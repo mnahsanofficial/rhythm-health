@@ -6,7 +6,7 @@ import { RhythmRing } from "@/components/rhythm-ring";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import { HABIT_PRESETS, placeHabits } from "@/lib/rhythm/habits";
 import { formatDuration, formatHours, minutesBetween } from "@/lib/rhythm/time";
-import type { ActivityLevel, AgeRange } from "@/lib/types/api";
+import { ACTIVITY_LEVELS, MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type ActivityLevel, type AgeRange } from "@/lib/types/api";
 
 export type StepProps = {
   draft: OnboardingDraft;
@@ -118,7 +118,8 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
   );
 }
 
-const MIN_HOURS = 3;
+// The backend accepts 3–14; past 12 is almost always a mistyped time.
+const MIN_HOURS = MIN_SLEEP_HOURS;
 const MAX_HOURS = 12;
 
 function HoursBody({ draft, update }: StepProps) {
@@ -178,7 +179,7 @@ function StepperButton({
 }
 
 export const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; hint: string }[] = [
-  { value: "mostly_sedentary", label: "Mostly sitting", hint: "Desk-based, not much walking" },
+  { value: "sedentary", label: "Mostly sitting", hint: "Desk-based, not much walking" },
   { value: "lightly_active", label: "Lightly active", hint: "Some walking most days" },
   { value: "moderately_active", label: "Moderately active", hint: "Exercise two or three times a week" },
   { value: "very_active", label: "Very active", hint: "Training or physical work most days" },
@@ -231,6 +232,7 @@ function HabitsBody({ draft, update }: StepProps) {
       options={HABIT_PRESETS.map((h) => h.label)}
       value={draft.regular_habits ?? []}
       onChange={(regular_habits) => update({ regular_habits })}
+      max={MAX_LIST_ITEMS}
       addLabel="Something else you do most days?"
       addPlaceholder="e.g. Tea before bed"
     />
@@ -254,6 +256,7 @@ function ConstraintsBody({ draft, update }: StepProps) {
       options={CONSTRAINT_OPTIONS}
       value={draft.constraints ?? []}
       onChange={(constraints) => update({ constraints })}
+      max={MAX_LIST_ITEMS}
       addLabel="Anything else?"
       addPlaceholder="e.g. Dog walks at 7am"
     />
@@ -288,7 +291,7 @@ export const STEPS: Step[] = [
     id: "activity",
     question: "How much do you move on a typical day?",
     why: "No need to be exact. This helps us suggest changes that fit.",
-    isAnswered: (d) => Boolean(d.activity_level),
+    isAnswered: (d) => ACTIVITY_LEVELS.some((a) => a === d.activity_level),
     Body: ActivityBody,
   },
   {

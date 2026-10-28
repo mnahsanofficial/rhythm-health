@@ -103,7 +103,8 @@ export function ChipPicker({ legend, options, value, onChange, max, addLabel, ad
         </motion.div>
       </fieldset>
 
-      {max !== undefined && (
+      {/* A small limit is part of the question ("pick up to three"), so count it; a large one only matters once hit. */}
+      {max !== undefined && (max <= 5 || full) && (
         <p aria-live="polite" className="mt-3 text-caption text-muted">
           {value.length} of {max} picked{full ? ". Unpick one to choose another." : ""}
         </p>
