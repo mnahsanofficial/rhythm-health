@@ -1,11 +1,12 @@
 "use client";
 
+import { ChipPicker } from "@/components/onboarding/chip-picker";
 import { ChoiceGroup } from "@/components/onboarding/choice-group";
 import { RhythmRing } from "@/components/rhythm-ring";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
 import { placeHabits } from "@/lib/rhythm/habits";
 import { formatDuration, formatHours, minutesBetween } from "@/lib/rhythm/time";
-import type { AgeRange } from "@/lib/types/api";
+import type { ActivityLevel, AgeRange } from "@/lib/types/api";
 
 export type StepProps = {
   draft: OnboardingDraft;
@@ -174,6 +175,51 @@ function StepperButton({
   );
 }
 
+const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; hint: string }[] = [
+  { value: "mostly_sedentary", label: "Mostly sitting", hint: "Desk-based, not much walking" },
+  { value: "lightly_active", label: "Lightly active", hint: "Some walking most days" },
+  { value: "moderately_active", label: "Moderately active", hint: "Exercise two or three times a week" },
+  { value: "very_active", label: "Very active", hint: "Training or physical work most days" },
+];
+
+function ActivityBody({ draft, update }: StepProps) {
+  return (
+    <ChoiceGroup
+      legend="How active you are"
+      options={ACTIVITY_OPTIONS}
+      value={draft.activity_level}
+      onChange={(activity_level) => update({ activity_level })}
+    />
+  );
+}
+
+// Outcomes people can notice day to day. No weight, calorie or medical goals.
+const GOAL_OPTIONS = [
+  "More energy in the morning",
+  "Better focus",
+  "Fall asleep faster",
+  "Fewer afternoon slumps",
+  "Calmer evenings",
+  "Move more during the day",
+  "Eat more vegetables",
+  "A steadier routine",
+];
+const MAX_GOALS = 3;
+
+function GoalsBody({ draft, update }: StepProps) {
+  return (
+    <ChipPicker
+      legend="Goals"
+      options={GOAL_OPTIONS}
+      value={draft.goals ?? []}
+      onChange={(goals) => update({ goals })}
+      max={MAX_GOALS}
+      addLabel="Something else?"
+      addPlaceholder="e.g. Feel less groggy on Mondays"
+    />
+  );
+}
+
 /** Questions in order. Each one fills one profile field (TRD §12.1). */
 export const STEPS: Step[] = [
   {
@@ -197,6 +243,20 @@ export const STEPS: Step[] = [
     why: "Most people sleep a little less than they're in bed. A guess is fine.",
     isAnswered: nightIsPlausible,
     Body: HoursBody,
+  },
+  {
+    id: "activity",
+    question: "How much do you move on a typical day?",
+    why: "No need to be exact. This helps us suggest changes that fit.",
+    isAnswered: (d) => Boolean(d.activity_level),
+    Body: ActivityBody,
+  },
+  {
+    id: "goals",
+    question: "What would you like to improve?",
+    why: "Pick up to three. Your first experiment will start from one of these.",
+    isAnswered: (d) => (d.goals?.length ?? 0) > 0,
+    Body: GoalsBody,
   },
 ];
 
