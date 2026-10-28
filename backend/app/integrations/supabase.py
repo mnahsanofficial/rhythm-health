@@ -19,3 +19,37 @@ def check_connection() -> bool:
     except httpx.HTTPError:
         return False
     return res.status_code == 200
+
+
+class SupabaseUnavailable(Exception):
+    """The Supabase database could not be reached or returned an error."""
+
+
+def rest_request(
+    method: str,
+    table: str,
+    *,
+    params: dict[str, str] | None = None,
+    json: dict | None = None,
+    prefer: str | None = None,
+) -> list[dict]:
+    """Call PostgREST with the service-role key. Callers must scope queries to the user."""
+    key = settings.supabase_service_role_key
+    if not settings.supabase_url or not key:
+        raise SupabaseUnavailable("Supabase is not configured")
+    headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+    if prefer:
+        headers["Prefer"] = prefer
+    try:
+        res = httpx.request(
+            method,
+            f"{settings.supabase_url.rstrip('/')}/rest/v1/{table}",
+            headers=headers,
+            params=params,
+            json=json,
+            timeout=10,
+        )
+        res.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise SupabaseUnavailable(type(exc).__name__) from exc
+    return res.json()
