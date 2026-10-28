@@ -1,13 +1,16 @@
+// Temporary: shows the shell and type scale until the home screen lands in the next chunk.
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-md flex-1 flex-col justify-center gap-3 px-4 py-12">
-      <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-        Playmakers C2 · Health habits
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-4 px-4 py-12 sm:px-8">
+      <p className="text-caption font-medium text-moss">Shell check</p>
+      <h1 className="font-display text-headline tracking-tight sm:text-display">
+        Stop guessing what works for you.
+        <span className="block text-muted">Test it.</span>
+      </h1>
+      <p className="max-w-prose text-lead text-muted">
+        Body copy in Instrument Sans. Times and numbers use tabular mono:{" "}
+        <span className="font-mono tabular-nums text-ink">23:30 → 07:30 · 7.5 h</span>
       </p>
-      <h1 className="text-3xl font-semibold tracking-tight">Health</h1>
-      <p className="text-zinc-600 dark:text-zinc-400">
-        Placeholder. The product idea isn&apos;t decided yet.
-      </p>
-    </main>
+    </div>
   );
 }
