@@ -1,3 +1,4 @@
+import { AuthPanel } from "@/components/auth-panel";
 import { BackendStatus } from "@/components/backend-status";
 
 export default function Home() {
@@ -10,6 +11,7 @@ export default function Home() {
         Stop guessing what works for you. Test it.
       </h1>
       <BackendStatus />
+      <AuthPanel />
     </main>
   );
 }

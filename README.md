@@ -20,7 +20,7 @@ cd backend && uv sync && cp .env.example .env.local
 uv run uvicorn app.main:app --reload --port 8001
 ```
 
-Check `http://localhost:8001/health` returns `{"status":"ok"}`; the home page shows "Backend connected".
+Check `http://localhost:8001/health` returns `{"status":"ok"}`; the home page shows "Backend connected". For auth, fill in the Supabase values in both `.env.local` files (see the `.env.example` files), check `http://localhost:8001/health/supabase` returns `{"status":"ok"}`, then sign up on the home page and click "Test protected endpoint".
 
 ## Scripts
 
