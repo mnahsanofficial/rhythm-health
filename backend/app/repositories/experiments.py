@@ -26,3 +26,21 @@ def get(profile_id: str, experiment_id: str) -> dict | None:
         params={"id": f"eq.{experiment_id}", "profile_id": f"eq.{profile_id}", "select": "*"},
     )
     return rows[0] if rows else None
+
+
+def start(profile_id: str, experiment_id: str, started_at: str) -> dict | None:
+    """Move proposed -> active. The status filter makes the transition atomic:
+    None means the experiment was no longer proposed. May raise SupabaseConflict if
+    the profile already has an active experiment (partial unique index)."""
+    rows = rest_request(
+        "PATCH",
+        "experiments",
+        params={
+            "id": f"eq.{experiment_id}",
+            "profile_id": f"eq.{profile_id}",
+            "status": "eq.proposed",
+        },
+        json={"status": "active", "started_at": started_at},
+        prefer="return=representation",
+    )
+    return rows[0] if rows else None

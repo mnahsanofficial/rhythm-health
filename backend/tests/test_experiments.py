@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.auth.supabase import get_current_user
-from app.integrations.supabase import SupabaseUnavailable
+from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
 from app.main import app
 from app.repositories import experiments, profiles
 from tests.test_propose import CLASSIFICATION, PREDICTION, PROPOSAL
@@ -48,6 +48,15 @@ class FakeDb:
             if r["profile_id"] == profile_id and (status is None or r["status"] == status)
         ]
 
+    def start(self, profile_id, experiment_id, started_at):
+        row = self.get(profile_id, experiment_id)
+        if row is None or row["status"] != "proposed":
+            return None
+        if any(r["profile_id"] == profile_id and r["status"] == "active" for r in self.rows):
+            raise SupabaseConflict()  # what the unique index does under a race
+        row.update(status="active", started_at=started_at)
+        return row
+
     def get(self, profile_id, experiment_id):
         return next(
             (r for r in self.rows if r["id"] == experiment_id and r["profile_id"] == profile_id),
@@ -62,6 +71,7 @@ def db(monkeypatch):
     monkeypatch.setattr(experiments, "create", fake.create)
     monkeypatch.setattr(experiments, "list_for_profile", fake.list_for_profile)
     monkeypatch.setattr(experiments, "get", fake.get)
+    monkeypatch.setattr(experiments, "start", fake.start)
     app.dependency_overrides[get_current_user] = lambda: fake.current
     yield fake
     app.dependency_overrides.clear()
@@ -162,3 +172,108 @@ def test_database_down_is_503(db, monkeypatch):
     monkeypatch.setattr(experiments, "create", boom)
     assert client.get("/api/experiments").status_code == 503
     assert client.post("/api/experiments", json=BODY).status_code == 503
+
+
+# --- start ------------------------------------------------------------------
+
+
+def save_one():
+    return client.post("/api/experiments", json=BODY).json()
+
+
+def test_start_requires_auth():
+    assert client.post("/api/experiments/00000000-0000-0000-0000-000000000001/start").status_code == 401
+
+
+def test_proposed_experiment_reports_not_started(db):
+    assert save_one()["progress"]["state"] == "not_started"
+
+
+def test_start_activates_and_reports_day_one_baseline(db):
+    saved = save_one()
+    res = client.post(f"/api/experiments/{saved['id']}/start")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "active"
+    assert body["started_at"] is not None
+    assert body["progress"]["state"] == "in_progress"
+    assert body["progress"]["day_number"] == 1
+    assert body["progress"]["phase"] == "baseline"
+    assert body["progress"]["phase_day"] == 1 and body["progress"]["phase_days"] == 3
+    assert body["progress"]["total_days"] == 10
+    assert body["progress"]["days_remaining"] == 9
+    # the definition and prediction are untouched
+    assert body["prediction"] == saved["prediction"]
+    assert body["hypothesis"] == saved["hypothesis"]
+
+
+def test_start_twice_is_409(db):
+    saved = save_one()
+    assert client.post(f"/api/experiments/{saved['id']}/start").status_code == 200
+    again = client.post(f"/api/experiments/{saved['id']}/start")
+    assert again.status_code == 409
+    assert "active" in again.json()["detail"]
+
+
+def test_only_one_active_experiment(db):
+    first, second = save_one(), save_one()
+    assert client.post(f"/api/experiments/{first['id']}/start").status_code == 200
+    res = client.post(f"/api/experiments/{second['id']}/start")
+    assert res.status_code == 409
+    assert "already have an active" in res.json()["detail"]
+    assert client.get(f"/api/experiments/{second['id']}").json()["status"] == "proposed"
+
+
+def test_concurrent_start_conflict_is_409(db, monkeypatch):
+    saved = save_one()
+
+    def conflict(*_a):
+        raise SupabaseConflict()
+
+    monkeypatch.setattr(experiments, "start", conflict)
+    assert client.post(f"/api/experiments/{saved['id']}/start").status_code == 409
+
+
+def test_cannot_start_another_users_experiment(db):
+    saved = save_one()
+    db.current = BOB
+    assert client.post(f"/api/experiments/{saved['id']}/start").status_code == 404
+    db.current = ALICE
+    assert client.get(f"/api/experiments/{saved['id']}").json()["status"] == "proposed"
+
+
+def test_users_can_each_have_an_active_experiment(db):
+    mine = save_one()
+    db.current = BOB
+    theirs = save_one()
+    assert client.post(f"/api/experiments/{theirs['id']}/start").status_code == 200
+    db.current = ALICE
+    assert client.post(f"/api/experiments/{mine['id']}/start").status_code == 200
+
+
+def test_start_missing_or_malformed_id(db):
+    assert client.post("/api/experiments/00000000-0000-0000-0000-0000000000ff/start").status_code == 404
+    assert client.post("/api/experiments/nope/start").status_code == 422
+
+
+def test_get_reports_current_day_from_started_at(db):
+    from datetime import UTC, datetime, timedelta
+
+    saved = save_one()
+    client.post(f"/api/experiments/{saved['id']}/start")
+    db.rows[0]["started_at"] = (datetime.now(UTC) - timedelta(days=4, hours=2)).isoformat()
+    progress = client.get(f"/api/experiments/{saved['id']}").json()["progress"]
+    assert progress["day_number"] == 5
+    assert progress["phase"] == "intervention"
+    assert progress["phase_day"] == 2 and progress["phase_days"] == 7
+    assert client.get("/api/experiments?status=active").json()[0]["progress"]["day_number"] == 5
+
+
+def test_start_database_down_is_503(db, monkeypatch):
+    saved = save_one()
+
+    def boom(*_a):
+        raise SupabaseUnavailable("down")
+
+    monkeypatch.setattr(experiments, "start", boom)
+    assert client.post(f"/api/experiments/{saved['id']}/start").status_code == 503

@@ -25,6 +25,10 @@ class SupabaseUnavailable(Exception):
     """The Supabase database could not be reached or returned an error."""
 
 
+class SupabaseConflict(Exception):
+    """A uniqueness constraint rejected the write (HTTP 409 from PostgREST)."""
+
+
 def rest_request(
     method: str,
     table: str,
@@ -50,6 +54,10 @@ def rest_request(
             timeout=10,
         )
         res.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 409:
+            raise SupabaseConflict() from exc
+        raise SupabaseUnavailable(type(exc).__name__) from exc
     except httpx.HTTPError as exc:
         raise SupabaseUnavailable(type(exc).__name__) from exc
     return res.json()

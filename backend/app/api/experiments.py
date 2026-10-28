@@ -1,15 +1,17 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.supabase import get_current_user
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
-from app.integrations.supabase import SupabaseUnavailable
+from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
 from app.repositories import experiments, profiles
 from app.schemas.experiment import ExperimentOut, ExperimentStatus, ProposeRequest
 from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
 from app.services import safety
+from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
 
 router = APIRouter(prefix="/api/experiments")
@@ -71,7 +73,7 @@ def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_curr
         "prediction": body.prediction.model_dump(),
     }
     try:
-        return experiments.create(profile_id, values)
+        return with_progress(experiments.create(profile_id, values))
     except SupabaseUnavailable:
         raise _db_error()
 
@@ -80,7 +82,7 @@ def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_curr
 def list_experiments(status: ExperimentStatus | None = None, user_id: str = Depends(get_current_user)):
     profile_id = _profile_id(user_id)
     try:
-        return experiments.list_for_profile(profile_id, status)
+        return [with_progress(r) for r in experiments.list_for_profile(profile_id, status)]
     except SupabaseUnavailable:
         raise _db_error()
 
@@ -94,4 +96,30 @@ def get_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)
         raise _db_error()
     if row is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
-    return row
+    return with_progress(row)
+
+
+@router.post("/{experiment_id}/start", response_model=ExperimentOut)
+def start_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)):
+    profile_id = _profile_id(user_id)
+    already_active = HTTPException(
+        status_code=409, detail="You already have an active experiment"
+    )
+    try:
+        row = experiments.get(profile_id, str(experiment_id))
+        if row is None:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        if row["status"] != "proposed":
+            raise HTTPException(
+                status_code=409, detail=f"Only a proposed experiment can be started (this one is {row['status']})"
+            )
+        if experiments.list_for_profile(profile_id, "active"):
+            raise already_active
+        started = experiments.start(profile_id, str(experiment_id), datetime.now(UTC).isoformat())
+    except SupabaseConflict:
+        raise already_active
+    except SupabaseUnavailable:
+        raise _db_error()
+    if started is None:  # lost a race: no longer proposed
+        raise HTTPException(status_code=409, detail="Experiment is no longer proposed")
+    return with_progress(started)

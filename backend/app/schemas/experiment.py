@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from app.schemas.classification import Category
 from app.schemas.prediction import Prediction
+from app.schemas.progress import ExperimentProgress
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=400)]
 MetricKey = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,40}$")]
@@ -106,5 +107,6 @@ class ExperimentOut(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     is_seeded: bool
+    progress: ExperimentProgress
     created_at: datetime
     updated_at: datetime
