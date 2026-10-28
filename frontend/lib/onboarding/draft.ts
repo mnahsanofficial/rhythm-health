@@ -5,6 +5,19 @@ import type { ProfileInput } from "@/lib/types/api";
 
 export type OnboardingDraft = Partial<ProfileInput>;
 
+/** Saved answers back into draft form, so a returning user can edit rather than start over. */
+export function draftFromProfile(p: ProfileInput): OnboardingDraft {
+  return {
+    age_range: p.age_range,
+    usual_sleep_hours: p.usual_sleep_hours,
+    usual_sleep_schedule: p.usual_sleep_schedule,
+    activity_level: p.activity_level,
+    goals: p.goals,
+    regular_habits: p.regular_habits,
+    constraints: p.constraints,
+  };
+}
+
 /** The full PUT /api/profile body, or null while any required answer is missing. */
 export function toProfileInput(d: OnboardingDraft): ProfileInput | null {
   const s = d.usual_sleep_schedule;

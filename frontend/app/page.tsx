@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HomeCta } from "@/components/home-cta";
 import { RhythmRing } from "@/components/rhythm-ring";
 import { exampleProfile } from "@/lib/data/profile";
 import { placeHabits } from "@/lib/rhythm/habits";
@@ -40,14 +40,8 @@ export default function Home() {
             Turn a habit you&apos;re curious about into a short experiment. We predict what will change, you
             try it for a week, and you see whether it actually worked for you.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-            <Link
-              href="/onboarding"
-              className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium whitespace-nowrap text-paper transition-[background-color,scale] hover:bg-moss-deep active:scale-[0.98]"
-            >
-              Run your first experiment
-            </Link>
-            <p className="text-caption text-muted">About a minute to set up. You sign up at the end.</p>
+          <div className="mt-8">
+            <HomeCta />
           </div>
 
           <div className="mt-12">

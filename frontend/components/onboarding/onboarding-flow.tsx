@@ -6,7 +6,9 @@ import { ProgressBar } from "@/components/onboarding/progress-bar";
 import { RhythmSummary } from "@/components/onboarding/rhythm-summary";
 import { nightIsPlausible, QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
 import { RhythmRing } from "@/components/rhythm-ring";
-import { loadDraft, saveDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
+import { useSession } from "@/lib/auth/session";
+import { getProfile } from "@/lib/data/profile";
+import { draftFromProfile, loadDraft, saveDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
 import { placeHabits } from "@/lib/rhythm/habits";
 
 // Steps slide in the direction you're going, so back and forward feel different.
@@ -44,6 +46,25 @@ function Flow() {
   useEffect(() => {
     saveDraft({ step, draft });
   }, [step, draft]);
+
+  // A returning user with nothing on the device starts from their saved answers, not a blank form.
+  const { session } = useSession();
+  const [prefillChecked, setPrefillChecked] = useState(false);
+  const [prefillFailed, setPrefillFailed] = useState(false);
+  useEffect(() => {
+    if (!session || prefillChecked || Object.keys(draft).length > 0) return;
+    let cancelled = false;
+    getProfile()
+      .then((p) => {
+        if (cancelled || !p) return;
+        setDraft((d) => (Object.keys(d).length > 0 ? d : draftFromProfile(p)));
+      })
+      .catch(() => !cancelled && setPrefillFailed(true))
+      .finally(() => !cancelled && setPrefillChecked(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [session, prefillChecked, draft]);
 
   // After moving between steps, focus the new heading once it mounts (after the old step
   // has animated out), so keyboard and screen-reader users land on the new question.
@@ -88,6 +109,11 @@ function Flow() {
     >
       <div className="flex flex-col">
         <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
+        {prefillFailed && step === 0 && (
+          <p role="status" className="mt-4 rounded-card bg-clay-tint p-3 text-body text-clay">
+            Couldn&apos;t load your saved answers, so this starts blank. Saving at the end still updates your rhythm.
+          </p>
+        )}
 
         <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div

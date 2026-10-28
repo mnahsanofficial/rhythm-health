@@ -1,22 +1,23 @@
-// Profile data for the UI. Screens import from here, never from lib/mock directly.
-//
-// Wiring the real API: write a source that calls GET/PUT
-// `${NEXT_PUBLIC_API_URL}/api/profile` with the Supabase bearer token,
-// and assign it to `profileSource` below. Nothing else should need to change.
+// Profile data for the UI. Screens import from here, never from lib/mock or the API client directly.
 
-import { mockProfileSource, sampleProfile } from "@/lib/mock/profile";
+import { apiGet, apiSend, ApiError } from "@/lib/api/client";
+import { sampleProfile } from "@/lib/mock/profile";
 import type { Profile, ProfileInput } from "@/lib/types/api";
 
-export type ProfileSource = {
-  /** Resolves to null when the user hasn't created a profile yet. */
-  getProfile(): Promise<Profile | null>;
-  saveProfile(input: ProfileInput): Promise<Profile>;
-};
+/** The signed-in user's profile, or null if they haven't created one (the API answers 404). */
+export async function getProfile(): Promise<Profile | null> {
+  try {
+    return await apiGet<Profile>("/api/profile", true);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
 
-export const profileSource: ProfileSource = mockProfileSource;
+/** Create or replace the signed-in user's profile (PUT /api/profile). */
+export function saveProfile(input: ProfileInput): Promise<Profile> {
+  return apiSend<Profile>("PUT", "/api/profile", input);
+}
 
-/** True while screens show sample data; use it to label them. */
-export const isSampleData = true;
-
-/** Always sample data, even once the API is wired: used to illustrate the product before a user has a profile. */
+/** Always sample data: illustrates the product on the home page before anyone has a profile. */
 export const exampleProfile = sampleProfile;

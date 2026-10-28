@@ -7,8 +7,9 @@ import { AuthForm, type AuthMode } from "@/components/auth/auth-form";
 import { ACTIVITY_OPTIONS, AGE_OPTIONS } from "@/components/onboarding/steps";
 import { RhythmRing } from "@/components/rhythm-ring";
 import { useSession } from "@/lib/auth/session";
-import { isSampleData, profileSource } from "@/lib/data/profile";
-import { toProfileInput, type OnboardingDraft } from "@/lib/onboarding/draft";
+import { ApiError } from "@/lib/api/client";
+import { saveProfile } from "@/lib/data/profile";
+import { clearDraft, toProfileInput, type OnboardingDraft } from "@/lib/onboarding/draft";
 import { placeHabits } from "@/lib/rhythm/habits";
 import { formatHours } from "@/lib/rhythm/time";
 
@@ -19,7 +20,7 @@ type Props = {
   headingRef: React.Ref<HTMLHeadingElement>;
 };
 
-type SaveState = "idle" | "saving" | "saved" | "error";
+type SaveState = "idle" | "saving" | "saved" | { error: string };
 
 // The ring draws first (about 1.1s, markers until ~1.5s); the summary follows it in.
 const SUMMARY_DELAY = 1.3;
@@ -60,10 +61,17 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
     if (!input) return;
     setSave("saving");
     try {
-      await profileSource.saveProfile(input);
+      await saveProfile(input);
+      // Saved on the server, so the on-device copy has done its job.
+      clearDraft();
       setSave("saved");
-    } catch {
-      setSave("error");
+    } catch (e) {
+      setSave({
+        error:
+          e instanceof ApiError && e.status !== 0
+            ? `Couldn't save: ${e.message.replace(/\.$/, "")}. Your answers are still here, so try again.`
+            : "Couldn't reach the server. Your answers are still here, so try again.",
+      });
     }
   }
 
@@ -121,9 +129,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
             {save === "saved" ? (
               <div role="status" className="rounded-card bg-moss-tint p-5">
                 <p className="text-lead font-medium text-ink">Saved.</p>
-                <p className="mt-1 text-body text-muted">
-                  Next you&apos;ll pick a question to test. That screen is on its way.
-                </p>
+                <p className="mt-1 text-body text-muted">Your rhythm is in your account. Next, pick something to test.</p>
                 <Link
                   href="/"
                   className="mt-4 inline-flex min-h-11 items-center rounded-pill bg-moss px-5 text-body font-medium text-paper hover:bg-moss-deep"
@@ -157,13 +163,15 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                 >
                   {save === "saving" ? "Saving…" : "Save my rhythm"}
                 </button>
-                <p aria-live="polite" className="mt-3 text-caption text-muted">
-                  {save === "error"
-                    ? "Couldn't save just now. Your answers are still here, so try again."
+                <p
+                  aria-live="polite"
+                  className={`mt-3 text-caption ${typeof save === "object" ? "font-medium text-clay" : "text-muted"}`}
+                >
+                  {typeof save === "object"
+                    ? save.error
                     : !input
                       ? "A few answers are missing. Use Change to fill them in."
-                      : `Signed in as ${session.user.email}.` +
-                        (isSampleData ? " Saving is still sample data on this device." : "")}
+                      : `Signed in as ${session.user.email}.`}
                 </p>
               </>
             )}
