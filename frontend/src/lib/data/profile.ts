@@ -4,7 +4,7 @@
 // `${NEXT_PUBLIC_API_URL}/api/profile` with the Supabase bearer token,
 // and assign it to `profileSource` below. Nothing else should need to change.
 
-import { mockProfileSource } from "@/lib/mock/profile";
+import { mockProfileSource, sampleProfile } from "@/lib/mock/profile";
 import type { Profile, ProfileInput } from "@/lib/types/api";
 
 export type ProfileSource = {
@@ -17,3 +17,6 @@ export const profileSource: ProfileSource = mockProfileSource;
 
 /** True while screens show sample data; use it to label them. */
 export const isSampleData = true;
+
+/** Always sample data, even once the API is wired: used to illustrate the product before a user has a profile. */
+export const exampleProfile = sampleProfile;

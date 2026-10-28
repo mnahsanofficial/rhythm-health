@@ -11,7 +11,7 @@ export const sampleProfile: Profile = {
   usual_sleep_schedule: { bedtime: "23:30", wake_time: "07:30" },
   activity_level: "lightly_active",
   goals: ["better morning energy", "better focus"],
-  regular_habits: ["coffee around 9 AM", "late dinner", "phone before bed"],
+  regular_habits: ["Coffee around 9am", "Late dinner", "Phone in bed"],
   constraints: ["cannot exercise before work"],
   created_at: "2026-10-29T08:00:00.000Z",
   updated_at: "2026-10-29T08:00:00.000Z",
