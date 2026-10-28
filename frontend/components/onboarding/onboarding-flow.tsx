@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, type Variants } from "motion/react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { ProgressBar } from "@/components/onboarding/progress-bar";
 import { RhythmSummary } from "@/components/onboarding/rhythm-summary";
 import { nightIsPlausible, QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
@@ -39,6 +39,7 @@ function Flow() {
   const [direction, setDirection] = useState(1);
   const [draft, setDraft] = useState<OnboardingDraft>(() => loadDraft().draft);
   const focusNextHeading = useRef(false);
+  const formId = useId();
 
   useEffect(() => {
     saveDraft({ step, draft });
@@ -64,29 +65,28 @@ function Flow() {
   const answered = current ? current.isAnswered(draft) : true;
   const canContinue = (answered || Boolean(current?.optional)) && step < SUMMARY_STEP;
 
+  const submitStep = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canContinue) return;
+    if (current?.complete) {
+      const patch = current.complete(draft);
+      setDraft((d) => ({ ...d, ...patch }));
+    }
+    if (returnToSummary) {
+      setReturnToSummary(false);
+      go(SUMMARY_STEP);
+    } else {
+      go(step + 1);
+    }
+  };
+
   return (
     <div
       className={`mx-auto grid w-full max-w-6xl flex-1 px-4 sm:px-8 ${
         isSummary ? "" : "lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-20"
       }`}
     >
-      <form
-        className="flex flex-col"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!canContinue) return;
-          if (current?.complete) {
-            const patch = current.complete(draft);
-            setDraft((d) => ({ ...d, ...patch }));
-          }
-          if (returnToSummary) {
-            setReturnToSummary(false);
-            go(SUMMARY_STEP);
-          } else {
-            go(step + 1);
-          }
-        }}
-      >
+      <div className="flex flex-col">
         <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
 
         <AnimatePresence mode="wait" custom={direction} initial={false}>
@@ -99,24 +99,8 @@ function Flow() {
             exit="exit"
             className="flex-1 pt-8 pb-6 sm:flex-none sm:pt-12"
           >
-            {current ? (
-              <>
-                <p className="font-mono text-caption text-moss tabular-nums">
-                  {String(step).padStart(2, "0")} / {String(QUESTION_COUNT).padStart(2, "0")}
-                </p>
-                <h1
-                  ref={headingRef}
-                  tabIndex={-1}
-                  className="mt-2 font-display text-headline tracking-tight outline-none"
-                >
-                  {current.question}
-                </h1>
-                <p className="mt-2 text-body text-muted">{current.why}</p>
-                <div className="mt-8">
-                  <current.Body draft={draft} update={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
-                </div>
-              </>
-            ) : isSummary ? (
+            {isSummary ? (
+              // Outside any form: the summary holds its own sign-up form, and forms can't nest.
               <RhythmSummary
                 draft={draft}
                 headingRef={headingRef}
@@ -126,7 +110,28 @@ function Flow() {
                 }}
               />
             ) : (
-              <Intro headingRef={headingRef} />
+              <form id={formId} onSubmit={submitStep}>
+                {current ? (
+                  <>
+                    <p className="font-mono text-caption text-moss tabular-nums">
+                      {String(step).padStart(2, "0")} / {String(QUESTION_COUNT).padStart(2, "0")}
+                    </p>
+                    <h1
+                      ref={headingRef}
+                      tabIndex={-1}
+                      className="mt-2 font-display text-headline tracking-tight outline-none"
+                    >
+                      {current.question}
+                    </h1>
+                    <p className="mt-2 text-body text-muted">{current.why}</p>
+                    <div className="mt-8">
+                      <current.Body draft={draft} update={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
+                    </div>
+                  </>
+                ) : (
+                  <Intro headingRef={headingRef} />
+                )}
+              </form>
             )}
           </motion.div>
         </AnimatePresence>
@@ -146,13 +151,14 @@ function Flow() {
           )}
           <button
             type="submit"
+            form={formId}
             disabled={!canContinue}
             className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
           >
             {step === 0 ? "Start" : returnToSummary ? "Done" : answered ? "Continue" : "Skip"}
           </button>
         </div>
-      </form>
+      </div>
       {!isSummary && <RhythmPanel draft={draft} />}
     </div>
   );

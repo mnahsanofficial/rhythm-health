@@ -3,8 +3,10 @@
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
+import { AuthForm, type AuthMode } from "@/components/auth/auth-form";
 import { ACTIVITY_OPTIONS, AGE_OPTIONS } from "@/components/onboarding/steps";
 import { RhythmRing } from "@/components/rhythm-ring";
+import { useSession } from "@/lib/auth/session";
 import { isSampleData, profileSource } from "@/lib/data/profile";
 import { toProfileInput, type OnboardingDraft } from "@/lib/onboarding/draft";
 import { placeHabits } from "@/lib/rhythm/habits";
@@ -26,6 +28,8 @@ const SUMMARY_DELAY = 1.3;
 export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
   const reduce = useReducedMotion();
   const [save, setSave] = useState<SaveState>("idle");
+  const { session, loading: sessionLoading } = useSession();
+  const [authMode, setAuthMode] = useState<AuthMode>("sign-up");
   const input = toProfileInput(draft);
   const schedule = draft.usual_sleep_schedule;
   const placed = placeHabits(draft.regular_habits ?? [], schedule);
@@ -127,6 +131,21 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                   Back to home
                 </Link>
               </div>
+            ) : sessionLoading ? (
+              <div aria-hidden="true" className="h-12 w-48 animate-pulse rounded-pill bg-line" />
+            ) : !session ? (
+              // Answers are kept on the device until there's an account to save them to (TRD §6).
+              <div className="rounded-card border border-line bg-paper p-5 sm:p-6">
+                <h2 className="font-display text-title tracking-tight">
+                  {authMode === "sign-up" ? "Create an account to save it" : "Sign in to save it"}
+                </h2>
+                <p className="mt-1 mb-5 text-body text-muted">Your answers stay on this device until you do.</p>
+                {input ? (
+                  <AuthForm mode={authMode} onModeChange={setAuthMode} onSignedIn={handleSave} />
+                ) : (
+                  <p className="text-body text-muted">A few answers are missing. Use Change to fill them in.</p>
+                )}
+              </div>
             ) : (
               <>
                 <button
@@ -143,9 +162,8 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                     ? "Couldn't save just now. Your answers are still here, so try again."
                     : !input
                       ? "A few answers are missing. Use Change to fill them in."
-                      : isSampleData
-                        ? "Account sign-up comes next. For now this saves on this device only."
-                        : "You can change any of this later."}
+                      : `Signed in as ${session.user.email}.` +
+                        (isSampleData ? " Saving is still sample data on this device." : "")}
                 </p>
               </>
             )}

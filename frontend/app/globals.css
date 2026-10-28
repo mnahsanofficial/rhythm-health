@@ -14,6 +14,9 @@
   --color-night: #263a6b;
   --color-night-tint: #e4e7f0;
   --color-sun: #f2c14e;
+  /* Errors only: 7.6:1 text on tint. */
+  --color-clay: #7a2e1f;
+  --color-clay-tint: #f7e4df;
 
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;

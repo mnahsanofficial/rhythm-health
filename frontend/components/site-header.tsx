@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthNav } from "@/components/auth-nav";
 
 /** The mark: a 24-hour dial (midnight at the top) with night from 22:00 to 06:00 and a midday sun. */
 function Mark() {
@@ -13,7 +14,7 @@ function Mark() {
 
 export function SiteHeader() {
   return (
-    <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-4 sm:px-8">
+    <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
       <Link
         href="/"
         className="-mx-2 flex min-h-11 items-center gap-2 px-2 font-display text-title tracking-tight"
@@ -21,6 +22,7 @@ export function SiteHeader() {
         <Mark />
         Rhythm
       </Link>
+      <AuthNav />
     </header>
   );
 }
