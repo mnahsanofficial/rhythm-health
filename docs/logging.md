@@ -2,6 +2,8 @@
 
 Every agent session on this repo writes `.claude-logs/<timestamp>_<session-id>.md`: user prompts and final responses only, in the format from the 8x guide ([`agent-logging-setup.md`](agent-logging-setup.md), saved verbatim as pasted). `.claude-logs/` is committed, never gitignored.
 
+All agents write to that one folder, per 8x: no per-agent folders. The `agent:` frontmatter line, present only in Codex and Cursor logs, tells them apart.
+
 ## What's installed
 
 | Agent | Hook config (committed) | Script | Events |
@@ -32,10 +34,12 @@ Anyone who clones the repo gets the same logging. The `cd` is there because Clau
 
 | # | Agent | Canary | Result |
 |---|---|---|---|
-| 1 | Claude Code | `CAPTURE TEST — Playmakers C2, Nazmul` | pending |
+| 1 | Claude Code | `i merged the PR: CAPTURE TEST — Playmakers C2, Nazmul` | Pass. Prompt 6 and response 6 in `2026-10-28_14-55-21_94c5e335….md`, written by the hooks with no manual run. Frontmatter: `author: Md Nazmul Ahsan`, `github_user: mnahsanofficial`, `git_email: mnahsanofficial@gmail.com`. |
 | 2 | Claude Code (2nd session) | | pending |
 | 3 | Codex | | pending |
 | 4 | Cursor | | pending |
+
+Expected lag: Claude Code saves a prompt to its transcript just after `UserPromptSubmit` fires, so the newest prompt lands in the log at that turn's `Stop`. A turn that crashes before `Stop` loses its last prompt.
 
 ## Ways logging can stop silently
 
