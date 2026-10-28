@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ProgressBar } from "@/components/onboarding/progress-bar";
+import { RhythmSummary } from "@/components/onboarding/rhythm-summary";
 import { nightIsPlausible, QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
 import { RhythmRing } from "@/components/rhythm-ring";
 import { loadDraft, saveDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
@@ -27,9 +28,14 @@ export function OnboardingFlow() {
   return isClient ? <Flow /> : <StepSkeleton />;
 }
 
-/** step 0 is the intro; steps 1..n are STEPS[0..n-1]. */
+/** After the last question: the rhythm comes together. */
+const SUMMARY_STEP = STEPS.length + 1;
+
+/** step 0 is the intro; steps 1..n are STEPS[0..n-1]; then the summary. */
 function Flow() {
-  const [step, setStep] = useState(() => Math.min(loadDraft().step, STEPS.length));
+  const [step, setStep] = useState(() => Math.min(loadDraft().step, SUMMARY_STEP));
+  // Set when "Change" on the summary sends the user back to one question.
+  const [returnToSummary, setReturnToSummary] = useState(false);
   const [direction, setDirection] = useState(1);
   const [draft, setDraft] = useState<OnboardingDraft>(() => loadDraft().draft);
   const focusNextHeading = useRef(false);
@@ -53,12 +59,17 @@ function Flow() {
     setStep(to);
   };
 
-  const current = step > 0 ? STEPS[step - 1] : null;
+  const isSummary = step === SUMMARY_STEP;
+  const current = step > 0 && !isSummary ? STEPS[step - 1] : null;
   const answered = current ? current.isAnswered(draft) : true;
-  const canContinue = (answered || Boolean(current?.optional)) && step < STEPS.length;
+  const canContinue = (answered || Boolean(current?.optional)) && step < SUMMARY_STEP;
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl flex-1 px-4 sm:px-8 lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-20">
+    <div
+      className={`mx-auto grid w-full max-w-6xl flex-1 px-4 sm:px-8 ${
+        isSummary ? "" : "lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-20"
+      }`}
+    >
       <form
         className="flex flex-col"
         onSubmit={(e) => {
@@ -68,7 +79,12 @@ function Flow() {
             const patch = current.complete(draft);
             setDraft((d) => ({ ...d, ...patch }));
           }
-          go(step + 1);
+          if (returnToSummary) {
+            setReturnToSummary(false);
+            go(SUMMARY_STEP);
+          } else {
+            go(step + 1);
+          }
         }}
       >
         <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
@@ -100,13 +116,25 @@ function Flow() {
                   <current.Body draft={draft} update={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
                 </div>
               </>
+            ) : isSummary ? (
+              <RhythmSummary
+                draft={draft}
+                headingRef={headingRef}
+                onEdit={(to) => {
+                  setReturnToSummary(true);
+                  go(to);
+                }}
+              />
             ) : (
               <Intro headingRef={headingRef} />
             )}
           </motion.div>
         </AnimatePresence>
 
-        <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0">
+        <div
+          hidden={isSummary}
+          className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0"
+        >
           {step > 0 && (
             <button
               type="button"
@@ -121,11 +149,11 @@ function Flow() {
             disabled={!canContinue}
             className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
           >
-            {step === 0 ? "Start" : answered ? "Continue" : "Skip"}
+            {step === 0 ? "Start" : returnToSummary ? "Done" : answered ? "Continue" : "Skip"}
           </button>
         </div>
       </form>
-      <RhythmPanel draft={draft} />
+      {!isSummary && <RhythmPanel draft={draft} />}
     </div>
   );
 }

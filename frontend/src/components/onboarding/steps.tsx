@@ -25,7 +25,7 @@ export type Step = {
   Body: (props: StepProps) => React.ReactNode;
 };
 
-const AGE_OPTIONS: { value: AgeRange; label: string }[] = [
+export const AGE_OPTIONS: { value: AgeRange; label: string }[] = [
   { value: "18-24", label: "18–24" },
   { value: "25-34", label: "25–34" },
   { value: "35-44", label: "35–44" },
@@ -177,7 +177,7 @@ function StepperButton({
   );
 }
 
-const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; hint: string }[] = [
+export const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; hint: string }[] = [
   { value: "mostly_sedentary", label: "Mostly sitting", hint: "Desk-based, not much walking" },
   { value: "lightly_active", label: "Lightly active", hint: "Some walking most days" },
   { value: "moderately_active", label: "Moderately active", hint: "Exercise two or three times a week" },
