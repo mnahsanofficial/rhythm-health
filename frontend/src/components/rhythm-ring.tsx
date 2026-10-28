@@ -1,7 +1,16 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "motion/react";
-import { arcPath, formatHours, pointAt, toMinutes } from "@/lib/rhythm/time";
+import {
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "motion/react";
+import { useEffect, useRef } from "react";
+import { formatHours, minutesBetween, pointAt, toMinutes } from "@/lib/rhythm/time";
 import type { HabitPreset } from "@/lib/rhythm/habits";
 import type { SleepSchedule } from "@/lib/types/api";
 
@@ -15,50 +24,137 @@ const HOUR_LABELS = [
   { minutes: 720, text: "12" },
   { minutes: 1080, text: "18" },
 ];
-
-const nightVariants: Variants = {
-  hidden: { pathLength: 0 },
-  shown: { pathLength: 1, transition: { duration: 1.1, ease: [0.22, 1, 0.36, 1] } },
-};
-
-const markerVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.4 },
-  shown: (i: number) => ({
-    opacity: 1,
-    scale: 1,
-    transition: { delay: 0.9 + i * 0.12, type: "spring", stiffness: 420, damping: 22 },
-  }),
-};
+const settle = { type: "spring", stiffness: 120, damping: 22 } as const;
 
 type Props = {
-  schedule: SleepSchedule;
-  sleepHours: number;
+  schedule?: SleepSchedule;
+  sleepHours?: number;
   habits: HabitPreset[];
-  /** Draw the ring in when it first scrolls into view. */
-  drawIn?: boolean;
 };
 
-/** A person's day on a 24-hour dial: the night they sleep, and the habits placed at their times. */
-export function RhythmRing({ schedule, sleepHours, habits, drawIn = true }: Props) {
+/**
+ * A person's day on a 24-hour dial: the night they sleep, and habits placed at their times.
+ * It draws in when it first comes into view, then follows any change to the answers,
+ * so during onboarding the ring visibly builds from what the user enters.
+ */
+export function RhythmRing({ schedule, sleepHours, habits }: Props) {
+  const ref = useRef<SVGSVGElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.5 });
   const reduce = useReducedMotion();
-  const animate = drawIn && !reduce;
-  const night = arcPath(schedule.bedtime, schedule.wake_time, C, C, R_TRACK);
-  const label =
-    `Sleep from ${schedule.bedtime} to ${schedule.wake_time}, about ${formatHours(sleepHours)} hours.` +
-    (habits.length ? ` Habits: ${habits.map((h) => `${h.label} (${h.time})`).join(", ")}.` : "");
+
+  // Night arc = a circle stroke, rotated to bedtime, dashed to the length of the night.
+  const startDeg = schedule ? (toMinutes(schedule.bedtime) / 1440) * 360 : 0;
+  const spanFraction = schedule ? minutesBetween(schedule.bedtime, schedule.wake_time) / 1440 : 0;
+  const rotate = useMotionValue(startDeg);
+  const span = useMotionValue(0);
+  const hours = useMotionValue(sleepHours ?? 0);
+  const hoursText = useTransform(hours, (h) => formatHours(Math.round(h * 2) / 2));
+
+  useEffect(() => {
+    if (!inView) return;
+    // Turn the short way round, so 23:30 → 00:30 moves forward an hour, not back 23.
+    const delta = ((((startDeg - rotate.get()) % 360) + 540) % 360) - 180;
+    if (reduce) {
+      rotate.jump(rotate.get() + delta);
+      span.jump(spanFraction);
+      return;
+    }
+    const a = animate(rotate, rotate.get() + delta, settle);
+    const b = animate(span, spanFraction, { duration: span.get() === 0 ? 1.1 : 0.5, ease: [0.22, 1, 0.36, 1] });
+    return () => {
+      a.stop();
+      b.stop();
+    };
+  }, [inView, reduce, startDeg, spanFraction, rotate, span]);
+
+  useEffect(() => {
+    if (sleepHours === undefined) return;
+    if (reduce) {
+      hours.jump(sleepHours);
+      return;
+    }
+    const a = animate(hours, sleepHours, { duration: 0.4, ease: "easeOut" });
+    return () => a.stop();
+  }, [sleepHours, reduce, hours]);
+
+  const label = schedule
+    ? `Sleep from ${schedule.bedtime} to ${schedule.wake_time}` +
+      (sleepHours !== undefined ? `, about ${formatHours(sleepHours)} hours.` : ".") +
+      (habits.length ? ` Habits: ${habits.map((h) => `${h.label} (${h.time})`).join(", ")}.` : "")
+    : "Your rhythm will appear here as you answer.";
 
   return (
-    <motion.svg
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
-      role="img"
-      aria-label={label}
-      className="h-auto w-full"
-      initial={animate ? "hidden" : "shown"}
-      whileInView="shown"
-      viewport={{ once: true, amount: 0.5 }}
-    >
+    <svg ref={ref} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={label} className="h-auto w-full">
       <circle cx={C} cy={C} r={R_TRACK} fill="none" stroke="var(--color-line)" strokeWidth={22} />
+      <Ticks />
 
+      {schedule && <NightArc rotate={rotate} span={span} />}
+
+      {habits.map((habit, i) => {
+        const p = pointAt(toMinutes(habit.time), C, C, R_MARKERS);
+        return (
+          <motion.circle
+            key={habit.label}
+            cx={p.x}
+            cy={p.y}
+            r={7}
+            fill="var(--color-sun)"
+            stroke="var(--color-ink)"
+            strokeWidth={1.5}
+            initial={reduce ? false : { opacity: 0, scale: 0.4 }}
+            animate={inView ? { opacity: 1, scale: 1 } : undefined}
+            transition={{ delay: 0.9 + i * 0.12, type: "spring", stiffness: 420, damping: 22 }}
+            style={{ transformOrigin: `${p.x}px ${p.y}px` }}
+          />
+        );
+      })}
+
+      {sleepHours !== undefined ? (
+        <>
+          <text x={C} y={C + 4} textAnchor="middle" className="fill-ink font-display text-[48px] tabular-nums">
+            <motion.tspan>{hoursText}</motion.tspan>
+            <tspan className="fill-muted font-sans text-[18px]"> h</tspan>
+          </text>
+          <text x={C} y={C + 30} textAnchor="middle" className="fill-muted font-sans text-[13px]">
+            usual sleep
+          </text>
+        </>
+      ) : (
+        schedule && (
+          <text x={C} y={C + 5} textAnchor="middle" className="fill-muted font-mono text-[13px] tabular-nums">
+            {schedule.bedtime}–{schedule.wake_time}
+          </text>
+        )
+      )}
+    </svg>
+  );
+}
+
+function NightArc({ rotate, span }: { rotate: MotionValue<number>; span: MotionValue<number> }) {
+  // A circle's stroke starts at 3 o'clock; -90° puts the start of the dash at midnight.
+  const fromTop = useTransform(rotate, (deg) => deg - 90);
+  const dash = useTransform(span, (s) => `${s} ${1 - s}`);
+  // A round cap on a zero-length dash still draws a dot, so hide the arc until it has length.
+  const opacity = useTransform(span, (s) => (s > 0.002 ? 1 : 0));
+  return (
+    <motion.circle
+      cx={C}
+      cy={C}
+      r={R_TRACK}
+      fill="none"
+      stroke="var(--color-night)"
+      strokeWidth={22}
+      strokeLinecap="round"
+      pathLength={1}
+      strokeDasharray={dash}
+      style={{ rotate: fromTop, opacity }}
+    />
+  );
+}
+
+function Ticks() {
+  return (
+    <>
       {Array.from({ length: 24 }, (_, hour) => {
         const major = hour % 6 === 0;
         const inner = pointAt(hour * 60, C, C, R_TRACK - 15);
@@ -76,7 +172,6 @@ export function RhythmRing({ schedule, sleepHours, habits, drawIn = true }: Prop
           />
         );
       })}
-
       {HOUR_LABELS.map(({ minutes, text }) => {
         const p = pointAt(minutes, C, C, R_TRACK - 42);
         return (
@@ -92,41 +187,6 @@ export function RhythmRing({ schedule, sleepHours, habits, drawIn = true }: Prop
           </text>
         );
       })}
-
-      <motion.path
-        d={night}
-        fill="none"
-        stroke="var(--color-night)"
-        strokeWidth={22}
-        strokeLinecap="round"
-        variants={nightVariants}
-      />
-
-      {habits.map((habit, i) => {
-        const p = pointAt(toMinutes(habit.time), C, C, R_MARKERS);
-        return (
-          <motion.circle
-            key={habit.label}
-            cx={p.x}
-            cy={p.y}
-            r={7}
-            fill="var(--color-sun)"
-            stroke="var(--color-ink)"
-            strokeWidth={1.5}
-            custom={i}
-            variants={markerVariants}
-            style={{ transformOrigin: `${p.x}px ${p.y}px` }}
-          />
-        );
-      })}
-
-      <text x={C} y={C + 4} textAnchor="middle" className="fill-ink font-display text-[48px] tabular-nums">
-        {formatHours(sleepHours)}
-        <tspan className="fill-muted font-sans text-[18px]"> h</tspan>
-      </text>
-      <text x={C} y={C + 30} textAnchor="middle" className="fill-muted font-sans text-[13px]">
-        usual sleep
-      </text>
-    </motion.svg>
+    </>
   );
 }

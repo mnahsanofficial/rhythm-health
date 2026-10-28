@@ -53,10 +53,13 @@ body {
   line-height: var(--text-body--line-height);
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-moss);
-  outline-offset: 3px;
-  border-radius: 6px;
+/* In the base layer so utilities (e.g. outline-none on focus-target headings) can override it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-moss);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
 }
 
 ::selection {

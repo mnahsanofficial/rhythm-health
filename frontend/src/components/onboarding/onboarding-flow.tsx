@@ -3,8 +3,10 @@
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ProgressBar } from "@/components/onboarding/progress-bar";
-import { QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
+import { nightIsPlausible, QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
+import { RhythmRing } from "@/components/rhythm-ring";
 import { loadDraft, saveDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
+import { placeHabits } from "@/lib/rhythm/habits";
 
 // Steps slide in the direction you're going, so back and forward feel different.
 const slide: Variants = {
@@ -55,67 +57,94 @@ function Flow() {
   const canContinue = current ? current.isAnswered(draft) && step < STEPS.length : true;
 
   return (
-    <form
-      className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 sm:px-8"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (canContinue) go(step + 1);
-      }}
-    >
-      <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
+    <div className="mx-auto grid w-full max-w-6xl flex-1 px-4 sm:px-8 lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-20">
+      <form
+        className="flex flex-col"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!canContinue) return;
+          if (current?.complete) {
+            const patch = current.complete(draft);
+            setDraft((d) => ({ ...d, ...patch }));
+          }
+          go(step + 1);
+        }}
+      >
+        <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
 
-      <AnimatePresence mode="wait" custom={direction} initial={false}>
-        <motion.div
-          key={step}
-          custom={direction}
-          variants={slide}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          className="flex-1 pt-8 pb-6 sm:flex-none sm:pt-12"
-        >
-          {current ? (
-            <>
-              <p className="font-mono text-caption text-moss tabular-nums">
-                {String(step).padStart(2, "0")} / {String(QUESTION_COUNT).padStart(2, "0")}
-              </p>
-              <h1
-                ref={headingRef}
-                tabIndex={-1}
-                className="mt-2 font-display text-headline tracking-tight outline-none"
-              >
-                {current.question}
-              </h1>
-              <p className="mt-2 text-body text-muted">{current.why}</p>
-              <div className="mt-8">
-                <current.Body draft={draft} update={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
-              </div>
-            </>
-          ) : (
-            <Intro headingRef={headingRef} />
-          )}
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0">
-        {step > 0 && (
-          <button
-            type="button"
-            onClick={() => go(step - 1)}
-            className="min-h-12 rounded-pill px-5 text-body font-medium text-ink hover:bg-line/60"
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+          <motion.div
+            key={step}
+            custom={direction}
+            variants={slide}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="flex-1 pt-8 pb-6 sm:flex-none sm:pt-12"
           >
-            Back
+            {current ? (
+              <>
+                <p className="font-mono text-caption text-moss tabular-nums">
+                  {String(step).padStart(2, "0")} / {String(QUESTION_COUNT).padStart(2, "0")}
+                </p>
+                <h1
+                  ref={headingRef}
+                  tabIndex={-1}
+                  className="mt-2 font-display text-headline tracking-tight outline-none"
+                >
+                  {current.question}
+                </h1>
+                <p className="mt-2 text-body text-muted">{current.why}</p>
+                <div className="mt-8">
+                  <current.Body draft={draft} update={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
+                </div>
+              </>
+            ) : (
+              <Intro headingRef={headingRef} />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0">
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => go(step - 1)}
+              className="min-h-12 rounded-pill px-5 text-body font-medium text-ink hover:bg-line/60"
+            >
+              Back
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={!canContinue}
+            className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
+          >
+            {step === 0 ? "Start" : "Continue"}
           </button>
-        )}
-        <button
-          type="submit"
-          disabled={!canContinue}
-          className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
-        >
-          {step === 0 ? "Start" : "Continue"}
-        </button>
+        </div>
+      </form>
+      <RhythmPanel draft={draft} />
+    </div>
+  );
+}
+
+/** Wide screens: the ring sits beside the questions and fills in as each answer arrives. */
+function RhythmPanel({ draft }: { draft: OnboardingDraft }) {
+  return (
+    <aside aria-label="Your rhythm so far" className="hidden lg:block">
+      <div className="sticky top-8 mt-14 rounded-card border border-line bg-paper p-8">
+        <p className="text-caption font-medium text-ink">Your rhythm so far</p>
+        <div className="mx-auto mt-4 max-w-[340px]">
+          <RhythmRing
+            schedule={nightIsPlausible(draft) ? draft.usual_sleep_schedule : undefined}
+            sleepHours={draft.usual_sleep_hours}
+            habits={placeHabits(draft.regular_habits ?? [])}
+          />
+        </div>
+        <p className="mt-4 text-caption text-muted">Built from your answers. Nothing is sent until you sign up.</p>
       </div>
-    </form>
+    </aside>
   );
 }
 

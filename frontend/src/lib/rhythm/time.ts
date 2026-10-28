@@ -22,15 +22,14 @@ export function pointAt(minutes: number, cx: number, cy: number, r: number) {
   return { x: round(cx + r * Math.sin(a)), y: round(cy - r * Math.cos(a)) };
 }
 
-/** SVG path for the clockwise arc from `from` to `to`. */
-export function arcPath(from: ClockTime, to: ClockTime, cx: number, cy: number, r: number): string {
-  const start = pointAt(toMinutes(from), cx, cy, r);
-  const end = pointAt(toMinutes(to), cx, cy, r);
-  const largeArc = minutesBetween(from, to) > DAY_MINUTES / 2 ? 1 : 0;
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}`;
-}
-
 /** 7.5 → "7.5", 8 → "8". */
 export function formatHours(hours: number): string {
   return Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+}
+
+/** 465 → "7 h 45 min", 480 → "8 h". For durations people read, not compute with. */
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return m ? `${h} h ${m} min` : `${h} h`;
 }
