@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import me, profile
+from app.api import experiments, me, profile
 from app.config import settings
 from app.integrations import supabase
 
@@ -9,6 +9,7 @@ app = FastAPI(title="Rhythm Health Lab API")
 
 app.include_router(me.router)
 app.include_router(profile.router)
+app.include_router(experiments.router)
 
 app.add_middleware(
     CORSMiddleware,
