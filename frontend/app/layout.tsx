@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Instrument_Sans } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
 import { SiteHeader } from "@/components/site-header";
+import { SessionProvider } from "@/lib/auth/session";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -22,7 +23,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Rhythm",
-  description: "Run small experiments to learn which habits actually work for you.",
+  description: "Run personal experiments to learn which habits actually affect you.",
 };
 
 export const viewport: Viewport = {
@@ -42,12 +43,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
-        <MotionProvider>
-          <SiteHeader />
-          <main id="main" className="flex flex-1 flex-col">
-            {children}
-          </main>
-        </MotionProvider>
+        <SessionProvider>
+          <MotionProvider>
+            <SiteHeader />
+            <main id="main" className="flex flex-1 flex-col">
+              {children}
+            </main>
+          </MotionProvider>
+        </SessionProvider>
       </body>
     </html>
   );
