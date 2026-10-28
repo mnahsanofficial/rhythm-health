@@ -1,0 +1,165 @@
+"use client";
+
+import { AnimatePresence, motion, type Variants } from "motion/react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ProgressBar } from "@/components/onboarding/progress-bar";
+import { QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
+import { loadDraft, saveDraft, type OnboardingDraft } from "@/lib/onboarding/draft";
+
+// Steps slide in the direction you're going, so back and forward feel different.
+const slide: Variants = {
+  enter: (dir: number) => ({ x: dir * 48, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+  exit: (dir: number) => ({ x: dir * -48, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }),
+};
+
+const noSubscribe = () => () => {};
+
+/** Saved answers live in localStorage, so the flow renders in the browser only; the server sends a skeleton. */
+export function OnboardingFlow() {
+  const isClient = useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false,
+  );
+  return isClient ? <Flow /> : <StepSkeleton />;
+}
+
+/** step 0 is the intro; steps 1..n are STEPS[0..n-1]. */
+function Flow() {
+  const [step, setStep] = useState(() => Math.min(loadDraft().step, STEPS.length));
+  const [direction, setDirection] = useState(1);
+  const [draft, setDraft] = useState<OnboardingDraft>(() => loadDraft().draft);
+  const focusNextHeading = useRef(false);
+
+  useEffect(() => {
+    saveDraft({ step, draft });
+  }, [step, draft]);
+
+  // After moving between steps, focus the new heading once it mounts (after the old step
+  // has animated out), so keyboard and screen-reader users land on the new question.
+  const headingRef = (el: HTMLHeadingElement | null) => {
+    if (el && focusNextHeading.current) {
+      focusNextHeading.current = false;
+      el.focus({ preventScroll: true });
+    }
+  };
+
+  const go = (to: number) => {
+    focusNextHeading.current = true;
+    setDirection(to > step ? 1 : -1);
+    setStep(to);
+  };
+
+  const current = step > 0 ? STEPS[step - 1] : null;
+  const canContinue = current ? current.isAnswered(draft) && step < STEPS.length : true;
+
+  return (
+    <form
+      className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 sm:px-8"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (canContinue) go(step + 1);
+      }}
+    >
+      <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
+
+      <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <motion.div
+          key={step}
+          custom={direction}
+          variants={slide}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          className="flex-1 pt-8 pb-6 sm:flex-none sm:pt-12"
+        >
+          {current ? (
+            <>
+              <p className="font-mono text-caption text-moss tabular-nums">
+                {String(step).padStart(2, "0")} / {String(QUESTION_COUNT).padStart(2, "0")}
+              </p>
+              <h1
+                ref={headingRef}
+                tabIndex={-1}
+                className="mt-2 font-display text-headline tracking-tight outline-none"
+              >
+                {current.question}
+              </h1>
+              <p className="mt-2 text-body text-muted">{current.why}</p>
+              <div className="mt-8">
+                <current.Body draft={draft} update={(patch) => setDraft((d) => ({ ...d, ...patch }))} />
+              </div>
+            </>
+          ) : (
+            <Intro headingRef={headingRef} />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0">
+        {step > 0 && (
+          <button
+            type="button"
+            onClick={() => go(step - 1)}
+            className="min-h-12 rounded-pill px-5 text-body font-medium text-ink hover:bg-line/60"
+          >
+            Back
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={!canContinue}
+          className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
+        >
+          {step === 0 ? "Start" : "Continue"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Intro({ headingRef }: { headingRef: React.Ref<HTMLHeadingElement> }) {
+  return (
+    <>
+      <h1 ref={headingRef} tabIndex={-1} className="font-display text-display-sm tracking-tight outline-none">
+        First, your rhythm.
+        <span className="block text-muted">Seven quick questions.</span>
+      </h1>
+      <ul className="mt-8 flex flex-col gap-4 text-lead">
+        <li className="flex gap-3">
+          <span aria-hidden="true" className="mt-2.5 size-2 shrink-0 rounded-full bg-night" />
+          When you usually sleep and wake, and how much of that is sleep.
+        </li>
+        <li className="flex gap-3">
+          <span aria-hidden="true" className="mt-2.5 size-2 shrink-0 rounded-full bg-moss" />
+          How much you move, and what you&apos;d like to change.
+        </li>
+        <li className="flex gap-3">
+          <span aria-hidden="true" className="mt-2.5 size-2 shrink-0 rounded-full border border-ink bg-sun" />
+          The habits you already have, like coffee or late dinners.
+        </li>
+      </ul>
+      <p className="mt-8 text-body text-muted">
+        Nothing medical, and no weights or calories. Your answers stay on this device until you create an
+        account at the end.
+      </p>
+    </>
+  );
+}
+
+/** Same shape as a question step, shown while saved answers load. */
+function StepSkeleton() {
+  return (
+    <div aria-hidden="true" className="mx-auto w-full max-w-xl animate-pulse px-4 pt-10 sm:px-8">
+      <div className="h-3 w-16 rounded-pill bg-line" />
+      <div className="mt-4 h-8 w-3/4 rounded-pill bg-line" />
+      <div className="mt-3 h-4 w-full rounded-pill bg-line" />
+      <div className="mt-10 flex flex-col gap-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="h-14 rounded-card bg-line/70" />
+        ))}
+      </div>
+    </div>
+  );
+}
