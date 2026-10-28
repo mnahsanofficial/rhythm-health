@@ -11,14 +11,22 @@ git clone https://github.com/mnahsanofficial/rhythm-health.git
 cd rhythm-health
 git config user.name "Your Name"          # local to this repo; agent logs record it
 git config user.email "you@example.com"
+cd frontend
 npm install
 cp .env.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000. Check `http://localhost:3000/api/health` returns `{"ok":true,...}`. The SQLite file is created at `./data/health.db` on first use.
+Open http://localhost:3000. Check `http://localhost:3000/api/health` returns `{"ok":true,...}`. The SQLite file is created at `frontend/data/health.db` on first use.
+
+## Layout
+
+- `frontend/`: the Next.js app. Its agent rules are in [`frontend/AGENTS.md`](frontend/AGENTS.md).
+- `backend/`: FastAPI, per [`TRD.md`](TRD.md) (not created yet).
 
 ## Scripts
+
+Run these from `frontend/`.
 
 | Command | What it does |
 |---|---|
