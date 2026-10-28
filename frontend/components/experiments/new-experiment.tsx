@@ -47,16 +47,24 @@ function PredictionRange({ min, max }: { min: number; max: number }) {
   );
 }
 
-function ProposalPreview({ result, onStart, onAskSomethingElse, starting }: {
+function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startDisabled }: {
   result: ProposeResponse;
   onStart: () => void;
   onAskSomethingElse: () => void;
   starting: boolean;
+  startDisabled: boolean;
 }) {
   const proposal = result.proposal;
   const prediction = result.prediction;
   if (!proposal || !prediction) return null;
   const totalDays = proposal.baseline_days + proposal.intervention_days;
+  const metricLabel = proposal.metrics.find((metric) => metric.key === prediction.target_metric)?.label
+    ?? prediction.target_metric;
+  const directionText = {
+    increase: "likely to go up",
+    decrease: "likely to go down",
+    no_change: "likely to stay about the same",
+  }[prediction.direction];
 
   return (
     <section
@@ -130,7 +138,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting }: {
 
       <div className="mt-8 rounded-card bg-moss-tint p-5 sm:p-6">
         <p className="font-mono text-caption text-moss">The forecast</p>
-        <h3 className="mt-2 font-display text-title">{prediction.target_metric}: {prediction.direction.replace("_", " ")}</h3>
+        <h3 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h3>
         <p className="mt-3 font-display text-headline" aria-live="polite">
           <motion.span initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
             {signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}
@@ -155,7 +163,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting }: {
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" onClick={onStart} disabled={starting} className={`${primary} w-full sm:w-auto`}>
+        <button type="button" onClick={onStart} disabled={starting || startDisabled} className={`${primary} w-full sm:w-auto`}>
           {starting ? "Saving your experiment…" : "Start this experiment"}
         </button>
         <button type="button" onClick={onAskSomethingElse} disabled={starting} className={secondary}>
@@ -217,6 +225,7 @@ export function NewExperiment() {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [activeExperiment, setActiveExperiment] = useState<Experiment | null>(null);
+  const [savedExperimentId, setSavedExperimentId] = useState<string | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const output = useRef<HTMLElement>(null);
 
@@ -270,6 +279,9 @@ export function NewExperiment() {
     setQuestion(value);
     setResult(null);
     setError(null);
+    setStartError(null);
+    setSavedExperimentId(null);
+    setActiveExperiment(null);
     input.current?.focus();
   }
 
@@ -279,26 +291,42 @@ export function NewExperiment() {
     setStarting(true);
     setStartError(null);
     setActiveExperiment(null);
+    let experimentId = savedExperimentId;
     try {
-      const saved = await saveExperiment({
-        proposal: result.proposal,
-        prediction: result.prediction,
-        category: result.classification.category,
-      });
-      try {
-        const active = await startExperiment(saved.id);
-        router.push(`/experiments/${encodeURIComponent(active.id)}`);
-      } catch (cause) {
-        if (cause instanceof ApiError && cause.status === 409 && cause.message.toLowerCase().includes("active")) {
-          const active = await listExperiments("active");
-          setActiveExperiment(active[0] ?? null);
-          setStartError(active.length ? "You already have an active experiment." : cause.message);
-        } else {
-          setStartError(cause instanceof Error ? cause.message : "Couldn’t start this experiment.");
+      if (!experimentId) {
+        const activeExperiments = await listExperiments("active");
+        if (activeExperiments.length > 0) {
+          setActiveExperiment(activeExperiments[0]);
+          setStartError("You already have an active experiment.");
+          return;
         }
+        const saved = await saveExperiment({
+          proposal: result.proposal,
+          prediction: result.prediction,
+          category: result.classification.category,
+        });
+        experimentId = saved.id;
+        setSavedExperimentId(saved.id);
       }
+      const active = await startExperiment(experimentId);
+      router.push(`/experiments/${encodeURIComponent(active.id)}`);
     } catch (cause) {
-      setStartError(cause instanceof Error ? cause.message : "Couldn’t save this experiment.");
+      if (experimentId) {
+        setSavedExperimentId(experimentId);
+        if (cause instanceof ApiError && cause.status === 409 && cause.message.toLowerCase().includes("active")) {
+          setStartError("Your experiment was saved, but it couldn’t be started because another experiment is active.");
+          try {
+            const activeExperiments = await listExperiments("active");
+            setActiveExperiment(activeExperiments[0] ?? null);
+          } catch {
+            setStartError("Your experiment was saved, but we couldn’t check which experiment is active. You can retry starting it.");
+          }
+        } else {
+          setStartError(`Your experiment was saved, but it couldn’t be started: ${cause instanceof Error ? cause.message : "Please try again."}`);
+        }
+      } else {
+        setStartError(cause instanceof Error ? cause.message : "Couldn’t check for an active experiment. Please try again.");
+      }
     } finally {
       inFlight.current = false;
       setStarting(false);
@@ -355,6 +383,7 @@ export function NewExperiment() {
             onStart={() => void beginExperiment()}
             onAskSomethingElse={() => chooseQuestion("")}
             starting={starting}
+            startDisabled={Boolean(activeExperiment)}
           />
           {startError && (
             <div role="alert" className="mt-4 rounded-card bg-clay-tint p-5 text-clay">
