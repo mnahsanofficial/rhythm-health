@@ -2,6 +2,8 @@
 
 Every agent session on this repo writes `.claude-logs/<timestamp>_<session-id>.md`: user prompts and final responses only, in the format from the 8x guide ([`agent-logging-setup.md`](agent-logging-setup.md), saved verbatim as pasted). `.claude-logs/` is committed, never gitignored.
 
+All agents write to that one folder, per 8x: no per-agent folders. The `agent:` frontmatter line, present only in Codex and Cursor logs, tells them apart.
+
 ## What's installed
 
 | Agent | Hook config (committed) | Script | Events |
@@ -32,14 +34,17 @@ Anyone who clones the repo gets the same logging. The `cd` is there because Clau
 
 | # | Agent | Canary | Result |
 |---|---|---|---|
-| 1 | Claude Code | `CAPTURE TEST — Playmakers C2, Nazmul` | pending |
-| 2 | Claude Code (2nd session) | | pending |
-| 3 | Codex | | pending |
-| 4 | Cursor | | pending |
+| 1 | Claude Code | `i merged the PR: CAPTURE TEST — Playmakers C2, Nazmul` | Pass. Prompt 6 and response 6 in `2026-10-28_14-55-21_94c5e335….md`, written by the hooks with no manual run. Frontmatter: `author: Md Nazmul Ahsan`, `github_user: mnahsanofficial`, `git_email: mnahsanofficial@gmail.com`. |
+| 2 | Claude Code (2nd session) | `CAPTURE TEST 2 — Playmakers C2, Nazmul` | Pass. Own file, `2026-10-28_16-18-53_04fdfec2….md`, with prompt 1 and response 1 and the same frontmatter. The first session's file contains none of it. |
+| 3 | Codex Desktop (CLI 0.165) | `CAPTURE TEST 2 — Playmakers C2, Nazmul` | **Fail: no log written.** The project is trusted, but the hooks were never approved, so they didn't run. Separately, 0.165 changed its transcript format (`item_completed` `UserMessage`/`AgentMessage`), which the adapter now handles; tested against this session's transcript, outside the repo. Re-run after approving the hooks. |
+| 4 | Cursor | | Not run yet |
+
+Expected lag: Claude Code saves a prompt to its transcript just after `UserPromptSubmit` fires, so the newest prompt lands in the log at that turn's `Stop`. A turn that crashes before `Stop` loses its last prompt.
 
 ## Ways logging can stop silently
 
-- Codex hook approval is lost after any edit to `.codex/hooks.json`.
+- Codex hooks don't run until they are approved (`/hooks`), and the approval is lost after any edit to `.codex/hooks.json`. Until then Codex works normally and logs nothing.
+- Codex changes its transcript format between versions; it isn't a stable interface. After a Codex update, check that a new `agent: codex` log appears.
 - The wrong `gh` account becomes active. `github_user` records whatever `gh api user` returns.
 - `git config user.email` isn't set locally in the clone, so it falls back to global or `unknown`.
-- Two Claude Code sessions run in the same folder at once. The guide script logs whichever transcript changed most recently, so a hook can write the other session's file. Each session's own next hook rewrites its own file.
+- Two Claude Code sessions run in the same folder at once. The guide script isn't told which session fired the hook, so it re-renders whichever transcript changed most recently. Content never mixes, because each file is built only from its own transcript. But a session's hook can update the other session's file instead of its own, so its newest turn is missing until its next hook. If that session ends while the other one keeps going, its last turn stays missing until someone sends it another message. Safest habit: one Claude Code session per checkout at a time.
