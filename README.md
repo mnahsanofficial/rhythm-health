@@ -1,4 +1,4 @@
-# Health
+# rhythm-health
 
 8x Playmakers C2 (Oct 28 – Nov 6), track "Health habits". A pair project by Nazmul and Shakeb. Runs and demos on localhost; nothing is deployed.
 
@@ -9,8 +9,8 @@ Stack: Next.js 16 (App Router), TypeScript, Tailwind CSS 4, SQLite via Drizzle (
 Requires Node 20.9+ (22 recommended) and git.
 
 ```bash
-git clone https://github.com/shakeb03/Health.git
-cd Health
+git clone https://github.com/mnahsanofficial/rhythm-health.git
+cd rhythm-health
 git config user.name "Your Name"          # local to this repo; agent logs record it
 git config user.email "you@example.com"
 npm install
