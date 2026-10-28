@@ -13,24 +13,39 @@ const primary = "min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-paper 
 const secondary = "min-h-11 rounded-pill border border-line bg-paper px-5 py-2 font-medium hover:border-moss";
 
 function starters(profile: Profile): string[] {
-  const questions = profile.goals.slice(0, 2).map((goal) => `What small daily habit could help me with ${goal.replace(/[.!?]+$/, "").toLowerCase()}?`);
-  return [...new Set([...questions,
-    "Does walking after dinner improve my sleep?",
-    "Does less caffeine improve my focus?",
-    "Does waking earlier actually improve my productivity?",
-  ])].filter((q) => q.length <= 500);
+  const presetQuestions: Record<string, string> = {
+    "More energy in the morning": "What could give me more energy in the morning?",
+    "Better focus": "What could help me focus better?",
+    "Fall asleep faster": "What could help me fall asleep faster?",
+    "Fewer afternoon slumps": "What could help me avoid afternoon slumps?",
+    "Calmer evenings": "What could make my evenings feel calmer?",
+    "Move more during the day": "What could help me move more during the day?",
+    "Eat more vegetables": "What could help me eat more vegetables?",
+    "A steadier routine": "What could help me build a steadier routine?",
+  };
+  const questions = profile.goals.slice(0, 2).map((goal) =>
+    presetQuestions[goal] ?? `What small change could help with: ${goal}?`,
+  );
+  return [...new Set(questions)].filter((question) => question.length <= 500);
 }
 
 function ProposalSkeleton() {
   return (
     <section aria-label="Preparing your experiment" className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
-      <p role="status" className="text-lead font-medium">Finding a small change you can test…</p>
-      <p className="mt-2 text-muted">We&apos;re checking your question, shaping a plan around your rhythm, and estimating what might change. This can take a little while.</p>
+      <p role="status" className="text-lead font-medium">
+        Finding a small change you can test…
+      </p>
+      <p className="mt-2 text-muted">
+        We&apos;re checking your question, shaping a plan around your rhythm, and estimating what might change. This can take a little while.
+      </p>
       <div aria-hidden="true" className="mt-7 space-y-5 motion-safe:animate-pulse">
-        <div className="h-8 w-3/4 rounded bg-line" />
-        <div className="h-16 rounded bg-oat" />
-        <div className="grid grid-cols-2 gap-3"><div className="h-24 rounded bg-oat" /><div className="h-24 rounded bg-moss-tint" /></div>
-        <div className="h-24 rounded bg-oat" />
+        <div className="h-8 w-3/4 rounded-pill bg-line" />
+        <div className="h-16 rounded-card bg-oat" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-24 rounded-card bg-oat" />
+          <div className="h-24 rounded-card bg-moss-tint" />
+        </div>
+        <div className="h-24 rounded-card bg-oat" />
       </div>
     </section>
   );
@@ -105,16 +120,16 @@ export function NewExperiment() {
 
   const profile = session && loaded?.userId === session.user.id ? loaded.profile : null;
   if (loading || !session || !profile) {
-    return <div className="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8">
+    return <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-8">
       {profileError ? <div role="alert" className="rounded-card bg-clay-tint p-6 text-clay">
         <p>Couldn&apos;t load your rhythm: {profileError}</p>
         <button className={`${secondary} mt-4 text-ink`} onClick={() => { setProfileError(null); setAttempt((n) => n + 1); }}>Try again</button>
-      </div> : <div role="status"><span className="sr-only">Loading your rhythm</span><div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse"><div className="h-12 w-3/4 rounded bg-line" /><div className="h-56 rounded-card bg-paper" /><div className="h-32 rounded-card bg-paper" /></div></div>}
+      </div> : <div role="status"><span className="sr-only">Loading your rhythm</span><div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse"><div className="h-12 w-3/4 rounded-pill bg-line" /><div className="h-56 rounded-card bg-paper" /><div className="h-32 rounded-card bg-paper" /></div></div>}
     </div>;
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-5 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
       <Link href="/" className="inline-flex min-h-11 items-center text-moss hover:underline">← Your lab</Link>
       <div className="mt-5 grid gap-10 lg:grid-cols-[1fr_280px] lg:gap-14">
         <div className="min-w-0">
@@ -145,7 +160,10 @@ export function NewExperiment() {
               <p className="mt-3 text-muted">{result.safety.reason || "This question isn’t suitable for a small habit experiment."}</p>
               {result.safety.suggested_alternative && <div className="mt-5 border-t border-line pt-5"><p>{result.safety.suggested_alternative}</p><button type="button" className={`${secondary} mt-4`} onClick={() => chooseQuestion(result.safety.suggested_alternative!)}>Use this instead</button></div>}
             </> : <>
-              {result.classification.risk === "review" && <div role="note" className="mb-5 rounded-xl bg-clay-tint p-4 text-clay"><p className="font-medium">Before you test this</p><p className="mt-1">{result.safety.reason || "Treat this experiment with care and keep the change small."}</p></div>}
+              {result.classification.risk === "review" && <div role="note" className="mb-5 rounded-card bg-clay-tint p-4 text-clay">
+                    <p className="font-medium">Before you test this</p>
+                    <p className="mt-1">{result.safety.reason || "Treat this experiment with care and keep the change small."}</p>
+                  </div>}
               <p className="font-mono text-caption text-moss">Your proposed question</p>
               <h2 className="mt-3 font-display text-headline">{result.proposal?.question}</h2>
               <p className="mt-4 text-muted">{result.proposal?.hypothesis}</p>
