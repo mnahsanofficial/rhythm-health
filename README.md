@@ -1,33 +1,33 @@
 8x Playmakers C2 (Oct 28 – Nov 6), track "Health habits". A pair project by Nazmul and Shakeb. Runs and demos on localhost; nothing is deployed.
 
-Stack: Next.js 16 (App Router), TypeScript, Tailwind CSS 4, SQLite via Drizzle (`better-sqlite3`).
+Stack: Next.js 16 (App Router), TypeScript, Tailwind CSS 4 in `frontend/`; FastAPI (Python 3.11+, managed with `uv`) in `backend/`. See `PRD.md` and `TRD.md`.
 
 ## Setup
 
-Requires Node 20.9+ (22 recommended) and git.
+Requires Node 20.9+, [uv](https://docs.astral.sh/uv/) and git.
 
 ```bash
 git clone https://github.com/mnahsanofficial/rhythm-health.git
 cd rhythm-health
 git config user.name "Your Name"          # local to this repo; agent logs record it
 git config user.email "you@example.com"
-npm install
-cp .env.example .env.local
-npm run dev
+
+# frontend, http://localhost:3000
+cd frontend && npm install && cp .env.example .env.local && npm run dev
+
+# backend, http://localhost:8001 (second terminal)
+cd backend && uv sync && cp .env.example .env.local
+uv run uvicorn app.main:app --reload --port 8001
 ```
 
-Open http://localhost:3000. Check `http://localhost:3000/api/health` returns `{"ok":true,...}`. The SQLite file is created at `./data/health.db` on first use.
+Check `http://localhost:8001/health` returns `{"status":"ok"}`; the home page shows "Backend connected". For auth, fill in the Supabase values in both `.env.local` files (see the `.env.example` files), check `http://localhost:8001/health/supabase` returns `{"status":"ok"}`, then sign up on the home page and click "Test protected endpoint".
 
 ## Scripts
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Dev server on :3000 |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | Generate route types, then `tsc --noEmit` |
-| `npm run build` | Production build |
-| `npm run db:push` | Apply `src/db/schema.ts` to the local database |
-| `npm run db:studio` | Browse the database |
+| `npm run dev` / `lint` / `typecheck` / `build` (in `frontend/`) | Next.js dev server, ESLint, route types + `tsc`, production build |
+| `uv run pytest` (in `backend/`) | Backend tests |
 
 ## Agent logs
 
