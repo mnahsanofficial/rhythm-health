@@ -4,7 +4,7 @@ import { ChipPicker } from "@/components/onboarding/chip-picker";
 import { ChoiceGroup } from "@/components/onboarding/choice-group";
 import { RhythmRing } from "@/components/rhythm-ring";
 import type { OnboardingDraft } from "@/lib/onboarding/draft";
-import { placeHabits } from "@/lib/rhythm/habits";
+import { HABIT_PRESETS, placeHabits } from "@/lib/rhythm/habits";
 import { formatDuration, formatHours, minutesBetween } from "@/lib/rhythm/time";
 import type { ActivityLevel, AgeRange } from "@/lib/types/api";
 
@@ -18,6 +18,8 @@ export type Step = {
   question: string;
   why: string;
   isAnswered: (draft: OnboardingDraft) => boolean;
+  /** Can be skipped: Continue stays enabled and reads "Skip" until something is picked. */
+  optional?: boolean;
   /** Fields to save when leaving the step forward, e.g. a suggested value the user accepted as is. */
   complete?: (draft: OnboardingDraft) => OnboardingDraft;
   Body: (props: StepProps) => React.ReactNode;
@@ -70,7 +72,7 @@ function InlineRing({ draft }: { draft: OnboardingDraft }) {
       <RhythmRing
         schedule={nightIsPlausible(draft) ? draft.usual_sleep_schedule : undefined}
         sleepHours={draft.usual_sleep_hours}
-        habits={placeHabits(draft.regular_habits ?? [])}
+        habits={placeHabits(draft.regular_habits ?? [], draft.usual_sleep_schedule)}
       />
     </div>
   );
@@ -220,6 +222,44 @@ function GoalsBody({ draft, update }: StepProps) {
   );
 }
 
+// No inline ring here on phones: under ten chips it would sit below the fold. The closing
+// step shows the whole ring; wide screens see markers arrive in the side panel.
+function HabitsBody({ draft, update }: StepProps) {
+  return (
+    <ChipPicker
+      legend="Habits"
+      options={HABIT_PRESETS.map((h) => h.label)}
+      value={draft.regular_habits ?? []}
+      onChange={(regular_habits) => update({ regular_habits })}
+      addLabel="Something else you do most days?"
+      addPlaceholder="e.g. Tea before bed"
+    />
+  );
+}
+
+const CONSTRAINT_OPTIONS = [
+  "Can't exercise before work",
+  "Shift work",
+  "Young kids at home",
+  "Long commute",
+  "Travel a lot for work",
+  "No gym nearby",
+  "Little free time in the evening",
+];
+
+function ConstraintsBody({ draft, update }: StepProps) {
+  return (
+    <ChipPicker
+      legend="Constraints"
+      options={CONSTRAINT_OPTIONS}
+      value={draft.constraints ?? []}
+      onChange={(constraints) => update({ constraints })}
+      addLabel="Anything else?"
+      addPlaceholder="e.g. Dog walks at 7am"
+    />
+  );
+}
+
 /** Questions in order. Each one fills one profile field (TRD §12.1). */
 export const STEPS: Step[] = [
   {
@@ -257,6 +297,24 @@ export const STEPS: Step[] = [
     why: "Pick up to three. Your first experiment will start from one of these.",
     isAnswered: (d) => (d.goals?.length ?? 0) > 0,
     Body: GoalsBody,
+  },
+  {
+    id: "habits",
+    question: "What do you already do most days?",
+    why: "Pick any that sound like you, or add your own.",
+    isAnswered: (d) => (d.regular_habits?.length ?? 0) > 0,
+    optional: true,
+    complete: (d) => ({ regular_habits: d.regular_habits ?? [] }),
+    Body: HabitsBody,
+  },
+  {
+    id: "constraints",
+    question: "Anything that limits what you can change?",
+    why: "So we don't suggest experiments that won't fit your life. Skip if nothing comes to mind.",
+    isAnswered: (d) => (d.constraints?.length ?? 0) > 0,
+    optional: true,
+    complete: (d) => ({ constraints: d.constraints ?? [] }),
+    Body: ConstraintsBody,
   },
 ];
 

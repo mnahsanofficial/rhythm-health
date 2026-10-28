@@ -2,6 +2,7 @@
 
 import {
   animate,
+  AnimatePresence,
   motion,
   useInView,
   useMotionValue,
@@ -9,9 +10,9 @@ import {
   useTransform,
   type MotionValue,
 } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatHours, minutesBetween, pointAt, toMinutes } from "@/lib/rhythm/time";
-import type { HabitPreset } from "@/lib/rhythm/habits";
+import type { PlacedHabit } from "@/lib/rhythm/habits";
 import type { SleepSchedule } from "@/lib/types/api";
 
 const SIZE = 320;
@@ -29,7 +30,7 @@ const settle = { type: "spring", stiffness: 120, damping: 22 } as const;
 type Props = {
   schedule?: SleepSchedule;
   sleepHours?: number;
-  habits: HabitPreset[];
+  habits: PlacedHabit[];
 };
 
 /**
@@ -49,6 +50,14 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
   const span = useMotionValue(0);
   const hours = useMotionValue(sleepHours ?? 0);
   const hoursText = useTransform(hours, (h) => formatHours(Math.round(h * 2) / 2));
+  // Markers wait for the night arc on the first draw-in; after that, a newly picked habit pops in at once.
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    if (!inView) return;
+    const t = setTimeout(() => setSettled(true), 1600);
+    return () => clearTimeout(t);
+  }, [inView]);
 
   useEffect(() => {
     if (!inView) return;
@@ -90,24 +99,27 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
 
       {schedule && <NightArc rotate={rotate} span={span} />}
 
-      {habits.map((habit, i) => {
-        const p = pointAt(toMinutes(habit.time), C, C, R_MARKERS);
-        return (
-          <motion.circle
-            key={habit.label}
-            cx={p.x}
-            cy={p.y}
-            r={7}
-            fill="var(--color-sun)"
-            stroke="var(--color-ink)"
-            strokeWidth={1.5}
-            initial={reduce ? false : { opacity: 0, scale: 0.4 }}
-            animate={inView ? { opacity: 1, scale: 1 } : undefined}
-            transition={{ delay: 0.9 + i * 0.12, type: "spring", stiffness: 420, damping: 22 }}
-            style={{ transformOrigin: `${p.x}px ${p.y}px` }}
-          />
-        );
-      })}
+      <AnimatePresence>
+        {habits.map((habit, i) => {
+          const p = pointAt(toMinutes(habit.time), C, C, R_MARKERS);
+          return (
+            <motion.circle
+              key={habit.label}
+              cx={p.x}
+              cy={p.y}
+              r={7}
+              fill="var(--color-sun)"
+              stroke="var(--color-ink)"
+              strokeWidth={1.5}
+              initial={reduce ? false : { opacity: 0, scale: 0.4 }}
+              animate={inView ? { opacity: 1, scale: 1 } : undefined}
+              exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.15 } }}
+              transition={{ delay: settled ? 0 : 0.9 + i * 0.12, type: "spring", stiffness: 420, damping: 22 }}
+              style={{ transformOrigin: `${p.x}px ${p.y}px` }}
+            />
+          );
+        })}
+      </AnimatePresence>
 
       {sleepHours !== undefined ? (
         <>

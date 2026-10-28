@@ -54,7 +54,8 @@ function Flow() {
   };
 
   const current = step > 0 ? STEPS[step - 1] : null;
-  const canContinue = current ? current.isAnswered(draft) && step < STEPS.length : true;
+  const answered = current ? current.isAnswered(draft) : true;
+  const canContinue = (answered || Boolean(current?.optional)) && step < STEPS.length;
 
   return (
     <div className="mx-auto grid w-full max-w-6xl flex-1 px-4 sm:px-8 lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-20">
@@ -120,7 +121,7 @@ function Flow() {
             disabled={!canContinue}
             className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
           >
-            {step === 0 ? "Start" : "Continue"}
+            {step === 0 ? "Start" : answered ? "Continue" : "Skip"}
           </button>
         </div>
       </form>
@@ -139,7 +140,7 @@ function RhythmPanel({ draft }: { draft: OnboardingDraft }) {
           <RhythmRing
             schedule={nightIsPlausible(draft) ? draft.usual_sleep_schedule : undefined}
             sleepHours={draft.usual_sleep_hours}
-            habits={placeHabits(draft.regular_habits ?? [])}
+            habits={placeHabits(draft.regular_habits ?? [], draft.usual_sleep_schedule)}
           />
         </div>
         <p className="mt-4 text-caption text-muted">Built from your answers. Nothing is sent until you sign up.</p>

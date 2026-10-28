@@ -25,7 +25,7 @@ const STEPS = [
 ];
 
 export default function Home() {
-  const habits = placeHabits(exampleProfile.regular_habits);
+  const habits = placeHabits(exampleProfile.regular_habits, exampleProfile.usual_sleep_schedule);
   const { bedtime, wake_time } = exampleProfile.usual_sleep_schedule;
 
   return (
