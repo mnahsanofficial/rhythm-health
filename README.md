@@ -1,5 +1,3 @@
-# rhythm-health
-
 8x Playmakers C2 (Oct 28 – Nov 6), track "Health habits". A pair project by Nazmul and Shakeb. Runs and demos on localhost; nothing is deployed.
 
 Stack: Next.js 16 (App Router), TypeScript, Tailwind CSS 4, SQLite via Drizzle (`better-sqlite3`).
