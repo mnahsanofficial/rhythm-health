@@ -32,8 +32,19 @@ def find_rollout(session_id: str) -> Optional[Path]:
     return matches[-1] if matches else None
 
 
+ITEM_ROLES = {'UserMessage': 'user', 'AgentMessage': 'assistant'}
+LEGACY_ROLES = {'user_message': 'user', 'agent_message': 'assistant'}
+
+
+def item_text(item: dict) -> str:
+    parts = [c.get('text', '') for c in item.get('content') or [] if c.get('type') in ('text', 'Text')]
+    return '\n'.join(p.strip() for p in parts if p.strip())
+
+
 def extract_clean_log(jsonl_path: Path) -> List[Tuple[str, str, str]]:
-    entries = []
+    """Codex >= 0.16x logs item_completed UserMessage/AgentMessage; older
+    versions log user_message/agent_message. Use whichever the file has."""
+    items, legacy = [], []
     for line in jsonl_path.read_text().strip().split('\n'):
         if not line.strip():
             continue
@@ -44,15 +55,19 @@ def extract_clean_log(jsonl_path: Path) -> List[Tuple[str, str, str]]:
         if entry.get('type') != 'event_msg':
             continue
         payload = entry.get('payload') or {}
-        message = payload.get('message')
-        if not isinstance(message, str) or not message.strip():
-            continue
         timestamp = entry.get('timestamp', '')
-        if payload.get('type') == 'user_message':
-            entries.append((timestamp, 'user', message.strip()))
-        elif payload.get('type') == 'agent_message':
-            entries.append((timestamp, 'assistant', message.strip()))
-    return entries
+        kind = payload.get('type')
+        if kind == 'item_completed':
+            item = payload.get('item') or {}
+            role = ITEM_ROLES.get(item.get('type'))
+            text = item_text(item)
+            if role and text:
+                items.append((timestamp, role, text))
+        elif kind in LEGACY_ROLES:
+            message = payload.get('message')
+            if isinstance(message, str) and message.strip():
+                legacy.append((timestamp, LEGACY_ROLES[kind], message.strip()))
+    return items or legacy
 
 
 def main():
