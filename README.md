@@ -31,4 +31,4 @@ Open http://localhost:3000. Check `http://localhost:3000/api/health` returns `{"
 
 ## Agent logs
 
-Claude Code, Codex and Cursor sessions are logged to `.claude-logs/` automatically, and the logs are committed with your changes. Before your first agent session, read [`docs/logging.md`](docs/logging.md): Codex needs a one-time hook approval. Agent rules are in [`AGENTS.md`](AGENTS.md).
+Claude Code, Codex and Cursor sessions are logged to `.claude-logs/` automatically, and the logs are committed with your changes. Before your first agent session, do the [teammate setup](docs/logging.md#teammate-setup) in `docs/logging.md` and run a canary. Agent rules are in [`AGENTS.md`](AGENTS.md).
