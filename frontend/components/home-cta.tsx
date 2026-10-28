@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/data/profile";
+import { listExperiments } from "@/lib/data/experiments";
+import type { Experiment } from "@/lib/types/api";
 import { useSession } from "@/lib/auth/session";
 
-type State = { kind: "loading" } | { kind: "new" } | { kind: "returning" } | { kind: "error"; message: string };
+type State =
+  | { kind: "loading" }
+  | { kind: "new" }
+  | { kind: "returning" }
+  | { kind: "active"; experiment: Experiment }
+  | { kind: "error"; message: string };
 
 const primary =
   "inline-flex min-h-12 shrink-0 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium whitespace-nowrap text-paper transition-[background-color,scale] hover:bg-moss-deep active:scale-[0.98]";
@@ -20,7 +27,16 @@ export function HomeCta() {
     if (loading || !session) return;
     let cancelled = false;
     getProfile()
-      .then((p) => !cancelled && setState({ kind: p ? "returning" : "new" }))
+      .then(async (profile) => {
+        if (cancelled) return;
+        if (!profile) {
+          setState({ kind: "new" });
+          return;
+        }
+        const active = await listExperiments("active");
+        if (cancelled) return;
+        setState(active.length ? { kind: "active", experiment: active[0] } : { kind: "returning" });
+      })
       .catch((e: Error) => !cancelled && setState({ kind: "error", message: e.message }));
     return () => {
       cancelled = true;
@@ -60,6 +76,21 @@ export function HomeCta() {
         </Link>
         <Link href="/onboarding" className="text-body font-medium text-moss underline-offset-4 hover:underline">
           Update your rhythm
+        </Link>
+      </div>
+    );
+  }
+
+  if (view.kind === "active") {
+    const { experiment } = view;
+    const day = experiment.progress.day_number ?? experiment.progress.total_days;
+    return (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <Link href={`/experiments/${encodeURIComponent(experiment.id)}`} className={primary}>
+          Day {day} of {experiment.progress.total_days}
+        </Link>
+        <Link href="/experiments/new" className="text-body font-medium text-moss underline-offset-4 hover:underline">
+          Test a new question
         </Link>
       </div>
     );

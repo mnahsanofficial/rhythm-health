@@ -47,6 +47,42 @@ function PredictionRange({ min, max }: { min: number; max: number }) {
   );
 }
 
+export function ForecastCard({ prediction, metrics }: {
+  prediction: Experiment["prediction"];
+  metrics: Experiment["metrics"];
+}) {
+  const metricLabel = metrics.find((metric) => metric.key === prediction.target_metric)?.label
+    ?? prediction.target_metric;
+  const directionText = {
+    increase: "likely to go up",
+    decrease: "likely to go down",
+    no_change: "likely to stay about the same",
+  }[prediction.direction];
+
+  return (
+    <div className="rounded-card bg-moss-tint p-5 sm:p-6">
+      <p className="font-mono text-caption text-moss">The forecast</p>
+      <h3 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h3>
+      <p className="mt-3 font-display text-headline" aria-live="polite">
+        <motion.span initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
+          {signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}
+        </motion.span>
+      </p>
+      <PredictionRange min={prediction.expected_change_min} max={prediction.expected_change_max} />
+      <p className="mt-5 text-caption text-muted">Confidence: <span className="font-medium capitalize text-ink">{prediction.confidence}</span></p>
+      <p className="mt-3">{prediction.reasoning}</p>
+      {prediction.uncertainty_factors.length > 0 && (
+        <div className="mt-4">
+          <p className="text-caption font-medium">Things that may affect the result</p>
+          <ul className="mt-2 list-inside list-disc text-caption text-muted">
+            {prediction.uncertainty_factors.map((factor) => <li key={factor}>{factor}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startDisabled }: {
   result: ProposeResponse;
   onStart: () => void;
@@ -58,13 +94,6 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
   const prediction = result.prediction;
   if (!proposal || !prediction) return null;
   const totalDays = proposal.baseline_days + proposal.intervention_days;
-  const metricLabel = proposal.metrics.find((metric) => metric.key === prediction.target_metric)?.label
-    ?? prediction.target_metric;
-  const directionText = {
-    increase: "likely to go up",
-    decrease: "likely to go down",
-    no_change: "likely to stay about the same",
-  }[prediction.direction];
 
   return (
     <section
@@ -136,25 +165,8 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
         </ul>
       </div>
 
-      <div className="mt-8 rounded-card bg-moss-tint p-5 sm:p-6">
-        <p className="font-mono text-caption text-moss">The forecast</p>
-        <h3 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h3>
-        <p className="mt-3 font-display text-headline" aria-live="polite">
-          <motion.span initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
-            {signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}
-          </motion.span>
-        </p>
-        <PredictionRange min={prediction.expected_change_min} max={prediction.expected_change_max} />
-        <p className="mt-5 text-caption text-muted">Confidence: <span className="font-medium capitalize text-ink">{prediction.confidence}</span></p>
-        <p className="mt-3">{prediction.reasoning}</p>
-        {prediction.uncertainty_factors.length > 0 && (
-          <div className="mt-4">
-            <p className="text-caption font-medium">Things that may affect the result</p>
-            <ul className="mt-2 list-inside list-disc text-caption text-muted">
-              {prediction.uncertainty_factors.map((factor) => <li key={factor}>{factor}</li>)}
-            </ul>
-          </div>
-        )}
+      <div className="mt-8">
+        <ForecastCard prediction={prediction} metrics={proposal.metrics} />
       </div>
 
       <div className="mt-7 rounded-card border border-line p-4 text-body">
