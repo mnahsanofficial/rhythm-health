@@ -1,6 +1,6 @@
 # Agent instructions
 
-The one instructions file for every agent on this repo (Claude Code, Codex, Cursor). `CLAUDE.md` imports it; Codex and Cursor read it directly.
+The main instructions file for every agent on this repo (Claude Code, Codex, Cursor). `CLAUDE.md` imports it; Codex and Cursor read it directly. `frontend/AGENTS.md` adds Next.js rules for code in `frontend/`.
 
 Context: 8x Playmakers C2, track "Health habits" (fitness, sleep, food), theme "Learning that sticks". Built by a pair, Nazmul and Shakeb, each rated on their own work.
 
@@ -35,12 +35,7 @@ Don't change files the other person is actively working on (check their open PRs
 - Secrets go in `.env.local` only. It's gitignored. `.env.example` lists the variable names, never the values.
 - Never print, echo, or paste a secret value, not even in a response. These logs are public.
 
-<!-- BEGIN:nextjs-agent-rules -->
+## Code layout
 
-## This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- `frontend/`: the Next.js app. Read `frontend/AGENTS.md` before writing code there.
+- `backend/`: FastAPI, per `TRD.md` (not created yet). Owned by Shakeb.

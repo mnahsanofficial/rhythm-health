@@ -1,10 +1,18 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Fraunces, Geist_Mono, Instrument_Sans } from "next/font/google";
+import { MotionProvider } from "@/components/motion-provider";
+import { SiteHeader } from "@/components/site-header";
 import { SessionProvider } from "@/lib/auth/session";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
+});
+
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
 });
 
@@ -14,17 +22,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Rhythm Health Lab",
+  title: "Rhythm",
   description: "Run personal experiments to learn which habits actually affect you.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f6f3ec",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${instrument.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><SessionProvider>{children}</SessionProvider></body>
+      <body className="flex min-h-full flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-3 focus:text-oat"
+        >
+          Skip to content
+        </a>
+        <SessionProvider>
+          <MotionProvider>
+            <SiteHeader />
+            <main id="main" className="flex flex-1 flex-col">
+              {children}
+            </main>
+          </MotionProvider>
+        </SessionProvider>
+      </body>
     </html>
   );
 }
