@@ -197,7 +197,7 @@ function ActivityBody({ draft, update }: StepProps) {
 }
 
 // Outcomes people can notice day to day. No weight, calorie or medical goals.
-const GOAL_OPTIONS = [
+export const GOAL_OPTIONS = [
   "More energy in the morning",
   "Better focus",
   "Fall asleep faster",
@@ -207,6 +207,16 @@ const GOAL_OPTIONS = [
   "Eat more vegetables",
   "A steadier routine",
 ];
+export const GOAL_QUESTIONS: Record<(typeof GOAL_OPTIONS)[number], string> = {
+  "More energy in the morning": "What could give me more energy in the morning?",
+  "Better focus": "What could help me focus better?",
+  "Fall asleep faster": "What could help me fall asleep faster?",
+  "Fewer afternoon slumps": "What could help me avoid afternoon slumps?",
+  "Calmer evenings": "What could make my evenings feel calmer?",
+  "Move more during the day": "What could help me move more during the day?",
+  "Eat more vegetables": "What could help me eat more vegetables?",
+  "A steadier routine": "What could help me build a steadier routine?",
+};
 const MAX_GOALS = 3;
 
 function GoalsBody({ draft, update }: StepProps) {

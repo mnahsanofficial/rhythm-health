@@ -8,25 +8,24 @@ import { useSession } from "@/lib/auth/session";
 import { proposeExperiment } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
 import type { Profile, ProposeResponse } from "@/lib/types/api";
+import { GOAL_QUESTIONS } from "@/components/onboarding/steps";
 
 const primary = "min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-paper hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50";
 const secondary = "min-h-11 rounded-pill border border-line bg-paper px-5 py-2 font-medium hover:border-moss";
 
 function starters(profile: Profile): string[] {
-  const presetQuestions: Record<string, string> = {
-    "More energy in the morning": "What could give me more energy in the morning?",
-    "Better focus": "What could help me focus better?",
-    "Fall asleep faster": "What could help me fall asleep faster?",
-    "Fewer afternoon slumps": "What could help me avoid afternoon slumps?",
-    "Calmer evenings": "What could make my evenings feel calmer?",
-    "Move more during the day": "What could help me move more during the day?",
-    "Eat more vegetables": "What could help me eat more vegetables?",
-    "A steadier routine": "What could help me build a steadier routine?",
-  };
   const questions = profile.goals.slice(0, 2).map((goal) =>
-    presetQuestions[goal] ?? `What small change could help with: ${goal}?`,
+    GOAL_QUESTIONS[goal as keyof typeof GOAL_QUESTIONS] ?? `What small change could help with: ${goal}?`,
   );
-  return [...new Set(questions)].filter((question) => question.length <= 500);
+  const examples = [
+    { question: "Does walking after dinner improve my sleep?", goals: ["Fall asleep faster"] },
+    { question: "Does less caffeine improve my focus?", goals: ["Better focus"] },
+    { question: "Does waking earlier actually improve my productivity?", goals: ["More energy in the morning"] },
+  ];
+  const distinctExamples = examples
+    .filter(({ goals }) => !profile.goals.some((goal) => goals.includes(goal)))
+    .map(({ question }) => question);
+  return [...new Set([...questions, ...distinctExamples])].filter((question) => question.length <= 500);
 }
 
 function ProposalSkeleton() {
