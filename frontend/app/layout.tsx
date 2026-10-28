@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Health",
-  description: "Playmakers C2 · Health habits",
+  title: "Rhythm Health Lab",
+  description: "Run personal experiments to learn which habits actually affect you.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
