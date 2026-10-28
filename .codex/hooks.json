@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/extract-log-codex.py\"", "timeout": 30 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/extract-log-codex.py\"", "timeout": 30 }
+        ]
+      }
+    ]
+  }
+}
