@@ -1,7 +1,12 @@
-import re
+from datetime import datetime
 from typing import Annotated, Literal, Self
 
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+
+from app.schemas.classification import Category
+from app.schemas.prediction import Prediction
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=400)]
 MetricKey = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,40}$")]
@@ -77,3 +82,29 @@ class ExperimentProposal(BaseModel):
     @property
     def primary_metric_key(self) -> str:
         return self.success_criteria.primary_metric
+
+
+ExperimentStatus = Literal["draft", "proposed", "active", "completed"]
+
+
+class ExperimentOut(BaseModel):
+    """A saved experiment. profile_id is deliberately not exposed."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: UUID
+    status: ExperimentStatus
+    question: str
+    category: Category
+    hypothesis: str
+    intervention: Intervention
+    baseline_days: int
+    intervention_days: int
+    metrics: list[Metric]
+    success_criteria: SuccessCriteria
+    prediction: Prediction
+    started_at: datetime | None
+    completed_at: datetime | None
+    is_seeded: bool
+    created_at: datetime
+    updated_at: datetime

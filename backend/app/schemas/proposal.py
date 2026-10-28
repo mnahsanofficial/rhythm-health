@@ -2,6 +2,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from app.schemas.classification import Category
 from app.schemas.experiment import ExperimentProposal
 from app.schemas.prediction import Prediction
 
@@ -19,3 +20,9 @@ class ProposalWithPrediction(BaseModel):
         if self.prediction.target_metric != self.proposal.primary_metric_key:
             raise ValueError("prediction.target_metric must equal the primary metric key")
         return self
+
+
+class SaveExperimentRequest(ProposalWithPrediction):
+    """Body for saving what /propose returned. No user_id or profile_id: both come from the token."""
+
+    category: Category
