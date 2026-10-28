@@ -30,6 +30,27 @@ Anyone who clones the repo gets the same logging. The `cd` is there because Clau
 - **Codex.** Hooks are on by default, but project hooks run only after the project is trusted and the hook is approved in `/hooks`. Approval is tied to the hook's hash, so any edit to `.codex/hooks.json` turns it off silently until it's re-approved. The script reads the rollout transcript from the hook payload, and fills in from the payload if the transcript lags.
 - **Cursor.** Cursor gives the prompt and final response text directly in the hook payloads. The script keeps a per-conversation state file at `.git/agent-log-state/` (never committed) and re-renders the log on each event.
 
+## Teammate setup
+
+Pulling the repo brings the hooks, but each person's machine decides whether logs get written, and whose name is on them. Do this once per clone (Mac or Linux; the hook commands are shell commands).
+
+1. **Clone** `https://github.com/mnahsanofficial/rhythm-health` (you need collaborator access). Work from that clone, not an older one.
+2. **Git identity, inside the clone.** The logs record these values:
+   ```bash
+   git config user.name "Your Name"
+   git config user.email "you@example.com"
+   ```
+3. **GitHub CLI:** `gh auth status` must show *your* account as active. `github_user` comes from `gh api user`; without `gh` it reads `unknown`.
+4. **`python3`** must be on your PATH (`python3 --version`).
+5. **Claude Code:** start sessions at the repo root, not a subfolder, and accept the folder-trust prompt. Run one session per checkout at a time.
+6. **Codex:** trust the project, then approve the hooks with `/hooks` (Codex CLI). Unapproved hooks are skipped without any warning.
+7. **Cursor:** untested. Don't use its agent here until its canary passes.
+8. **Canary**, once per agent you'll use: send `CAPTURE TEST — Playmakers C2, <your name>`. After the reply, check:
+   ```bash
+   ls -t .claude-logs | head -3
+   ```
+   A new file should hold your prompt and the reply, with your `author`, `github_user` and `git_email` in the frontmatter (Codex and Cursor logs also say `agent:`). No file means that agent isn't logging. Don't use it for project work until it is.
+
 ## Canary results
 
 | # | Agent | Canary | Result |
