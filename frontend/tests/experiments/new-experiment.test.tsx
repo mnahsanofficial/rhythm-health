@@ -64,6 +64,57 @@ beforeEach(() => {
 });
 
 describe("new experiment flow", () => {
+  it("checks for an active experiment before proposing when none is running", async () => {
+    const user = userEvent.setup();
+    const requestOrder: string[] = [];
+    let proposalCalls = 0;
+    server.use(
+      http.get(`${api}/api/experiments`, ({ request }) => {
+        requestOrder.push("active-check");
+        expect(new URL(request.url).search).toBe("?status=active");
+        return HttpResponse.json([]);
+      }),
+      http.post(`${api}/api/experiments/propose`, () => {
+        requestOrder.push("propose");
+        proposalCalls += 1;
+        return HttpResponse.json(proposeResponse);
+      }),
+    );
+    render(<NewExperiment />);
+
+    await submitQuestion(user);
+
+    expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
+    expect(requestOrder).toEqual(["active-check", "propose"]);
+    expect(proposalCalls).toBe(1);
+  });
+
+  it("shows the active experiment and skips proposing when one is already running", async () => {
+    const user = userEvent.setup();
+    let proposalCalls = 0;
+    server.use(
+      http.get(`${api}/api/experiments`, ({ request }) => {
+        expect(new URL(request.url).search).toBe("?status=active");
+        return HttpResponse.json([activeExperiment]);
+      }),
+      http.post(`${api}/api/experiments/propose`, () => {
+        proposalCalls += 1;
+        return HttpResponse.json(proposeResponse);
+      }),
+    );
+    render(<NewExperiment />);
+
+    await submitQuestion(user);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an active experiment");
+    expect(screen.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute(
+      "href",
+      `/experiments/${activeExperiment.id}`,
+    );
+    expect(screen.queryByRole("region", { name: "Experiment and prediction preview" })).not.toBeInTheDocument();
+    expect(proposalCalls).toBe(0);
+  });
+
   it("shows proposal loading and retry states, then the review preview and lets the user ask again", async () => {
     const user = userEvent.setup();
     let releaseFirstResponse!: () => void;
