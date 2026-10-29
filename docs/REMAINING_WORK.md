@@ -81,7 +81,7 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 
 | # | Item | Status | Source | Done means | Priority | Depends on Nazmul |
 |---|---|---|---|---|---|---|
-| B1 | Seeded demo: `POST /api/demo/reset` and seed data | Not started; next priority after the basic backend features (B3, B4) | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
+| B1 | Seeded demo: `POST /api/demo/reset` and seed data | Done on `feat/demo-reset` (not yet merged); checked against the real Supabase, not yet clicked through in the browser while signed in | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
 | B3 | Past experiments as context for new predictions | Not started | PRD §5.6, §16, §23, TRD §19 | `/propose` passes up to 5 relevant completed experiments to the model | Must | No |
 | B4 | Don't count future days as missing when finished early | Done on `feat/past-experiment-context`, not yet merged; check by hand with a real early finish | PRD §14 ("missing days") | `adherence.missing_days` only lists days whose 24-hour interval had ended by the completion time, and `coverage_rate` uses elapsed days only, so future days neither count as missing nor lower coverage. The backend is the single source of truth; the frontend renders it as returned | Must | No (F4 just displays the result) |
 | B6 | Regenerate the prediction before start | Not started | TRD §18 | A proposed experiment's prediction can be regenerated; after start it can't | Nice | Yes, if the UI offers it |
@@ -114,23 +114,23 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 
 | # | Item | Why | Priority |
 |---|---|---|---|
-| I1 | Seeded demo end to end (B1 + F2) | F2 now expects the decided bare `LabReport`; the backend endpoint and seed data are still needed for the 5 Nov demo | Must; waiting on Shakeb |
+| I1 | Seeded demo end to end (B1 + F2) | The backend endpoint exists on `feat/demo-reset` and returns the bare `LabReport` F2 expects. Still to do: merge it, then click through `/demo` while signed in | Must; waiting on Shakeb |
 | I2 | Move the frontend to the real report shape (B2 + F3) | Done in `feat/lab-report-v2`: the frontend reads the nested `narrative`, the embedded `experiment` and `chart`, and writes the narrative with a separate `POST /report` | Done |
 | I3 | Missing days after an early finish (B4 + F4) | **Decided:** the backend is the source of truth for `missing_days`; the frontend does not filter it. Remaining work is B4 itself (backend), then confirming F4 shows the result | Must (B4 still to build) |
 | I4 | Day boundaries | **Accepted V1 decision:** a day is a rolling 24 hours from `started_at`, not a calendar day (start at 11pm and "day 2" begins at 11pm the next night). No profile time zone is used. Timestamps are shown in the viewer's local time | Decided |
 | I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
 | I6 | Refresh `frontend/tests/contracts/openapi.json` | Done in `feat/lab-report-v2`, regenerated from the backend after PR #21. Refresh it again whenever a backend schema changes (see `docs/rules/api-contracts.md`) | Done |
 
-### B1 seeded demo reset: decided, not built
+### B1 seeded demo reset: decided, built
 
-Contract (recorded in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset-decided-not-built)):
+Contract (recorded in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset-decided-built)):
 
 - Authenticated `POST /api/demo/reset` with an empty JSON body `{}`; no user or profile ID, the bearer token identifies the user.
 - Returns the bare `LabReport` for the completed seeded experiment (it already embeds the experiment). No `{ experiment, report }` wrapper.
 - Creates or resets only the signed-in user's seeded demo data, using the normal tables and schemas; idempotent. All non-seeded experiments are preserved, including an active one.
-- Still to do: Shakeb builds the endpoint and seed data; Nazmul changes `frontend/lib/data/demo.ts`, its tests and the e2e fixture to the bare `LabReport`; TRD §28 gets the JSON.
+- Built on `feat/demo-reset`. The frontend already uses the bare `LabReport`. Still to do: merge, click through `/demo` signed in, and write the JSON into TRD §28.
 
-PRD §18 requires an example that can be explored without waiting for a multi-day experiment. Until the endpoint exists, F2 can't be verified against the live backend.
+PRD §18 requires an example that can be explored without waiting for a multi-day experiment. Once `feat/demo-reset` is merged, F2 can be verified against the live backend.
 
 ### Report API as built
 

@@ -34,7 +34,7 @@ def rest_request(
     table: str,
     *,
     params: dict[str, str] | None = None,
-    json: dict | None = None,
+    json: dict | list[dict] | None = None,
     prefer: str | None = None,
 ) -> list[dict]:
     """Call PostgREST with the service-role key. Callers must scope queries to the user."""

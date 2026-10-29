@@ -2,6 +2,7 @@ from app.integrations.supabase import rest_request
 
 
 def create(profile_id: str, values: dict) -> dict:
+    """`values` may carry an `id` (the seeded demo uses a fixed one per profile)."""
     rows = rest_request(
         "POST",
         "experiments",
@@ -76,4 +77,15 @@ def list_completed(profile_id: str, limit: int) -> list[dict]:
             "order": "completed_at.desc",
             "limit": str(limit),
         },
+    )
+
+
+def delete_seeded(profile_id: str) -> None:
+    """Remove this profile's seeded demo experiments. Check-ins and reports go with them
+    (on delete cascade). Normal experiments are never matched."""
+    rest_request(
+        "DELETE",
+        "experiments",
+        params={"profile_id": f"eq.{profile_id}", "is_seeded": "eq.true"},
+        prefer="return=representation",
     )
