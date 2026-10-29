@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
 
@@ -19,4 +20,19 @@ describe("sample-data home illustration", () => {
     expect(screen.getByText("23:30–07:30")).toBeVisible();
     expect(screen.getByRole("img", { name: "Sample rhythm illustration" })).toBeVisible();
   });
+  it("lets visitors explore example habits without changing their own rhythm", async () => {
+    const user = userEvent.setup();
+    render(<Home />);
+    const coffee = screen.getByRole("checkbox", { name: /Coffee around 9am/ });
+    expect(coffee).toBeChecked();
+    await user.click(coffee);
+    expect(coffee).not.toBeChecked();
+    expect(screen.getByRole("status")).toHaveTextContent("2 habits shown");
+    await user.click(coffee);
+    expect(coffee).toBeChecked();
+    expect(screen.getByRole("status")).toHaveTextContent("3 habits shown");
+    expect(screen.getByRole("link", { name: "Run your first experiment" })).toHaveAttribute("href", "/onboarding");
+    expect(screen.getByText("A rhythm, shown with sample data. Yours is drawn from your own answers.")).toBeVisible();
+  });
+
 });

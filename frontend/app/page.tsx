@@ -1,9 +1,7 @@
 import { HomeCta } from "@/components/home-cta";
 import { HomeExperience } from "@/components/home-experience";
-import { RhythmRing } from "@/components/rhythm-ring";
-import Link from "next/link";
+import { LandingRhythm } from "@/components/landing-rhythm";
 import { exampleProfile } from "@/lib/data/profile";
-import { placeHabits } from "@/lib/rhythm/habits";
 
 const EXAMPLE_QUESTIONS = [
   "Does walking after dinner improve my sleep?",
@@ -27,74 +25,37 @@ const STEPS = [
 ];
 
 export default function Home() {
-  const habits = placeHabits(exampleProfile.regular_habits, exampleProfile.usual_sleep_schedule);
-  const { bedtime, wake_time } = exampleProfile.usual_sleep_schedule;
-
   return (
     <HomeExperience>
       <div className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-8">
-        <section className="grid items-center gap-10 pt-8 pb-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
+        <section className="grid items-center gap-10 pt-8 pb-14 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-12">
           <div>
             <h1 className="font-display text-display-sm tracking-tight text-balance sm:text-display">
               Stop guessing what works for you.
               <span className="block text-muted">Test it.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lead text-muted">
-              Turn a habit you&apos;re curious about into a short experiment. We predict what will change, you
-              try it for a week, and you see whether it actually worked for you.
+              Turn a habit question into a small personal experiment. Record your usual routine,
+              test one change, then compare the forecast with your own observations.
             </p>
             <div className="mt-8">
               <HomeCta />
-              <Link
-                href="/history"
-                className="mt-3 inline-flex min-h-11 items-center px-1 text-body font-medium text-moss underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss"
-              >
-                Experiment history
-              </Link>
+
             </div>
 
-            <div className="mt-12">
-              <h2 className="text-caption font-medium text-ink">Questions people test</h2>
-              <ul className="mt-3 flex flex-col gap-3 border-l-2 border-moss pl-4">
-                {EXAMPLE_QUESTIONS.map((q) => (
-                  <li key={q} className="font-display text-lead text-ink">
-                    {q}
-                  </li>
-                ))}
-              </ul>
+            <div className="mt-10 grid grid-cols-2 gap-5 border-t border-line pt-5">
+              <div>
+                <p className="font-mono text-title tabular-nums">3 + 7</p>
+                <p className="mt-1 text-caption text-muted">Normal days, then test days.</p>
+              </div>
+              <div>
+                <p className="font-mono text-title tabular-nums">30 seconds</p>
+                <p className="mt-1 text-caption text-muted">A small daily check-in.</p>
+              </div>
             </div>
           </div>
 
-          <figure className="rounded-card border border-line bg-paper p-5 sm:p-8">
-            <div className="mx-auto max-w-[340px]">
-              <RhythmRing
-                schedule={exampleProfile.usual_sleep_schedule}
-                sleepHours={exampleProfile.usual_sleep_hours}
-                habits={habits}
-              />
-            </div>
-            <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-body">
-              <dt className="flex items-center gap-2 text-muted">
-                <span aria-hidden="true" className="size-3 rounded-full bg-night" />
-                Asleep
-              </dt>
-              <dd className="font-mono tabular-nums">
-                {bedtime}–{wake_time}
-              </dd>
-              {habits.map((h) => (
-                <div key={h.label} className="contents">
-                  <dt className="flex items-center gap-2 text-muted">
-                    <span aria-hidden="true" className="size-3 rounded-full border border-ink bg-sun" />
-                    {h.label}
-                  </dt>
-                  <dd className="font-mono tabular-nums">{h.time}</dd>
-                </div>
-              ))}
-            </dl>
-            <figcaption className="mt-6 border-t border-line pt-4 text-caption text-muted">
-              A rhythm, shown with sample data. Yours is drawn from your own answers.
-            </figcaption>
-          </figure>
+          <LandingRhythm profile={exampleProfile} />
         </section>
 
         <section aria-labelledby="how-it-works" className="border-t border-line pt-12">
@@ -105,11 +66,24 @@ export default function Home() {
             {STEPS.map((step, i) => (
               <li key={step.title}>
                 <p className="font-mono text-caption text-moss tabular-nums">0{i + 1}</p>
-                <h3 className="mt-2 text-title font-medium tracking-tight">{step.title}</h3>
+                <h3 className="mt-2 font-display text-title tracking-tight">{step.title}</h3>
                 <p className="mt-2 text-body text-muted">{step.body}</p>
               </li>
             ))}
           </ol>
+        </section>
+        <section aria-labelledby="question-examples" className="mt-12 border-t border-line pt-10">
+          <div className="grid gap-6 lg:grid-cols-[0.75fr_1.25fr] lg:gap-16">
+            <h2 id="question-examples" className="font-display text-headline tracking-tight">A question worth testing.</h2>
+            <ul className="divide-y divide-line">
+              {EXAMPLE_QUESTIONS.map((question, index) => (
+                <li key={question} className="flex gap-4 py-4 first:pt-0">
+                  <span aria-hidden="true" className="pt-1 font-mono text-caption text-moss">0{index + 1}</span>
+                  <p className="font-display text-title">{question}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       </div>
     </HomeExperience>

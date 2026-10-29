@@ -151,3 +151,9 @@ Choice ticks reserve their space and use a 150ms transform/opacity transition. T
 Prediction versus reality leads the report. The original prediction is visible from the start; Reveal my result brings in the actual change and its range marker over 480ms with 10px translation and opacity on the settle curve. The final numeric value appears immediately and never counts through misleading intermediate estimates. Replay uses the saved response without another request. Reduced motion reveals the final state immediately, with the same information and keyboard focus retained on the button.
 
 Night identifies the original forecast; moss identifies the observation. The verdict and adherence follow. Written sections without backend content show waiting states, never invented findings. Report skeletons are static.
+
+### Public landing
+
+The public hero explains the daily effort and the standard 3-baseline/7-test-day format. An explicitly labelled sample rhythm can be explored using native habit checkboxes; this only updates the example's local component state. No request or onboarding draft is written. Checkmarks respond over 150ms and added ring markers over 280ms, using transform/opacity with reduced motion respected. There is no ambient animation.
+
+Example questions follow the product explanation. The primary action starts onboarding; signed-in visitors see their personal dashboard instead of the public hero.
