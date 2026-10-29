@@ -233,7 +233,12 @@ export function NewExperiment() {
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const [result, setResult] = useState<ProposeResponse | null>(null);
-  const [error, setError] = useState<{ status: number; message: string } | null>(null);
+  const [error, setError] = useState<{
+    status: number;
+    message: string;
+    stage: "active-check" | "proposal";
+  } | null>(null);
+  const [checkingActive, setCheckingActive] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [activeExperiment, setActiveExperiment] = useState<Experiment | null>(null);
@@ -269,9 +274,22 @@ export function NewExperiment() {
     if (inFlight.current || text.length < 5 || text.length > 500) return;
     inFlight.current = true;
     setBusy(true);
+    setCheckingActive(true);
     setError(null);
+    setStartError(null);
+    setActiveExperiment(null);
     setResult(null);
+    let activeCheckComplete = false;
     try {
+      const activeExperiments = await listExperiments("active");
+      activeCheckComplete = true;
+      setCheckingActive(false);
+      if (activeExperiments.length > 0) {
+        setActiveExperiment(activeExperiments[0]);
+        setStartError("You already have an active experiment.");
+        return;
+      }
+
       const response = await proposeExperiment(text);
       if (response.safety.allowed && (!response.proposal || !response.prediction)) {
         throw new ApiError(502, "The plan came back incomplete. Please retry.");
@@ -280,9 +298,14 @@ export function NewExperiment() {
     } catch (e) {
       const status = e instanceof ApiError ? e.status : 0;
       if (status === 401) router.replace("/sign-in?next=/experiments/new");
-      setError({ status, message: e instanceof Error ? e.message : "Something went wrong. Please try again." });
+      setError({
+        status,
+        message: e instanceof Error ? e.message : "Something went wrong. Please try again.",
+        stage: activeCheckComplete ? "proposal" : "active-check",
+      });
     } finally {
       inFlight.current = false;
+      setCheckingActive(false);
       setBusy(false);
     }
   }
@@ -366,21 +389,38 @@ export function NewExperiment() {
           <form className="mt-8" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
             <label htmlFor="question" className="block font-medium">Your question or goal</label>
             <textarea ref={input} id="question" required minLength={5} maxLength={500} disabled={busy} value={question}
-              onChange={(event) => { setQuestion(event.target.value); setError(null); setResult(null); }}
+              onChange={(event) => {
+                setQuestion(event.target.value);
+                setError(null);
+                setResult(null);
+                setStartError(null);
+                setActiveExperiment(null);
+              }}
               aria-describedby="question-help question-count" rows={4}
               placeholder="Does walking after dinner improve my sleep?"
               className="mt-3 w-full resize-y rounded-card border border-line bg-paper p-4 text-body placeholder:text-muted disabled:opacity-70" />
             <div className="mt-2 flex justify-between gap-4 text-caption text-muted"><p id="question-help">5–500 characters. One small change at a time.</p><span id="question-count" className="font-mono">{question.length}/500</span></div>
-            <button type="submit" disabled={busy || question.trim().length < 5 || !!result?.safety.allowed} className={`${primary} mt-5 w-full sm:w-auto`}>{busy ? "Shaping your experiment…" : "Design my experiment"}</button>
+            <button type="submit" disabled={busy || question.trim().length < 5 || !!result?.safety.allowed} className={`${primary} mt-5 w-full sm:w-auto`}>
+              {checkingActive ? "Checking your experiment…" : busy ? "Shaping your experiment…" : "Design my experiment"}
+            </button>
           </form>
 
+          {checkingActive && <p role="status" className="mt-4 text-caption text-muted">Checking whether you already have an active experiment…</p>}
+
           {error && <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
-            <p className="font-medium">{error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : "Your question hasn’t been submitted successfully."}</p>
+            <p className="font-medium">{error.stage === "active-check" ? "Couldn’t check for an active experiment." : error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : "Your question hasn’t been submitted successfully."}</p>
             <p className="mt-2">{error.message}</p>
-            {error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
+            {error.stage === "proposal" && error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
           </div>}
 
-          {busy && <ProposalSkeleton />}
+          {activeExperiment && startError && !result && <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
+            <p>{startError}</p>
+            <Link href={`/experiments/${encodeURIComponent(activeExperiment.id)}`} className="mt-3 inline-flex min-h-11 items-center underline">
+              Go to your active experiment
+            </Link>
+          </div>}
+
+          {busy && !checkingActive && <ProposalSkeleton />}
       {result && !result.safety.allowed && <section ref={output} tabIndex={-1} aria-label="Question result" className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
             <>
               <p className="font-display text-title">Let&apos;s find a gentler experiment.</p>

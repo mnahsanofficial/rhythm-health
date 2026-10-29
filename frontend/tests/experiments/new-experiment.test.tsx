@@ -123,6 +123,7 @@ describe("new experiment flow", () => {
     const firstRequestStarted = new Promise<void>((resolve) => { requestStarted = resolve; });
     let proposalCalls = 0;
     server.use(
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
       http.post(`${api}/api/experiments/propose`, async ({ request }) => {
         expect(await request.json()).toEqual({ question });
         proposalCalls += 1;
@@ -210,7 +211,7 @@ describe("new experiment flow", () => {
     releaseStart();
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
-    expect(listQueries).toEqual(["?status=active"]);
+    expect(listQueries).toEqual(["?status=active", "?status=active"]);
     expect(savedRequest).toEqual(saveExperimentRequest);
   });
 
@@ -218,9 +219,13 @@ describe("new experiment flow", () => {
     const user = userEvent.setup();
     let saveCalls = 0;
     let startCalls = 0;
+    let activeChecks = 0;
     server.use(
       http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(proposeResponse)),
-      http.get(`${api}/api/experiments`, () => HttpResponse.json([activeExperiment])),
+      http.get(`${api}/api/experiments`, () => {
+        activeChecks += 1;
+        return HttpResponse.json(activeChecks === 1 ? [] : [activeExperiment]);
+      }),
       http.post(`${api}/api/experiments`, () => {
         saveCalls += 1;
         return HttpResponse.json(experiment, { status: 201 });
@@ -242,6 +247,7 @@ describe("new experiment flow", () => {
       `/experiments/${activeExperiment.id}`,
     );
     expect(within(preview).getByRole("button", { name: "Start this experiment" })).toBeDisabled();
+    expect(activeChecks).toBe(2);
     expect(saveCalls).toBe(0);
     expect(startCalls).toBe(0);
   });
@@ -280,7 +286,7 @@ describe("new experiment flow", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
     expect(saveCalls).toBe(1);
     expect(startCalls).toBe(2);
-    expect(listCalls).toBe(1);
+    expect(listCalls).toBe(2);
   });
 });
 
