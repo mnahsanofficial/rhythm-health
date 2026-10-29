@@ -223,13 +223,15 @@ function ProposalSkeleton() {
   );
 }
 
-export function NewExperiment() {
+export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: string }) {
   const router = useRouter();
   const { session, loading } = useSession();
   const [loaded, setLoaded] = useState<{ userId: string; profile: Profile } | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(
+    initialQuestion.length >= 5 && initialQuestion.length <= 500 ? initialQuestion : "",
+  );
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const [result, setResult] = useState<ProposeResponse | null>(null);
