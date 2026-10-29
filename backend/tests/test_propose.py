@@ -8,7 +8,7 @@ from app.auth.supabase import get_current_user
 from app.config import settings
 from app.integrations import openrouter
 from app.main import app
-from app.repositories import profiles
+from app.repositories import experiments, profiles, reports
 from app.schemas.classification import Classification
 from app.schemas.experiment import ExperimentProposal
 from app.schemas.prediction import Prediction
@@ -86,6 +86,8 @@ class FakeAI:
 def api(monkeypatch):
     app.dependency_overrides[get_current_user] = lambda: USER_ID
     monkeypatch.setattr(profiles, "get_by_user_id", lambda _uid: PROFILE_ROW)
+    monkeypatch.setattr(experiments, "list_completed", lambda *_a: [])
+    monkeypatch.setattr(reports, "list_for_experiments", lambda _ids: [])
 
     def install(**overrides):
         fake = FakeAI(**overrides)

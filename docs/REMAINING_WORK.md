@@ -41,7 +41,7 @@ Nobody has finished a real experiment through the UI yet; the earliest that's po
 
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
-| F2 | Open the seeded completed experiment | Waiting on backend. The frontend side is ready: `resetDemo` and the demo entry expect the bare `LabReport`. The entry stays visible; until B1 exists, clicking it shows the API's error | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 |
+| F2 | Open the seeded completed experiment | Works against the real backend on `feat/demo-reset` (clicked through signed in, `/demo` to the report). Needs that branch merged to `main` | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 merged |
 | F4 | Don't show future days as "Missed" after finishing early | Frontend done; waiting on B4. The report's "Missed" and the day chart use `analysis.adherence.missing_days` exactly as returned; an unlogged day not in that list shows as "Not reached before you finished". Tested in `tests/report/lab-report-flow.test.tsx`. Until B4 lands, the live backend still lists future days as missing, so they still show as missed | PRD §13, §15 section 5 | An early finish shows the `missing_days` the API returns, with no frontend filtering (the backend is the source of truth, I3). Once B4 lands, check it by hand | Must | Yes: B4 |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
 | F7 | Rhythm ring hydration mismatch under reduced motion | Done | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
@@ -81,9 +81,9 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 
 | # | Item | Status | Source | Done means | Priority | Depends on Nazmul |
 |---|---|---|---|---|---|---|
-| B1 | Seeded demo: `POST /api/demo/reset` and seed data | Not started; next priority after the basic backend features (B3, B4) | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
+| B1 | Seeded demo: `POST /api/demo/reset` and seed data | Done on `feat/demo-reset` (not yet merged); checked against the real Supabase, not yet clicked through in the browser while signed in | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
 | B3 | Past experiments as context for new predictions | Not started | PRD §5.6, §16, §23, TRD §19 | `/propose` passes up to 5 relevant completed experiments to the model | Must | No |
-| B4 | Don't count future days as missing when finished early | Partial (bug) | PRD §14 ("missing days") | `adherence.missing_days` only lists days whose 24-hour interval had ended by the completion time, and `coverage_rate` uses elapsed days only, so future days neither count as missing nor lower coverage. The backend is the single source of truth; the frontend renders it as returned | Must | No (F4 just displays the result) |
+| B4 | Don't count future days as missing when finished early | Done on `feat/past-experiment-context`, not yet merged; check by hand with a real early finish | PRD §14 ("missing days") | `adherence.missing_days` only lists days whose 24-hour interval had ended by the completion time, and `coverage_rate` uses elapsed days only, so future days neither count as missing nor lower coverage. The backend is the single source of truth; the frontend renders it as returned | Must | No (F4 just displays the result) |
 | B6 | Regenerate the prediction before start | Not started | TRD §18 | A proposed experiment's prediction can be regenerated; after start it can't | Nice | Yes, if the UI offers it |
 | B7 | Structured request logging | Deferred: only if time permits (decided) | TRD §37 | Each request logs request_id, user_id, experiment_id, operation, duration_ms, status (today only AI calls are logged) | Nice | No |
 | B8 | One full-flow integration test | Partial; last step, after all features and the frontend are ready (decided) | TRD §42 | One test runs profile → propose → save → start → check-ins → complete → report with mocked AI | Nice | No |
@@ -114,23 +114,23 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 
 | # | Item | Why | Priority |
 |---|---|---|---|
-| I1 | Seeded demo end to end (B1 + F2) | F2 now expects the decided bare `LabReport`; the backend endpoint and seed data are still needed for the 5 Nov demo | Must; waiting on Shakeb |
+| I1 | Seeded demo end to end (B1 + F2) | The backend endpoint exists on `feat/demo-reset` and returns the bare `LabReport` F2 expects. Clicked through signed in and it works. Still to do: merge `feat/demo-reset` | Must; waiting on merge |
 | I2 | Move the frontend to the real report shape (B2 + F3) | Done in `feat/lab-report-v2`: the frontend reads the nested `narrative`, the embedded `experiment` and `chart`, and writes the narrative with a separate `POST /report` | Done |
 | I3 | Missing days after an early finish (B4 + F4) | **Decided:** the backend is the source of truth for `missing_days`; the frontend does not filter it. Remaining work is B4 itself (backend), then confirming F4 shows the result | Must (B4 still to build) |
 | I4 | Day boundaries | **Accepted V1 decision:** a day is a rolling 24 hours from `started_at`, not a calendar day (start at 11pm and "day 2" begins at 11pm the next night). No profile time zone is used. Timestamps are shown in the viewer's local time | Decided |
 | I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
 | I6 | Refresh `frontend/tests/contracts/openapi.json` | Done in `feat/lab-report-v2`, regenerated from the backend after PR #21. Refresh it again whenever a backend schema changes (see `docs/rules/api-contracts.md`) | Done |
 
-### B1 seeded demo reset: decided, not built
+### B1 seeded demo reset: decided, built
 
-Contract (recorded in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset-decided-not-built)):
+Contract (recorded in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset-decided-built)):
 
 - Authenticated `POST /api/demo/reset` with an empty JSON body `{}`; no user or profile ID, the bearer token identifies the user.
 - Returns the bare `LabReport` for the completed seeded experiment (it already embeds the experiment). No `{ experiment, report }` wrapper.
 - Creates or resets only the signed-in user's seeded demo data, using the normal tables and schemas; idempotent. All non-seeded experiments are preserved, including an active one.
-- Still to do: Shakeb builds the endpoint and seed data; Nazmul changes `frontend/lib/data/demo.ts`, its tests and the e2e fixture to the bare `LabReport`; TRD §28 gets the JSON.
+- Built on `feat/demo-reset`. The frontend already uses the bare `LabReport`. Checked signed in at `/demo`, and the contract is written into TRD §28. Still to do: merge.
 
-PRD §18 requires an example that can be explored without waiting for a multi-day experiment. Until the endpoint exists, F2 can't be verified against the live backend.
+PRD §18 requires an example that can be explored without waiting for a multi-day experiment. Once `feat/demo-reset` is merged, F2 can be verified against the live backend.
 
 ### Report API as built
 
@@ -192,7 +192,7 @@ Differences from the old proposal: there is no top-level `experiment_id` (use `e
 
 | # | Where | What | Effect |
 |---|---|---|---|
-| R2 | `backend/app/services/analysis.py:98`, shown by the report's "Missed" and the day chart | `missing_days` covers every planned day, including ones not reached yet. The frontend shows it as returned | An early finish says days 6–10 were "Missed" until B4 lands (F4 is ready) |
+| R2 | `backend/app/services/analysis.py:98`, shown by the report's "Missed" and the day chart | Before B4, `missing_days` covered every planned day, including ones not reached yet. The frontend shows it as returned | Fixed in the backend by B4 (on `feat/past-experiment-context`); until that merges, an early finish still says days 6–10 were "Missed" |
 | R3 | `frontend/components/rhythm-ring.tsx` | Resolved: CSS controls arrival motion; the server and browser render identical SVG | F7 regression passes and the reduced-motion browser test is enabled again |
 | R4 | `backend/app/services/progress.py:34` | Days are 24 hours from the start time | A late-evening start shifts every day. Accepted V1 behavior (I4); worth knowing when demoing |
 | R5 | `backend/app/api/checkins.py:29` | Only today's check-in can be submitted | A missed day can't be filled in later. By design, but worth knowing for the demo |

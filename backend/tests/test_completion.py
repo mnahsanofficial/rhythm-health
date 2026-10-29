@@ -183,3 +183,19 @@ def test_database_down_is_503(db, monkeypatch):
     monkeypatch.setattr(reports, "upsert", boom)
     assert client.post(COMPLETE).status_code == 503
     assert db.experiment["status"] == "active"
+
+
+def test_early_finish_reports_only_elapsed_days(db):
+    db.experiment["started_at"] = (datetime.now(UTC) - timedelta(days=6, hours=12)).isoformat()
+    db.checkins = [{**c, "experiment_id": EXP_ID} for c in SEEDED if c["day_number"] <= 6]
+    adherence = client.post(COMPLETE).json()["analysis"]["adherence"]
+    assert adherence["missing_days"] == []
+    assert adherence["coverage_rate"] == 1.0
+
+
+def test_early_finish_still_lists_a_missed_elapsed_day(db):
+    db.experiment["started_at"] = (datetime.now(UTC) - timedelta(days=6, hours=12)).isoformat()
+    db.checkins = [{**c, "experiment_id": EXP_ID} for c in SEEDED if c["day_number"] in (1, 3, 4, 5, 6)]
+    adherence = client.post(COMPLETE).json()["analysis"]["adherence"]
+    assert adherence["missing_days"] == [2]
+    assert adherence["coverage_rate"] == pytest.approx(5 / 6, abs=1e-3)

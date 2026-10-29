@@ -23,3 +23,13 @@ def list_for_experiment(experiment_id: str) -> list[dict]:
             "order": "day_number.asc",
         },
     )
+
+
+def create_many(experiment_id: str, rows: list[dict]) -> list[dict]:
+    """Insert a whole run of check-ins in one request (used by the seeded demo)."""
+    return rest_request(
+        "POST",
+        "daily_checkins",
+        json=[{**r, "experiment_id": experiment_id} for r in rows],
+        prefer="return=representation",
+    )

@@ -1170,19 +1170,39 @@ Returns the completed Lab Report.
 
 ### POST `/api/demo/reset`
 
-Requires authentication.
+Requires authentication (Supabase bearer token).
 
-Creates or resets seeded demo data for the **currently authenticated user only**.
+**Request:** an empty JSON body `{}`, or no body. The user comes only from the verified token. Any field, including `user_id` or `profile_id`, is rejected with `422`.
 
-It creates:
+**Response `200`:** the bare `LabReport` of the completed seeded experiment, the same shape as `GET /api/experiments/{id}/report` (section 27), with `narrative` filled in. `LabReport` already contains the experiment, so there is no wrapper.
 
-- seeded profile values where appropriate
-- completed experiment
+**Behavior**
+
+- Creates or resets seeded demo data for the **currently authenticated user only**.
+- Resets **only** that user's rows marked `is_seeded`. Every non-seeded experiment is preserved untouched, including an `active` one, along with its check-ins and report. The reset never changes the one-active-experiment rule.
+- The profile is not changed. The user must already have a profile.
+- **Idempotent:** it can be run repeatedly. Each run deletes the user's seeded experiment (its check-ins and report go with it through `on delete cascade`) and writes a fresh one. Edits made to the seeded data are discarded.
+- The seeded experiment has the same id on every reset (derived from the profile id), so links to it keep working.
+
+It writes:
+
+- one completed experiment, with `is_seeded = true`
 - baseline check-ins
 - intervention check-ins
-- experiment report
+- an experiment report
 
-The seeded data uses exactly the same schemas and tables as normal experiments.
+The seeded data uses exactly the same schemas and tables as normal experiments. Its `analysis` is computed by the normal deterministic analysis from the seeded check-ins, not stored as text. The narrative (summary, interpretation, personal learnings, confounders, next experiment) is fixed text written to agree with that analysis and checked by the same wording rules as generated narratives. No AI call is made.
+
+Seeded experiments are left out of the past-experiment context used for new predictions.
+
+**Errors**
+
+| Status | When |
+|---|---|
+| `401` | missing or invalid token |
+| `409` | the user has no profile yet, or two resets ran at the same time |
+| `422` | the body contains any field |
+| `503` | the database is unavailable |
 
 ---
 
