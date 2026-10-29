@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
@@ -25,7 +25,7 @@ type Answers = {
 };
 
 const primaryButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
+  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-transform duration-150 motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
 const secondaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
 
@@ -54,6 +54,8 @@ function answersFrom(checkin: Checkin | undefined): Answers {
 /** Today's check-in for one experiment: the PRD's main daily action, aimed at under 30 seconds. */
 export function CheckinForm({ id }: { id: string }) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
+  const savedHeadingRef = useRef<HTMLHeadingElement>(null);
   const { session, loading: sessionLoading } = useSession();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -93,6 +95,10 @@ export function CheckinForm({ id }: { id: string }) {
   useEffect(() => {
     if (formError) alertRef.current?.focus();
   }, [formError]);
+
+  useEffect(() => {
+    if (saved) savedHeadingRef.current?.focus();
+  }, [saved]);
 
   if (load.kind === "loading") return <CheckinSkeleton />;
 
@@ -151,13 +157,23 @@ export function CheckinForm({ id }: { id: string }) {
   const alreadyToday = checkins.some((c) => c.day_number === day);
   const metrics = [...experiment.metrics].sort((a, b) => Number(b.primary) - Number(a.primary));
 
+  const answerTotal = metrics.length + Number(testDay);
+  const answered = metrics.filter((m) => answers.values[m.key] !== undefined).length
+    + Number(testDay && answers.interventionDone !== undefined);
+
   if (saved) {
     const logged = new Set(checkins.map((c) => c.day_number));
     return (
       <Shell back={experimentPath}>
         <div role="status" className="flex flex-col items-start">
-          <Tick />
-          <h1 className="mt-5 font-display text-display-sm tracking-tight">Day {day} recorded.</h1>
+          <Tick reduceMotion={Boolean(reduceMotion)} />
+          <h1
+            ref={savedHeadingRef}
+            tabIndex={-1}
+            className="mt-5 font-display text-display-sm tracking-tight outline-none"
+          >
+            Day {day} recorded.
+          </h1>
           <p className="mt-3 text-lead text-muted">
             {logged.size} of {progress.total_days} days logged.{" "}
             {progress.days_remaining ? `${progress.days_remaining} to go.` : "That was the last day."}
@@ -170,13 +186,15 @@ export function CheckinForm({ id }: { id: string }) {
                 <motion.li
                   key={n}
                   aria-label={`Day ${n}${isLogged ? ", logged" : ""}`}
-                  initial={n === day ? { scale: 0.4, opacity: 0 } : false}
+                  initial={n === day && !reduceMotion ? { scale: 0.7, opacity: 0 } : false}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.35, type: "spring", stiffness: 420, damping: 22 }}
-                  className={`size-6 rounded-full border ${
-                    isLogged ? "border-moss bg-moss" : n <= day ? "border-line bg-paper" : "border-dashed border-line"
+                  transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className={`grid size-11 place-items-center rounded-pill border font-mono text-caption ${
+                    isLogged ? "border-moss bg-moss text-paper" : n <= day ? "border-line bg-paper" : "border-dashed border-line"
                   }`}
-                />
+                >
+                  <span aria-hidden="true">{isLogged ? "✓" : n}</span>
+                </motion.li>
               );
             })}
           </ol>
@@ -256,6 +274,29 @@ export function CheckinForm({ id }: { id: string }) {
           ? "A test day. Tell us whether you made the change, then how it went."
           : "A normal day. Don't change anything yet, just notice how it went."}
       </p>
+      <div className="mt-6 border-y border-line py-4">
+        <div className="flex items-center justify-between gap-4 text-caption">
+          <p role="status" className="font-mono tabular-nums">
+            {answered} of {answerTotal} answered
+          </p>
+          <span className="text-muted">{answered === answerTotal ? "Ready to record" : "Note optional"}</span>
+        </div>
+        <div
+          role="progressbar"
+          aria-label="Check-in answers"
+          aria-valuemin={0}
+          aria-valuemax={answerTotal}
+          aria-valuenow={answered}
+          className="mt-3 h-1 overflow-hidden rounded-pill bg-line"
+        >
+          <motion.div
+            initial={false}
+            animate={{ scaleX: answerTotal ? answered / answerTotal : 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="h-full origin-left bg-moss"
+          />
+        </div>
+      </div>
       {alreadyToday && (
         <p className="mt-4 rounded-card bg-moss-tint p-3 text-body text-ink">
           You&apos;ve already checked in today. Saving again replaces those answers.
@@ -293,7 +334,7 @@ export function CheckinForm({ id }: { id: string }) {
                 return (
                   <label
                     key={label}
-                    className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-[background-color,border-color,color,scale] duration-150 active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
+                    className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-150 motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
                       selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
                     }`}
                   >
@@ -376,30 +417,34 @@ function Shell({
   );
 }
 
-/** A tick that draws itself: the check-in is saved. */
-function Tick() {
+/** A single settling tick confirms the successful save. */
+function Tick({ reduceMotion }: { reduceMotion: boolean }) {
   return (
-    <svg viewBox="0 0 48 48" className="size-14" aria-hidden="true">
+    <motion.svg
+      viewBox="0 0 48 48"
+      className="size-20"
+      aria-hidden="true"
+      initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+    >
       <circle cx="24" cy="24" r="22" fill="var(--color-moss-tint)" />
-      <motion.path
+      <path
         d="M14 24.5 L21 31.5 L34 17"
         fill="none"
         stroke="var(--color-moss)"
         strokeWidth={3.5}
         strokeLinecap="round"
         strokeLinejoin="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       />
-    </svg>
+    </motion.svg>
   );
 }
 
 /** Same shape as the form: header, three questions, the save button. */
 export function CheckinSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-2xl animate-pulse px-4 pt-6 sm:px-8 sm:pt-10">
+    <div aria-hidden="true" className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-8 sm:pt-10">
       <div className="h-5 w-32 rounded-pill bg-line" />
       <div className="mt-8 h-3 w-36 rounded-pill bg-line" />
       <div className="mt-3 h-10 w-2/3 rounded-pill bg-line" />
