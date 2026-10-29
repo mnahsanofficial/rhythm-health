@@ -1,6 +1,6 @@
 # Remaining work
 
-Status as of **29 Oct 2026**, based on `origin/main` (`3948fc2`) plus the current F1 branch changes. Final demo: **Thu 5 Nov**.
+Status as of **29 Oct 2026**, based on `origin/main` (`97a1f5e`) plus the current F5 branch changes. Final demo: **Thu 5 Nov**.
 
 The core loop, in the order this list follows: **onboarding → propose an experiment → daily check-ins → see results and progress.** 8x judges "a core loop that works end to end", so open items that block the loop come first.
 
@@ -16,15 +16,17 @@ The core loop, in the order this list follows: **onboarding → propose an exper
 **How "Done" was checked.** Backend checks below were last run on `main`; frontend checks were run on this branch:
 
 - Backend: `uv run pytest`, 168 tests.
-- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (37 tests). The base branch also passed `npm run build`.
-- Playwright: `npm run test:e2e`, 2 flows passed at 390px and 1440px. Two unrelated flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
+- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (43 tests). The base branch also passed `npm run build`.
+- Playwright: `npm run test:e2e`, 7 flows passed, including history at 390px and 1440px. Two unrelated flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
 
-Each flow was also tried by hand at 390px and 1440px, signed in with a real account:
+The main account flows were also tried by hand at 390px and 1440px, signed in with a real account:
 
 | Flow | Run against |
 |---|---|
 | Profile, propose, save, start | The real backend |
 | Check-in, finish, report | Real backend reads; writes mocked, so no fake health data went into the shared database |
+
+The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states.
 
 Nobody has finished a real experiment against the real database yet. The earliest that's possible is about 3 Nov.
 
@@ -41,7 +43,6 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | F2 | Open the seeded completed experiment | Not started | PRD §18, TRD §28–29 | A signed-in user can load the demo experiment and open its full Lab Report from the app | Must | Yes: B1 |
 | F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Partial | PRD §15 (sections 6, 7, 9), TRD §24–25 | The report shows the AI summary, learnings and next experiment, and a **Run this experiment** button that starts a new proposal from it | Must | Yes: B2 |
 | F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish lists only days that actually passed without a check-in | Must | Yes: B4, or agree the frontend filters |
-| F5 | Experiment history screen | Not started | PRD §17, §19 screen 8, §23 | A list of past experiments, each with question, date, prediction, observed change and signal | Must | Maybe: I5 |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
 | F7 | Rhythm ring hydration mismatch under reduced motion | Partial (bug) | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
 | F8 | Tests for check-in, dashboard and report | Not started | TRD §43 (frontend owns these screens) | Component and e2e tests cover these three screens; the contract test covers `CheckinIn`/`CheckinOut`/`ReportOut` | Nice | No |
@@ -61,6 +62,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | Home rhythm ring | PRD §20 | **Uses sample data**, labelled as sample, by design. Onboarding draws the user's own ring |
 | Ask a question, see the proposal and prediction, start | PRD §7–9, TRD §13 | Shows confidence, reasoning and uncertainty factors |
 | Check for an active experiment before proposing | TRD §2.5 | `/experiments/new` checks the active list before `/propose`; if one exists, it links to it without making an AI call |
+| Experiment history | PRD §17, §19 screen 8, §23; TRD §27 | Lists completed experiments with date, prediction, observed outcome and signal; loads each existing report independently, with loading, missing, error and retry states |
 | Safety block with a suggested alternative ("Use this instead") | PRD §10, TRD §15 | |
 | Daily check-in from the experiment's own metrics | PRD §12, TRD §20 | Scale, number, boolean, duration; optional note; server field errors shown per field |
 | Experiment dashboard and timeline | PRD §11, §13 | Day X of N, phase, adherence, logged/missed/today/upcoming days, tap a day for its values |
@@ -111,7 +113,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | I2 | Agree the AI report JSON shape before building (B2 + F3) | `ReportOut` types `interpretation`, `learnings` and `next_experiment` as loose `dict`s. TRD §25 has an example shape | Must |
 | I3 | Missing days after an early finish (B4 + F4) | Decide whether the backend fixes `missing_days` or the frontend filters it, so the two don't disagree | Must |
 | I4 | Day boundaries | A day is 24 hours from the start time, not a calendar day. Start at 11pm and "day 2" begins at 11pm the next night | Must (decision) |
-| I5 | Data for the history screen (F5) | `GET /api/experiments` has no result fields. Either the frontend fetches each report, or the list includes a short result summary | Must (decision) |
+| I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
 | I6 | Keep `frontend/tests/contracts/openapi.json` in step with the backend | The contract test catches drift, but only if the snapshot is refreshed when schemas change | Nice |
 
 ---
