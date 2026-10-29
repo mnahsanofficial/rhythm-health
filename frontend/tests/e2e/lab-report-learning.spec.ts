@@ -168,8 +168,9 @@ for (const width of [390, 1440]) {
       if (reducedMotion === "reduce") {
         expect(await comparison.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
       }
-      await expect(page.getByRole("region", { name: "What you learned about you" })).toContainText("Waiting for your written results");
-      await expect(page.getByRole("region", { name: "What to test next" })).toContainText("Waiting for your follow-up results");
+      // Before the narrative is written, the report offers to write it rather than waiting.
+      await expect(page.getByRole("region", { name: "What you learned about you" }).getByRole("button", { name: "Write my report" })).toBeEnabled();
+      await expect(page.getByRole("region", { name: "What to test next" })).toContainText("appears once your report is written");
       await expect(page.getByRole("link", { name: "Run this experiment" })).toHaveCount(0);
       expect(counts.proposals).toBe(0);
     });

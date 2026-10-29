@@ -2,64 +2,59 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
-import type { Checkin, Experiment, MetricAnalysis, MetricValue, PredictionComparison } from "@/lib/types/api";
+import type { ChartData, ChartPoint } from "@/lib/types/api";
 
 type Props = {
-  experiment: Experiment;
-  checkins: Checkin[];
-  primary: MetricAnalysis;
-  comparison: PredictionComparison | null;
+  chart: ChartData;
+  /** analysis.adherence.missing_days: the backend decides which unlogged days count as missed. */
+  missingDays: number[];
 };
 
-function numeric(v: MetricValue | undefined): number | null {
-  if (v === undefined) return null;
-  return typeof v === "boolean" ? (v ? 1 : 0) : v;
-}
+type Plotted = { p: ChartPoint; v: number };
+
+const listDays = (days: number[]) => `${days.length === 1 ? "day" : "days"} ${days.join(", ")}`;
 
 /**
- * PRD §15 section 5: the primary metric day by day. Baseline and test days, skipped days,
- * the baseline average and the predicted range, with each day tappable for its values and note.
- * The SVG stretches to fit; points and labels are HTML so they stay readable and focusable.
+ * PRD §15 section 5: the primary metric day by day, drawn from the backend's chart data. Baseline
+ * and test days, the baseline average and the predicted range, with each logged day tappable for
+ * its values and note. Nothing is recalculated here. The SVG stretches to fit; points and labels
+ * are HTML so they stay readable and focusable.
  */
-export function DayChart({ experiment, checkins, primary, comparison }: Props) {
+export function DayChart({ chart, missingDays }: Props) {
   const reduce = useReducedMotion();
   const panelId = useId();
   const [open, setOpen] = useState<number | null>(null);
-  const metric = experiment.metrics.find((m) => m.key === primary.key);
-  const total = experiment.baseline_days + experiment.intervention_days;
-  const byDay = new Map(checkins.map((c) => [c.day_number, c]));
-  const points = checkins
-    .map((c) => ({ c, v: numeric(c.metric_values[primary.key]) }))
-    .filter((p): p is { c: Checkin; v: number } => p.v !== null)
-    .sort((a, b) => a.c.day_number - b.c.day_number);
+  const metric = chart.primary_metric;
+  const total = chart.baseline_days + chart.intervention_days;
+  const byDay = new Map(chart.points.map((p) => [p.day, p]));
+  const points: Plotted[] = chart.points
+    .filter((p): p is ChartPoint & { value: number } => p.logged && p.value !== null)
+    .map((p) => ({ p, v: p.value }));
+  const missed = new Set(missingDays);
+  const unlogged = chart.points.filter((p) => !p.logged).map((p) => p.day);
+  const missedDays = unlogged.filter((day) => missed.has(day));
+  const notReached = unlogged.filter((day) => !missed.has(day));
 
-  // Predicted range in the metric's own units: baseline mean shifted by the predicted percents.
-  const base = primary.baseline.mean;
-  const band =
-    comparison && base !== null
-      ? {
-          lo: base + (Math.abs(base) * comparison.predicted_min) / 100,
-          hi: base + (Math.abs(base) * comparison.predicted_max) / 100,
-        }
-      : null;
+  const base = chart.baseline_mean;
+  const band = chart.predicted_band ? { lo: chart.predicted_band.expected_value_min, hi: chart.predicted_band.expected_value_max } : null;
 
   const values = [...points.map((p) => p.v), ...(base !== null ? [base] : []), ...(band ? [band.lo, band.hi] : [])];
-  let lo = metric?.type === "scale" && metric.min !== null ? metric.min : Math.min(...values);
-  let hi = metric?.type === "scale" && metric.max !== null ? metric.max : Math.max(...values);
+  let lo = metric.type === "scale" && metric.min !== null ? metric.min : Math.min(...values);
+  let hi = metric.type === "scale" && metric.max !== null ? metric.max : Math.max(...values);
   if (!(hi > lo)) {
     lo -= 1;
     hi += 1;
   }
   const x = (day: number) => ((day - 0.5) / total) * 100;
   const y = (v: number) => 100 - ((Math.min(Math.max(v, lo), hi) - lo) / (hi - lo)) * 100;
-  const testStart = (experiment.baseline_days / total) * 100;
+  const testStart = (chart.baseline_days / total) * 100;
 
   // One line per run of consecutive logged days, so a missed day leaves a visible gap.
   const runs: { day: number; v: number }[][] = [];
   for (const p of points) {
     const last = runs.at(-1);
-    if (last && last.at(-1)!.day === p.c.day_number - 1) last.push({ day: p.c.day_number, v: p.v });
-    else runs.push([{ day: p.c.day_number, v: p.v }]);
+    if (last && last.at(-1)!.day === p.p.day - 1) last.push({ day: p.p.day, v: p.v });
+    else runs.push([{ day: p.p.day, v: p.v }]);
   }
 
   const selected = open !== null ? byDay.get(open) : undefined;
@@ -70,7 +65,7 @@ export function DayChart({ experiment, checkins, primary, comparison }: Props) {
       <h2 id="chart-heading" className="font-display text-title">
         Day by day
       </h2>
-      <p className="mt-1 text-body text-muted">{primary.label}</p>
+      <p className="mt-1 text-body text-muted">{metric.label}</p>
 
       <div className="mt-6 flex gap-3">
         <div aria-hidden="true" className="relative w-6 shrink-0 font-mono text-caption text-muted">
@@ -118,24 +113,24 @@ export function DayChart({ experiment, checkins, primary, comparison }: Props) {
               style={{ top: `${y(base)}%` }}
             />
           )}
-          {points.map(({ c, v }) => {
-            const test = c.phase === "intervention";
-            const skipped = test && !c.intervention_completed;
-            const label = `Day ${c.day_number}, ${test ? "test" : "baseline"}${skipped ? ", change skipped" : ""}: ${fmt(v)}`;
+          {points.map(({ p, v }) => {
+            const test = p.phase === "intervention";
+            const skipped = test && !p.intervention_completed;
+            const label = `Day ${p.day}, ${test ? "test" : "baseline"}${skipped ? ", change skipped" : ""}: ${fmt(v)}`;
             return (
               <button
-                key={c.day_number}
+                key={p.day}
                 type="button"
                 aria-label={label}
-                aria-expanded={open === c.day_number}
+                aria-expanded={open === p.day}
                 aria-controls={panelId}
-                onClick={() => setOpen(open === c.day_number ? null : c.day_number)}
+                onClick={() => setOpen(open === p.day ? null : p.day)}
                 className="group absolute grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full"
-                style={{ left: `${x(c.day_number)}%`, top: `${y(v)}%` }}
+                style={{ left: `${x(p.day)}%`, top: `${y(v)}%` }}
               >
                 <span
                   className={`block rounded-full border-2 transition-[scale] group-hover:scale-125 ${
-                    open === c.day_number ? "size-4 ring-2 ring-sun ring-offset-1" : "size-3.5"
+                    open === p.day ? "size-4 ring-2 ring-sun ring-offset-1" : "size-3.5"
                   } ${
                     !test ? "border-night bg-night" : skipped ? "border-moss bg-paper" : "border-moss bg-moss"
                   }`}
@@ -148,7 +143,7 @@ export function DayChart({ experiment, checkins, primary, comparison }: Props) {
 
       <div aria-hidden="true" className="mt-2 ml-9 flex font-mono text-caption text-muted">
         {Array.from({ length: total }, (_, i) => (
-          <span key={i} className="flex-1 text-center tabular-nums">
+          <span key={i} className={`flex-1 text-center tabular-nums ${missed.has(i + 1) ? "text-clay line-through" : !byDay.get(i + 1)?.logged ? "opacity-40" : ""}`}>
             {i + 1}
           </span>
         ))}
@@ -177,28 +172,34 @@ export function DayChart({ experiment, checkins, primary, comparison }: Props) {
         )}
         {band && (
           <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="h-2.5 w-4 bg-night/15" /> Predicted range
+            <span aria-hidden="true" className="h-2.5 w-4 bg-night/15" /> Predicted range: {fmt(band.lo)}–{fmt(band.hi)}
           </li>
         )}
       </ul>
+      {(missedDays.length > 0 || notReached.length > 0) && (
+        <div className="mt-3 text-caption text-muted">
+          {missedDays.length > 0 && <p>Missed: {listDays(missedDays)}.</p>}
+          {notReached.length > 0 && <p>Not reached before you finished: {listDays(notReached)}.</p>}
+        </div>
+      )}
 
       <div id={panelId} aria-live="polite">
         <AnimatePresence initial={false} mode="wait">
           {selected ? (
             <motion.div
-              key={selected.day_number}
+              key={selected.day}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, transition: { duration: 0.1 } }}
               className="mt-5 rounded-card bg-oat p-4"
             >
               <p className="font-mono text-caption text-moss">
-                Day {selected.day_number} · {selected.phase === "intervention" ? "Test" : "Baseline"}
+                Day {selected.day} · {selected.phase === "intervention" ? "Test" : "Baseline"}
                 {selected.phase === "intervention" && (selected.intervention_completed ? " · made the change" : " · skipped the change")}
               </p>
               <dl className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
-                {experiment.metrics.map((m) => {
-                  const v = selected.metric_values[m.key];
+                {chart.metrics.map((m) => {
+                  const v = selected.values?.[m.key];
                   return v === undefined ? null : (
                     <div key={m.key} className="flex justify-between gap-4">
                       <dt className="text-muted">{m.label}</dt>

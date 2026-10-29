@@ -43,7 +43,7 @@ describe("Lab Report learning sections", () => {
         expect(request.headers.get("authorization")).toBe("Bearer fake-session-token");
         return HttpResponse.json(writtenLabReport);
       }),
-      http.get(`${api}/api/experiments/${experiment.id}/checkins`, () => HttpResponse.json([])),
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
     );
 
     render(<LabReport id={experiment.id} />);
@@ -58,7 +58,7 @@ describe("Lab Report learning sections", () => {
     const nextSection = screen.getByRole("region", { name: "What to test next" });
     expect(within(nextSection).getByText(narrative.next_experiment.question)).toBeInTheDocument();
     expect(within(nextSection).getByText(narrative.next_experiment.reason)).toBeInTheDocument();
-    expect(within(nextSection).getByRole("link", { name: "Run this experiment" })).toHaveAttribute(
+    expect(await within(nextSection).findByRole("link", { name: "Run this experiment" })).toHaveAttribute(
       "href",
       nextQuestionHref,
     );
