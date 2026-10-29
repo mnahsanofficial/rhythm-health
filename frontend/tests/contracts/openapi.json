@@ -582,6 +582,57 @@
         }
       }
     },
+    "/api/demo/reset": {
+      "post": {
+        "summary": "Reset Demo",
+        "description": "Create or reset the signed-in user's seeded demo experiment and return its Lab Report.",
+        "operationId": "reset_demo_api_demo_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DemoResetRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1101,6 +1152,13 @@
           "risk"
         ],
         "title": "Classification"
+      },
+      "DemoResetRequest": {
+        "properties": {},
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DemoResetRequest",
+        "description": "Empty on purpose: the user comes from the verified token, never from the body."
       },
       "ExperimentOut": {
         "properties": {

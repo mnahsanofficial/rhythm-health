@@ -45,4 +45,9 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
     assertContract("ReportNarrative", writtenLabReport.narrative);
     assertContract("ChartData", labReport.chart);
   });
+
+  it("validates the demo reset request and its bare LabReport response (B1)", () => {
+    assertContract("DemoResetRequest", {});
+    assertContract("LabReport", { ...writtenLabReport, experiment: { ...writtenLabReport.experiment, is_seeded: true } });
+  });
 });
