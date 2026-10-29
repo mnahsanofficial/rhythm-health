@@ -43,6 +43,19 @@ beforeEach(() => {
 });
 
 describe("Lab Report flow", () => {
+  it("keeps seeded demo results visibly labelled as a sample after opening the report", async () => {
+    server.use(http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
+      ...writtenLabReport,
+      experiment: { ...writtenLabReport.experiment, is_seeded: true },
+    })), http.get(`${api}/api/experiments`, () => HttpResponse.json([])));
+    render(<LabReport id={id} />);
+
+    const notice = await screen.findByRole("note", { name: "Sample experiment" });
+    expect(notice).toBeVisible();
+    expect(notice).toHaveTextContent("This report is based on seeded example check-ins.");
+    expect(screen.getByRole("heading", { name: writtenLabReport.experiment.question })).toBeVisible();
+  });
+
   it("shows the analysis straight away from one GET /report, then offers to write the report", async () => {
     const calls = trackCalls();
     server.use(http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(labReport)));

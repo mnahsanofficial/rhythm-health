@@ -2,6 +2,7 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
 import openApi from "./openapi.json";
+import earlyFinish from "../support/early-finish-reports.json";
 import {
   experiment,
   labReport,
@@ -50,4 +51,14 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
     assertContract("DemoResetRequest", {});
     assertContract("LabReport", { ...writtenLabReport, experiment: { ...writtenLabReport.experiment, is_seeded: true } });
   });
+  it("validates the first-day experiment from the real progress service", () => {
+    assertContract("ExperimentOut", earlyFinish.first_day.experiment);
+  });
+
+  it.each(earlyFinish.cases)("validates the backend-generated F4 case: $name", (scenario) => {
+    assertContract("LabReport", scenario.report);
+    expect(scenario.report.analysis.adherence.missing_days).toEqual(scenario.expected.missing_days);
+    expect(scenario.report.analysis.adherence.coverage_rate).toBeCloseTo(scenario.expected.coverage_rate, 3);
+  });
+
 });

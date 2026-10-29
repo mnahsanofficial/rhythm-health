@@ -225,7 +225,7 @@ export type Adherence = {
   intervention_days_completed: number;
   /** Completed / logged test days; null if none logged. */
   adherence_rate: number | null;
-  /** All logged days / all planned days. */
+  /** Logged days / finished rolling days, including a logged in-progress day when finishing early. */
   coverage_rate: number;
   missing_days: number[];
 };

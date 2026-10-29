@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins } from "@/lib/data/checkins";
 import { getExperiment } from "@/lib/data/experiments";
-import { completeExperiment, notEnoughCheckins } from "@/lib/data/reports";
+import { completeExperiment, getReport, notEnoughCheckins } from "@/lib/data/reports";
 import type { Checkin, Experiment } from "@/lib/types/api";
 
 // Mirrors backend/app/services/analysis.py: results need this many check-ins per phase.
@@ -23,7 +23,7 @@ const secondaryButton =
 
 type Load =
   | { kind: "loading" }
-  | { kind: "ready"; experiment: Experiment; checkins: Checkin[] }
+  | { kind: "ready"; experiment: Experiment; checkins: Checkin[]; completedMissingDays: number[] | null }
   | { kind: "error"; status: number; message: string };
 
 function counts(experiment: Experiment, checkins: Checkin[]) {
@@ -56,7 +56,15 @@ export function ExperimentDetail({ id }: { id: string }) {
     }
     let cancelled = false;
     Promise.all([getExperiment(id), listCheckins(id)])
-      .then(([experiment, checkins]) => !cancelled && setLoad({ kind: "ready", experiment, checkins }))
+      .then(async ([experiment, checkins]) => {
+        // Completion freezes the backend's elapsed-day analysis. Reuse it rather than
+        // marking every unlogged planned day missed or calculating a second date rule.
+        const report = experiment.status === "completed" ? await getReport(id) : null;
+        if (!cancelled) setLoad({
+          kind: "ready", experiment, checkins,
+          completedMissingDays: report?.analysis.adherence.missing_days ?? null,
+        });
+      })
       .catch((cause: unknown) => {
         if (cancelled) return;
         if (cause instanceof ApiError && cause.status === 401) {
@@ -107,7 +115,7 @@ export function ExperimentDetail({ id }: { id: string }) {
     );
   }
 
-  const { experiment, checkins } = load;
+  const { experiment, checkins, completedMissingDays } = load;
   const { progress } = experiment;
   const c = counts(experiment, checkins);
 
@@ -147,7 +155,12 @@ export function ExperimentDetail({ id }: { id: string }) {
             {c.test > 0 && ` · change made on ${c.changeMade} of ${c.test} test days`}
           </p>
         </div>
-        <Timeline experiment={experiment} checkins={checkins} />
+        {experiment.status === "completed" && completedMissingDays === null && (
+          <p role="status" className="mt-4 text-body text-muted">
+            Completed-day status will appear when your report is available.
+          </p>
+        )}
+        <Timeline experiment={experiment} checkins={checkins} missingDays={completedMissingDays} />
       </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
