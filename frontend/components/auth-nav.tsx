@@ -12,7 +12,7 @@ export function AuthNav() {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
-  if (loading) return <span aria-hidden="true" className="h-9 w-20 animate-pulse rounded-pill bg-line" />;
+  if (loading) return <span aria-hidden="true" className="h-9 w-20 rounded-pill bg-line" />;
 
   if (!session) {
     return (

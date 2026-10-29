@@ -45,7 +45,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Waiting on backend (UI ready) | PRD §15 (sections 7, 9), TRD §24–25 | With the agreed B2 response, the report shows summary, interpretation, personal learnings, confounders and next experiment; **Run this experiment** opens a prefilled proposal | Must | Yes: B2 |
 | F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish lists only days that actually passed without a check-in | Must | Yes: B4, or agree the frontend filters |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
-| F7 | Rhythm ring hydration mismatch under reduced motion | Partial (bug) | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
+| F7 | Rhythm ring hydration mismatch under reduced motion | Done | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
 | F8 | Tests for check-in, dashboard and report | Not started | TRD §43 (frontend owns these screens) | Component and e2e tests cover these three screens; the contract test covers `CheckinIn`/`CheckinOut`/`ReportOut` | Nice | No |
 | F9 | Magic-link sign-in | Not started | TRD §6, §27 | A user can sign in from an emailed link | Nice | Yes: redirect URL set in the Supabase project |
 | F10 | Edit the AI proposal before starting | Not started | PRD §23 (nice to have) | The user can adjust the proposal before **Start** | Nice | Maybe: whether the backend re-checks edits |
@@ -165,7 +165,7 @@ This is needed to populate PRD §15's personal-learning section 7 and follow-up 
 | # | Where | What | Effect |
 |---|---|---|---|
 | R2 | `backend/app/services/analysis.py:98`, shown at `frontend/components/report/lab-report.tsx:184` | `missing_days` covers every planned day, including ones not reached yet | An early finish says days 6–10 were "Missed" (B4/F4) |
-| R3 | `frontend/components/rhythm-ring.tsx:118` | `initial={reduce ? false : …}`: `useReducedMotion()` differs between server and browser | Hydration mismatch with reduced motion on; e2e test skipped at `frontend/tests/e2e/onboarding-experiment.spec.ts:98` (F7) |
+| R3 | `frontend/components/rhythm-ring.tsx` | Resolved: CSS controls arrival motion; the server and browser render identical SVG | F7 regression passes and the reduced-motion browser test is enabled again |
 | R4 | `backend/app/services/progress.py:34` | Days are 24 hours from the start time | A late-evening start shifts every day (I4) |
 | R5 | `backend/app/api/checkins.py:29` | Only today's check-in can be submitted | A missed day can't be filled in later. By design, but worth knowing for the demo |
 | R6 | Schedule | A real experiment needs about 5 days of check-ins before it can finish | The 5 Nov demo depends on the seed (I1) |
@@ -198,3 +198,13 @@ The brief's theme ("Learning that sticks") needs a reason to return on day 3 and
 - **S3. Report countdown on home.** "Your report can be ready from {date}" under the check-in button.
 - **S4. Abandon or restart an experiment.** There's no way out of an active experiment, and only one is allowed at a time.
 - **S5. Rehearse the demo.** On 4 Nov, run seed → report → history → new question by hand, at 390px, on the machine used for the demo.
+
+## UI motion review follow-up
+
+- PRD §11 also asks for a primary-metric trend on the experiment dashboard. The existing detail screen shows recorded values when a day is selected, but has no across-days trend. This pre-existing gap was found while sharing the timeline with signed-in home; it needs a separate test-first item.
+- Signed-in home now focuses on the user's experiment, daily check-in and recorded progress. The seeded demo entry moved to `/demo`, reachable through the lab's Demo link.
+
+### Production build blocker found during motion review — resolved
+
+- `frontend/app/experiments/new/page.tsx` previously awaited `searchParams` outside Suspense with Cache Components enabled; that route was identical in baseline `cac55a4`. The page now serves a shaped static loading shell and reads URL data in a child inside Suspense. Prefilled questions retain their existing behavior.
+- The new server-render regression first failed when URL data was pending, then passed after the boundary was added. The production build using fake frontend test variables now generates all 12 pages, including `/experiments/new` as a partially prerendered route.

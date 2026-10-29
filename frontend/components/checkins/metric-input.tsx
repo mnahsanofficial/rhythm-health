@@ -19,8 +19,8 @@ export function MetricInput({ metric, value, text, onChange, error }: Props) {
   const describedBy = error ? errorId : undefined;
 
   return (
-    <fieldset aria-describedby={describedBy} aria-invalid={Boolean(error)}>
-      <legend className="text-lead font-medium text-ink">{metric.label}</legend>
+    <fieldset className="border-b border-line pb-8" aria-describedby={describedBy} aria-invalid={Boolean(error)}>
+      <legend className="font-display text-title text-ink">{metric.label}</legend>
       {metric.type === "scale" && metric.min !== null && metric.max !== null && (
         <ScaleInput min={metric.min} max={metric.max} value={value} name={id} onChange={(v) => onChange(v, "")} />
       )}
@@ -77,7 +77,7 @@ function ScaleInput({
           return (
             <label
               key={n}
-              className={`grid min-h-12 cursor-pointer place-items-center rounded-card border font-mono text-lead tabular-nums transition-[background-color,border-color,color,scale] duration-150 active:scale-95 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
+              className={`grid min-h-12 cursor-pointer place-items-center rounded-card border font-mono text-lead tabular-nums transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-95 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
                 selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
               }`}
             >
@@ -89,7 +89,11 @@ function ScaleInput({
                 onChange={() => onChange(n)}
                 className="sr-only"
               />
-              {n}
+              <span
+                className={`transition-transform duration-[var(--motion-press)] motion-reduce:transition-none ${selected ? "scale-110" : "scale-100"}`}
+              >
+                {n}
+              </span>
             </label>
           );
         })}
@@ -109,7 +113,7 @@ function YesNo({ name, value, onChange }: { name: string; value: boolean | undef
         return (
           <label
             key={label}
-            className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-[background-color,border-color,color,scale] duration-150 active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
+            className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
               selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
             }`}
           >

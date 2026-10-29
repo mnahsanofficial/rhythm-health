@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Experiment, Report } from "@/lib/types/api";
+import type { Checkin, Experiment, Report } from "@/lib/types/api";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
 import { experiment } from "../support/fixtures";
 
@@ -114,4 +114,69 @@ for (const width of [390, 1440]) {
     await runNextExperiment.click();
     await expect(page.getByRole("textbox", { name: "Your question or goal" })).toHaveValue(nextQuestion);
   });
+}
+
+for (const width of [390, 1440]) {
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    test(`reveals prediction versus reality at ${width}px with motion ${reducedMotion}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const counts = await installApiMocks(page);
+      await answerOnboardingWithMouse(page);
+      await createAccountAndSaveProfile(page, counts);
+      await page.emulateMedia({ reducedMotion });
+      const calculatedReport = {
+        ...report,
+        summary: null, interpretation: null, personal_learnings: [], confounders: [], next_experiment: null,
+        analysis: { ...report.analysis, prediction: {
+          predicted_direction: "increase", predicted_min: 8, predicted_max: 15, predicted_midpoint: 11.5,
+          observed_change_percent: 11, error_points: -0.5, within_predicted_range: true,
+          direction_correct: true, accuracy_percent: 100,
+        } },
+      };
+      await page.route(`${API}/api/experiments/${experiment.id}`, route => route.fulfill({ json: completedExperiment }));
+      await page.route(`${API}/api/experiments/${experiment.id}/report`, route => route.fulfill({ json: calculatedReport }));
+      const checkins: Checkin[] = Array.from({ length: 10 }, (_, index) => ({
+        id: `record-${index + 1}`, experiment_id: experiment.id,
+        phase: index < 3 ? "baseline" : "intervention", day_number: index + 1,
+        intervention_completed: index >= 3 && index < 9,
+        metric_values: { morning_energy: index < 3 ? [5, 5.5, 6][index] : 6.1, sleep_quality: 7 },
+        note: null, created_at: "2026-10-28T12:00:00Z", updated_at: "2026-10-28T12:00:00Z",
+      }));
+      await page.route(`${API}/api/experiments/${experiment.id}/checkins`, route => route.fulfill({ json: checkins }));
+      await page.goto(`/experiments/${experiment.id}/report`);
+      const comparison = page.getByRole("region", { name: "Prediction vs reality" });
+      const capture = async (frame: string) => {
+        if (!process.env.CAPTURE_UI_MOTION || reducedMotion === "reduce") return;
+        await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+        if (frame === "after") {
+          const chart = page.getByRole("region", { name: "Day by day" });
+          await chart.scrollIntoViewIfNeeded();
+          await expect.poll(() => chart.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
+          await comparison.scrollIntoViewIfNeeded();
+        }
+        await page.screenshot({ path: `../docs/screenshots/ui-motion/report/${width}/${frame}.png`, fullPage: true });
+      };
+      await expect(comparison).toBeVisible();
+      const verdict = page.getByRole("region", { name: "Likely signal" });
+      const comparisonTop = await comparison.evaluate(el => el.getBoundingClientRect().top);
+      expect(comparisonTop).toBeLessThan(await verdict.evaluate(el => el.getBoundingClientRect().top));
+      await capture("before");
+      const reveal = comparison.getByRole("button", { name: "Reveal my result" });
+      await reveal.focus();
+      await page.keyboard.press("Enter");
+      await expect(comparison.getByRole("status")).toContainText("inside the predicted range");
+      await capture("during");
+      await expect(comparison.getByText("+11%", { exact: true })).toHaveCSS("opacity", "1");
+      await capture("after");
+      await expect(comparison.getByText("+8% to +15%", { exact: true })).toBeVisible();
+      await expect(comparison.getByRole("button", { name: "Replay comparison" })).toBeFocused();
+      if (reducedMotion === "reduce") {
+        expect(await comparison.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
+      }
+      await expect(page.getByRole("region", { name: "What you learned about you" })).toContainText("Waiting for your written results");
+      await expect(page.getByRole("region", { name: "What to test next" })).toContainText("Waiting for your follow-up results");
+      await expect(page.getByRole("link", { name: "Run this experiment" })).toHaveCount(0);
+      expect(counts.proposals).toBe(0);
+    });
+  }
 }

@@ -1,6 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion, type Variants } from "motion/react";
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { ProgressBar } from "@/components/onboarding/progress-bar";
 import { RhythmSummary } from "@/components/onboarding/rhythm-summary";
@@ -14,8 +16,8 @@ import { placeHabits } from "@/lib/rhythm/habits";
 // Steps slide in the direction you're going, so back and forward feel different.
 const slide: Variants = {
   enter: (dir: number) => ({ x: dir * 48, opacity: 0 }),
-  center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
-  exit: (dir: number) => ({ x: dir * -48, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }),
+  center: { x: 0, opacity: 1, transition: { duration: MOTION_DURATION.step, ease: MOTION_EASE.settle } },
+  exit: (dir: number) => ({ x: dir * -48, opacity: 0, transition: { duration: MOTION_DURATION.panel, ease: "easeIn" } }),
 };
 
 const noSubscribe = () => () => {};
@@ -35,6 +37,7 @@ const SUMMARY_STEP = STEPS.length + 1;
 
 /** step 0 is the intro; steps 1..n are STEPS[0..n-1]; then the summary. */
 function Flow() {
+  const reduce = useReducedMotion();
   const [step, setStep] = useState(() => Math.min(loadDraft().step, SUMMARY_STEP));
   // Set when "Change" on the summary sends the user back to one question.
   const [returnToSummary, setReturnToSummary] = useState(false);
@@ -119,10 +122,10 @@ function Flow() {
           <motion.div
             key={step}
             custom={direction}
-            variants={slide}
-            initial="enter"
-            animate="center"
-            exit="exit"
+            variants={reduce ? undefined : slide}
+            initial={reduce ? false : "enter"}
+            animate={reduce ? undefined : "center"}
+            exit={reduce ? undefined : "exit"}
             className="flex-1 pt-8 pb-6 sm:flex-none sm:pt-12"
           >
             {isSummary ? (
@@ -241,7 +244,7 @@ function Intro({ headingRef }: { headingRef: React.Ref<HTMLHeadingElement> }) {
 /** Same shape as a question step, shown while saved answers load. */
 function StepSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-xl animate-pulse px-4 pt-10 sm:px-8">
+    <div aria-hidden="true" className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-8">
       <div className="h-3 w-16 rounded-pill bg-line" />
       <div className="mt-4 h-8 w-3/4 rounded-pill bg-line" />
       <div className="mt-3 h-4 w-full rounded-pill bg-line" />

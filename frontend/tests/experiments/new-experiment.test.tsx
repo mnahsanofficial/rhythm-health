@@ -153,6 +153,8 @@ describe("new experiment flow", () => {
     await user.click(screen.getByRole("button", { name: "Retry" }));
 
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    expect(screen.queryByRole("textbox", { name: "Your question or goal" })).not.toBeInTheDocument();
+    expect(within(preview).getByRole("heading", { name: proposalQuestion(), level: 1 })).toBeVisible();
     expect(within(preview).getByRole("heading", { name: proposalQuestion() })).toBeVisible();
     expect(within(preview).getByText("Light evening activity may improve next-morning energy.")).toBeVisible();
     expect(within(preview).getByText("Walk for 20 minutes")).toBeVisible();

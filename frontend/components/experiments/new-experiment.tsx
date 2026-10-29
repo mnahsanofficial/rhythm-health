@@ -1,9 +1,11 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listExperiments, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
@@ -19,6 +21,7 @@ function signedPercent(value: number) {
 }
 
 function PredictionRange({ min, max }: { min: number; max: number }) {
+  const reduce = useReducedMotion();
   const extent = Math.max(Math.abs(min), Math.abs(max), 1);
   const span = extent * 2;
   const position = (value: number) => ((value + extent) / span) * 100;
@@ -31,11 +34,11 @@ function PredictionRange({ min, max }: { min: number; max: number }) {
       <div className="relative h-3 rounded-pill bg-line">
         <div className="absolute inset-y-0 w-px bg-ink/50" style={{ left: "50%" }} />
         <motion.div
-          initial={{ scaleX: 0 }}
+          initial={reduce ? false : { scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reduce ? 0 : MOTION_DURATION.reveal, ease: MOTION_EASE.settle }}
           style={{ left: `${left}%`, width: `${Math.max(width, 3)}%`, transformOrigin: "left" }}
-          className="absolute inset-y-0 rounded-pill bg-moss"
+          className="absolute inset-y-0 rounded-pill bg-night"
         />
       </div>
       <div className="mt-2 flex justify-between font-mono text-caption text-muted">
@@ -51,6 +54,7 @@ export function ForecastCard({ prediction, metrics }: {
   prediction: Experiment["prediction"];
   metrics: Experiment["metrics"];
 }) {
+  const reduce = useReducedMotion();
   const metricLabel = metrics.find((metric) => metric.key === prediction.target_metric)?.label
     ?? prediction.target_metric;
   const directionText = {
@@ -60,11 +64,11 @@ export function ForecastCard({ prediction, metrics }: {
   }[prediction.direction];
 
   return (
-    <div className="rounded-card bg-moss-tint p-5 sm:p-6">
-      <p className="font-mono text-caption text-moss">The forecast</p>
-      <h3 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h3>
-      <p className="mt-3 font-display text-headline" aria-live="polite">
-        <motion.span initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.45 }}>
+    <div className="rounded-card border-t-4 border-night bg-night-tint p-5 sm:p-7">
+      <p className="text-caption font-medium text-night">The original forecast</p>
+      <h2 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h2>
+      <p className="mt-4 font-mono text-headline tracking-tight tabular-nums">
+        <motion.span initial={reduce ? false : { opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: reduce ? 0 : MOTION_DURATION.response }}>
           {signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}
         </motion.span>
       </p>
@@ -98,7 +102,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
   return (
     <section
       aria-label="Experiment and prediction preview"
-      className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8"
+      className="mt-6"
     >
       {result.classification.risk === "review" && (
         <div role="note" className="mb-6 rounded-card bg-clay-tint p-4 text-clay">
@@ -108,15 +112,18 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
       )}
 
       <p className="font-mono text-caption text-moss">Your question</p>
-      <h2 className="mt-2 font-display text-headline">{proposal.question}</h2>
+      <h1 className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{proposal.question}</h1>
 
-      <div className="mt-7">
-        <h3 className="font-display text-title">The hypothesis</h3>
+      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+      <div>
+
+      <div>
+        <h2 className="font-display text-title">The hypothesis</h2>
         <p className="mt-2 text-muted">{proposal.hypothesis}</p>
       </div>
 
       <div className="mt-7 rounded-card bg-oat p-5">
-        <h3 className="font-display text-title">The small change</h3>
+        <h2 className="font-display text-title">The small change</h2>
         <p className="mt-3 font-medium">{proposal.intervention.action}</p>
         <dl className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
@@ -132,7 +139,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
 
       <div className="mt-7">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-display text-title">A {totalDays}-day timeline</h3>
+          <h2 className="font-display text-title">A {totalDays}-day timeline</h2>
           <p className="text-caption text-muted">{proposal.baseline_days} baseline · {proposal.intervention_days} test</p>
         </div>
         <ol className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-10">
@@ -153,7 +160,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
       </div>
 
       <div className="mt-7 border-t border-line pt-6">
-        <h3 className="font-display text-title">What we&apos;ll notice</h3>
+        <h2 className="font-display text-title">What we&apos;ll notice</h2>
         <ul className="mt-3 space-y-2">
           {proposal.metrics.map((metric) => (
             <li key={metric.key} className="flex items-center gap-3">
@@ -165,8 +172,10 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
         </ul>
       </div>
 
-      <div className="mt-8">
+      </div>
+      <aside className="lg:sticky lg:top-8" aria-label="Your prediction">
         <ForecastCard prediction={prediction} metrics={proposal.metrics} />
+      </aside>
       </div>
 
       <div className="mt-7 rounded-card border border-line p-4 text-body">
@@ -207,9 +216,20 @@ function ProposalSkeleton() {
       <p role="status" className="text-lead font-medium">
         Finding a small change you can test…
       </p>
-      <p className="mt-2 text-muted">
-        We&apos;re checking your question, shaping a plan around your rhythm, and estimating what might change. This can take a little while.
-      </p>
+      <p className="mt-2 text-muted">Your plan and forecast will arrive together. This can take a little while.</p>
+      <ol aria-label="What goes into your experiment" className="mt-6 grid gap-4 sm:grid-cols-3">
+        {[
+          ["01", "A suitable question", "Check that this fits a small habit experiment."],
+          ["02", "A plan for your day", "Shape one change around your routine."],
+          ["03", "An honest forecast", "Estimate a range, including what is uncertain."],
+        ].map(([number, title, description]) => (
+          <li key={number} className="border-t border-line pt-3">
+            <span aria-hidden="true" className="font-mono text-caption text-moss">{number}</span>
+            <p className="mt-1 font-medium">{title}</p>
+            <p className="mt-1 text-caption text-muted">{description}</p>
+          </li>
+        ))}
+      </ol>
       <div aria-hidden="true" className="mt-7 space-y-5 motion-safe:animate-pulse">
         <div className="h-8 w-3/4 rounded-pill bg-line" />
         <div className="h-16 rounded-card bg-oat" />
@@ -269,6 +289,7 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
 
   useEffect(() => {
     if (result) output.current?.focus();
+    else input.current?.focus();
   }, [result]);
 
   async function submit() {
@@ -376,15 +397,16 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
       {profileError ? <div role="alert" className="rounded-card bg-clay-tint p-6 text-clay">
         <p>Couldn&apos;t load your rhythm: {profileError}</p>
         <button className={`${secondary} mt-4 text-ink`} onClick={() => { setProfileError(null); setAttempt((n) => n + 1); }}>Try again</button>
-      </div> : <div role="status"><span className="sr-only">Loading your rhythm</span><div aria-hidden="true" className="space-y-6 motion-safe:animate-pulse"><div className="h-12 w-3/4 rounded-pill bg-line" /><div className="h-56 rounded-card bg-paper" /><div className="h-32 rounded-card bg-paper" /></div></div>}
+      </div> : <div role="status"><span className="sr-only">Loading your rhythm</span><div aria-hidden="true" className="space-y-6"><div className="h-12 w-3/4 rounded-pill bg-line" /><div className="h-56 rounded-card bg-paper" /><div className="h-32 rounded-card bg-paper" /></div></div>}
     </div>;
   }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
       <Link href="/" className="inline-flex min-h-11 items-center text-moss hover:underline">← Your lab</Link>
-      <div className="mt-5 grid gap-10 lg:grid-cols-[1fr_280px] lg:gap-14">
+      <div className={`mt-5 grid gap-10 ${result?.safety.allowed ? "" : "lg:grid-cols-[1fr_280px] lg:gap-14"}`}>
         <div className="min-w-0">
+          {!result?.safety.allowed && <>
           <p className="font-mono text-caption text-moss">A little curiosity, a little evidence</p>
           <h1 className="mt-3 font-display text-display-sm tracking-tight sm:text-display">Ask a question.</h1>
           <p className="mt-4 text-lead text-muted">What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.</p>
@@ -406,6 +428,7 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
               {checkingActive ? "Checking your experiment…" : busy ? "Shaping your experiment…" : "Design my experiment"}
             </button>
           </form>
+          </>}
 
           {checkingActive && <p role="status" className="mt-4 text-caption text-muted">Checking whether you already have an active experiment…</p>}
 
@@ -456,14 +479,14 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
         </div>
       )}
         </div>
-        <aside className="lg:pt-2">
+        {!result?.safety.allowed && <aside className="lg:pt-2">
           <div className="rounded-card bg-moss-tint p-6">
             <p className="font-display text-title">Start with a hunch</p>
             <p className="mt-2 text-caption text-muted">Inspired by your goals and everyday questions. Pick one, then make it yours.</p>
             <ul className="mt-5 divide-y divide-moss/20">{starters(profile).map((starter) => <li key={starter}><button disabled={busy} type="button" onClick={() => chooseQuestion(starter)} className="min-h-11 w-full py-4 text-left text-body text-ink hover:text-moss disabled:opacity-50">{starter}<span aria-hidden="true" className="ml-2 text-moss">↗</span></button></li>)}</ul>
           </div>
           <p className="mt-5 px-1 text-caption text-muted">First a plan. Then a prediction. You decide whether to begin.</p>
-        </aside>
+        </aside>}
       </div>
     </div>
   );

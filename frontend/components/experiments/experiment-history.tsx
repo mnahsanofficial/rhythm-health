@@ -1,6 +1,9 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api/client";
@@ -23,6 +26,7 @@ export function ExperimentHistory() {
   const { session, loading: sessionLoading } = useSession();
   const [load, setLoad] = useState<HistoryLoad>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [order, setOrder] = useState<"newest" | "oldest">("newest");
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -58,7 +62,7 @@ export function ExperimentHistory() {
 
   if (load.kind === "error") {
     return (
-      <main className="mx-auto w-full max-w-4xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+      <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
         <Link href="/" className={secondary}>← Your lab</Link>
         <div role="alert" className="mt-8 rounded-card bg-clay-tint p-6 text-clay sm:p-8">
           <h1 className="font-display text-headline">We couldn&apos;t load your history.</h1>
@@ -74,12 +78,17 @@ export function ExperimentHistory() {
             Try again
           </button>
         </div>
-      </main>
+      </div>
     );
   }
 
+  const ordered = [...load.experiments].sort((a, b) => {
+    const stamp = (experiment: Experiment) => Date.parse(experiment.completed_at ?? experiment.created_at) || 0;
+    return order === "newest" ? stamp(b) - stamp(a) : stamp(a) - stamp(b);
+  });
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
       <Link href="/" className={secondary}>← Your lab</Link>
       <div className="mt-5">
         <p className="font-mono text-caption text-moss">What you&apos;ve learned</p>
@@ -96,17 +105,37 @@ export function ExperimentHistory() {
           <Link href="/experiments/new" className={`${primary} mt-5`}>Test a new question</Link>
         </section>
       ) : (
-        <ol aria-label="Completed experiments" className="mt-8 flex flex-col gap-5">
-          {load.experiments.map((experiment) => (
-            <HistoryItem key={experiment.id} experiment={experiment} />
-          ))}
-        </ol>
+        <>
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
+            <p role="status" className="font-mono text-caption text-muted tabular-nums">
+              {ordered.length} completed {ordered.length === 1 ? "experiment" : "experiments"} · {order} first
+            </p>
+            <fieldset className="flex gap-1 rounded-pill bg-paper p-1">
+              <legend className="sr-only">Sort experiments</legend>
+              {(["newest", "oldest"] as const).map(value => (
+                <label
+                  key={value}
+                  className={`inline-flex min-h-11 cursor-pointer items-center rounded-pill px-4 text-body has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${order === value ? "bg-moss text-paper" : "text-muted hover:text-ink"}`}
+                >
+                  <input type="radio" name="history-order" value={value} checked={order === value} onChange={() => setOrder(value)} className="sr-only" />
+                  {value === "newest" ? "Newest first" : "Oldest first"}
+                </label>
+              ))}
+            </fieldset>
+          </div>
+          <ol aria-label="Completed experiments" className="mt-5 divide-y divide-line border-b border-line">
+            {ordered.map((experiment) => (
+              <HistoryItem key={experiment.id} experiment={experiment} />
+            ))}
+          </ol>
+        </>
       )}
-    </main>
+    </div>
   );
 }
 
 function HistoryItem({ experiment }: { experiment: Experiment }) {
+  const reduce = useReducedMotion();
   const [reportState, setReportState] = useState<
     | { kind: "loading" }
     | { kind: "ready"; report: Report | null }
@@ -148,25 +177,36 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
     : null;
 
   return (
-    <li>
-      <article aria-label={experiment.question} className="rounded-card border border-line bg-paper p-5 sm:p-7">
-        <p className="font-mono text-caption text-muted">
-          {completedOn ? `Finished ${completedOn}` : "Completed experiment"}
-        </p>
+    <motion.li layout={reduce ? false : "position"} transition={{ duration: reduce ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}>
+      <article aria-label={experiment.question} className="py-7 sm:py-9">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-mono text-caption text-muted">{completedOn ? `Finished ${completedOn}` : "Completed experiment"}</p>
+          {experiment.is_seeded && <span className="rounded-pill bg-line px-3 py-1 text-caption text-ink">Sample experiment</span>}
+        </div>
         <h2 className="mt-2 font-display text-title sm:text-headline">{experiment.question}</h2>
 
-        <dl className="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-3">
+        <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-5 lg:grid-cols-[1fr_1fr_0.8fr]">
           <div>
-            <dt className="text-caption text-muted">Prediction</dt>
+            <dt className="border-l-2 border-night pl-3 text-caption text-muted">Prediction</dt>
             <dd className="mt-1 font-medium">
-              {predictionMetricLabel} {formatRange(experiment.prediction.expected_change_min, experiment.prediction.expected_change_max)}
+              <span className="block text-caption font-normal text-muted">{predictionMetricLabel}</span>{" "}
+              <span className="font-mono text-title text-night tabular-nums">{formatRange(experiment.prediction.expected_change_min, experiment.prediction.expected_change_max)}</span>
             </dd>
           </div>
           {reportState.kind === "loading" && (
-            <div role="status" className="text-caption text-muted">Loading report…</div>
+            <>
+              <div role="status" className="min-h-16 text-caption text-muted">
+                Loading report…
+                <div aria-hidden="true" className="mt-2 h-7 w-24 rounded-pill bg-line" />
+              </div>
+              <div aria-hidden="true" className="min-h-16">
+                <div className="h-4 w-12 rounded-pill bg-line" />
+                <div className="mt-3 h-7 w-28 rounded-pill bg-line" />
+              </div>
+            </>
           )}
           {reportState.kind === "error" && (
-            <div className="sm:col-span-2" role="alert">
+            <div className="col-span-2" role="alert">
               <dt className="text-caption text-clay">Couldn&apos;t load this report</dt>
               <dd className="mt-1 text-caption text-muted">{reportState.message}</dd>
               <button
@@ -182,7 +222,7 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
             </div>
           )}
           {reportState.kind === "ready" && !report && (
-            <div className="sm:col-span-2">
+            <div className="col-span-2">
               <dt className="text-caption text-muted">Results</dt>
               <dd className="mt-1 text-body text-muted">Report not available yet.</dd>
             </div>
@@ -190,16 +230,17 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
           {report && (
             <>
               <div>
-                <dt className="text-caption text-muted">Observed outcome</dt>
+                <dt className="border-l-2 border-moss pl-3 text-caption text-muted">Observed outcome</dt>
                 <dd className="mt-1 font-medium">
-                  {observedMetricLabel} {primaryMetric?.percent_change === null || primaryMetric?.percent_change === undefined
+                  <span className="block text-caption font-normal text-muted">{observedMetricLabel}</span>{" "}
+                  <span className="font-mono text-title tabular-nums">{primaryMetric?.percent_change === null || primaryMetric?.percent_change === undefined
                     ? "Not enough data"
-                    : signedPercent(primaryMetric.percent_change)}
+                    : signedPercent(primaryMetric.percent_change)}</span>
                 </dd>
               </div>
               <div>
                 <dt className="text-caption text-muted">Signal</dt>
-                <dd className="mt-1 font-medium">{SIGNAL_COPY[report.analysis.signal.classification].label}</dd>
+                <dd className="mt-2 inline-flex rounded-pill bg-moss-tint px-3 py-1 text-body font-medium text-ink">{SIGNAL_COPY[report.analysis.signal.classification].label}</dd>
               </div>
             </>
           )}
@@ -209,7 +250,7 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
           Open Lab Report
         </Link>
       </article>
-    </li>
+    </motion.li>
   );
 }
 
@@ -223,16 +264,16 @@ function formatRange(min: number, max: number) {
 
 function HistorySkeleton() {
   return (
-    <main aria-busy="true" className="mx-auto w-full max-w-4xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div aria-busy="true" className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
       <span className="sr-only">Loading your experiment history</span>
-      <div aria-hidden="true" className="animate-pulse">
+      <div aria-hidden="true" className="space-y-1">
         <div className="h-11 w-28 rounded-pill bg-line" />
         <div className="mt-8 h-4 w-40 rounded-pill bg-line" />
         <div className="mt-3 h-12 w-3/4 rounded-pill bg-line" />
         <div className="mt-3 h-6 w-full max-w-xl rounded-pill bg-line" />
         <div className="mt-8 flex flex-col gap-5">
           {[0, 1].map((item) => (
-            <div key={item} className="rounded-card border border-line bg-paper p-5 sm:p-7">
+            <div key={item} className="border-b border-line py-7">
               <div className="h-4 w-36 rounded-pill bg-line" />
               <div className="mt-4 h-7 w-4/5 rounded-pill bg-line" />
               <div className="mt-7 grid gap-4 sm:grid-cols-3">
@@ -242,6 +283,6 @@ function HistorySkeleton() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

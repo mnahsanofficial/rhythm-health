@@ -237,8 +237,19 @@ function GoalsBody({ draft, update }: StepProps) {
 // step shows the whole ring; wide screens see markers arrive in the side panel.
 function HabitsBody({ draft, update }: StepProps) {
   return (
+    <>
+    <p role="status" className="mb-5 border-l-2 border-moss pl-4 text-body text-muted">
+      {draft.regular_habits?.length ?? 0} {(draft.regular_habits?.length ?? 0) === 1 ? "habit" : "habits"} in your rhythm. Pick what is already part of your day.
+    </p>
     <ChipPicker
       legend="Habits"
+      groups={["Morning", "Afternoon", "Evening"].map((label, index) => ({
+        label,
+        options: HABIT_PRESETS.filter(h => {
+          const hour = "time" in h ? Number(h.time.slice(0, 2)) : 23;
+          return index === 0 ? hour < 12 : index === 1 ? hour >= 12 && hour < 18 : hour >= 18;
+        }).map(h => h.label),
+      }))}
       options={HABIT_PRESETS.map((h) => h.label)}
       value={draft.regular_habits ?? []}
       onChange={(regular_habits) => update({ regular_habits })}
@@ -246,6 +257,7 @@ function HabitsBody({ draft, update }: StepProps) {
       addLabel="Something else you do most days?"
       addPlaceholder="e.g. Tea before bed"
     />
+    </>
   );
 }
 
@@ -261,6 +273,11 @@ const CONSTRAINT_OPTIONS = [
 
 function ConstraintsBody({ draft, update }: StepProps) {
   return (
+    <>
+    <div role="status" className="mb-5 border-l-2 border-night pl-4">
+      <p className="font-medium">{draft.constraints?.length ?? 0} {(draft.constraints?.length ?? 0) === 1 ? "thing" : "things"} to work around</p>
+      <p className="text-body text-muted">Your experiment should fit your life. These help us choose a manageable change.</p>
+    </div>
     <ChipPicker
       legend="Constraints"
       options={CONSTRAINT_OPTIONS}
@@ -270,6 +287,7 @@ function ConstraintsBody({ draft, update }: StepProps) {
       addLabel="Anything else?"
       addPlaceholder="e.g. Dog walks at 7am"
     />
+    </>
   );
 }
 

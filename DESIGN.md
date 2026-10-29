@@ -1,25 +1,16 @@
 # Design
 
-This file records the design as it is built in `frontend/`. The tokens come from `frontend/app/globals.css`; if this file and that one disagree, `globals.css` is right and this file is out of date.
+Rhythm Health Lab turns a daily habit question into a small personal experiment. The visual language comes from sleep, daylight, routines and evidence collected over time.
 
-## Overview
+## Direction
 
-**A day's light.**
-- **Colours:** oat paper and ink. Moss for actions, night blue for sleep, a sun yellow for daylight markers.
-- **Type:** a soft serif for headings, a plain sans for reading, a mono for every number.
-- **The signature visual:** the **rhythm ring**, a 24-hour dial with midnight at the top, sleep as a night-blue arc, and habits as sun dots. It appears on the home page (sample data), during onboarding and on the summary (the user's own answers).
+**A day's light:** oat and paper surfaces, ink text, moss actions and observations, night-blue sleep and forecasts, and sun-yellow habit markers. Fraunces gives questions their voice, Instrument Sans keeps forms readable, and Geist Mono carries times and measurements.
 
-**Key characteristics:**
+Design at 390px first, then check at 1440px. Use type, spacing and dividers to establish hierarchy. Cards group a decision or comparison; history uses rows. Avoid decorative gradients, repeated shadows, all-caps labels and a fade-up on every section.
 
-- Mobile-first: designed at 390px, then widened.
-- Light mode only for V1.
-- Colour by role, from tokens only. No hex values outside `globals.css`.
-- Calm motion that settles into place, and turns off with reduced motion.
-- Honest data: results read as a pattern, not proof, and sample data is labelled.
+## Visual tokens
 
-## Tokens
-
-All tokens live in the `@theme` block of `frontend/app/globals.css` (Tailwind 4, CSS-first, no `tailwind.config.js`). Use them as Tailwind classes: `bg-oat`, `text-muted`, `border-line`, `rounded-card`, `font-display`.
+Colour, type, shape and easing live in `frontend/app/globals.css`. Use Tailwind token classes; do not put literal colours in components.
 
 ### Colour
 
@@ -51,79 +42,79 @@ Fonts load through `next/font/google` in `frontend/app/layout.tsx`.
 
 Scale: `text-caption` 14, `text-body` 16, `text-lead` 18, `text-title` 24, `text-headline` 32, `text-display-sm` 44, `text-display` 60 (px). Each size sets its own line height. Large headings use `tracking-tight` and often `text-balance`.
 
-### Shape and motion
+### Shape and spacing
 
-| Token | Value | Use |
-|---|---|---|
-| `rounded-card` | 1.25rem | Cards, inputs, alert boxes |
-| `rounded-pill` | 999px | Buttons, chips, meters, skeleton lines |
-| `ease-settle` | `cubic-bezier(0.22, 1, 0.36, 1)` | The easing for things settling into place; the same curve is written as `[0.22, 1, 0.36, 1]` in `motion` transitions |
-
-Spacing uses Tailwind's default scale. There is one shadow in the app: the "You" marker on the prediction bar.
-
-## Layout
-
-- **Page container:** `mx-auto w-full max-w-6xl px-4 sm:px-8`, so a 16px side gutter on phones.
-- **Content widths:**
-  - forms and single-column flows: `max-w-xl`, `max-w-2xl` or `max-w-3xl`;
-  - sign-in: `max-w-md`.
-- **Wide screens:** onboarding puts the rhythm ring in a sticky side panel; on phones it's hidden until the summary.
-- **Sticky bars:** onboarding's Back/Continue bar sticks to the bottom on phones, with a blurred `oat` background.
-
-## Components
-
-There is no component library and no `cva`/`cn` helper. Components are plain React with Tailwind classes. Shared class strings are written as constants at the top of the file (for example `primary` in `home-cta.tsx` and `new-experiment.tsx`).
-
-| Pattern | How it's built |
+| Token or convention | Value / use |
 |---|---|
-| Primary button | `min-h-12 rounded-pill bg-moss px-6 text-lead font-medium text-paper hover:bg-moss-deep active:scale-[0.98]`; disabled at `opacity-40` to `opacity-60` |
-| Secondary button | `min-h-11 rounded-pill border border-line bg-paper px-5`, border turns moss on hover |
-| Text link or action | `font-medium text-moss underline-offset-4 hover:underline` |
-| Card | `rounded-card border border-line bg-paper p-5` to `p-8` |
-| Error | `role="alert"`, `rounded-card bg-clay-tint p-3 text-clay`, plus a "Try again" button where a retry makes sense |
-| Info or success | `role="status"`, `bg-moss-tint text-ink` |
-| Loading | A `…Skeleton` component in the shape of the content: `animate-pulse` blocks in `bg-line` |
-| Choice lists and chips | Real radio or checkbox inputs inside labels (`onboarding/choice-group.tsx`, `onboarding/chip-picker.tsx`) |
-| Scale input (1–10) | A radio grid, 5 per row on phones and 10 on wider screens, each 48px tall (`checkins/metric-input.tsx`) |
-| Signal tag | `likely_signal`: `bg-moss text-paper`; `possible_signal`: `bg-moss-tint text-moss`; `unclear`: `bg-line text-ink`; `probably_noise`: `bg-oat text-muted` with a border (`report/lab-report.tsx`) |
-| Charts | No chart library. `report/day-chart.tsx` is an SVG for areas and bands, with HTML for lines and labels and 44px tap targets on each day; `report/prediction-vs-reality.tsx` is a range bar with a "You" marker |
+| `rounded-card` | 1.25rem; grouped controls, comparisons and alerts |
+| `rounded-pill` | 999px; actions, chips, markers and meters |
+| Page gutters | `px-4 sm:px-8`; 16px on phones |
+| Page width | `max-w-6xl`; focused flows use narrower containers |
+| Tap targets | At least 44px; primary actions generally 48px |
+| Inputs | At least 16px on phones |
+| Focus | Visible moss outline, 2px with 3px offset |
 
-### Folders
+Use Tailwind's spacing scale. Keep the typography and palette consistent across public and signed-in pages. Current comparison markers use a border rather than a shadow.
 
-`frontend/components/`:
+## Motion system
 
-| Folder | What's in it |
+Motion answers a user action or shows a real state change. It never delays a decision, invents progress or obscures data. Animate **transform and opacity only**. The library is `motion/react`; native controls and the rhythm SVG also use CSS.
+
+JavaScript tokens are in `frontend/lib/motion.ts`, in seconds. Their CSS mirrors are in `globals.css`, in milliseconds. Keep the two representations aligned. Use `MOTION_DURATION` / `MOTION_EASE` in Motion and `var(--motion-…)` / `var(--ease-settle)` in CSS.
+
+| Name | JS seconds | CSS | Role |
+|---|---:|---|---|
+| `press` | 0.15 | `--motion-press: 150ms` | Choice ticks and press feedback |
+| `exit` | 0.12 | `--motion-exit: 120ms` | Recorded-day panel departure |
+| `panel` | 0.20 | `--motion-panel: 200ms` | Day details; onboarding departure |
+| `response` | 0.28 | `--motion-response: 280ms` | Check-in confirmation, progress, habit arrival, history reorder |
+| `step` | 0.35 | `--motion-step: 350ms` | Directional onboarding entry |
+| `reveal` | 0.48 | `--motion-reveal: 480ms` | Forecast range, completed rhythm arc, report comparison |
+| `settle` easing | `[0.22, 1, 0.36, 1]` | `--ease-settle` | A change settling into place |
+
+Small existing selection springs, chart fades and panel departures keep their local settings. They are supporting interactions, not additional signature moments. Avoid inventing another timing where a shared role fits.
+
+### Two memorable moments
+
+1. **The completed rhythm.** Finishing onboarding assembles the person's sleep and chosen habits into a day. The arc arrives once over 480ms and habit markers over 280ms. Geometry and sleep duration are final immediately. Answers, editing and save controls remain available throughout; there is no stagger delaying them.
+2. **Prediction versus reality.** The comparison leads the Lab Report. The original forecast stays visible and fixed. Reveal my result brings in the measured value and range marker over 480ms using opacity and 10px translation. Replay reuses the loaded report. Keyboard focus stays on the button and a polite status announces the result. No intermediate numerical estimates or confetti.
+
+### Everyday loop
+
+| Screen | Interaction and feedback |
 |---|---|
-| `onboarding/` | The seven questions and the summary |
-| `auth/` | Sign-in and sign-up |
-| `experiments/` | Ask a question, the proposal, the dashboard and timeline |
-| `checkins/` | The daily check-in |
-| `report/` | The Lab Report |
+| Check-in | Native choices respond to selection; the answered count tracks valid answers. Progress uses scaleX. A successful save lands a tick and today's marker and focuses the confirmation heading. “Not today” counts as an answer, not adherence. |
+| Personal home | Own question, today's action, phase and recorded days. Selecting a logged day reveals its values with a 6px/opacity panel transition. Space is reserved so surrounding navigation stays stable. |
+| Proposal | Waiting explains what goes into the response without claiming live stage completion. The finished plan replaces entry and restores focus appropriately. Forecast endpoints remain readable while the range fills. |
+| Onboarding | Steps move in the direction of navigation; focus moves to the heading. Habits follow morning, afternoon and evening; constraints explain how the plan should fit life. Choices retain native keyboard behavior and Skip. |
+| Lab Report | Comparison first; verdict, adherence and daily evidence follow. Written sections without backend content show waiting states. |
+| Public landing | A labelled sample rhythm can be explored with native habit checkboxes. Only the example's component state changes; no request or onboarding draft is written. |
+| History | Native newest/oldest controls reorder existing rows through position transforms. Report state stays with each experiment; seeded rows are labelled as samples. |
 
-Shared pieces sit at the top level: `site-header.tsx`, `auth-nav.tsx`, `home-cta.tsx`, `rhythm-ring.tsx` and `motion-provider.tsx`.
+Do not add global page entrance effects. Preserve context through persistent questions, directional step transitions, focused headings and stable panels.
 
-## Motion
+### Loading and reduced motion
 
-- **Library:** `motion` (`motion/react`).
-- **Reduced motion:** `MotionProvider` wraps the app in `MotionConfig reducedMotion="user"`. Components with their own animations also check `useReducedMotion()`. `globals.css` cuts CSS animations and transitions to near zero under `prefers-reduced-motion`.
-- **Timing:**
-  - most transitions take 0.2–0.6s on the settle curve;
-  - markers that land (the "You" dot, ticks) use a quick, well-damped spring;
-  - onboarding steps slide 48px in the direction you're going.
-- **Numbers that matter count up once** (`CountUp` in `prediction-vs-reality.tsx`), so a result arrives rather than just appearing.
+Ordinary loading skeletons are static and shaped like the coming content. **Only the AI proposal wait may pulse** while its actual request is pending. Never mark a stage complete or display a percentage unless the API provides that progress.
 
-## Lessons from building it
+`MotionConfig reducedMotion="user"` disables transform/layout motion but preserves opacity; it is not sufficient on its own. Custom transitions must use `useReducedMotion()` to show the final state immediately. CSS arrivals use `motion-safe:` and native transitions use the reduced-motion override. Never lose text, results or controls when motion is reduced.
 
-- Don't put `whileTap` on a `<label>`: it makes the label focusable and breaks radio groups. Press feedback on choices is CSS `active:` instead.
-- Round SVG coordinates calculated with `Math.sin` and `Math.cos` (`lib/rhythm/time.ts`). Otherwise the server and browser render slightly different numbers and hydration fails.
-- On an SVG stretched with `preserveAspectRatio="none"`, draw dashed lines and anything that must keep its shape in HTML, not SVG.
-- After a step change, move focus to the new heading (`tabIndex={-1}`, `outline-none`), so keyboard and screen-reader users land on the new question.
+Server and client must produce identical initial markup. Do not branch SVG initial styles on a browser-only motion preference. The ring uses deterministic geometry and CSS media queries; the hydration regression explicitly tests differing server/browser preferences.
 
-## Accessibility
+## Components and data
 
-- WCAG AA contrast for all text.
-- Touch targets of at least 44px.
-- A visible moss focus ring (`:focus-visible`, 2px, offset 3px).
-- A skip link to `#main`.
-- A label for every input.
-- Details: [`docs/rules/ui-quality.md`](docs/rules/ui-quality.md).
+- Components are plain React and Tailwind; there is no component kit or class-variant framework.
+- Pages get data through `lib/data/*`. Mock data belongs in `lib/mock/*` and every sample surface is labelled.
+- Signed-in home resolves the session before mounting private data. Public marketing and the sample ring do not appear there.
+- `experiments/experiment-progress.tsx` shares the daily action and timeline between home and experiment detail.
+- Native radio/checkbox inputs belong inside labels. Never add `whileTap` to their labels or wrappers; CSS press feedback preserves keyboard behavior. Reserve tick space instead of animating width.
+- Errors use clay and `role="alert"`, with retry where useful. Status messages are polite. API calls retain loading, error and empty states.
+- SVG coordinates calculated with trigonometry are rounded. On stretched SVGs, use HTML for dashed lines and elements whose shapes must stay fixed.
+- Forms cannot nest. Onboarding summary/account controls sit outside the step form.
+- A short experiment shows a pattern, not proof. Keep prediction ranges and uncertainty; do not imply medical certainty.
+
+## Evidence and maintenance
+
+See [UI motion rules](docs/rules/ui-motion.md), [UI quality](docs/rules/ui-quality.md) and [testing](docs/rules/testing.md). The [screenshot index](docs/screenshots/ui-motion/README.md) links baseline and final screens and the before/during/after frames.
+
+Every visible change is checked in the browser at 390px and 1440px. New interactive behavior and reduced motion get behavior tests. Keep screenshots as evidence, not snapshot assertions.
