@@ -272,13 +272,19 @@ describe("ask from Your lab", () => {
     expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
     const toggle = screen.getByRole("button", { name: "Test another habit" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const summary = screen.getByRole("heading", { name: experiment.question });
+    expect(toggle.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await user.click(toggle);
     const field = screen.getByRole("textbox", { name: "Your question or goal" });
     expect(field).toHaveFocus();
     expect(screen.getByRole("alert")).toHaveTextContent("You already have an active experiment.");
     expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
-    expect(screen.getByText("Day 4 of 10")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Ask a question.", level: 2 })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "See your experiment" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Day 4 of 10")).not.toBeVisible();
+    expect(screen.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Your observations, day by day." })).toBeVisible();
+    expect(screen.queryByText("Start with a hunch")).not.toBeInTheDocument();
     await user.type(field, "Does less caffeine improve my focus?");
     expect(screen.getByRole("button", { name: "Design my experiment" })).toBeDisabled();
     // Also guard the submit handler if the disabled button is bypassed.
@@ -286,6 +292,8 @@ describe("ask from Your lab", () => {
     expect(propose).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Close question" }));
     expect(screen.getByRole("button", { name: "Test another habit" })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(screen.getByRole("link", { name: "See your experiment" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Test another habit" }));
     expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue("Does less caffeine improve my focus?");
   });

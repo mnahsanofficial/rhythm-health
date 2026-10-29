@@ -19,7 +19,7 @@ Product decisions are made together (PRD §27).
 
 The core loop works end to end on localhost: onboarding, ask a question, see the prediction, start, daily check-ins, finish, and the Lab Report's calculated sections.
 
-Signed-in users can ask directly on Your lab (`/`); `/experiments/new` uses the same form and proposal flow. With an active experiment, Your lab keeps today's check-in visible and offers “Test another habit” in place. Until the backend allows more than one active experiment, the form explains the limit and blocks paid proposal requests.
+Signed-in users can ask directly on Your lab (`/`); `/experiments/new` uses the same form and proposal flow. With an active experiment, Your lab keeps today's check-in visible and offers “Test another habit” at the top, replacing the experiment summary with the form in place until closed. Until the backend allows more than one active experiment, the form explains the limit and blocks paid proposal requests.
 
 Signed-in home focuses on your experiment and today’s check-in. Open **Demo** in the lab navigation (`/demo`) to explore the seeded completed example.
 

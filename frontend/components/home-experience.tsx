@@ -71,12 +71,13 @@ function SignedInHome() {
 
   return (
     <div className="page-frame pt-8 pb-16 sm:pt-14">
-      <p className="text-body text-muted">Your lab</p>
+      {state.kind !== "active" && <p className="text-body text-muted">Your lab</p>}
       {state.kind === "active" ? (
-        <>
-          <ActiveLab experiment={state.experiment} checkins={state.checkins} />
-          <ActiveQuestion profile={state.profile} experiment={state.experiment} />
-        </>
+        <ActiveLab
+          profile={state.profile}
+          experiment={state.experiment}
+          checkins={state.checkins}
+        />
       ) : state.kind === "error" ? (
         <section role="alert" className="mt-5 max-w-2xl rounded-card bg-clay-tint p-6 text-clay">
           <h1 className="font-display text-headline">We couldn&apos;t load your lab.</h1>
@@ -116,8 +117,12 @@ function SignedInHome() {
   );
 }
 
-/** Keep the daily loop first; opening a new question stays on this page. */
-function ActiveQuestion({ profile, experiment }: { profile: Profile; experiment: Experiment }) {
+/** The question form replaces the summary in place; daily evidence stays visible. */
+function ActiveLab({ profile, experiment, checkins }: {
+  profile: Profile;
+  experiment: Experiment;
+  checkins: Checkin[];
+}) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -136,31 +141,6 @@ function ActiveQuestion({ profile, experiment }: { profile: Profile; experiment:
     if (open) panel.current?.querySelector("textarea")?.focus();
   }, [open]);
 
-  return (
-    <section aria-label="Test another habit" className="mt-10 border-t border-line pt-6">
-      <button
-        ref={toggle}
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={toggleQuestion}
-        className="min-h-12 rounded-pill border border-moss px-6 font-medium text-moss transition-transform duration-[var(--motion-press)] hover:bg-moss-tint active:scale-[0.98] motion-reduce:transition-none"
-      >
-        {open ? "Close question" : "Test another habit"}
-      </button>
-      <div ref={panel} id={panelId} hidden={!open}>
-        <ExperimentFlow
-          profile={profile}
-          knownActiveExperiment={experiment}
-          returnTo="/"
-          headingLevel={2}
-        />
-      </div>
-    </section>
-  );
-}
-
-function ActiveLab({ experiment, checkins }: { experiment: Experiment; checkins: Checkin[] }) {
   const { progress } = experiment;
   const path = `/experiments/${encodeURIComponent(experiment.id)}`;
   const logged = new Set(checkins.map((day) => day.day_number)).size;
@@ -169,32 +149,55 @@ function ActiveLab({ experiment, checkins }: { experiment: Experiment; checkins:
 
   return (
     <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-body text-muted">Your lab</p>
+        <button
+          ref={toggle}
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={toggleQuestion}
+          className="min-h-12 rounded-pill border border-moss px-6 font-medium text-moss transition-transform duration-[var(--motion-press)] hover:bg-moss-tint active:scale-[0.98] motion-reduce:transition-none"
+        >
+          {open ? "Close question" : "Test another habit"}
+        </button>
+      </div>
       <div className="mt-4 grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
-        <section>
-          <p className="font-mono text-caption text-moss tabular-nums">
-            {progress.state === "in_progress"
-              ? `Day ${progress.day_number} of ${progress.total_days}`
-              : progress.state === "ended" ? "Experiment days ended" : progress.state === "completed" ? "Completed" : "Not started"}
-          </p>
-          <h1 className="mt-3 font-display text-headline tracking-tight text-balance sm:text-display-sm">
-            {experiment.question}
-          </h1>
-          <div className="mt-6 border-l-2 border-moss pl-4">
-            <p className="text-caption text-muted">
-              {progress.phase === "baseline" ? "Keep your usual routine" : "Your small change"}
+        <div className="min-w-0">
+          <section hidden={open}>
+            <p className="font-mono text-caption text-moss tabular-nums">
+              {progress.state === "in_progress"
+                ? `Day ${progress.day_number} of ${progress.total_days}`
+                : progress.state === "ended" ? "Experiment days ended" : progress.state === "completed" ? "Completed" : "Not started"}
             </p>
-            <p className="mt-1 text-lead">{experiment.intervention.action}</p>
-            <p className="mt-1 text-body text-muted">
-              {progress.phase === "baseline"
-                ? `Your change starts on day ${experiment.baseline_days + 1}.`
-                : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}
-            </p>
+            <h1 className="mt-3 font-display text-headline tracking-tight text-balance sm:text-display-sm">
+              {experiment.question}
+            </h1>
+            <div className="mt-6 border-l-2 border-moss pl-4">
+              <p className="text-caption text-muted">
+                {progress.phase === "baseline" ? "Keep your usual routine" : "Your small change"}
+              </p>
+              <p className="mt-1 text-lead">{experiment.intervention.action}</p>
+              <p className="mt-1 text-body text-muted">
+                {progress.phase === "baseline"
+                  ? `Your change starts on day ${experiment.baseline_days + 1}.`
+                  : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}
+              </p>
+            </div>
+            <Link href={path} className={`${textLink} mt-5`}>
+              {progress.state === "ended" ? "Finish and see results" : "See your experiment"}
+              <span aria-hidden="true" className="ml-2">→</span>
+            </Link>
+          </section>
+          <div ref={panel} id={panelId} hidden={!open}>
+            <ExperimentFlow
+              profile={profile}
+              knownActiveExperiment={experiment}
+              returnTo="/"
+              showStarters={false}
+            />
           </div>
-          <Link href={path} className={`${textLink} mt-5`}>
-            {progress.state === "ended" ? "Finish and see results" : "See your experiment"}
-            <span aria-hidden="true" className="ml-2">→</span>
-          </Link>
-        </section>
+        </div>
         <TodayCard experiment={experiment} checkins={checkins} path={path} />
       </div>
       <section aria-labelledby="lab-progress" className="mt-10 border-t border-line pt-7">

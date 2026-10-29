@@ -257,12 +257,14 @@ export function ExperimentFlow({
   knownActiveExperiment = null,
   returnTo = "/experiments/new",
   headingLevel = 1,
+  showStarters = true,
 }: {
   profile: Profile;
   initialQuestion?: string;
   knownActiveExperiment?: Experiment | null;
   returnTo?: "/" | "/experiments/new";
   headingLevel?: 1 | 2;
+  showStarters?: boolean;
 }) {
   const router = useRouter();
   const [question, setQuestion] = useState(
@@ -393,7 +395,7 @@ export function ExperimentFlow({
 
   return (
     <div>
-      <div className={`mt-5 grid gap-10 ${result?.safety.allowed ? "" : "lg:grid-cols-[1fr_280px] lg:gap-14"}`}>
+      <div className={`mt-5 grid gap-10 ${!showStarters || result?.safety.allowed ? "" : "lg:grid-cols-[1fr_280px] lg:gap-14"}`}>
         <div className="min-w-0">
           {!result?.safety.allowed && <>
           <QuestionForm
@@ -470,7 +472,7 @@ export function ExperimentFlow({
         </div>
       )}
         </div>
-        {!result?.safety.allowed && <aside className="lg:pt-2">
+        {showStarters && !result?.safety.allowed && <aside className="lg:pt-2">
           <div className="rounded-card bg-moss-tint p-6">
             <p className="font-display text-title">Start with a hunch</p>
             <p className="mt-2 text-caption text-muted">Inspired by your goals and everyday questions. Pick one, then make it yours.</p>
