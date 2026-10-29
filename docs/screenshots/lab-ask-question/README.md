@@ -38,10 +38,10 @@ Recreate captures with `CAPTURE_LAB_ASK=1 npm run test:e2e -- tests/e2e/lab-ask-
 ## Verification
 
 - `npm test`: 106 passed across 20 files.
-- Full `npm run test:e2e` at the first feature commit: 66 passed, one existing skipped keyboard/time-input test. No new skips. The top-area refinement passed all 17 home, shared proposal and full layout-width browser checks, including normal/reduced motion at 390, 768 and 1440px.
+- Post-main handover on 2026-10-30, product code `bd0faa9` with main `7685a89` included: full `npm run test:e2e` passed 66 tests with one existing skipped keyboard/time-input test. No new skips. Normal/reduced motion at 390, 768 and 1440px and the full layout-width matrix passed.
 - Button alignment/fill refinement: 13 browser checks passed for home, the shared question flow and the full layout-width matrix; 106 unit tests, lint and typecheck also passed.
 - `npm run lint` and `npm run typecheck`: passed.
-- Production build at the first feature commit, with fake frontend test variables: passed, all 12 pages generated. The required post-merge checks will repeat it before the PR.
+- Post-main production build, with fake frontend test variables: passed, all 12 pages generated. Lint, typecheck and all 106 unit tests also passed again. Separate browser inspection of home and `/experiments/new` at 390, 768 and 1440px found no page errors or hydration warnings.
 - Browser inspection: 390, 768 and 1440px, with normal and reduced motion. The broader layout suite also passed from 320 through 2560px and at 200% zoom.
 - Paid AI calls: 0. Shared Supabase writes: 0.
 
