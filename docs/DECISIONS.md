@@ -55,7 +55,6 @@ None of these has been applied; `TRD.md` and `PRD.md` are unchanged since the fi
 - **PRD §13 / TRD §11:** experiment days are rolling 24-hour intervals from `started_at`, shown in the viewer's local time (Q7); early completion needs `min(2, baseline_days)` baseline and `min(3, intervention_days)` intervention check-ins (Q8).
 - **TRD §§13, 17, 30, 36, 38:** one combined design-and-prediction call; Jev through OpenRouter via `OPENROUTER_JEV_MODEL`; remove `JEV_API_KEY` and `JEV_API_URL` (Q9). `OPENROUTER_FAST_MODEL` is also unused.
 - **TRD §§24–26:** `/complete` is deterministic; narrative comes from `POST /report`; document the `LabReport` shape, including `chart`, and the one-call, one-retry budget (Q4).
-- **TRD §28:** specify B1: empty request body, bare `LabReport` response, idempotent reset, and preservation of non-seeded and active experiments (Q3).
 - **PRD §14 / TRD §§21, 24:** state B4's elapsed-day rule and that coverage uses elapsed days only (Q6).
 - **TRD §§6, 37, 42:** mark magic-link sign-in out of V1, structured request logs deferred (time permitting), and the mocked full-flow test as the final step (Q12).
 - **TRD §38 / `docs/ENV_SETUP.md`:** remove `APP_ENV` (Q13). Deployment: Q11 is decided as localhost for C2, so TRD §39's Vercel/Railway plan can be marked out of scope for this milestone.

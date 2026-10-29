@@ -41,7 +41,7 @@ Nobody has finished a real experiment through the UI yet; the earliest that's po
 
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
-| F2 | Open the seeded completed experiment | Waiting on backend. The frontend side is ready: `resetDemo` and the demo entry expect the bare `LabReport`. The entry stays visible; until B1 exists, clicking it shows the API's error | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 |
+| F2 | Open the seeded completed experiment | Works against the real backend on `feat/demo-reset` (clicked through signed in, `/demo` to the report). Needs that branch merged to `main` | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 merged |
 | F4 | Don't show future days as "Missed" after finishing early | Frontend done; waiting on B4. The report's "Missed" and the day chart use `analysis.adherence.missing_days` exactly as returned; an unlogged day not in that list shows as "Not reached before you finished". Tested in `tests/report/lab-report-flow.test.tsx`. Until B4 lands, the live backend still lists future days as missing, so they still show as missed | PRD §13, §15 section 5 | An early finish shows the `missing_days` the API returns, with no frontend filtering (the backend is the source of truth, I3). Once B4 lands, check it by hand | Must | Yes: B4 |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
 | F7 | Rhythm ring hydration mismatch under reduced motion | Done | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
@@ -114,7 +114,7 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 
 | # | Item | Why | Priority |
 |---|---|---|---|
-| I1 | Seeded demo end to end (B1 + F2) | The backend endpoint exists on `feat/demo-reset` and returns the bare `LabReport` F2 expects. Still to do: merge it, then click through `/demo` while signed in | Must; waiting on Shakeb |
+| I1 | Seeded demo end to end (B1 + F2) | The backend endpoint exists on `feat/demo-reset` and returns the bare `LabReport` F2 expects. Clicked through signed in and it works. Still to do: merge `feat/demo-reset` | Must; waiting on merge |
 | I2 | Move the frontend to the real report shape (B2 + F3) | Done in `feat/lab-report-v2`: the frontend reads the nested `narrative`, the embedded `experiment` and `chart`, and writes the narrative with a separate `POST /report` | Done |
 | I3 | Missing days after an early finish (B4 + F4) | **Decided:** the backend is the source of truth for `missing_days`; the frontend does not filter it. Remaining work is B4 itself (backend), then confirming F4 shows the result | Must (B4 still to build) |
 | I4 | Day boundaries | **Accepted V1 decision:** a day is a rolling 24 hours from `started_at`, not a calendar day (start at 11pm and "day 2" begins at 11pm the next night). No profile time zone is used. Timestamps are shown in the viewer's local time | Decided |
@@ -128,7 +128,7 @@ Contract (recorded in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset-decided-
 - Authenticated `POST /api/demo/reset` with an empty JSON body `{}`; no user or profile ID, the bearer token identifies the user.
 - Returns the bare `LabReport` for the completed seeded experiment (it already embeds the experiment). No `{ experiment, report }` wrapper.
 - Creates or resets only the signed-in user's seeded demo data, using the normal tables and schemas; idempotent. All non-seeded experiments are preserved, including an active one.
-- Built on `feat/demo-reset`. The frontend already uses the bare `LabReport`. Still to do: merge, click through `/demo` signed in, and write the JSON into TRD §28.
+- Built on `feat/demo-reset`. The frontend already uses the bare `LabReport`. Checked signed in at `/demo`, and the contract is written into TRD §28. Still to do: merge.
 
 PRD §18 requires an example that can be explored without waiting for a multi-day experiment. Once `feat/demo-reset` is merged, F2 can be verified against the live backend.
 
