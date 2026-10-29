@@ -204,7 +204,7 @@ The brief's theme ("Learning that sticks") needs a reason to return on day 3 and
 - PRD §11 also asks for a primary-metric trend on the experiment dashboard. The existing detail screen shows recorded values when a day is selected, but has no across-days trend. This pre-existing gap was found while sharing the timeline with signed-in home; it needs a separate test-first item.
 - Signed-in home now focuses on the user's experiment, daily check-in and recorded progress. The seeded demo entry moved to `/demo`, reachable through the lab's Demo link.
 
-### Production build blocker found during motion review
+### Production build blocker found during motion review — resolved
 
-- **New follow-up, frontend-owned:** `frontend/app/experiments/new/page.tsx:11` awaits `searchParams` outside a Suspense boundary while Cache Components is enabled. The route file is identical in baseline `cac55a4`. A production build using fake frontend test variables compiles and typechecks, then fails prerendering `/experiments/new` with `blocking-prerender-dynamic`. The local dev and mocked browser flows pass.
-- Reproduce with a production build using the fake frontend test variables. The proposed fix is to put the component that reads `searchParams` under Suspense with a shaped fallback; handle this in its own test-first chunk. It was not changed during the motion documentation work.
+- `frontend/app/experiments/new/page.tsx` previously awaited `searchParams` outside Suspense with Cache Components enabled; that route was identical in baseline `cac55a4`. The page now serves a shaped static loading shell and reads URL data in a child inside Suspense. Prefilled questions retain their existing behavior.
+- The new server-render regression first failed when URL data was pending, then passed after the boundary was added. The production build using fake frontend test variables now generates all 12 pages, including `/experiments/new` as a partially prerendered route.
