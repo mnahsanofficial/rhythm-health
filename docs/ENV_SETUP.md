@@ -31,7 +31,6 @@ Every variable is a field of `Settings` in `backend/app/config.py`, read from `b
 
 | Variable | What it's for | Where to get it | Secret? |
 |---|---|---|---|
-| `APP_ENV` | Environment name | Leave blank locally (defaults to `development`). Nothing reads it yet | No |
 | `CORS_ORIGINS` | Comma-separated origins allowed to call the API | Leave blank locally (defaults to `http://localhost:3000`). Set to the real frontend origin when deployed; no wildcard (TRD §40) | No |
 | `SUPABASE_URL` | Supabase project URL, for the database and for checking sign-in tokens | Supabase → Project Settings → API | No |
 | `SUPABASE_SERVICE_ROLE_KEY` | Database access from the backend. **Bypasses RLS** | Supabase → Project Settings → API → service_role key | **Yes. Backend only, never in the frontend** |
