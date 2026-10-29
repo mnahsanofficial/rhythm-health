@@ -39,6 +39,16 @@ If a session's log changes after your last commit, add a `chore(logs): …` comm
 - A PR that changes what people see says which screens and widths you checked.
 - The other person reviews before merging when the PR touches their area or shared files (`AGENTS.md`, `README.md`, the API contract).
 
+## Refresh main before opening a PR
+
+This is a required handover for every agent, even if the branch started from the latest main:
+
+1. Run `git fetch origin` before opening the PR.
+2. Give the person the exact command `git merge origin/main` to run on the feature branch. The person runs the merge; the agent does not run it. Never rebase or force-push.
+3. If the merge reports conflicts, show every conflicted file and the conflicting changes, then wait for direction before resolving them.
+4. After the merge, rerun frontend lint, typecheck, the full unit/component and Playwright suites, and the production build. Check the changed pages in a browser at mobile, tablet and desktop widths. Report failures and fix them before proceeding.
+5. Only after those checks pass, open the PR with `gh`. Publication must be authorized; opening a PR never authorizes merging it.
+
 ## Merging
 
 - **Merge commits only.** Never squash or rebase-merge. Squashing collapses the code and log history that shows who did what, and we're rated individually.

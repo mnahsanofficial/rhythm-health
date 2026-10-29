@@ -59,7 +59,7 @@ Don't change files the other person is actively working on; check their open PRs
 
 Each line is a summary. Read the file before you work in that area.
 
-- **[Git workflow](docs/rules/git-workflow.md):** branch names, Conventional Commit messages, PRs, merge commits, session logs.
+- **[Git workflow](docs/rules/git-workflow.md):** branch names, Conventional Commit messages, session logs, and the required [latest-main merge handover before every PR](docs/rules/git-workflow.md#refresh-main-before-opening-a-pr). The person runs the merge; agents wait on conflicts and repeat checks afterward.
 - **[Secrets](docs/rules/secrets.md):** which values are secret, where they live, and how to check one is set without printing it.
 - **[API contracts](docs/rules/api-contracts.md):** how the frontend and the FastAPI backend talk. Covers auth, error shapes, the shared types and the contract test.
 - **[Testing](docs/rules/testing.md):** the suites, what they mock, testing by hand, and keeping paid AI calls to a minimum. Frontend changes follow red-before-green: prove the behavior with a failing test before changing product code.
