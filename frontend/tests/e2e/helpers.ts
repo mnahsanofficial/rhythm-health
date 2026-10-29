@@ -165,7 +165,7 @@ export async function answerOnboardingWithMouse(page: Page) {
 
 export async function createAccountAndSaveProfile(page: Page, counts: E2eCounts) {
   await page.getByRole("textbox", { name: "Email" }).fill("learner@example.invalid");
-  await page.getByLabel("Password").fill("fake-test-password");
+  await page.getByLabel("Password", { exact: true }).fill("fake-test-password");
   await page.getByRole("button", { name: "Create account" }).click();
   await page.getByRole("status").filter({ hasText: "Saved." }).waitFor();
   if (counts.signUps !== 1 || counts.profileWrites !== 1) {

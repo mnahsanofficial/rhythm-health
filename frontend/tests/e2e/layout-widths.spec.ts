@@ -74,6 +74,8 @@ async function measure(page: Page, wide: boolean): Promise<Problems> {
       for (let j = i + 1; j < items.length; j++) {
         const a = items[i], b = items[j];
         if (a.contains(b) || b.contains(a) || pinned(a) !== pinned(b)) continue;
+        // A control drawn inside the field it controls, like the password eye, is meant to overlap.
+        if ((a.id && b.getAttribute("aria-controls") === a.id) || (b.id && a.getAttribute("aria-controls") === b.id)) continue;
         const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
         const x = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
         const y = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
