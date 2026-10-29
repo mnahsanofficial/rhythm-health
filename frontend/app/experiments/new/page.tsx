@@ -23,7 +23,7 @@ async function QuestionFromRequest({ searchParams }: Props) {
 
 function QuestionSkeleton() {
   return (
-    <div role="status" className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-8">
+    <div role="status" className="page-frame py-12">
       <span className="sr-only">Loading your experiment</span>
       <div aria-hidden="true" className="space-y-6">
         <div className="h-5 w-24 rounded-pill bg-line" />

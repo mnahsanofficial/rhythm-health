@@ -62,7 +62,7 @@ export function ExperimentHistory() {
 
   if (load.kind === "error") {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+      <div className="page-frame pt-8 pb-16 sm:pt-14">
         <Link href="/" className={secondary}>← Your lab</Link>
         <div role="alert" className="mt-8 rounded-card bg-clay-tint p-6 text-clay sm:p-8">
           <h1 className="font-display text-headline">We couldn&apos;t load your history.</h1>
@@ -88,12 +88,12 @@ export function ExperimentHistory() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="page-frame pt-8 pb-16 sm:pt-14">
       <Link href="/" className={secondary}>← Your lab</Link>
       <div className="mt-5">
         <p className="font-mono text-caption text-moss">What you&apos;ve learned</p>
         <h1 className="mt-2 font-display text-headline tracking-tight sm:text-display-sm">Your experiment history</h1>
-        <p className="mt-3 max-w-2xl text-lead text-muted">
+        <p className="mt-3 text-lead text-muted">
           Look back at your predictions and the patterns your experiments found.
         </p>
       </div>
@@ -264,7 +264,7 @@ function formatRange(min: number, max: number) {
 
 function HistorySkeleton() {
   return (
-    <div aria-busy="true" className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div aria-busy="true" className="page-frame pt-8 pb-16 sm:pt-14">
       <span className="sr-only">Loading your experiment history</span>
       <div aria-hidden="true" className="space-y-1">
         <div className="h-11 w-28 rounded-pill bg-line" />

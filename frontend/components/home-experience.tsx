@@ -69,7 +69,7 @@ function SignedInHome() {
   if (state.kind === "loading") return <LabSkeleton />;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="page-frame pt-8 pb-16 sm:pt-14">
       <p className="text-body text-muted">Your lab</p>
       {state.kind === "active" ? (
         <ActiveLab experiment={state.experiment} checkins={state.checkins} />
@@ -170,7 +170,7 @@ function ActiveLab({ experiment, checkins }: { experiment: Experiment; checkins:
 
 function LabSkeleton() {
   return (
-    <div role="status" aria-label="Loading your lab" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-8">
+    <div role="status" aria-label="Loading your lab" className="page-frame py-12">
       <span className="sr-only">Loading your lab</span>
       <div aria-hidden="true">
         <div className="h-5 w-24 rounded-pill bg-line" />

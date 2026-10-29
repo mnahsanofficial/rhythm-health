@@ -60,7 +60,7 @@ async function prepareSignedInHome(page: import("@playwright/test").Page) {
   await answerOnboardingWithMouse(page);
   await createAccountAndSaveProfile(page, counts);
   await page.goto("/");
-  await page.getByRole("link", { name: "Demo", exact: true }).click();
+  await page.getByRole("navigation", { name: "Your lab" }).getByRole("link", { name: "Demo", exact: true }).click();
 }
 
 function mockDemoReset(page: import("@playwright/test").Page, status = 200) {

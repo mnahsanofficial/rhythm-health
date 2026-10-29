@@ -79,7 +79,7 @@ export function ExperimentDetail({ id }: { id: string }) {
   if (load.kind === "error") {
     const notFound = load.status === 404;
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-8">
+      <div className="page-frame py-12">
         <div role="alert" className="rounded-card bg-clay-tint p-6 text-clay">
           <h1 className="font-display text-title">
             {notFound ? "We couldn't find that experiment." : "We couldn't load your experiment."}
@@ -112,7 +112,7 @@ export function ExperimentDetail({ id }: { id: string }) {
   const c = counts(experiment, checkins);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="page-frame pt-8 pb-16 sm:pt-14">
       <Link href="/" className="-mx-1 inline-flex min-h-11 items-center px-1 text-moss hover:underline">
         ← Your lab
       </Link>
@@ -285,7 +285,7 @@ function Meter({ label, have, need }: { label: string; have: number; need: numbe
 /** Same shape as the page: heading, today and finish cards, timeline. */
 export function ExperimentDetailSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-5xl px-4 pt-8 sm:px-8 sm:pt-14">
+    <div aria-hidden="true" className="page-frame pt-8 sm:pt-14">
       <div className="h-5 w-24 rounded-pill bg-line" />
       <div className="mt-8 h-3 w-48 rounded-pill bg-line" />
       <div className="mt-3 h-10 w-3/4 rounded-pill bg-line" />
