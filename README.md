@@ -23,11 +23,7 @@ Signed-in users can ask directly on Your lab (`/`); `/experiments/new` uses the 
 
 Signed-in home focuses on your experiment and today’s check-in. Open **Demo** in the lab navigation (`/demo`) to explore the seeded completed example.
 
-Still to build for the 5 Nov demo:
-- the AI-written parts of the report (what we learned, what to test next);
-- past experiments as context for new predictions;
-- the experiment history screen;
-- a few bugs.
+The written report, past-experiment context and history are built. The seeded demo has been verified against the real backend. Early-finish missed days have been verified with isolated backend-generated data; a genuine live early finish remains unchecked. See the remaining-work list for other gaps and limitations.
 
 Full list, with owners and priorities: [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md).
 
@@ -125,6 +121,8 @@ npm run build
 ```
 
 What each suite covers, and how to test by hand without spending AI credits or writing fake data: [docs/rules/testing.md](docs/rules/testing.md).
+
+F2/F4 verification, including the live demo evidence, isolated early-finish fixture generator, timezone cases and local-only manual API: [docs/F2_F4_VERIFICATION.md](docs/F2_F4_VERIFICATION.md).
 
 ## Project structure
 

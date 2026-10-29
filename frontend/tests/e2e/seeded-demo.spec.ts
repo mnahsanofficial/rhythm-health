@@ -101,6 +101,7 @@ for (const width of [390, 1440]) {
 
     await expect(page).toHaveURL(`/experiments/${experiment.id}/report`);
     await expect(page.getByRole("heading", { name: question })).toBeVisible();
+    await expect(page.getByRole("note", { name: "Sample experiment" })).toBeVisible();
     await expect(page.getByText("Likely signal")).toBeVisible();
     await expect(page.getByRole("heading", { name: "How the days went" })).toBeVisible();
     await page.screenshot({ path: `test-results/seeded-demo-report-${width}.png`, fullPage: true });

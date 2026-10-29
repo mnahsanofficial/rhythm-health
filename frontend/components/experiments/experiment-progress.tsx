@@ -102,7 +102,12 @@ export function TodayCard({ experiment, checkins, path }: { experiment: Experime
 }
 
 /** Every day of the experiment. Logged days open to show what was recorded (PRD §13). */
-export function Timeline({ experiment, checkins }: { experiment: Experiment; checkins: Checkin[] }) {
+export function Timeline({ experiment, checkins, missingDays }: {
+  experiment: Experiment;
+  checkins: Checkin[];
+  /** Stored completion analysis; never infer completed missing days from the plan length. */
+  missingDays?: readonly number[] | null;
+}) {
   const panelId = useId();
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState<number | null>(null);
@@ -121,8 +126,10 @@ export function Timeline({ experiment, checkins }: { experiment: Experiment; che
           const baseline = day <= experiment.baseline_days;
           const logged = byDay.get(day);
           const isToday = day === today;
-          const missed = !logged && day <= pastThrough;
-          const state = logged ? "logged" : isToday ? "today, not logged yet" : missed ? "missed" : "upcoming";
+          const completed = progress.state === "completed";
+          const missed = !logged && (completed ? missingDays?.includes(day) === true : day <= pastThrough);
+          const state = logged ? "logged" : isToday ? "today, not logged yet" : missed ? "missed"
+            : completed ? "not recorded before completion" : "upcoming";
           const tone = logged
             ? baseline
               ? "bg-night text-paper"

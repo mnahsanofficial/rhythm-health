@@ -129,6 +129,12 @@ export function LabReport({ id }: { id: string }) {
 
   return (
     <Page back={path}>
+      {experiment.is_seeded && (
+        <div role="note" aria-label="Sample experiment" className="mb-5 border-l-2 border-night pl-4">
+          <p className="font-medium text-night">Sample experiment</p>
+          <p className="mt-1 text-body text-muted">This report is based on seeded example check-ins.</p>
+        </div>
+      )}
       <p className="font-mono text-caption text-moss">Lab Report{completedOn ? ` · finished ${completedOn}` : ""}</p>
       <h1 className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{experiment.question}</h1>
 
