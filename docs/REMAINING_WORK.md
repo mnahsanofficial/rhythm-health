@@ -50,6 +50,7 @@ Nobody has finished a real experiment through the UI yet; the earliest that's po
 | F10 | Edit the AI proposal before starting | Not started | PRD §23 (nice to have) | The user can adjust the proposal before **Start** | Nice | Maybe: whether the backend re-checks edits |
 | F11 | Share or export the Lab Report | Not started | PRD §23 (nice to have) | A report can be shared or saved | Nice | No |
 | F12 | Clean-up | Partial | none | Unused `auth-panel.tsx` and `backend-status.tsx` deleted, one `signedPercent`, keyboard e2e test fixed and turned back on | Nice | No |
+| F13 | Use the backend's `missed` flag on chart days | Waiting on B11. Until it lands, the day chart tells a missed day from one not reached using `analysis.adherence.missing_days`, which B4 now makes correct | PRD §15 section 5 | The chart reads `chart.points[].missed` instead of looking days up in `missing_days`; the contract snapshot is refreshed and the early-finish test still passes | Nice | Yes: B11 |
 
 ### Done
 
@@ -89,6 +90,7 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 | B8 | One full-flow integration test | Partial; last step, after all features and the frontend are ready (decided) | TRD §42 | One test runs profile → propose → save → start → check-ins → complete → report with mocked AI | Nice | No |
 | B9 | Optional AI safety assessment | Not started | TRD §15 (marked optional) | An AI check runs after the rules for borderline requests | Nice | No |
 | B10 | Deployment | Not started | TRD §39 | Frontend on Vercel, backend on Railway, CORS set to those origins (TRD §40). The README says localhost only for now | Nice | Yes: env values on Vercel |
+| B11 | `missed: boolean` on each `chart.points` item | Agreed by Shakeb on 30 Oct, not built yet | PRD §15 section 5; TRD §26 | Each chart point says whether that day counts as missed, by the same rule as `missing_days` (B4), so the frontend doesn't infer it | Nice | Yes: F13 |
 
 ### Done
 
@@ -119,7 +121,8 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 | I3 | Missing days after an early finish (B4 + F4) | **Decided:** the backend is the source of truth for `missing_days`; the frontend does not filter it. Remaining work is B4 itself (backend), then confirming F4 shows the result | Must (B4 still to build) |
 | I4 | Day boundaries | **Accepted V1 decision:** a day is a rolling 24 hours from `started_at`, not a calendar day (start at 11pm and "day 2" begins at 11pm the next night). No profile time zone is used. Timestamps are shown in the viewer's local time | Decided |
 | I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
-| I6 | Refresh `frontend/tests/contracts/openapi.json` | Done in `feat/lab-report-v2`, regenerated from the backend after PR #21. Refresh it again whenever a backend schema changes (see `docs/rules/api-contracts.md`) | Done |
+| I6 | Refresh `frontend/tests/contracts/openapi.json` | Done in `feat/lab-report-v2`, and refreshed again on `chore/lab-report-followups` for `POST /api/demo/reset` and `DemoResetRequest`. Refresh it whenever a backend schema changes (see `docs/rules/api-contracts.md`) | Done |
+| I7 | Chart missed flag (B11 + F13) | Agreed 30 Oct: the backend adds `missed` to each chart point, then the frontend reads it instead of `missing_days`. Nothing changes for people until then: both give the same answer | Nice; waiting on Shakeb |
 
 ### B1 seeded demo reset: decided, built
 
@@ -141,6 +144,9 @@ This replaces the earlier B2 proposal. Source: `backend/app/schemas/lab_report.p
 | `POST /api/experiments/{id}/complete` | none | `LabReport` with `narrative: null` | 409 not enough check-ins (detail has the counts), already completed, or not active |
 | `POST /api/experiments/{id}/report?regenerate=false` | none | `LabReport` with `narrative` filled | 409 not completed; 404 no report; 503 AI unavailable; 502 AI output invalid after retry |
 | `GET /api/experiments/{id}/report` | none | `LabReport` (`narrative` null until written) | 404 no report yet |
+
+- **Timing (Shakeb, 30 Oct):** a fresh `POST /report` took about 10–11 seconds in live testing; a repeat that returns the stored narrative takes under a second. The frontend has no client timeout; its "This can take a little while" copy is enough unless calls get much slower.
+- **`?regenerate=true` is for development and testing only** (Shakeb, 30 Oct). The UI never sends it.
 
 ```
 LabReport = {
@@ -198,7 +204,7 @@ Differences from the old proposal: there is no top-level `experiment_id` (use `e
 | R5 | `backend/app/api/checkins.py:29` | Only today's check-in can be submitted | A missed day can't be filled in later. By design, but worth knowing for the demo |
 | R6 | Schedule | A real experiment needs about 5 days of check-ins before it can finish | The 5 Nov demo depends on the seed (I1) |
 | R7 | `frontend/tests/contracts/api-contract.test.ts` | The snapshot is current and covers `LabReport`, but the test doesn't check check-in fixtures yet | Check-in shape drift wouldn't be caught (F8) |
-| R12 | `backend/app/services/report_writer.py` | Nothing in code checks that numbers quoted in the narrative match the analysis (the signal classification and wording are checked) | A model could misquote a figure in the prose. The frontend never takes a figure from the narrative: every number on the report comes from `analysis` or `chart` (tested) |
+| R12 | `backend/app/services/report_writer.py` | Nothing in code checks that numbers quoted in the narrative match the analysis (the signal classification and wording are checked). **Deferred** by Shakeb on 30 Oct: added later only if time permits | A model could misquote a figure in the prose. The analysis stays the source of truth, and the frontend never takes a figure from the narrative: every number on the report comes from `analysis` or `chart` (tested) |
 | R8 | `frontend/tests/e2e/onboarding-experiment.spec.ts:30` | Keyboard-only onboarding test skipped: Chromium leaves the time fields empty | Keyboard path through the sleep-schedule step isn't covered automatically (F12) |
 | R9 | `frontend/components/experiments/experiment-flow.tsx` (`signedPercent`) vs `frontend/lib/report/copy.ts:51` | Two `signedPercent` functions; only one rounds | A range could read "+7.5%" on the proposal and "+8%" on the report (F12) |
 | R10 | `frontend/components/auth-panel.tsx`, `frontend/components/backend-status.tsx` | Not imported anywhere | Dead code (F12) |
