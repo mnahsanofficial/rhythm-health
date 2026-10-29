@@ -5,7 +5,7 @@ export function HomeCta() {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
       <Link
         href="/onboarding"
-        className="inline-flex min-h-12 shrink-0 whitespace-nowrap items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform duration-150 hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+        className="inline-flex min-h-12 shrink-0 whitespace-nowrap items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
       >
         Run your first experiment
       </Link>

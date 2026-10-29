@@ -55,7 +55,7 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
               fill="var(--color-sun)"
               stroke="var(--color-ink)"
               strokeWidth={1.5}
-              className="origin-center motion-safe:animate-[rhythm-arrive_280ms_var(--ease-settle)_both]"
+              className="origin-center motion-safe:animate-[rhythm-arrive_var(--motion-response)_var(--ease-settle)_both]"
               style={{ transformBox: "fill-box" }}
             />
           );
@@ -85,7 +85,7 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
 
 function NightArc({ rotate, span }: { rotate: number; span: number }) {
   return (
-    <g className="origin-center motion-safe:animate-[rhythm-arrive_480ms_var(--ease-settle)_both]">
+    <g className="origin-center motion-safe:animate-[rhythm-arrive_var(--motion-reveal)_var(--ease-settle)_both]">
       <circle
         cx={C} cy={C} r={R_TRACK}
         fill="none" stroke="var(--color-night)" strokeWidth={22}

@@ -48,7 +48,7 @@ export function LandingRhythm({ profile }: { profile: Profile }) {
                   aria-hidden="true"
                   className={`grid size-6 shrink-0 place-items-center rounded-pill border ${checked ? "border-moss bg-moss text-paper" : "border-muted text-muted"}`}
                 >
-                  <svg viewBox="0 0 16 16" className={`size-4 transition-[transform,opacity] duration-150 motion-reduce:transition-none ${checked ? "scale-100 opacity-100" : "scale-75 opacity-0"}`}>
+                  <svg viewBox="0 0 16 16" className={`size-4 transition-[transform,opacity] duration-[var(--motion-press)] motion-reduce:transition-none ${checked ? "scale-100 opacity-100" : "scale-75 opacity-0"}`}>
                     <path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>

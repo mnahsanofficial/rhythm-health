@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,7 +27,7 @@ type Answers = {
 };
 
 const primaryButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-transform duration-150 motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
+  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-transform duration-[var(--motion-press)] motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
 const secondaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
 
@@ -188,7 +190,7 @@ export function CheckinForm({ id }: { id: string }) {
                   aria-label={`Day ${n}${isLogged ? ", logged" : ""}`}
                   initial={n === day && !reduceMotion ? { scale: 0.7, opacity: 0 } : false}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
                   className={`grid size-11 place-items-center rounded-pill border font-mono text-caption ${
                     isLogged ? "border-moss bg-moss text-paper" : n <= day ? "border-line bg-paper" : "border-dashed border-line"
                   }`}
@@ -292,7 +294,7 @@ export function CheckinForm({ id }: { id: string }) {
           <motion.div
             initial={false}
             animate={{ scaleX: answerTotal ? answered / answerTotal : 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
             className="h-full origin-left bg-moss"
           />
         </div>
@@ -334,7 +336,7 @@ export function CheckinForm({ id }: { id: string }) {
                 return (
                   <label
                     key={label}
-                    className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-150 motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
+                    className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
                       selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
                     }`}
                   >
@@ -426,7 +428,7 @@ function Tick({ reduceMotion }: { reduceMotion: boolean }) {
       aria-hidden="true"
       initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
     >
       <circle cx="24" cy="24" r="22" fill="var(--color-moss-tint)" />
       <path

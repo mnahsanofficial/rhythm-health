@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { ProgressBar } from "@/components/onboarding/progress-bar";
@@ -14,8 +16,8 @@ import { placeHabits } from "@/lib/rhythm/habits";
 // Steps slide in the direction you're going, so back and forward feel different.
 const slide: Variants = {
   enter: (dir: number) => ({ x: dir * 48, opacity: 0 }),
-  center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
-  exit: (dir: number) => ({ x: dir * -48, opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }),
+  center: { x: 0, opacity: 1, transition: { duration: MOTION_DURATION.step, ease: MOTION_EASE.settle } },
+  exit: (dir: number) => ({ x: dir * -48, opacity: 0, transition: { duration: MOTION_DURATION.panel, ease: "easeIn" } }),
 };
 
 const noSubscribe = () => () => {};

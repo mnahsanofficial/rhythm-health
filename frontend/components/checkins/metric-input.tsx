@@ -77,7 +77,7 @@ function ScaleInput({
           return (
             <label
               key={n}
-              className={`grid min-h-12 cursor-pointer place-items-center rounded-card border font-mono text-lead tabular-nums transition-transform duration-150 motion-reduce:transition-none active:scale-95 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
+              className={`grid min-h-12 cursor-pointer place-items-center rounded-card border font-mono text-lead tabular-nums transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-95 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
                 selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
               }`}
             >
@@ -90,7 +90,7 @@ function ScaleInput({
                 className="sr-only"
               />
               <span
-                className={`transition-transform duration-150 motion-reduce:transition-none ${selected ? "scale-110" : "scale-100"}`}
+                className={`transition-transform duration-[var(--motion-press)] motion-reduce:transition-none ${selected ? "scale-110" : "scale-100"}`}
               >
                 {n}
               </span>
@@ -113,7 +113,7 @@ function YesNo({ name, value, onChange }: { name: string; value: boolean | undef
         return (
           <label
             key={label}
-            className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-150 motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
+            className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
               selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
             }`}
           >

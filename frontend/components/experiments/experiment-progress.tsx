@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION } from "@/lib/motion";
+
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useId, useState } from "react";
@@ -193,8 +195,8 @@ export function Timeline({ experiment, checkins }: { experiment: Experiment; che
               key={selected.day_number}
               initial={reduceMotion ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: -6, transition: { duration: 0.12 } }}
-              transition={{ duration: reduceMotion ? 0 : 0.2 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -6, transition: { duration: MOTION_DURATION.exit } }}
+              transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.panel }}
               className="rounded-card bg-oat p-4 sm:p-5"
             >
               <p className="font-mono text-caption text-moss">

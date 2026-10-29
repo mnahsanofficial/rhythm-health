@@ -44,6 +44,16 @@
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Seconds in lib/motion.ts, milliseconds here. Keep both representations aligned. */
+:root {
+  --motion-press: 150ms;
+  --motion-exit: 120ms;
+  --motion-panel: 200ms;
+  --motion-response: 280ms;
+  --motion-step: 350ms;
+  --motion-reveal: 480ms;
+}
+
 html {
   background: var(--color-oat);
   color: var(--color-ink);

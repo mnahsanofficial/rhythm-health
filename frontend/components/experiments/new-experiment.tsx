@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -34,7 +36,7 @@ function PredictionRange({ min, max }: { min: number; max: number }) {
         <motion.div
           initial={reduce ? false : { scaleX: 0 }}
           animate={{ scaleX: 1 }}
-          transition={{ duration: reduce ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reduce ? 0 : MOTION_DURATION.reveal, ease: MOTION_EASE.settle }}
           style={{ left: `${left}%`, width: `${Math.max(width, 3)}%`, transformOrigin: "left" }}
           className="absolute inset-y-0 rounded-pill bg-night"
         />
@@ -66,7 +68,7 @@ export function ForecastCard({ prediction, metrics }: {
       <p className="text-caption font-medium text-night">The original forecast</p>
       <h2 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h2>
       <p className="mt-4 font-mono text-headline tracking-tight tabular-nums">
-        <motion.span initial={reduce ? false : { opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: reduce ? 0 : 0.28 }}>
+        <motion.span initial={reduce ? false : { opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: reduce ? 0 : MOTION_DURATION.response }}>
           {signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}
         </motion.span>
       </p>

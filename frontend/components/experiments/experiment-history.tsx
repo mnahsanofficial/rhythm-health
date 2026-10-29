@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
@@ -175,7 +177,7 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
     : null;
 
   return (
-    <motion.li layout={reduce ? false : "position"} transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}>
+    <motion.li layout={reduce ? false : "position"} transition={{ duration: reduce ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}>
       <article aria-label={experiment.question} className="py-7 sm:py-9">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-caption text-muted">{completedOn ? `Finished ${completedOn}` : "Completed experiment"}</p>

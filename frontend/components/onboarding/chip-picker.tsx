@@ -64,7 +64,7 @@ export function ChipPicker({ legend, options, value, onChange, max, addLabel, ad
                         <input type="checkbox" checked={picked} disabled={disabled} onChange={() => toggle(chip)} className="sr-only" />
                         <svg
                           viewBox="0 0 16 16" aria-hidden="true"
-                          className={`size-4 shrink-0 transition-[transform,opacity] duration-150 motion-reduce:transition-none ${picked ? "scale-100 opacity-100" : "scale-75 opacity-30"}`}
+                          className={`size-4 shrink-0 transition-[transform,opacity] duration-[var(--motion-press)] motion-reduce:transition-none ${picked ? "scale-100 opacity-100" : "scale-75 opacity-30"}`}
                         >
                           {picked ? <path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" /> : <circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" />}
                         </svg>

@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION } from "@/lib/motion";
+
 import { motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
 
@@ -31,7 +33,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
             // which steals focus from the radio and breaks arrow keys.
             <label
               key={option.value}
-              className="relative flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-line bg-paper px-4 py-3 transition-[scale] duration-150 active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss"
+              className="relative flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-line bg-paper px-4 py-3 transition-[scale] duration-[var(--motion-press)] active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss"
             >
               {selected && (
                 <motion.span
@@ -68,7 +70,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
                     strokeLinejoin="round"
                     initial={false}
                     animate={{ opacity: selected ? 1 : 0 }}
-                    transition={{ duration: reduce ? 0 : 0.15, ease: "easeOut" }}
+                    transition={{ duration: reduce ? 0 : MOTION_DURATION.press, ease: "easeOut" }}
                   />
                 </svg>
               </span>

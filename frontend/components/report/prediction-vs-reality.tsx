@@ -1,5 +1,7 @@
 "use client";
 
+import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
+
 import { motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
 import { signedPercent } from "@/lib/report/copy";
@@ -21,7 +23,7 @@ export function PredictionVsReality({ comparison, metricLabel }: { comparison: P
   const landing = {
     initial: reduce ? false as const : { opacity: 0, y: 10 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: reduce ? 0 : 0.48, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: reduce ? 0 : MOTION_DURATION.reveal, ease: MOTION_EASE.settle },
   };
 
   return (
