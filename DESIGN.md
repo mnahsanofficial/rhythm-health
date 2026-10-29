@@ -127,3 +127,9 @@ Shared pieces sit at the top level: `site-header.tsx`, `auth-nav.tsx`, `home-cta
 - A skip link to `#main`.
 - A label for every input.
 - Details: [`docs/rules/ui-quality.md`](docs/rules/ui-quality.md).
+
+### Signed-in home
+
+Home resolves the session before showing either the public landing or the personal lab. Signed-in home focuses on the user's current question, today's check-in, phase and recorded days. Sample rhythm and marketing sections appear only when signed out. History, rhythm settings and the seeded demo (`/demo`) are secondary navigation.
+
+The home and experiment detail reuse `experiments/experiment-progress.tsx` for the daily action and timeline. Selecting a recorded day reveals its answers with a 200ms opacity/6px transform transition; reduced motion shows them immediately. The answer region reserves space so selection keeps surrounding content stable. Both touched dashboard skeletons are static.

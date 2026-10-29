@@ -198,3 +198,8 @@ The brief's theme ("Learning that sticks") needs a reason to return on day 3 and
 - **S3. Report countdown on home.** "Your report can be ready from {date}" under the check-in button.
 - **S4. Abandon or restart an experiment.** There's no way out of an active experiment, and only one is allowed at a time.
 - **S5. Rehearse the demo.** On 4 Nov, run seed → report → history → new question by hand, at 390px, on the machine used for the demo.
+
+## UI motion review follow-up
+
+- PRD §11 also asks for a primary-metric trend on the experiment dashboard. The existing detail screen shows recorded values when a day is selected, but has no across-days trend. This pre-existing gap was found while sharing the timeline with signed-in home; it needs a separate test-first item.
+- Signed-in home now focuses on the user's experiment, daily check-in and recorded progress. The seeded demo entry moved to `/demo`, reachable through the lab's Demo link.

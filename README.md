@@ -19,8 +19,9 @@ Product decisions are made together (PRD §27).
 
 The core loop works end to end on localhost: onboarding, ask a question, see the prediction, start, daily check-ins, finish, and the Lab Report's calculated sections.
 
+Signed-in home focuses on your experiment and today’s check-in. Open **Demo** in the lab navigation (`/demo`) to explore the seeded completed example.
+
 Still to build for the 5 Nov demo:
-- the seeded demo experiment;
 - the AI-written parts of the report (what we learned, what to test next);
 - past experiments as context for new predictions;
 - the experiment history screen;

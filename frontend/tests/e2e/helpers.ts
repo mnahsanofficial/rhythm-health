@@ -34,7 +34,7 @@ export async function installApiMocks(page: Page) {
         access_token: "fake-e2e-access-token",
         token_type: "bearer",
         expires_in: 3600,
-        expires_at: 1793268000,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
         refresh_token: "fake-e2e-refresh-token",
         user,
         weak_password: null,
