@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -135,12 +134,22 @@ export function LabReport({ id }: { id: string }) {
       <p className="font-mono text-caption text-moss">Lab Report{completedOn ? ` · finished ${completedOn}` : ""}</p>
       <h1 className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{experiment.question}</h1>
 
-      <motion.section
+      <div className="mt-8">
+        {analysis.prediction && primary ? (
+          <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} />
+        ) : (
+          <section className="rounded-card border border-line bg-paper p-6 sm:p-8">
+            <h2 className="font-display text-title">Prediction vs reality</h2>
+            <p className="mt-2 text-body text-muted">
+              There wasn&apos;t enough data in both phases to compare with the prediction.
+            </p>
+          </section>
+        )}
+      </div>
+
+      <section
         aria-labelledby="verdict-heading"
-        className="mt-8 rounded-card bg-paper p-6 sm:p-8"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="mt-8 border-t border-line pt-7"
       >
         <p className="text-caption text-muted">Signal or noise</p>
         <h2 id="verdict-heading" className="mt-2 flex flex-wrap items-center gap-3">
@@ -168,19 +177,9 @@ export function LabReport({ id }: { id: string }) {
           </ul>
         )}
         <p className="mt-5 text-caption text-muted">A short personal experiment shows a pattern, not proof.</p>
-      </motion.section>
+      </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
-        {analysis.prediction && primary ? (
-          <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} />
-        ) : (
-          <section className="rounded-card border border-line bg-paper p-6 sm:p-8">
-            <h2 className="font-display text-title">Prediction vs reality</h2>
-            <p className="mt-2 text-body text-muted">
-              There wasn&apos;t enough data in both phases to compare with the prediction.
-            </p>
-          </section>
-        )}
+      <div className="mt-6">
         <section aria-labelledby="adherence-heading" className="rounded-card border border-line bg-paper p-6 sm:p-8">
           <h2 id="adherence-heading" className="font-display text-title">
             How the days went
@@ -240,7 +239,7 @@ export function LabReport({ id }: { id: string }) {
           <p className="mt-3 max-w-2xl text-body">{narrative.summary}</p>
         ) : (
           <p className="mt-3 max-w-2xl text-body text-muted">
-            Written takeaways will appear when they are available for this report.
+            Waiting for your written results. Takeaways will appear when they are available for this report.
           </p>
         )}
         {narrative.interpretation && (
@@ -287,7 +286,7 @@ export function LabReport({ id }: { id: string }) {
         ) : (
           <>
             <p className="mt-3 max-w-2xl text-body text-muted">
-              A follow-up question will appear here when it is available for this report.
+              Waiting for your follow-up results. A new question will appear when it is available for this report.
             </p>
             <Link href="/experiments/new" className={`${linkButton} mt-5`}>
               Ask a new question
@@ -350,7 +349,7 @@ function Page({ children, back }: { children: React.ReactNode; back?: string }) 
 /** Same shape as the report: heading, verdict, two cards, chart. */
 export function LabReportSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-5xl animate-pulse px-4 pt-8 sm:px-8 sm:pt-14">
+    <div aria-hidden="true" className="mx-auto w-full max-w-5xl px-4 pt-8 sm:px-8 sm:pt-14">
       <div className="h-5 w-32 rounded-pill bg-line" />
       <div className="mt-6 h-3 w-40 rounded-pill bg-line" />
       <div className="mt-3 h-10 w-3/4 rounded-pill bg-line" />

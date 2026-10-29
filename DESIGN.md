@@ -145,3 +145,9 @@ The AI wait explains the request's work without claiming live stage completion o
 Habits follow morning, afternoon and evening; custom habits appear as their own group. Constraints explain how selections shape a manageable plan. Both retain native checkboxes, custom entries, back navigation and Skip.
 
 Choice ticks reserve their space and use a 150ms transform/opacity transition. There are no layout or width animations. Step slides turn off under reduced motion. The summary's answers and save controls are immediately available; the completed night arc arrives once over 480ms and habit markers over 280ms. Ring geometry and sleep values are never intermediate estimates. CSS media queries control these arrivals so reduced-motion preferences cannot change server/client SVG markup.
+
+### Lab Report comparison
+
+Prediction versus reality leads the report. The original prediction is visible from the start; Reveal my result brings in the actual change and its range marker over 480ms with 10px translation and opacity on the settle curve. The final numeric value appears immediately and never counts through misleading intermediate estimates. Replay uses the saved response without another request. Reduced motion reveals the final state immediately, with the same information and keyboard focus retained on the button.
+
+Night identifies the original forecast; moss identifies the observation. The verdict and adherence follow. Written sections without backend content show waiting states, never invented findings. Report skeletons are static.
