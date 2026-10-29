@@ -1,6 +1,6 @@
 # Remaining work
 
-Status as of **29 Oct 2026**, based on `origin/main` (`97a1f5e`) plus the current F5 branch changes. Final demo: **Thu 5 Nov**.
+Status as of **29 Oct 2026**, based on `origin/main` (`5843ec6`) plus the current F3 changes. Final demo: **Thu 5 Nov**.
 
 The core loop, in the order this list follows: **onboarding → propose an experiment → daily check-ins → see results and progress.** 8x judges "a core loop that works end to end", so open items that block the loop come first.
 
@@ -12,12 +12,13 @@ The core loop, in the order this list follows: **onboarding → propose an exper
 | **Partial** | Started; what's missing is stated |
 | **Not started** | Nothing in the code yet |
 | **Uses sample data** | UI exists but isn't wired to the API |
+| **Waiting on backend** | Frontend work is ready against a proposed contract; backend confirmation or implementation is still needed |
 
 **How "Done" was checked.** Backend checks below were last run on `main`; frontend checks were run on this branch:
 
 - Backend: `uv run pytest`, 168 tests.
-- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (43 tests). The base branch also passed `npm run build`.
-- Playwright: `npm run test:e2e`, 7 flows passed, including history at 390px and 1440px. Two unrelated flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
+- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (44 tests).
+- Playwright: `npm run test:e2e`, 9 flows passed, including report takeaways and next-question handoff at 390px and 1440px. Two existing flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
 
 The main account flows were also tried by hand at 390px and 1440px, signed in with a real account:
 
@@ -26,7 +27,7 @@ The main account flows were also tried by hand at 390px and 1440px, signed in wi
 | Profile, propose, save, start | The real backend |
 | Check-in, finish, report | Real backend reads; writes mocked, so no fake health data went into the shared database |
 
-The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states.
+The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states. The report's proposed B2 narrative sections and the prefilled next-question handoff were also checked at both widths with mocked responses. The live backend still does not provide the proposed B2 fields.
 
 Nobody has finished a real experiment against the real database yet. The earliest that's possible is about 3 Nov.
 
@@ -41,7 +42,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
 | F2 | Open the seeded completed experiment | Not started | PRD §18, TRD §28–29 | A signed-in user can load the demo experiment and open its full Lab Report from the app | Must | Yes: B1 |
-| F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Partial | PRD §15 (sections 6, 7, 9), TRD §24–25 | The report shows the AI summary, learnings and next experiment, and a **Run this experiment** button that starts a new proposal from it | Must | Yes: B2 |
+| F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Waiting on backend (UI ready) | PRD §15 (sections 7, 9), TRD §24–25 | With the agreed B2 response, the report shows summary, interpretation, personal learnings, confounders and next experiment; **Run this experiment** opens a prefilled proposal | Must | Yes: B2 |
 | F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish lists only days that actually passed without a check-in | Must | Yes: B4, or agree the frontend filters |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
 | F7 | Rhythm ring hydration mismatch under reduced motion | Partial (bug) | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
@@ -78,7 +79,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | # | Item | Status | Source | Done means | Priority | Depends on Nazmul |
 |---|---|---|---|---|---|---|
 | B1 | Seeded demo: `POST /api/demo/reset` and seed data | Not started | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
-| B2 | AI report: interpretation, learnings, next experiment | Not started | PRD §15, TRD §24–25, §31 | `/complete` fills `interpretation`, `learnings` and `next_experiment` from the calculated facts, validated by Pydantic; the AI can't change the classification | Must | Yes: F3, agree the shape (I2) |
+| B2 | AI report: interpretation, learnings, next experiment | Not started | PRD §15, TRD §24–25, §31 | `/complete` returns the agreed typed B2 report from calculated facts, validated by Pydantic; generated prose cannot change the classification | Must | Yes: F3, agree the shape (I2) |
 | B3 | Past experiments as context for new predictions | Not started | PRD §5.6, §16, §23, TRD §19 | `/propose` passes up to 5 relevant completed experiments to the model | Must | No |
 | B4 | Don't count future days as missing when finished early | Partial (bug) | PRD §14 ("missing days") | `adherence.missing_days` only lists days before the completion day | Must | Yes: F4 |
 | B5 | Chart-ready data in the report | Not started | TRD §26 | The report includes the `chart` array | Nice | No; the frontend builds the chart from check-ins today |
@@ -110,11 +111,22 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | # | Item | Why | Priority |
 |---|---|---|---|
 | I1 | Seeded demo end to end (B1 + F2) | A real experiment can't reach a Lab Report before about 3 Nov. The seed is the only reliable way to demo results on 5 Nov | Must |
-| I2 | Agree the AI report JSON shape before building (B2 + F3) | `ReportOut` types `interpretation`, `learnings` and `next_experiment` as loose `dict`s. TRD §25 has an example shape | Must |
+| I2 | Agree the AI report JSON shape (B2 + F3) | F3 is implemented against the proposal in [DECISIONS.md](DECISIONS.md#b2--report-response); current `ReportOut` still has loose fields and doesn't include all the proposed narrative fields | Must; waiting on Shakeb |
 | I3 | Missing days after an early finish (B4 + F4) | Decide whether the backend fixes `missing_days` or the frontend filters it, so the two don't disagree | Must |
 | I4 | Day boundaries | A day is 24 hours from the start time, not a calendar day. Start at 11pm and "day 2" begins at 11pm the next night | Must (decision) |
 | I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
 | I6 | Keep `frontend/tests/contracts/openapi.json` in step with the backend | The contract test catches drift, but only if the snapshot is refreshed when schemas change | Nice |
+
+### Request for Shakeb: B2 report contract
+
+Please confirm and implement the proposed B2 contract in [DECISIONS.md](DECISIONS.md#b2--report-response), or reply with a corrected shape:
+
+- Keep the existing authenticated endpoints and request bodies: `GET /api/experiments/{id}/report` returns the report, and `POST /api/experiments/{id}/complete` returns `{ experiment, report }`. The nested report and GET response should use the same shape; no user or profile ID is added to either request.
+- Return `{ experiment_id, analysis, summary, interpretation, personal_learnings, confounders, next_experiment, created_at }`. `summary` and `interpretation` are strings; `personal_learnings` and `confounders` are string arrays; `next_experiment` is `{ question, reason }`.
+- Keep deterministic `analysis` and its classification authoritative. Validate generated narrative fields with Pydantic and do not allow generated prose to alter the calculation.
+- Confirm the proposed budget of one report-generation model call, with at most one schema-validation retry, and update TRD §§24–25 to match the agreed response and cost.
+
+This is needed to populate PRD §15's personal-learning section 7 and follow-up question/CTA section 9 from real report data. Until B2 is agreed and served, F3's UI is tested only with mocked responses and shows an honest unavailable message for missing narrative fields.
 
 ---
 
