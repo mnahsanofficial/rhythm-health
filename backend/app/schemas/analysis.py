@@ -45,7 +45,7 @@ class Adherence(BaseModel):
     intervention_days_completed: int
     # completed / logged intervention days (None if none logged)
     adherence_rate: float | None = None
-    # all logged days / all planned days
+    # logged days / days that had elapsed at completion (all planned days for a full run)
     coverage_rate: float
     missing_days: list[int]
 

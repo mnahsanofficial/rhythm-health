@@ -49,11 +49,12 @@ def complete_experiment(experiment_id: UUID, user_id: str = Depends(get_current_
             },
         )
 
-    result = analysis.analyze(row, logged)
+    completed_at = datetime.now(UTC)
+    result = analysis.analyze(row, logged, completed_at)
     profile_id = profile_id_for(user_id)
     try:
         saved = reports.upsert(str(experiment_id), result.model_dump(mode="json"))
-        done = experiments.complete(profile_id, str(experiment_id), datetime.now(UTC).isoformat())
+        done = experiments.complete(profile_id, str(experiment_id), completed_at.isoformat())
     except SupabaseConflict:
         raise HTTPException(status_code=409, detail="This experiment is already completed")
     except SupabaseUnavailable:

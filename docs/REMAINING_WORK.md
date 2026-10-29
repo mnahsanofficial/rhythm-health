@@ -83,7 +83,7 @@ B2 and B5 are done and moved to the Done table below; their IDs are not reused.
 |---|---|---|---|---|---|---|
 | B1 | Seeded demo: `POST /api/demo/reset` and seed data | Not started; next priority after the basic backend features (B3, B4) | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
 | B3 | Past experiments as context for new predictions | Not started | PRD §5.6, §16, §23, TRD §19 | `/propose` passes up to 5 relevant completed experiments to the model | Must | No |
-| B4 | Don't count future days as missing when finished early | Partial (bug) | PRD §14 ("missing days") | `adherence.missing_days` only lists days whose 24-hour interval had ended by the completion time, and `coverage_rate` uses elapsed days only, so future days neither count as missing nor lower coverage. The backend is the single source of truth; the frontend renders it as returned | Must | No (F4 just displays the result) |
+| B4 | Don't count future days as missing when finished early | Done on `feat/past-experiment-context`, not yet merged; check by hand with a real early finish | PRD §14 ("missing days") | `adherence.missing_days` only lists days whose 24-hour interval had ended by the completion time, and `coverage_rate` uses elapsed days only, so future days neither count as missing nor lower coverage. The backend is the single source of truth; the frontend renders it as returned | Must | No (F4 just displays the result) |
 | B6 | Regenerate the prediction before start | Not started | TRD §18 | A proposed experiment's prediction can be regenerated; after start it can't | Nice | Yes, if the UI offers it |
 | B7 | Structured request logging | Deferred: only if time permits (decided) | TRD §37 | Each request logs request_id, user_id, experiment_id, operation, duration_ms, status (today only AI calls are logged) | Nice | No |
 | B8 | One full-flow integration test | Partial; last step, after all features and the frontend are ready (decided) | TRD §42 | One test runs profile → propose → save → start → check-ins → complete → report with mocked AI | Nice | No |
@@ -192,7 +192,7 @@ Differences from the old proposal: there is no top-level `experiment_id` (use `e
 
 | # | Where | What | Effect |
 |---|---|---|---|
-| R2 | `backend/app/services/analysis.py:98`, shown by the report's "Missed" and the day chart | `missing_days` covers every planned day, including ones not reached yet. The frontend shows it as returned | An early finish says days 6–10 were "Missed" until B4 lands (F4 is ready) |
+| R2 | `backend/app/services/analysis.py:98`, shown by the report's "Missed" and the day chart | Before B4, `missing_days` covered every planned day, including ones not reached yet. The frontend shows it as returned | Fixed in the backend by B4 (on `feat/past-experiment-context`); until that merges, an early finish still says days 6–10 were "Missed" |
 | R3 | `frontend/components/rhythm-ring.tsx` | Resolved: CSS controls arrival motion; the server and browser render identical SVG | F7 regression passes and the reduced-motion browser test is enabled again |
 | R4 | `backend/app/services/progress.py:34` | Days are 24 hours from the start time | A late-evening start shifts every day. Accepted V1 behavior (I4); worth knowing when demoing |
 | R5 | `backend/app/api/checkins.py:29` | Only today's check-in can be submitted | A missed day can't be filled in later. By design, but worth knowing for the demo |

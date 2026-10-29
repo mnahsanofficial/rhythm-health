@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -224,3 +225,63 @@ def test_prediction_accuracy(low, high, observed, expected):
 def test_accuracy_is_always_bounded():
     for observed in (-500, -50, 0, 12, 40, 900):
         assert 0 <= prediction_accuracy(8, 15, observed) <= 100
+
+
+# --- early finish: only elapsed days count ----------------------------------
+
+START = datetime(2026, 10, 1, 8, 0, tzinfo=UTC)
+
+
+def started(**kw):
+    return {**experiment(**kw), "started_at": START.isoformat()}
+
+
+def after(days):
+    return START + timedelta(days=days)
+
+
+def early_checkins(logged_days):
+    """3 baseline days then intervention days, restricted to the days that were logged."""
+    return [c for c in SEEDED if c["day_number"] in logged_days]
+
+
+def test_early_finish_does_not_count_future_days_as_missing():
+    # Finished 6.5 days in: days 1-6 are over, days 7-10 never happened.
+    a = analyze(started(), early_checkins(range(1, 7)), after(6.5)).adherence
+    assert a.missing_days == []
+    assert a.coverage_rate == 1.0
+    assert a.intervention_days_planned == 7  # the plan itself is unchanged
+
+
+def test_early_finish_still_reports_a_day_that_really_was_missed():
+    a = analyze(started(), early_checkins([1, 3, 4, 5, 6]), after(6.5)).adherence
+    assert a.missing_days == [2]
+    assert a.coverage_rate == pytest.approx(5 / 6, abs=1e-3)
+
+
+def test_day_in_progress_is_not_missing_but_counts_when_logged():
+    # 5.5 days in: days 1-5 are over and day 6 is under way.
+    unlogged = analyze(started(), early_checkins(range(1, 6)), after(5.5)).adherence
+    assert unlogged.missing_days == [] and unlogged.coverage_rate == 1.0
+    logged = analyze(started(), early_checkins(range(1, 7)), after(5.5)).adherence
+    assert logged.missing_days == [] and logged.coverage_rate == 1.0
+    assert logged.baseline_days_logged == 3 and logged.intervention_days_logged == 3
+
+
+def test_full_length_experiment_is_unchanged_by_completion_time():
+    checkins = [c for c in SEEDED if c["day_number"] not in (2, 9)]
+    legacy = analyze(experiment(), checkins).adherence
+    for finished in (after(10), after(10.5), after(14)):
+        assert analyze(started(), checkins, finished).adherence == legacy
+    assert legacy.missing_days == [2, 9] and legacy.coverage_rate == 0.8
+
+
+def test_early_finish_changes_adherence_only_not_the_statistics():
+    checkins = early_checkins(range(1, 7))
+    early = analyze(started(), checkins, after(6.5))
+    unaware = analyze(experiment(), checkins)
+    assert early.metrics == unaware.metrics
+    assert early.signal == unaware.signal
+    assert early.prediction == unaware.prediction
+    assert early.adherence.adherence_rate == unaware.adherence.adherence_rate
+    assert unaware.adherence.missing_days == [7, 8, 9, 10]  # the old behaviour, for contrast

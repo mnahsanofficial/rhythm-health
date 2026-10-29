@@ -5,6 +5,7 @@ All thresholds are named constants below so the behaviour is easy to read and te
 
 import math
 import statistics
+from datetime import datetime
 
 from app.schemas.analysis import (
     Adherence,
@@ -17,6 +18,7 @@ from app.schemas.analysis import (
 )
 from app.schemas.experiment import Metric, SuccessCriteria
 from app.schemas.prediction import Prediction
+from app.services.progress import DAY
 
 # Minimum check-ins per phase before an experiment can be completed (capped by the
 # configured phase length, so the 1 + 2 day demo shape still works).
@@ -50,14 +52,16 @@ def checkin_counts(checkins: list[dict]) -> tuple[int, int]:
     return baseline, len(checkins) - baseline
 
 
-def analyze(experiment: dict, checkins: list[dict]) -> Analysis:
+def analyze(experiment: dict, checkins: list[dict], completed_at: datetime | None = None) -> Analysis:
     metrics = [Metric.model_validate(m) for m in experiment["metrics"]]
     criteria = SuccessCriteria.model_validate(experiment["success_criteria"])
     prediction = Prediction.model_validate(experiment["prediction"])
     baseline_days = experiment["baseline_days"]
     intervention_days = experiment["intervention_days"]
 
-    adherence = _adherence(checkins, baseline_days, intervention_days)
+    adherence = _adherence(
+        checkins, baseline_days, intervention_days, _days_elapsed(experiment, completed_at)
+    )
     results = [_analyze_metric(m, checkins) for m in metrics]
     primary = next(r for r in results if r.primary)
 
@@ -81,12 +85,32 @@ def analyze(experiment: dict, checkins: list[dict]) -> Analysis:
 # --- adherence --------------------------------------------------------------
 
 
-def _adherence(checkins: list[dict], baseline_days: int, intervention_days: int) -> Adherence:
+def _days_elapsed(experiment: dict, completed_at: datetime | None) -> int | None:
+    """Whole 24-hour days finished by `completed_at`, or None to treat every planned day as
+    elapsed (no completion time, or an experiment that never started)."""
+    started_at = experiment.get("started_at")
+    if completed_at is None or started_at is None:
+        return None
+    if isinstance(started_at, str):
+        started_at = datetime.fromisoformat(started_at)
+    return max(0, (completed_at - started_at) // DAY)
+
+
+def _adherence(
+    checkins: list[dict],
+    baseline_days: int,
+    intervention_days: int,
+    days_elapsed: int | None = None,
+) -> Adherence:
     base = [c for c in checkins if c["phase"] == "baseline"]
     inter = [c for c in checkins if c["phase"] == "intervention"]
     completed = sum(1 for c in inter if c["intervention_completed"])
     total = baseline_days + intervention_days
     logged_days = {c["day_number"] for c in checkins}
+    # Days that can count as missed: those that finished before completion. A day still in
+    # progress counts only if it was logged, and days that never happened count for nothing.
+    finished = total if days_elapsed is None else min(total, days_elapsed)
+    considered = set(range(1, finished + 1)) | logged_days
     return Adherence(
         baseline_days_planned=baseline_days,
         baseline_days_logged=len(base),
@@ -94,8 +118,8 @@ def _adherence(checkins: list[dict], baseline_days: int, intervention_days: int)
         intervention_days_logged=len(inter),
         intervention_days_completed=completed,
         adherence_rate=_r(completed / len(inter)) if inter else None,
-        coverage_rate=_r(len(logged_days) / total),
-        missing_days=[d for d in range(1, total + 1) if d not in logged_days],
+        coverage_rate=_r(len(logged_days) / len(considered)) if considered else 0.0,
+        missing_days=sorted(considered - logged_days),
     )
 
 
