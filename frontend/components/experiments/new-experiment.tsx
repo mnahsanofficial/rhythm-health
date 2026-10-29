@@ -393,7 +393,7 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
 
   const profile = session && loaded?.userId === session.user.id ? loaded.profile : null;
   if (loading || !session || !profile) {
-    return <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-8">
+    return <div className="page-frame py-12">
       {profileError ? <div role="alert" className="rounded-card bg-clay-tint p-6 text-clay">
         <p>Couldn&apos;t load your rhythm: {profileError}</p>
         <button className={`${secondary} mt-4 text-ink`} onClick={() => { setProfileError(null); setAttempt((n) => n + 1); }}>Try again</button>
@@ -402,7 +402,7 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="page-frame pt-8 pb-16 sm:pt-14">
       <Link href="/" className="inline-flex min-h-11 items-center text-moss hover:underline">← Your lab</Link>
       <div className={`mt-5 grid gap-10 ${result?.safety.allowed ? "" : "lg:grid-cols-[1fr_280px] lg:gap-14"}`}>
         <div className="min-w-0">

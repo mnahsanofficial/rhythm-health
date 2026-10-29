@@ -1,6 +1,6 @@
 # UI quality
 
-Mobile-first. The daily loop happens on a phone (PRD §21), so check every screen at **390px** wide first, then desktop.
+Mobile-first. The daily loop happens on a phone (PRD §21), so check every screen at **390px** wide first. Then it must hold at every width from 320px to 2560px and at 200% zoom: follow the [layout rules in DESIGN.md](../../DESIGN.md#layout) and add new pages to `frontend/tests/e2e/layout-widths.spec.ts`.
 
 ## Every API call has real states
 

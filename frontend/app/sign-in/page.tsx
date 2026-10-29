@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function SignInPage() {
   return (
-    <div className="mx-auto w-full max-w-md flex-1 px-4 pt-10 pb-16 sm:px-8 sm:pt-16">
+    <div className="page-frame flex-1 pt-10 pb-16 sm:pt-16 [--frame:28rem]">
       {/* SignIn reads ?next=, which only exists in the browser. */}
       <Suspense fallback={<FormSkeleton />}>
         <SignIn />

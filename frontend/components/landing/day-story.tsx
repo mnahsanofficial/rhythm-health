@@ -145,10 +145,13 @@ function StorySection({ children, first = false, labelledBy }: { children: React
   return (
     <section
       aria-labelledby={labelledBy}
-      className={`flex min-h-svh items-start px-[var(--gutter)] lg:items-center motion-reduce:min-h-0 motion-reduce:py-6 ${first ? "pt-[max(1.5rem,6svh)] lg:pt-0 motion-reduce:pt-8" : "pt-[max(4.5rem,12svh)] lg:pt-0"}`}
+      className={`flex min-h-svh items-start lg:items-center motion-reduce:min-h-0 motion-reduce:py-6 ${first ? "pt-[max(1.5rem,6svh)] lg:pt-0 motion-reduce:pt-8" : "pt-[max(4.5rem,12svh)] lg:pt-0"}`}
     >
-      <div className="w-full max-w-[min(100%,34rem)] rounded-card border border-line bg-paper/95 p-5 sm:p-7 motion-reduce:max-w-[min(100%,40rem)]">
-        {children}
+      {/* The card sits in the page frame, so it lines up with the header at every width. */}
+      <div className="page-frame">
+        <div className="w-full max-w-[34rem] rounded-card border border-line bg-paper/95 p-5 sm:p-7 motion-reduce:max-w-[40rem]">
+          {children}
+        </div>
       </div>
     </section>
   );

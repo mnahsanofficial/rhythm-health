@@ -6,7 +6,7 @@ Rhythm Health Lab turns a daily habit question into a small personal experiment.
 
 **A day's light:** oat and paper surfaces, ink text, moss actions and observations, night-blue sleep and forecasts, and sun-yellow habit markers. Fraunces gives questions their voice, Instrument Sans keeps forms readable, and Geist Mono carries times and measurements.
 
-Design at 390px first, then check at 1440px. Use type, spacing and dividers to establish hierarchy. Cards group a decision or comparison; history uses rows. Avoid decorative gradients, repeated shadows, all-caps labels and a fade-up on every section.
+Design at 390px first, then make the layout hold at every width (see [Layout](#layout)). Use type, spacing and dividers to establish hierarchy. Cards group a decision or comparison; history uses rows. Avoid decorative gradients, repeated shadows, all-caps labels and a fade-up on every section.
 
 ## Visual tokens
 
@@ -41,7 +41,7 @@ Colour, type, shape and easing live in `frontend/app/globals.css`. Use Tailwind 
 
 Fonts load through `next/font/google` in `frontend/app/layout.tsx`.
 
-Scale: `text-caption` 14, `text-body` 16, `text-lead` 18, `text-title` 24, `text-headline` 32, `text-display-sm` 44, `text-display` 60 (px). Each size sets its own line height. Large headings use `tracking-tight` and often `text-balance`.
+Scale: `text-caption` 14, `text-body` 16, `text-lead` 18 (px, fixed). Headings are fluid: `text-title` 22–24, `text-headline` 28–32, `text-display-sm` 36–44, `text-display` 44–60, each a `clamp()` of rem and vw, so they grow smoothly with the screen and still enlarge with browser zoom. Each size sets its own line height. Large headings use `tracking-tight` and often `text-balance`.
 
 ### Shape and spacing
 
@@ -49,13 +49,26 @@ Scale: `text-caption` 14, `text-body` 16, `text-lead` 18, `text-title` 24, `text
 |---|---|
 | `rounded-card` | 1.25rem; grouped controls, comparisons and alerts |
 | `rounded-pill` | 999px; actions, chips, markers and meters |
-| Page gutters | `px-4 sm:px-8`; 16px on phones |
-| Page width | `max-w-6xl`; focused flows use narrower containers |
+| Page gutters | `var(--gutter)`: `clamp(1rem, 4vw, 4rem)`, 16px on phones up to 64px |
+| Page width | `page-frame`: up to 90rem of content; focused flows narrow it with `[--frame:…]` |
 | Tap targets | At least 44px; primary actions generally 48px |
 | Inputs | At least 16px on phones |
 | Focus | Visible moss outline, 2px with 3px offset |
 
 Use Tailwind's spacing scale. Keep the typography and palette consistent across public and signed-in pages. Current comparison markers use a border rather than a shadow.
+
+## Layout
+
+Every page works at any width from 320px to 2560px, and at 200% browser zoom. There are no fixed "phone" and "desktop" designs: sizes flow between them.
+
+- **Backgrounds and illustrations reach both edges.** Full-width sections (the landing story's sky, a coloured band) sit outside the page frame. Never put a background on a `page-frame` element and call it full width.
+- **Content sits in the page frame.** Wrap each page's content in `page-frame` (in `globals.css`): centred, `width: 100%`, padded by the fluid `--gutter`, and at most 90rem of content wide. Focused flows narrow it with an arbitrary property instead of a new container, for example `page-frame [--frame:42rem]` for check-in, `28rem` for sign-in and `48rem` for the demo. The header uses the same frame, so its logo always lines up with the page content. Don't add `mx-auto max-w-* px-4 sm:px-8` containers.
+- **Grids and cards use the width; paragraphs don't.** A global rule caps every `<p>` at `48ch` (about 65–75 characters a line, measured for Instrument Sans). Don't override it with a wider `max-w-*` on a paragraph. Let cards, timelines and multi-column grids take the extra width instead.
+- **Fluid, not stepped.** Prefer `clamp()`, `var(--gutter)`, `minmax()` grid tracks and wrapping flex rows over adding breakpoints. Use a breakpoint where the layout really changes, such as a second column from `lg`.
+- **Pinned phone action bars** (`sticky bottom-0`) bleed to the screen edge with `-mx-[var(--gutter)] px-[var(--gutter)]`, not hard-coded `-mx-4`.
+- **Nothing scrolls sideways.** No element may be wider than the viewport. Illustrations use `preserveAspectRatio="xMidYMax slice"` or `w-full h-auto`, never a fixed pixel width.
+
+**How to check:** `frontend/tests/e2e/layout-widths.spec.ts` visits every page at 320, 375, 390, 768, 1024, 1280, 1440, 1920 and 2560px, and at 1280px and 1440px windows zoomed to 200% (640 and 720 CSS px). It fails on horizontal scrolling, content off centre, a page frame not using the available width, a paragraph over 76 characters a line, or overlapping text and controls. Add every new page to it. `CAPTURE_LAYOUT=1` saves a screenshot of each page at each width under `docs/screenshots/layout/`.
 
 ## Motion system
 

@@ -106,7 +106,7 @@ function Flow() {
 
   return (
     <div
-      className={`mx-auto grid w-full max-w-6xl flex-1 px-4 sm:px-8 ${
+      className={`page-frame grid flex-1 ${
         isSummary ? "" : "lg:grid-cols-[minmax(0,34rem)_1fr] lg:gap-20"
       }`}
     >
@@ -167,7 +167,7 @@ function Flow() {
 
         <div
           hidden={isSummary}
-          className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0"
+          className="sticky bottom-0 -mx-[var(--gutter)] flex items-center gap-3 border-t border-line bg-oat/95 px-[var(--gutter)] py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0"
         >
           {step > 0 && (
             <button
@@ -244,7 +244,7 @@ function Intro({ headingRef }: { headingRef: React.Ref<HTMLHeadingElement> }) {
 /** Same shape as a question step, shown while saved answers load. */
 function StepSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-xl px-4 pt-10 sm:px-8">
+    <div aria-hidden="true" className="page-frame pt-10 [--frame:36rem]">
       <div className="h-3 w-16 rounded-pill bg-line" />
       <div className="mt-4 h-8 w-3/4 rounded-pill bg-line" />
       <div className="mt-3 h-4 w-full rounded-pill bg-line" />

@@ -157,9 +157,9 @@ export function LabReport({ id }: { id: string }) {
             {signal.label}
           </span>
         </h2>
-        <p className="mt-4 max-w-2xl text-lead text-ink">{signal.summary}</p>
+        <p className="mt-4 text-lead text-ink">{signal.summary}</p>
         {primary && primary.percent_change !== null && (
-          <p className="mt-2 max-w-2xl text-body text-muted">
+          <p className="mt-2 text-body text-muted">
             {primary.label}: {signedPercent(primary.percent_change)} on test days compared with your baseline
             {primary.baseline.mean !== null && primary.intervention.mean !== null &&
               ` (${primary.baseline.mean.toFixed(1)} → ${primary.intervention.mean.toFixed(1)} on average)`}
@@ -236,14 +236,14 @@ export function LabReport({ id }: { id: string }) {
           What you learned about you
         </h2>
         {narrative.summary ? (
-          <p className="mt-3 max-w-2xl text-body">{narrative.summary}</p>
+          <p className="mt-3 text-body">{narrative.summary}</p>
         ) : (
-          <p className="mt-3 max-w-2xl text-body text-muted">
+          <p className="mt-3 text-body text-muted">
             Waiting for your written results. Takeaways will appear when they are available for this report.
           </p>
         )}
         {narrative.interpretation && (
-          <p className="mt-3 max-w-2xl text-body text-muted">{narrative.interpretation}</p>
+          <p className="mt-3 text-body text-muted">{narrative.interpretation}</p>
         )}
         {narrative.personalLearnings.length > 0 && (
           <ul className="mt-5 flex flex-col gap-3 border-t border-line pt-5">
@@ -274,8 +274,8 @@ export function LabReport({ id }: { id: string }) {
         </h2>
         {narrative.nextExperiment ? (
           <>
-            <p className="mt-3 max-w-2xl text-lead">{narrative.nextExperiment.question}</p>
-            <p className="mt-2 max-w-2xl text-body text-muted">{narrative.nextExperiment.reason}</p>
+            <p className="mt-3 text-lead">{narrative.nextExperiment.question}</p>
+            <p className="mt-2 text-body text-muted">{narrative.nextExperiment.reason}</p>
             <Link
               href={`/experiments/new?question=${encodeURIComponent(narrative.nextExperiment.question)}`}
               className={`${linkButton} mt-5`}
@@ -285,7 +285,7 @@ export function LabReport({ id }: { id: string }) {
           </>
         ) : (
           <>
-            <p className="mt-3 max-w-2xl text-body text-muted">
+            <p className="mt-3 text-body text-muted">
               Waiting for your follow-up results. A new question will appear when it is available for this report.
             </p>
             <Link href="/experiments/new" className={`${linkButton} mt-5`}>
@@ -335,7 +335,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Page({ children, back }: { children: React.ReactNode; back?: string }) {
   return (
-    <div className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-16 sm:px-8 sm:pt-14">
+    <div className="page-frame flex-1 pt-8 pb-16 sm:pt-14">
       {back && (
         <Link href={back} className="-mx-1 mb-6 inline-flex min-h-11 items-center px-1 text-moss hover:underline">
           ← Your experiment
@@ -349,7 +349,7 @@ function Page({ children, back }: { children: React.ReactNode; back?: string }) 
 /** Same shape as the report: heading, verdict, two cards, chart. */
 export function LabReportSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-5xl px-4 pt-8 sm:px-8 sm:pt-14">
+    <div aria-hidden="true" className="page-frame pt-8 sm:pt-14">
       <div className="h-5 w-32 rounded-pill bg-line" />
       <div className="mt-6 h-3 w-40 rounded-pill bg-line" />
       <div className="mt-3 h-10 w-3/4 rounded-pill bg-line" />

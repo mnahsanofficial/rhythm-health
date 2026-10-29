@@ -388,7 +388,7 @@ export function CheckinForm({ id }: { id: string }) {
           {fieldErrors.note && <p className="mt-2 text-caption font-medium text-clay">{fieldErrors.note}</p>}
         </div>
 
-        <div className="sticky bottom-0 -mx-4 border-t border-line bg-oat/95 px-4 py-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+        <div className="sticky bottom-0 -mx-[var(--gutter)] border-t border-line bg-oat/95 px-[var(--gutter)] py-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
           <button type="submit" disabled={saving} aria-busy={saving} className={`${primaryButton} w-full sm:w-auto`}>
             {saving ? "Saving…" : alreadyToday ? "Update today's check-in" : "Save today's check-in"}
           </button>
@@ -408,7 +408,7 @@ function Shell({
   backLabel?: string;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-16 sm:px-8 sm:pt-10">
+    <div className="page-frame flex-1 pt-6 pb-16 sm:pt-10 [--frame:42rem]">
       {back && (
         <Link href={back} className="-mx-1 mb-6 inline-flex min-h-11 items-center px-1 text-body text-moss hover:underline">
           ← {backLabel}
@@ -446,7 +446,7 @@ function Tick({ reduceMotion }: { reduceMotion: boolean }) {
 /** Same shape as the form: header, three questions, the save button. */
 export function CheckinSkeleton() {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-8 sm:pt-10">
+    <div aria-hidden="true" className="page-frame pt-6 sm:pt-10 [--frame:42rem]">
       <div className="h-5 w-32 rounded-pill bg-line" />
       <div className="mt-8 h-3 w-36 rounded-pill bg-line" />
       <div className="mt-3 h-10 w-2/3 rounded-pill bg-line" />

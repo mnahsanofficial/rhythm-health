@@ -24,21 +24,22 @@
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Type scale: 14 / 16 / 18 / 24 / 32 / 44 / 60 */
+  /* Type scale: 14 / 16 / 18, then fluid headings that grow with the screen up to
+     24 / 32 / 44 / 60. Each clamp mixes rem and vw, so browser zoom still enlarges them. */
   --text-caption: 0.875rem;
   --text-caption--line-height: 1.35rem;
   --text-body: 1rem;
   --text-body--line-height: 1.6rem;
   --text-lead: 1.125rem;
   --text-lead--line-height: 1.75rem;
-  --text-title: 1.5rem;
-  --text-title--line-height: 2rem;
-  --text-headline: 2rem;
-  --text-headline--line-height: 2.4rem;
-  --text-display-sm: 2.75rem;
-  --text-display-sm--line-height: 3rem;
-  --text-display: 3.75rem;
-  --text-display--line-height: 4rem;
+  --text-title: clamp(1.375rem, 1.25rem + 0.5vw, 1.5rem);
+  --text-title--line-height: 1.33;
+  --text-headline: clamp(1.75rem, 1.45rem + 1.2vw, 2rem);
+  --text-headline--line-height: 1.2;
+  --text-display-sm: clamp(2.25rem, 1.75rem + 2vw, 2.75rem);
+  --text-display-sm--line-height: 1.09;
+  --text-display: clamp(2.75rem, 2rem + 3vw, 3.75rem);
+  --text-display--line-height: 1.07;
 
   --radius-card: 1.25rem;
   --radius-pill: 999px;
@@ -73,6 +74,13 @@ body {
 
 /* In the base layer so utilities (e.g. outline-none on focus-target headings) can override it. */
 @layer base {
+  /* Reading width: a paragraph never runs past about 75 characters a line, however wide the
+     screen. Grids and cards can use the extra width; text can't. Instrument Sans's "0" is wide,
+     so 48ch holds roughly 65-75 average characters. Don't widen a paragraph past this. */
+  p {
+    max-inline-size: 48ch;
+  }
+
   :focus-visible {
     outline: 2px solid var(--color-moss);
     outline-offset: 3px;
@@ -101,11 +109,12 @@ body {
   to { opacity: 1; transform: scale(1); }
 }
 
-/* The shared page frame: content up to 80rem wide, centred, with the fluid gutter.
-   Backgrounds and illustrations sit outside it so they always reach both screen edges. */
+/* The shared page frame: content up to 90rem wide (or --frame for focused pages), centred,
+   with the fluid gutter. Backgrounds and illustrations sit outside it, so they always reach
+   both screen edges. */
 @utility page-frame {
   margin-inline: auto;
   width: 100%;
-  max-width: calc(80rem + 2 * var(--gutter));
+  max-width: calc(var(--frame, 90rem) + 2 * var(--gutter));
   padding-inline: var(--gutter);
 }

@@ -14,7 +14,7 @@ function Mark() {
 
 export function SiteHeader() {
   return (
-    <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
+    <header className="page-frame flex h-16 items-center justify-between gap-4">
       <Link
         href="/"
         className="-mx-2 flex min-h-11 items-center gap-2 px-2 font-display text-title tracking-tight"
