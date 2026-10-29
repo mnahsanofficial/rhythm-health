@@ -62,7 +62,7 @@ Each line is a summary. Read the file before you work in that area.
 - **[Git workflow](docs/rules/git-workflow.md):** branch names, Conventional Commit messages, PRs, merge commits, session logs.
 - **[Secrets](docs/rules/secrets.md):** which values are secret, where they live, and how to check one is set without printing it.
 - **[API contracts](docs/rules/api-contracts.md):** how the frontend and the FastAPI backend talk. Covers auth, error shapes, the shared types and the contract test.
-- **[Testing](docs/rules/testing.md):** the suites, what they mock, testing by hand, and keeping paid AI calls to a minimum.
+- **[Testing](docs/rules/testing.md):** the suites, what they mock, testing by hand, and keeping paid AI calls to a minimum. Frontend changes follow red-before-green: prove the behavior with a failing test before changing product code.
 - **[UI quality](docs/rules/ui-quality.md):** mobile-first, loading, error and empty states for every API call, accessibility, and labelled sample data.
 - **[Health content](docs/rules/health-content.md):** no calorie counting, weight targets or medical claims, and a short experiment shows a pattern, not proof.
 
