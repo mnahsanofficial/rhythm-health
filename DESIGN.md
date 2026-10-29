@@ -139,3 +139,9 @@ The home and experiment detail reuse `experiments/experiment-progress.tsx` for t
 The response replaces question entry with a dedicated preview. The plan and original forecast sit side by side on desktop and in reading order on phones. Forecasts use night/night-tint, mono endpoints and a range rather than a single precise estimate. The range fills via scaleX over 480ms on the settle curve; endpoints fade over 280ms. Reduced motion shows the final values immediately. This shared forecast styling also applies on experiment detail.
 
 The AI wait explains the request's work without claiming live stage completion or percentage progress. Its shaped skeleton may pulse while the actual request is pending; ordinary loading skeletons remain static. “Ask something else” restores focus to question entry.
+
+### Onboarding rhythm
+
+Habits follow morning, afternoon and evening; custom habits appear as their own group. Constraints explain how selections shape a manageable plan. Both retain native checkboxes, custom entries, back navigation and Skip.
+
+Choice ticks reserve their space and use a 150ms transform/opacity transition. There are no layout or width animations. Step slides turn off under reduced motion. The summary's answers and save controls are immediately available; the completed night arc arrives once over 480ms and habit markers over 280ms. Ring geometry and sleep values are never intermediate estimates. CSS media queries control these arrivals so reduced-motion preferences cannot change server/client SVG markup.

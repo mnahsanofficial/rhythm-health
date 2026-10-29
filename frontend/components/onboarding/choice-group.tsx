@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
 
 type Option<T extends string> = { value: T; label: string; hint?: string };
@@ -18,6 +18,7 @@ type Props<T extends string> = {
  */
 export function ChoiceGroup<T extends string>({ legend, options, value, onChange }: Props<T>) {
   const name = useId();
+  const reduce = useReducedMotion();
 
   return (
     <fieldset>
@@ -34,7 +35,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
             >
               {selected && (
                 <motion.span
-                  layoutId={`${name}-selected`}
+                  layoutId={reduce ? undefined : `${name}-selected`}
                   className="absolute inset-0 rounded-card border-2 border-moss bg-moss-tint"
                   transition={{ type: "spring", stiffness: 500, damping: 38 }}
                 />
@@ -66,8 +67,8 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     initial={false}
-                    animate={{ pathLength: selected ? 1 : 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    animate={{ opacity: selected ? 1 : 0 }}
+                    transition={{ duration: reduce ? 0 : 0.15, ease: "easeOut" }}
                   />
                 </svg>
               </span>

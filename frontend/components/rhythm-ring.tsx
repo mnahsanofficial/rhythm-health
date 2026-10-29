@@ -1,16 +1,5 @@
 "use client";
 
-import {
-  animate,
-  AnimatePresence,
-  motion,
-  useInView,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-  type MotionValue,
-} from "motion/react";
-import { useEffect, useRef, useState } from "react";
 import { formatHours, minutesBetween, pointAt, toMinutes } from "@/lib/rhythm/time";
 import type { PlacedHabit } from "@/lib/rhythm/habits";
 import type { SleepSchedule } from "@/lib/types/api";
@@ -25,7 +14,6 @@ const HOUR_LABELS = [
   { minutes: 720, text: "12" },
   { minutes: 1080, text: "18" },
 ];
-const settle = { type: "spring", stiffness: 120, damping: 22 } as const;
 
 type Props = {
   schedule?: SleepSchedule;
@@ -35,44 +23,12 @@ type Props = {
 
 /**
  * A person's day on a 24-hour dial: the night they sleep, and habits placed at their times.
- * It draws in when it first comes into view, then follows any change to the answers,
- * so during onboarding the ring visibly builds from what the user enters.
+ * The completed arc and new habit markers arrive once using transform and opacity.
+ * Geometry is final immediately; CSS media queries keep hydration independent of motion preferences.
  */
 export function RhythmRing({ schedule, sleepHours, habits }: Props) {
-  const ref = useRef<SVGSVGElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.5 });
-  const reduce = useReducedMotion();
-
-  // Night arc = a circle stroke, rotated to bedtime, dashed to the length of the night.
   const startDeg = schedule ? (toMinutes(schedule.bedtime) / 1440) * 360 : 0;
   const spanFraction = schedule ? minutesBetween(schedule.bedtime, schedule.wake_time) / 1440 : 0;
-  const rotate = useMotionValue(startDeg);
-  const span = useMotionValue(0);
-  // Markers wait for the night arc on the first draw-in; after that, a newly picked habit pops in at once.
-  const [settled, setSettled] = useState(false);
-
-  useEffect(() => {
-    if (!inView) return;
-    const t = setTimeout(() => setSettled(true), 1600);
-    return () => clearTimeout(t);
-  }, [inView]);
-
-  useEffect(() => {
-    if (!inView) return;
-    // Turn the short way round, so 23:30 → 00:30 moves forward an hour, not back 23.
-    const delta = ((((startDeg - rotate.get()) % 360) + 540) % 360) - 180;
-    if (reduce) {
-      rotate.jump(rotate.get() + delta);
-      span.jump(spanFraction);
-      return;
-    }
-    const a = animate(rotate, rotate.get() + delta, settle);
-    const b = animate(span, spanFraction, { duration: span.get() === 0 ? 1.1 : 0.5, ease: [0.22, 1, 0.36, 1] });
-    return () => {
-      a.stop();
-      b.stop();
-    };
-  }, [inView, reduce, startDeg, spanFraction, rotate, span]);
 
   const label = schedule
     ? `Sleep from ${schedule.bedtime} to ${schedule.wake_time}` +
@@ -81,17 +37,17 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
     : "Your rhythm will appear here as you answer.";
 
   return (
-    <svg ref={ref} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={label} className="h-auto w-full">
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={label} className="h-auto w-full">
       <circle cx={C} cy={C} r={R_TRACK} fill="none" stroke="var(--color-line)" strokeWidth={22} />
       <Ticks />
 
-      {schedule && <NightArc rotate={rotate} span={span} />}
+      {schedule && <NightArc rotate={startDeg} span={spanFraction} />}
 
-      <AnimatePresence>
-        {habits.map((habit, i) => {
+      <g>
+        {habits.map((habit) => {
           const p = pointAt(toMinutes(habit.time), C, C, R_MARKERS);
           return (
-            <motion.circle
+            <circle
               key={habit.label}
               cx={p.x}
               cy={p.y}
@@ -99,15 +55,12 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
               fill="var(--color-sun)"
               stroke="var(--color-ink)"
               strokeWidth={1.5}
-              initial={reduce ? false : { opacity: 0, scale: 0.4 }}
-              animate={inView ? { opacity: 1, scale: 1 } : undefined}
-              exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.15 } }}
-              transition={{ delay: settled ? 0 : 0.9 + i * 0.12, type: "spring", stiffness: 420, damping: 22 }}
-              style={{ transformOrigin: `${p.x}px ${p.y}px` }}
+              className="origin-center motion-safe:animate-[rhythm-arrive_280ms_var(--ease-settle)_both]"
+              style={{ transformBox: "fill-box" }}
             />
           );
         })}
-      </AnimatePresence>
+      </g>
 
       {sleepHours !== undefined ? (
         <>
@@ -130,25 +83,18 @@ export function RhythmRing({ schedule, sleepHours, habits }: Props) {
   );
 }
 
-function NightArc({ rotate, span }: { rotate: MotionValue<number>; span: MotionValue<number> }) {
-  // A circle's stroke starts at 3 o'clock; -90° puts the start of the dash at midnight.
-  const fromTop = useTransform(rotate, (deg) => deg - 90);
-  const dash = useTransform(span, (s) => `${s} ${1 - s}`);
-  // A round cap on a zero-length dash still draws a dot, so hide the arc until it has length.
-  const opacity = useTransform(span, (s) => (s > 0.002 ? 1 : 0));
+function NightArc({ rotate, span }: { rotate: number; span: number }) {
   return (
-    <motion.circle
-      cx={C}
-      cy={C}
-      r={R_TRACK}
-      fill="none"
-      stroke="var(--color-night)"
-      strokeWidth={22}
-      strokeLinecap="round"
-      pathLength={1}
-      strokeDasharray={dash}
-      style={{ rotate: fromTop, opacity }}
-    />
+    <g className="origin-center motion-safe:animate-[rhythm-arrive_480ms_var(--ease-settle)_both]">
+      <circle
+        cx={C} cy={C} r={R_TRACK}
+        fill="none" stroke="var(--color-night)" strokeWidth={22}
+        strokeLinecap="round" pathLength={1}
+        strokeDasharray={`${span} ${1 - span}`}
+        transform={`rotate(${rotate - 90} ${C} ${C})`}
+        opacity={span > 0.002 ? 1 : 0}
+      />
+    </g>
   );
 }
 

@@ -156,8 +156,7 @@ test("keyboard users can move through each onboarding step and reach the summary
   await expect(page.getByRole("heading", { name: /Here's your rhythm/ })).toBeVisible();
 });
 
-test("reduced-motion preference shortens decorative loading animations", async ({ page }) => {
-  test.skip(true, "Rendering the sample RhythmRing under reduced motion emits a server/client SVG hydration mismatch.");
+test("reduced-motion loading stays static", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const counts = await installApiMocks(page);
   await answerOnboardingWithMouse(page);
@@ -181,10 +180,9 @@ test("reduced-motion preference shortens decorative loading animations", async (
     await page.goto("/");
     await profileStarted;
     expect(await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
-    const pulse = page.getByRole("main").locator('div[aria-hidden="true"].animate-pulse').first();
-    await expect(pulse).toBeVisible();
-    const duration = await pulse.evaluate((element) => Number.parseFloat(getComputedStyle(element).animationDuration));
-    expect(duration).toBeLessThanOrEqual(0.0001);
+    const loading = page.getByRole("status", { name: "Loading your lab" });
+    await expect(loading).toBeVisible();
+    expect(await loading.evaluate(element => element.getAnimations({ subtree: true }).filter(animation => animation.playState === "running").length)).toBe(0);
   } finally {
     releaseProfile();
   }

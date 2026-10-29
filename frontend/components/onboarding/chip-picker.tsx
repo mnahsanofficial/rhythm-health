@@ -1,10 +1,10 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import { useId, useState } from "react";
 
 type Props = {
   legend: string;
+  groups?: { label: string; options: string[] }[];
   options: string[];
   value: string[];
   onChange: (value: string[]) => void;
@@ -20,7 +20,7 @@ const MAX_CUSTOM_LENGTH = 60;
  * Multiple choice as chips, plus "add your own". Native checkboxes underneath for keyboard
  * and screen readers. Picked chips fill in and grow a tick; added chips pop into the list.
  */
-export function ChipPicker({ legend, options, value, onChange, max, addLabel, addPlaceholder }: Props) {
+export function ChipPicker({ legend, options, value, onChange, max, addLabel, addPlaceholder, groups }: Props) {
   const inputId = useId();
   const [custom, setCustom] = useState("");
   // Anything picked that isn't a preset was typed by the user; show it as its own chip.
@@ -46,61 +46,36 @@ export function ChipPicker({ legend, options, value, onChange, max, addLabel, ad
     <div>
       <fieldset>
         <legend className="sr-only">{legend}</legend>
-        <motion.div layout className="flex flex-wrap gap-2">
-          <AnimatePresence initial={false} mode="popLayout">
-            {chips.map((chip) => {
-              const picked = value.includes(chip);
-              const disabled = full && !picked;
-              return (
-                <motion.label
-                  layout
-                  key={chip}
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: disabled ? 0.45 : 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.85 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 34 }}
-                  className={`flex min-h-11 items-center gap-1.5 rounded-pill border px-4 text-body transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss ${
-                    picked
-                      ? "border-moss bg-moss text-paper"
-                      : "border-line bg-paper text-ink hover:border-muted"
-                  } ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={picked}
-                    disabled={disabled}
-                    onChange={() => toggle(chip)}
-                    className="sr-only"
-                  />
-                  <AnimatePresence initial={false}>
-                    {picked && (
-                      <motion.svg
-                        key="tick"
-                        viewBox="0 0 16 16"
-                        aria-hidden="true"
-                        className="size-4 shrink-0"
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 16, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.18 }}
+        <div className="space-y-5">
+          {(groups ? [...groups, { label: "Your own habits", options: chips.filter(c => !options.includes(c)) }] : [{ label: "", options: chips }])
+            .filter(group => group.options.length > 0)
+            .map(group => (
+              <div key={group.label}>
+                {group.label && <h2 className="mb-2 font-display text-title">{group.label}</h2>}
+                <div className="flex flex-wrap gap-2">
+                  {group.options.map(chip => {
+                    const picked = value.includes(chip);
+                    const disabled = full && !picked;
+                    return (
+                      <label
+                        key={chip}
+                        className={`flex min-h-12 items-center gap-2 rounded-pill border px-4 text-body transition-transform active:scale-[0.98] motion-reduce:transition-none has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss ${picked ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"} ${disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}
                       >
-                        <path
-                          d="M3.5 8.5 L6.5 11.5 L12.5 4.5"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2.25}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </motion.svg>
-                    )}
-                  </AnimatePresence>
-                  {chip}
-                </motion.label>
-              );
-            })}
-          </AnimatePresence>
-        </motion.div>
+                        <input type="checkbox" checked={picked} disabled={disabled} onChange={() => toggle(chip)} className="sr-only" />
+                        <svg
+                          viewBox="0 0 16 16" aria-hidden="true"
+                          className={`size-4 shrink-0 transition-[transform,opacity] duration-150 motion-reduce:transition-none ${picked ? "scale-100 opacity-100" : "scale-75 opacity-30"}`}
+                        >
+                          {picked ? <path d="M3.5 8.5 L6.5 11.5 L12.5 4.5" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" /> : <circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" />}
+                        </svg>
+                        {chip}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+        </div>
       </fieldset>
 
       {/* A small limit is part of the question ("pick up to three"), so count it; a large one only matters once hit. */}
