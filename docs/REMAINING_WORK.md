@@ -61,7 +61,7 @@ Nobody has finished a real experiment through the UI yet; the earliest that's po
 | Home: new, returning and active states | PRD §20 | Active shows "Check in for day X", or "Done for today" |
 | Home rhythm ring | PRD §20 | **Uses sample data**, labelled as sample, by design. Onboarding draws the user's own ring |
 | Ask a question, see the proposal and prediction, start | PRD §7–9, TRD §13 | Shows confidence, reasoning and uncertainty factors |
-| Check for an active experiment before proposing | TRD §2.5 | `/experiments/new` checks the active list before `/propose`; if one exists, it links to it without making an AI call |
+| Check for an active experiment before proposing | TRD §2.5 | Your lab (`/`) and `/experiments/new` share the question/proposal flow. Both check the active list before `/propose`; home also shows the known active warning immediately when opening a question. No paid call is made while one is running |
 | Experiment history | PRD §17, §19 screen 8, §23; TRD §27 | Lists completed experiments with date, prediction, observed outcome and signal; loads each existing report independently, with loading, missing, error and retry states |
 | Safety block with a suggested alternative ("Use this instead") | PRD §10, TRD §15 | |
 | Daily check-in from the experiment's own metrics | PRD §12, TRD §20 | Scale, number, boolean, duration; optional note; server field errors shown per field |
@@ -200,7 +200,7 @@ Differences from the old proposal: there is no top-level `experiment_id` (use `e
 | R7 | `frontend/tests/contracts/api-contract.test.ts` | The snapshot is current and covers `LabReport`, but the test doesn't check check-in fixtures yet | Check-in shape drift wouldn't be caught (F8) |
 | R12 | `backend/app/services/report_writer.py` | Nothing in code checks that numbers quoted in the narrative match the analysis (the signal classification and wording are checked) | A model could misquote a figure in the prose. The frontend never takes a figure from the narrative: every number on the report comes from `analysis` or `chart` (tested) |
 | R8 | `frontend/tests/e2e/onboarding-experiment.spec.ts:30` | Keyboard-only onboarding test skipped: Chromium leaves the time fields empty | Keyboard path through the sleep-schedule step isn't covered automatically (F12) |
-| R9 | `frontend/components/experiments/new-experiment.tsx:17` vs `frontend/lib/report/copy.ts:51` | Two `signedPercent` functions; only one rounds | A range could read "+7.5%" on the proposal and "+8%" on the report (F12) |
+| R9 | `frontend/components/experiments/experiment-flow.tsx` (`signedPercent`) vs `frontend/lib/report/copy.ts:51` | Two `signedPercent` functions; only one rounds | A range could read "+7.5%" on the proposal and "+8%" on the report (F12) |
 | R10 | `frontend/components/auth-panel.tsx`, `frontend/components/backend-status.tsx` | Not imported anywhere | Dead code (F12) |
 
 ---

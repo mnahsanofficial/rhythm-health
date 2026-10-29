@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeExperience } from "@/components/home-experience";
 import type { Experiment } from "@/lib/types/api";
-import { experiment, profile } from "../support/fixtures";
+import { experiment, profile, proposeResponse, saveExperimentRequest } from "../support/fixtures";
 import { server } from "../support/server";
 
 const { getSession, router, sessionState } = vi.hoisted(() => ({
@@ -105,7 +105,7 @@ describe("home session gate", () => {
     server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([])));
     render(home());
 
-    expect(await screen.findByRole("link", { name: "Test a new question" })).toHaveAttribute("href", "/experiments/new");
+    expect(await screen.findByRole("textbox", { name: "Your question or goal" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Public landing with sample rhythm" })).not.toBeInTheDocument();
   });
 
@@ -179,7 +179,7 @@ describe("home session gate", () => {
 
     expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Loading your lab");
-    expect(await screen.findByRole("link", { name: "Test a new question" })).toBeVisible();
+    expect(await screen.findByRole("textbox", { name: "Your question or goal" })).toBeVisible();
   });
 
   it("removes the private dashboard immediately on sign-out", async () => {
@@ -192,5 +192,143 @@ describe("home session gate", () => {
 
     expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Public landing with sample rhythm" })).toBeVisible();
+  });
+});
+
+
+describe("ask from Your lab", () => {
+  it("validates the question and shows the same counter and copy as the question page", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([])));
+    render(home());
+
+    const field = await screen.findByRole("textbox", { name: "Your question or goal" });
+    const design = screen.getByRole("button", { name: "Design my experiment" });
+    expect(screen.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
+    expect(screen.getByText("A little curiosity, a little evidence")).toBeVisible();
+    expect(screen.getByText("5–500 characters. One small change at a time.")).toBeVisible();
+    expect(screen.getByText("0/500")).toBeVisible();
+    expect(design).toBeDisabled();
+    await user.type(field, "abcd");
+    expect(screen.getByText("4/500")).toBeVisible();
+    expect(design).toBeDisabled();
+    await user.type(field, "e");
+    expect(design).toBeEnabled();
+    await user.clear(field);
+    await user.type(field, "     ");
+    expect(design).toBeDisabled();
+    await user.clear(field);
+    await user.click(field);
+    await user.paste("x".repeat(501));
+    expect(field).toHaveValue("x".repeat(500));
+    expect(screen.getByText("500/500")).toBeVisible();
+    expect(design).toBeEnabled();
+  });
+
+  it("proposes, previews, saves and starts directly from home", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    const order: string[] = [];
+    let saved: unknown;
+    server.use(
+      http.get(`${api}/api/experiments`, () => {
+        order.push("active-check");
+        return HttpResponse.json([]);
+      }),
+      http.post(`${api}/api/experiments/propose`, async ({ request }) => {
+        order.push("propose");
+        expect(await request.json()).toEqual({ question: "Does evening walking help my sleep?" });
+        return HttpResponse.json(proposeResponse);
+      }),
+      http.post(`${api}/api/experiments`, async ({ request }) => {
+        order.push("save");
+        saved = await request.json();
+        return HttpResponse.json(experiment, { status: 201 });
+      }),
+      http.post(`${api}/api/experiments/${experiment.id}/start`, () => {
+        order.push("start");
+        return HttpResponse.json(activeExperiment);
+      }),
+    );
+    render(home());
+    await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), "  Does evening walking help my sleep?  ");
+    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(router.push).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Start this experiment" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
+    expect(saved).toEqual(saveExperimentRequest);
+    expect(order).toEqual(["active-check", "active-check", "propose", "active-check", "save", "start"]);
+  });
+
+  it("keeps today's check-in and shows the active warning before a paid request", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    const propose = vi.fn(() => HttpResponse.json(proposeResponse));
+    server.use(http.post(`${api}/api/experiments/propose`, propose));
+    render(home());
+    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    const toggle = screen.getByRole("button", { name: "Test another habit" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(toggle);
+    const field = screen.getByRole("textbox", { name: "Your question or goal" });
+    expect(field).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveTextContent("You already have an active experiment.");
+    expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
+    expect(screen.getByText("Day 4 of 10")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Ask a question.", level: 2 })).toBeVisible();
+    await user.type(field, "Does less caffeine improve my focus?");
+    expect(screen.getByRole("button", { name: "Design my experiment" })).toBeDisabled();
+    // Also guard the submit handler if the disabled button is bypassed.
+    fireEvent.submit(field.closest("form")!);
+    expect(propose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Close question" }));
+    expect(screen.getByRole("button", { name: "Test another habit" })).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Test another habit" }));
+    expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue("Does less caffeine improve my focus?");
+  });
+
+  it("rechecks active status on submit and blocks a newly started experiment", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    let checks = 0;
+    const propose = vi.fn(() => HttpResponse.json(proposeResponse));
+    server.use(
+      http.get(`${api}/api/experiments`, () => HttpResponse.json(++checks === 1 ? [] : [activeExperiment])),
+      http.post(`${api}/api/experiments/propose`, propose),
+    );
+    render(home());
+    await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), "Does evening walking help my sleep?");
+    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an active experiment.");
+    expect(screen.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute("href", `/experiments/${experiment.id}`);
+    expect(propose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the question and retries if the active lookup fails without proposing", async () => {
+    const user = userEvent.setup();
+    signedIn();
+    let checks = 0;
+    const propose = vi.fn(() => HttpResponse.json(proposeResponse));
+    server.use(
+      http.get(`${api}/api/experiments`, () => ++checks === 2
+        ? HttpResponse.json({ detail: "Experiments unavailable" }, { status: 503 })
+        : HttpResponse.json([])),
+      http.post(`${api}/api/experiments/propose`, propose),
+    );
+    render(home());
+    const field = await screen.findByRole("textbox", { name: "Your question or goal" });
+    await user.type(field, "Does evening walking help my sleep?");
+    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t check for an active experiment.");
+    expect(field).toHaveValue("Does evening walking help my sleep?");
+    expect(propose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
+    expect(propose).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("button", { name: "Ask something else" }));
+    expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveFocus();
   });
 });

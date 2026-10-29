@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ExperimentFlow } from "@/components/experiments/experiment-flow";
 import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins } from "@/lib/data/checkins";
 import { listExperiments } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
-import type { Checkin, Experiment } from "@/lib/types/api";
+import type { Checkin, Experiment, Profile } from "@/lib/types/api";
 
 type State =
   | { kind: "loading" }
   | { kind: "new" }
-  | { kind: "ready" }
-  | { kind: "active"; experiment: Experiment; checkins: Checkin[] }
+  | { kind: "ready"; profile: Profile }
+  | { kind: "active"; profile: Profile; experiment: Experiment; checkins: Checkin[] }
   | { kind: "error"; message: string };
 
 const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
@@ -48,11 +49,11 @@ function SignedInHome() {
         const [experiment] = await listExperiments("active");
         if (cancelled) return;
         if (!experiment) {
-          setState({ kind: "ready" });
+          setState({ kind: "ready", profile });
           return;
         }
         const checkins = await listCheckins(experiment.id);
-        if (!cancelled) setState({ kind: "active", experiment, checkins });
+        if (!cancelled) setState({ kind: "active", profile, experiment, checkins });
       } catch (error) {
         if (cancelled) return;
         if (error instanceof ApiError && error.status === 401) {
@@ -72,7 +73,10 @@ function SignedInHome() {
     <div className="page-frame pt-8 pb-16 sm:pt-14">
       <p className="text-body text-muted">Your lab</p>
       {state.kind === "active" ? (
-        <ActiveLab experiment={state.experiment} checkins={state.checkins} />
+        <>
+          <ActiveLab experiment={state.experiment} checkins={state.checkins} />
+          <ActiveQuestion profile={state.profile} experiment={state.experiment} />
+        </>
       ) : state.kind === "error" ? (
         <section role="alert" className="mt-5 max-w-2xl rounded-card bg-clay-tint p-6 text-clay">
           <h1 className="font-display text-headline">We couldn&apos;t load your lab.</h1>
@@ -88,18 +92,18 @@ function SignedInHome() {
             Try again
           </button>
         </section>
+      ) : state.kind === "ready" ? (
+        <ExperimentFlow profile={state.profile} returnTo="/" />
       ) : (
         <section className="max-w-2xl py-10 sm:py-16">
           <h1 className="font-display text-display-sm tracking-tight sm:text-display">
-            {state.kind === "new" ? "Start with your rhythm." : "What would you like to learn?"}
+            Start with your rhythm.
           </h1>
           <p className="mt-5 max-w-lg text-lead text-muted">
-            {state.kind === "new"
-              ? "Tell us about your routine so your first experiment fits your day."
-              : "You have no experiment running. Choose one small change to test next."}
+            Tell us about your routine so your first experiment fits your day.
           </p>
-          <Link href={state.kind === "new" ? "/onboarding" : "/experiments/new"} className={`${primary} mt-8`}>
-            {state.kind === "new" ? "Set up your rhythm" : "Test a new question"}
+          <Link href="/onboarding" className={`${primary} mt-8`}>
+            Set up your rhythm
           </Link>
         </section>
       )}
@@ -109,6 +113,50 @@ function SignedInHome() {
         <Link href="/demo" className={textLink}>Demo</Link>
       </nav>
     </div>
+  );
+}
+
+/** Keep the daily loop first; opening a new question stays on this page. */
+function ActiveQuestion({ profile, experiment }: { profile: Profile; experiment: Experiment }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const panel = useRef<HTMLDivElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+
+  function toggleQuestion() {
+    if (open) {
+      setOpen(false);
+      toggle.current?.focus();
+    } else {
+      setOpen(true);
+    }
+  }
+
+  useEffect(() => {
+    if (open) panel.current?.querySelector("textarea")?.focus();
+  }, [open]);
+
+  return (
+    <section aria-label="Test another habit" className="mt-10 border-t border-line pt-6">
+      <button
+        ref={toggle}
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={toggleQuestion}
+        className="min-h-12 rounded-pill border border-moss px-6 font-medium text-moss transition-transform duration-[var(--motion-press)] hover:bg-moss-tint active:scale-[0.98] motion-reduce:transition-none"
+      >
+        {open ? "Close question" : "Test another habit"}
+      </button>
+      <div ref={panel} id={panelId} hidden={!open}>
+        <ExperimentFlow
+          profile={profile}
+          knownActiveExperiment={experiment}
+          returnTo="/"
+          headingLevel={2}
+        />
+      </div>
+    </section>
   );
 }
 
