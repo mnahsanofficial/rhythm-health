@@ -30,3 +30,17 @@ def save_narrative(experiment_id: str, columns: dict) -> dict | None:
         prefer="return=representation",
     )
     return rows[0] if rows else None
+
+
+def list_for_experiments(experiment_ids: list[str]) -> list[dict]:
+    """Reports for several experiments in one request."""
+    if not experiment_ids:
+        return []
+    return rest_request(
+        "GET",
+        "experiment_reports",
+        params={
+            "experiment_id": f"in.({','.join(experiment_ids)})",
+            "select": "experiment_id,analysis",
+        },
+    )

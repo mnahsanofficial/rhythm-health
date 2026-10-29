@@ -6,7 +6,7 @@ from app.schemas.experiment import ExperimentProposal
 from app.schemas.prediction import Prediction
 from app.schemas.profile import ProfileOut
 from app.schemas.safety import SafetyDecision
-from app.services import experiment_designer, safety
+from app.services import experiment_designer, history, safety
 
 
 class ProposeResponse(BaseModel):
@@ -25,7 +25,8 @@ def propose(question: str, profile: ProfileOut) -> ProposeResponse:
     if not decision.allowed:
         return ProposeResponse(safety=decision, classification=classification)
 
-    designed = experiment_designer.design(question, profile, classification)
+    past = history.load(str(profile.id), classification.category)
+    designed = experiment_designer.design(question, profile, classification, past)
     proposal, prediction = designed.proposal, designed.prediction
 
     # The model's own output goes through the same rules before the user sees it.

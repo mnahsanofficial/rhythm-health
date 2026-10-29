@@ -61,3 +61,19 @@ def complete(profile_id: str, experiment_id: str, completed_at: str) -> dict | N
         prefer="return=representation",
     )
     return rows[0] if rows else None
+
+
+def list_completed(profile_id: str, limit: int) -> list[dict]:
+    """Newest completed experiments first, leaving out the seeded demo."""
+    return rest_request(
+        "GET",
+        "experiments",
+        params={
+            "profile_id": f"eq.{profile_id}",
+            "status": "eq.completed",
+            "is_seeded": "eq.false",
+            "select": "*",
+            "order": "completed_at.desc",
+            "limit": str(limit),
+        },
+    )
