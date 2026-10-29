@@ -44,3 +44,20 @@ def start(profile_id: str, experiment_id: str, started_at: str) -> dict | None:
         prefer="return=representation",
     )
     return rows[0] if rows else None
+
+
+def complete(profile_id: str, experiment_id: str, completed_at: str) -> dict | None:
+    """Move active -> completed. The status filter makes the transition atomic:
+    None means the experiment was no longer active."""
+    rows = rest_request(
+        "PATCH",
+        "experiments",
+        params={
+            "id": f"eq.{experiment_id}",
+            "profile_id": f"eq.{profile_id}",
+            "status": "eq.active",
+        },
+        json={"status": "completed", "completed_at": completed_at},
+        prefer="return=representation",
+    )
+    return rows[0] if rows else None
