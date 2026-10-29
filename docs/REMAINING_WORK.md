@@ -1,6 +1,6 @@
 # Remaining work
 
-Status as of **29 Oct 2026**, taken from the code on `main` (commit `80ce225`), not from the PRD. Final demo: **Thu 5 Nov**.
+Status as of **29 Oct 2026**, based on `origin/main` (`3948fc2`) plus the current F1 branch changes. Final demo: **Thu 5 Nov**.
 
 The core loop, in the order this list follows: **onboarding → propose an experiment → daily check-ins → see results and progress.** 8x judges "a core loop that works end to end", so open items that block the loop come first.
 
@@ -13,11 +13,11 @@ The core loop, in the order this list follows: **onboarding → propose an exper
 | **Not started** | Nothing in the code yet |
 | **Uses sample data** | UI exists but isn't wired to the API |
 
-**How "Done" was checked.** These pass on `main`:
+**How "Done" was checked.** Backend checks below were last run on `main`; frontend checks were run on this branch:
 
 - Backend: `uv run pytest`, 168 tests.
-- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (35 tests), `npm run build`.
-- Playwright: `npm run test:e2e`, 2 flows passed. 2 more are skipped in the code; see [Bugs and risks](#bugs-and-risks).
+- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (37 tests). The base branch also passed `npm run build`.
+- Playwright: `npm run test:e2e`, 2 flows passed at 390px and 1440px. Two unrelated flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
 
 Each flow was also tried by hand at 390px and 1440px, signed in with a real account:
 
@@ -38,7 +38,6 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
-| F1 | Check for an active experiment **before** proposing | Partial | TRD §2.5 | `/experiments/new` says "you already have an active experiment" before any AI call | Must | No |
 | F2 | Open the seeded completed experiment | Not started | PRD §18, TRD §28–29 | A signed-in user can load the demo experiment and open its full Lab Report from the app | Must | Yes: B1 |
 | F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Partial | PRD §15 (sections 6, 7, 9), TRD §24–25 | The report shows the AI summary, learnings and next experiment, and a **Run this experiment** button that starts a new proposal from it | Must | Yes: B2 |
 | F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish lists only days that actually passed without a check-in | Must | Yes: B4, or agree the frontend filters |
@@ -55,12 +54,13 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | Item | Source | Notes |
 |---|---|---|
-| Blank Supabase environment values | TRD §38 | Missing or blank values no longer crash pages; sign-in names the missing variables. Checked at 390px and 1440px. |
+| Blank Supabase environment values | TRD §38 | Missing or blank public settings no longer crash pages; sign-in names the missing variables. Covered by F0 tests and checked at 390px and 1440px in PR #12. |
 | Onboarding: 7 questions, saved on the device, account created at the end, sent as `PUT /api/profile` | PRD §6, TRD §12.1 | Returning users start from their saved profile |
 | Sign up, sign in and sign out with email and password | TRD §6 | A 401 sends you to `/sign-in?next=…` and back afterwards (TRD §33) |
 | Home: new, returning and active states | PRD §20 | Active shows "Check in for day X", or "Done for today" |
 | Home rhythm ring | PRD §20 | **Uses sample data**, labelled as sample, by design. Onboarding draws the user's own ring |
 | Ask a question, see the proposal and prediction, start | PRD §7–9, TRD §13 | Shows confidence, reasoning and uncertainty factors |
+| Check for an active experiment before proposing | TRD §2.5 | `/experiments/new` checks the active list before `/propose`; if one exists, it links to it without making an AI call |
 | Safety block with a suggested alternative ("Use this instead") | PRD §10, TRD §15 | |
 | Daily check-in from the experiment's own metrics | PRD §12, TRD §20 | Scale, number, boolean, duration; optional note; server field errors shown per field |
 | Experiment dashboard and timeline | PRD §11, §13 | Day X of N, phase, adherence, logged/missed/today/upcoming days, tap a day for its values |
@@ -139,7 +139,6 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Where | What | Effect |
 |---|---|---|---|
-| R1 | `frontend/components/experiments/new-experiment.tsx:309` | The active-experiment check runs only at **Start**, after `/propose` | Two paid AI calls are spent on a proposal that can't be started (F1) |
 | R2 | `backend/app/services/analysis.py:98`, shown at `frontend/components/report/lab-report.tsx:184` | `missing_days` covers every planned day, including ones not reached yet | An early finish says days 6–10 were "Missed" (B4/F4) |
 | R3 | `frontend/components/rhythm-ring.tsx:118` | `initial={reduce ? false : …}`: `useReducedMotion()` differs between server and browser | Hydration mismatch with reduced motion on; e2e test skipped at `frontend/tests/e2e/onboarding-experiment.spec.ts:98` (F7) |
 | R4 | `backend/app/services/progress.py:34` | Days are 24 hours from the start time | A late-evening start shifts every day (I4) |

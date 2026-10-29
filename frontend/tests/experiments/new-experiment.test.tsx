@@ -64,6 +64,57 @@ beforeEach(() => {
 });
 
 describe("new experiment flow", () => {
+  it("checks for an active experiment before proposing when none is running", async () => {
+    const user = userEvent.setup();
+    const requestOrder: string[] = [];
+    let proposalCalls = 0;
+    server.use(
+      http.get(`${api}/api/experiments`, ({ request }) => {
+        requestOrder.push("active-check");
+        expect(new URL(request.url).search).toBe("?status=active");
+        return HttpResponse.json([]);
+      }),
+      http.post(`${api}/api/experiments/propose`, () => {
+        requestOrder.push("propose");
+        proposalCalls += 1;
+        return HttpResponse.json(proposeResponse);
+      }),
+    );
+    render(<NewExperiment />);
+
+    await submitQuestion(user);
+
+    expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
+    expect(requestOrder).toEqual(["active-check", "propose"]);
+    expect(proposalCalls).toBe(1);
+  });
+
+  it("shows the active experiment and skips proposing when one is already running", async () => {
+    const user = userEvent.setup();
+    let proposalCalls = 0;
+    server.use(
+      http.get(`${api}/api/experiments`, ({ request }) => {
+        expect(new URL(request.url).search).toBe("?status=active");
+        return HttpResponse.json([activeExperiment]);
+      }),
+      http.post(`${api}/api/experiments/propose`, () => {
+        proposalCalls += 1;
+        return HttpResponse.json(proposeResponse);
+      }),
+    );
+    render(<NewExperiment />);
+
+    await submitQuestion(user);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an active experiment");
+    expect(screen.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute(
+      "href",
+      `/experiments/${activeExperiment.id}`,
+    );
+    expect(screen.queryByRole("region", { name: "Experiment and prediction preview" })).not.toBeInTheDocument();
+    expect(proposalCalls).toBe(0);
+  });
+
   it("shows proposal loading and retry states, then the review preview and lets the user ask again", async () => {
     const user = userEvent.setup();
     let releaseFirstResponse!: () => void;
@@ -72,6 +123,7 @@ describe("new experiment flow", () => {
     const firstRequestStarted = new Promise<void>((resolve) => { requestStarted = resolve; });
     let proposalCalls = 0;
     server.use(
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
       http.post(`${api}/api/experiments/propose`, async ({ request }) => {
         expect(await request.json()).toEqual({ question });
         proposalCalls += 1;
@@ -159,7 +211,7 @@ describe("new experiment flow", () => {
     releaseStart();
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
-    expect(listQueries).toEqual(["?status=active"]);
+    expect(listQueries).toEqual(["?status=active", "?status=active"]);
     expect(savedRequest).toEqual(saveExperimentRequest);
   });
 
@@ -167,9 +219,13 @@ describe("new experiment flow", () => {
     const user = userEvent.setup();
     let saveCalls = 0;
     let startCalls = 0;
+    let activeChecks = 0;
     server.use(
       http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(proposeResponse)),
-      http.get(`${api}/api/experiments`, () => HttpResponse.json([activeExperiment])),
+      http.get(`${api}/api/experiments`, () => {
+        activeChecks += 1;
+        return HttpResponse.json(activeChecks === 1 ? [] : [activeExperiment]);
+      }),
       http.post(`${api}/api/experiments`, () => {
         saveCalls += 1;
         return HttpResponse.json(experiment, { status: 201 });
@@ -191,6 +247,7 @@ describe("new experiment flow", () => {
       `/experiments/${activeExperiment.id}`,
     );
     expect(within(preview).getByRole("button", { name: "Start this experiment" })).toBeDisabled();
+    expect(activeChecks).toBe(2);
     expect(saveCalls).toBe(0);
     expect(startCalls).toBe(0);
   });
@@ -229,7 +286,7 @@ describe("new experiment flow", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
     expect(saveCalls).toBe(1);
     expect(startCalls).toBe(2);
-    expect(listCalls).toBe(1);
+    expect(listCalls).toBe(2);
   });
 });
 
