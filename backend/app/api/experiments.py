@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.api.deps import db_error, profile_id_for
 from app.auth.supabase import get_current_user
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
 from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
@@ -17,27 +18,12 @@ from app.services.proposal import ProposeResponse, propose
 router = APIRouter(prefix="/api/experiments")
 
 
-def _db_error() -> HTTPException:
-    return HTTPException(status_code=503, detail="Database unavailable")
-
-
-def _profile_id(user_id: str) -> str:
-    """The profile that belongs to the token's user. Clients never send this."""
-    try:
-        row = profiles.get_by_user_id(user_id)
-    except SupabaseUnavailable:
-        raise _db_error()
-    if row is None:
-        raise HTTPException(status_code=409, detail="Create your profile first")
-    return row["id"]
-
-
 @router.post("/propose", response_model=ProposeResponse)
 def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_user)):
     try:
         row = profiles.get_by_user_id(user_id)
     except SupabaseUnavailable:
-        raise _db_error()
+        raise db_error()
     if row is None:
         raise HTTPException(status_code=409, detail="Create your profile first")
 
@@ -51,7 +37,7 @@ def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_
 
 @router.post("", response_model=ExperimentOut, status_code=201)
 def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_current_user)):
-    profile_id = _profile_id(user_id)
+    profile_id = profile_id_for(user_id)
 
     # The body came back through the client, so it is re-validated (by the schema) and
     # re-checked for safety rather than trusted.
@@ -75,25 +61,25 @@ def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_curr
     try:
         return with_progress(experiments.create(profile_id, values))
     except SupabaseUnavailable:
-        raise _db_error()
+        raise db_error()
 
 
 @router.get("", response_model=list[ExperimentOut])
 def list_experiments(status: ExperimentStatus | None = None, user_id: str = Depends(get_current_user)):
-    profile_id = _profile_id(user_id)
+    profile_id = profile_id_for(user_id)
     try:
         return [with_progress(r) for r in experiments.list_for_profile(profile_id, status)]
     except SupabaseUnavailable:
-        raise _db_error()
+        raise db_error()
 
 
 @router.get("/{experiment_id}", response_model=ExperimentOut)
 def get_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)):
-    profile_id = _profile_id(user_id)
+    profile_id = profile_id_for(user_id)
     try:
         row = experiments.get(profile_id, str(experiment_id))
     except SupabaseUnavailable:
-        raise _db_error()
+        raise db_error()
     if row is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return with_progress(row)
@@ -101,7 +87,7 @@ def get_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)
 
 @router.post("/{experiment_id}/start", response_model=ExperimentOut)
 def start_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)):
-    profile_id = _profile_id(user_id)
+    profile_id = profile_id_for(user_id)
     already_active = HTTPException(
         status_code=409, detail="You already have an active experiment"
     )
@@ -119,7 +105,7 @@ def start_experiment(experiment_id: UUID, user_id: str = Depends(get_current_use
     except SupabaseConflict:
         raise already_active
     except SupabaseUnavailable:
-        raise _db_error()
+        raise db_error()
     if started is None:  # lost a race: no longer proposed
         raise HTTPException(status_code=409, detail="Experiment is no longer proposed")
     return with_progress(started)
