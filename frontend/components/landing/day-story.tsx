@@ -6,8 +6,8 @@ import { HomeCta } from "@/components/home-cta";
 import { Bedroom, Dinner, Glow, Hills, LAMPS, Layer, Moon, Office, SceneStill, Stars, Street, Sun, type StillKind } from "@/components/landing/scene-art";
 
 /*
- * One example day, told by scrolling. The story is seven screen-high sections over a sticky
- * stage. Keyframes use "story positions": section i covers positions i..i+1, and the stage
+ * One example day, told by scrolling. The story is seven screen-high sections (less the fixed
+ * header) over a sticky stage. Keyframes use "story positions": section i covers positions i..i+1, and the stage
  * shows positions 0.5 (top of the story) to 6.5 (bottom). The last frame matches the night
  * frame near the start, so the day reads as a cycle. Only opacity and transforms change.
  */
@@ -100,12 +100,12 @@ export function DayStory() {
       <div
         data-story-stage
         aria-hidden="true"
-        className="sticky top-0 h-svh w-full overflow-hidden bg-night [overflow-anchor:none] motion-reduce:hidden"
+        className="sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-night [overflow-anchor:none] motion-reduce:hidden"
       >
         {animate && <Stage target={ref} />}
       </div>
 
-      <div className="relative -mt-[100svh] motion-reduce:mt-0">
+      <div className="relative -mt-[calc(100svh-var(--header-h))] motion-reduce:mt-0">
         <StorySection first>
           <h1 className="font-display text-display-sm tracking-tight text-balance sm:text-display">
             Stop guessing what works for you.
@@ -145,7 +145,7 @@ function StorySection({ children, first = false, labelledBy }: { children: React
   return (
     <section
       aria-labelledby={labelledBy}
-      className={`flex min-h-svh items-start lg:items-center motion-reduce:min-h-0 motion-reduce:py-6 ${first ? "pt-[max(1.5rem,6svh)] lg:pt-0 motion-reduce:pt-8" : "pt-[max(4.5rem,12svh)] lg:pt-0"}`}
+      className={`flex min-h-[calc(100svh-var(--header-h))] items-start lg:items-center motion-reduce:min-h-0 motion-reduce:py-6 ${first ? "pt-[max(1.5rem,6svh)] lg:pt-0 motion-reduce:pt-8" : "pt-[max(4.5rem,12svh)] lg:pt-0"}`}
     >
       {/* The card sits in the page frame, so it lines up with the header at every width. */}
       <div className="page-frame">

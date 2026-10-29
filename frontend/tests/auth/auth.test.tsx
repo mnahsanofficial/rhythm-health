@@ -23,7 +23,7 @@ vi.mock("@/lib/auth/supabase", () => ({
   supabase: { auth: { signInWithPassword, signUp, signOut } },
 }));
 vi.mock("@/lib/auth/session", () => ({ useSession: () => sessionState }));
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/" }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
     <a href={href} {...props}>{children}</a>
@@ -87,6 +87,7 @@ describe("auth controls", () => {
     signOut.mockResolvedValue({ error: null });
     render(<AuthNav />);
 
+    await user.click(screen.getByRole("button", { name: /Account menu/ }));
     await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledOnce();
     expect(router.push).toHaveBeenCalledWith("/");

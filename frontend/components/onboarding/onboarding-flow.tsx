@@ -197,7 +197,7 @@ function Flow() {
 function RhythmPanel({ draft }: { draft: OnboardingDraft }) {
   return (
     <aside aria-label="Your rhythm so far" className="hidden lg:block">
-      <div className="sticky top-8 mt-14 rounded-card border border-line bg-paper p-8">
+      <div className="sticky top-[calc(var(--header-h)+2rem)] mt-14 rounded-card border border-line bg-paper p-8">
         <p className="text-caption font-medium text-ink">Your rhythm so far</p>
         <div className="mx-auto mt-4 max-w-[340px]">
           <RhythmRing

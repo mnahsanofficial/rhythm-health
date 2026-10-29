@@ -14,15 +14,17 @@ function Mark() {
 
 export function SiteHeader() {
   return (
-    <header className="page-frame flex h-16 items-center justify-between gap-4">
-      <Link
-        href="/"
-        className="-mx-2 flex min-h-11 items-center gap-2 px-2 font-display text-title tracking-tight"
-      >
-        <Mark />
-        Rhythm
-      </Link>
-      <AuthNav />
+    <header className="sticky top-0 z-40 border-b border-line bg-oat">
+      <div className="page-frame flex h-[var(--header-h)] items-center gap-2">
+        <Link
+          href="/"
+          className="-mx-2 flex min-h-11 shrink-0 items-center gap-2 px-2 font-display text-title tracking-tight"
+        >
+          <Mark />
+          Rhythm
+        </Link>
+        <AuthNav />
+      </div>
     </header>
   );
 }

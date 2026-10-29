@@ -56,11 +56,16 @@
   --motion-step: 350ms;
   --motion-reveal: 480ms;
 
+  /* The fixed header's height. Sticky content and scroll targets sit below it. */
+  --header-h: 4rem;
+
   /* Page side gutter: 16px on a 320px phone, growing with the screen to 64px. */
   --gutter: clamp(1rem, 4vw, 4rem);
 }
 
 html {
+  /* Focused headings and #anchors land below the fixed header, not under it. */
+  scroll-padding-top: calc(var(--header-h) + 1rem);
   background: var(--color-oat);
   color: var(--color-ink);
   -webkit-text-size-adjust: 100%;
