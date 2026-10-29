@@ -18,3 +18,15 @@ def get(experiment_id: str) -> dict | None:
         "GET", "experiment_reports", params={"experiment_id": f"eq.{experiment_id}", "select": "*"}
     )
     return rows[0] if rows else None
+
+
+def save_narrative(experiment_id: str, columns: dict) -> dict | None:
+    """Store the AI-written parts on an existing report. None if there is no report."""
+    rows = rest_request(
+        "PATCH",
+        "experiment_reports",
+        params={"experiment_id": f"eq.{experiment_id}"},
+        json=columns,
+        prefer="return=representation",
+    )
+    return rows[0] if rows else None

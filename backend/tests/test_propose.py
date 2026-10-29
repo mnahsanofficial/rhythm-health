@@ -268,7 +268,7 @@ def test_client_retries_once_then_succeeds(keyed, monkeypatch):
     out = openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u")
     assert out.n == 3
     assert len(seen) == 2
-    assert "did not match" in seen[1][-1]["content"]
+    assert "rejected" in seen[1][-1]["content"]
 
 
 def test_client_gives_up_after_second_invalid(keyed, monkeypatch):
