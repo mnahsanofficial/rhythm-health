@@ -94,12 +94,16 @@ for (const width of [390, 1440]) {
     await mockDemoReset(page);
     await mockReportReads(page);
 
-    await page.getByRole("button", { name: "Explore a completed example" }).click();
+    const demoButton = page.getByRole("button", { name: "Explore a completed example" });
+    await expect(demoButton).toBeVisible();
+    await page.screenshot({ path: `test-results/seeded-demo-entry-${width}.png`, fullPage: true });
+    await demoButton.click();
 
     await expect(page).toHaveURL(`/experiments/${experiment.id}/report`);
     await expect(page.getByRole("heading", { name: question })).toBeVisible();
     await expect(page.getByText("Likely signal")).toBeVisible();
     await expect(page.getByRole("heading", { name: "How the days went" })).toBeVisible();
+    await page.screenshot({ path: `test-results/seeded-demo-report-${width}.png`, fullPage: true });
   });
 }
 
@@ -126,14 +130,15 @@ test("shows loading and retry states when preparing the demo", async ({ page }) 
     await route.fulfill({ status: 200, json: { experiment: demoExperiment, report: demoReport } });
   });
 
-  const button = page.getByRole("button", { name: "Explore a completed example" });
+  const button = page.getByRole("button", { name: /Explore a completed example|Preparing the demo/ });
   await button.click();
   await resetStarted;
   await expect(button).toBeDisabled();
   await expect(button).toContainText("Preparing the demo");
   releaseReset();
 
-  await expect(page.getByRole("alert")).toContainText("Demo reset is unavailable");
+  const demoError = page.getByRole("alert").filter({ hasText: "Couldn't prepare the demo" });
+  await expect(demoError).toContainText("Demo reset is unavailable");
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page).toHaveURL(`/experiments/${experiment.id}/report`);
   expect(attempts).toBe(2);

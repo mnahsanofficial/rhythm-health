@@ -1,4 +1,5 @@
 import { HomeCta } from "@/components/home-cta";
+import { DemoEntry } from "@/components/demo-entry";
 import { RhythmRing } from "@/components/rhythm-ring";
 import Link from "next/link";
 import { exampleProfile } from "@/lib/data/profile";
@@ -43,6 +44,7 @@ export default function Home() {
           </p>
           <div className="mt-8">
             <HomeCta />
+            <DemoEntry />
             <Link
               href="/history"
               className="mt-3 inline-flex min-h-11 items-center px-1 text-body font-medium text-moss underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss"
