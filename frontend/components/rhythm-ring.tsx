@@ -31,8 +31,6 @@ type Props = {
   schedule?: SleepSchedule;
   sleepHours?: number;
   habits: PlacedHabit[];
-  /** Build everything up from zero, hours included: the end-of-onboarding reveal. */
-  assemble?: boolean;
 };
 
 /**
@@ -40,7 +38,7 @@ type Props = {
  * It draws in when it first comes into view, then follows any change to the answers,
  * so during onboarding the ring visibly builds from what the user enters.
  */
-export function RhythmRing({ schedule, sleepHours, habits, assemble = false }: Props) {
+export function RhythmRing({ schedule, sleepHours, habits }: Props) {
   const ref = useRef<SVGSVGElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.5 });
   const reduce = useReducedMotion();
@@ -50,8 +48,6 @@ export function RhythmRing({ schedule, sleepHours, habits, assemble = false }: P
   const spanFraction = schedule ? minutesBetween(schedule.bedtime, schedule.wake_time) / 1440 : 0;
   const rotate = useMotionValue(startDeg);
   const span = useMotionValue(0);
-  const hours = useMotionValue(assemble ? 0 : (sleepHours ?? 0));
-  const hoursText = useTransform(hours, (h) => formatHours(Math.round(h * 2) / 2));
   // Markers wait for the night arc on the first draw-in; after that, a newly picked habit pops in at once.
   const [settled, setSettled] = useState(false);
 
@@ -77,18 +73,6 @@ export function RhythmRing({ schedule, sleepHours, habits, assemble = false }: P
       b.stop();
     };
   }, [inView, reduce, startDeg, spanFraction, rotate, span]);
-
-  useEffect(() => {
-    if (sleepHours === undefined || !inView) return;
-    if (reduce) {
-      hours.jump(sleepHours);
-      return;
-    }
-    // Counting up from zero runs alongside the night arc drawing in.
-    const counting = hours.get() === 0;
-    const a = animate(hours, sleepHours, { duration: counting ? 1.1 : 0.4, ease: counting ? [0.22, 1, 0.36, 1] : "easeOut" });
-    return () => a.stop();
-  }, [sleepHours, reduce, hours, inView]);
 
   const label = schedule
     ? `Sleep from ${schedule.bedtime} to ${schedule.wake_time}` +
@@ -128,7 +112,7 @@ export function RhythmRing({ schedule, sleepHours, habits, assemble = false }: P
       {sleepHours !== undefined ? (
         <>
           <text x={C} y={C + 4} textAnchor="middle" className="fill-ink font-display text-[48px] tabular-nums">
-            <motion.tspan>{hoursText}</motion.tspan>
+            <tspan>{formatHours(sleepHours)}</tspan>
             <tspan className="fill-muted font-sans text-[18px]"> h</tspan>
           </text>
           <text x={C} y={C + 30} textAnchor="middle" className="fill-muted font-sans text-[13px]">

@@ -3,6 +3,68 @@ import { answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks
 import { API } from "./helpers";
 
 for (const width of [390, 1440]) {
+  for (const scenario of [
+    { bedtime: "23:30", wakeTime: "07:00", sleepHours: 7.5, plusClicks: 1, inBed: "7 h 30 min" },
+    { bedtime: "01:00", wakeTime: "08:00", sleepHours: 7, plusClicks: 1, inBed: "7 h" },
+  ]) {
+    test(`keeps summary sleep duration aligned for ${scenario.bedtime} to ${scenario.wakeTime} at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await installApiMocks(page);
+      await page.goto("/onboarding");
+      await page.getByRole("button", { name: "Start" }).click();
+      await page.getByText("25–34", { exact: true }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("heading", { name: "When do you usually sleep?" })).toBeVisible();
+      await page.getByLabel("Bedtime").fill(scenario.bedtime);
+      await page.getByLabel("Wake time").fill(scenario.wakeTime);
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("heading", { name: "How much of that is actual sleep?" })).toBeVisible();
+
+      const addSleepHalfHour = page.getByRole("button", { name: "Half an hour more" });
+      for (let i = 0; i < scenario.plusClicks; i += 1) await addSleepHalfHour.click();
+      await expect(page.getByText(`Out of ${scenario.inBed} in bed.`)).toBeVisible();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("heading", { name: "How much do you move on a typical day?" })).toBeVisible();
+      await page.getByText(/Lightly active/).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("heading", { name: "What would you like to improve?" })).toBeVisible();
+      await page.getByText("More energy in the morning", { exact: true }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("heading", { name: "What do you already do most days?" })).toBeVisible();
+      await page.getByRole("button", { name: "Skip" }).click();
+      await expect(page.getByRole("heading", { name: "Anything that limits what you can change?" })).toBeVisible();
+      await page.getByRole("button", { name: "Skip" }).click();
+      await expect(page.getByRole("heading", { name: /Here's your rhythm/ })).toBeVisible();
+
+      const ring = page.getByRole("img", {
+        name: new RegExp(`Sleep from ${scenario.bedtime} to ${scenario.wakeTime}, about ${scenario.sleepHours} hours`),
+      });
+      await expect(ring).toBeVisible();
+      await expect(ring).toContainText(`${scenario.sleepHours} h`);
+      if (scenario.bedtime === "23:30") {
+        await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+        await page.screenshot({
+          path: `../docs/screenshots/ui-motion/during/${width}/onboarding-summary-ring.png`,
+          fullPage: true,
+        });
+      }
+      await expect(page.getByText(new RegExp(`about ${scenario.sleepHours} h asleep`))).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Create an account to save it" })).toBeVisible();
+      await page.evaluate(() => {
+        for (const animation of document.getAnimations()) {
+          try { animation.finish(); } catch { /* Browser-managed animations may not be finishable. */ }
+        }
+      });
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+      await page.screenshot({
+        path: `../docs/screenshots/ui-motion/after/${width}/onboarding-summary-${scenario.bedtime.replace(":", "")}-${scenario.wakeTime.replace(":", "")}.png`,
+        fullPage: true,
+      });
+    });
+  }
+}
+
+for (const width of [390, 1440]) {
   test(`sign up, finish onboarding, and start an experiment at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const counts = await installApiMocks(page);

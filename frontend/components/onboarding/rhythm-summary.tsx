@@ -85,7 +85,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_1fr] lg:gap-16">
         <div className="rounded-card border border-line bg-paper p-5 sm:p-8">
           <div className="mx-auto max-w-[340px]">
-            <RhythmRing schedule={schedule} sleepHours={draft.usual_sleep_hours} habits={placed} assemble />
+            <RhythmRing schedule={schedule} sleepHours={draft.usual_sleep_hours} habits={placed} />
           </div>
           {placed.length > 0 && (
             <ul className="mt-6 flex flex-col gap-2 text-body">
