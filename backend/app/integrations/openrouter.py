@@ -1,5 +1,6 @@
 import logging
 import time
+from collections.abc import Callable
 from typing import TypeVar
 
 import httpx
@@ -34,8 +35,12 @@ def complete(
     system: str,
     user: str,
     timeout: float = 90,
+    check: Callable[[T], None] | None = None,
 ) -> T:
     """Ask `model` for JSON matching `schema`; validate with Pydantic, retry once.
+
+    `check` is an extra semantic validation run on a schema-valid result. It raises
+    ValueError to reject it; the message is fed back to the model for the retry.
 
     Prompts and responses are never logged: they contain personal data.
     """
@@ -51,7 +56,9 @@ def complete(
         content = _call(task, model, schema, messages, timeout)
         try:
             result = schema.model_validate_json(content)
-        except ValidationError as exc:
+            if check is not None:
+                check(result)
+        except ValueError as exc:  # pydantic's ValidationError is a ValueError
             logger.warning(
                 "ai_invalid_output task=%s model=%s validation_retry=%s",
                 task, model, attempt,
@@ -62,9 +69,9 @@ def complete(
                 {"role": "assistant", "content": content},
                 {
                     "role": "user",
-                    "content": "That did not match the required JSON schema. "
-                    f"Errors: {exc.json(include_input=False)}. "
-                    "Reply again with only corrected JSON.",
+                    "content": "That was rejected. "
+                    f"Errors: {_feedback(exc)}. "
+                    "Reply again with only corrected JSON that satisfies the schema and rules.",
                 },
             ]
             continue
@@ -74,6 +81,10 @@ def complete(
         )
         return result
     raise AssertionError("unreachable")
+
+
+def _feedback(exc: ValueError) -> str:
+    return exc.json(include_input=False) if isinstance(exc, ValidationError) else str(exc)
 
 
 def decide(

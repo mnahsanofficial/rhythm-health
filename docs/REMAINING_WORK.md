@@ -1,6 +1,6 @@
 # Remaining work
 
-Status as of **29 Oct 2026**, based on `origin/main` (`0dcad8a`) plus the current F2 changes. Final demo: **Thu 5 Nov**.
+Status as of **29 Oct 2026**. Backend checked against branch `feat/report-generation` (commit `b4749f2`, merged with `main` at `f935b7e`); frontend status carried over from the earlier pass and **not re-run here** (frontend dev dependencies aren't installed in this checkout). Final demo: **Thu 5 Nov**.
 
 The core loop, in the order this list follows: **onboarding → propose an experiment → daily check-ins → see results and progress.** 8x judges "a core loop that works end to end", so open items that block the loop come first.
 
@@ -16,8 +16,8 @@ The core loop, in the order this list follows: **onboarding → propose an exper
 
 **How "Done" was checked.** Backend checks below were last run on `main`; frontend checks were run on this branch:
 
-- Backend: `uv run pytest`, 168 tests.
-- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (49 tests).
+- Backend: `uv run pytest`, 189 tests, re-run on 29 Oct on `feat/report-generation`.
+- Frontend (last run on the F2 branch, not re-run on 29 Oct): `npm run lint`, `npm run typecheck`, `npm test` (49 tests).
 - Playwright: `npm run test:e2e`, 12 flows passed, including the seeded demo and report flows at 390px and 1440px. Two existing flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
 
 The main account flows were also tried by hand at 390px and 1440px, signed in with a real account:
@@ -27,9 +27,9 @@ The main account flows were also tried by hand at 390px and 1440px, signed in wi
 | Profile, propose, save, start | The real backend |
 | Check-in, finish, report | Real backend reads; writes mocked, so no fake health data went into the shared database |
 
-The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states. The report's proposed B2 narrative sections and the prefilled next-question handoff were checked at both widths with mocked responses. The F2 home entry point and seeded Lab Report were also checked at both widths with the proposed B1 response mocked. The live backend still provides neither the proposed B1 endpoint nor B2 fields.
+The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states. The report's narrative sections and the prefilled next-question handoff were checked at both widths with mocked responses written to the *old proposed* B2 shape, which is not what the backend now returns (see F3). The F2 home entry point and seeded Lab Report were also checked at both widths with the earlier wrapper-shaped B1 response mocked. The live backend still has no B1 endpoint. It now serves the report narrative, but nested under `narrative` rather than the flat fields those mocks use.
 
-Nobody has finished a real experiment against the real database yet. The earliest that's possible is about 3 Nov.
+Nobody has finished a real experiment through the UI yet; the earliest that's possible is about 3 Nov. On the backend, a seeded 10-check-in experiment has been completed and given a narrative against the real Supabase and OpenRouter (see Done, Backend).
 
 **Priority:** **Must** = needed for the 5 Nov demo. **Nice** = nice to have.
 
@@ -41,13 +41,13 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
-| F2 | Open the seeded completed experiment | Waiting on backend (UI ready) | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 |
-| F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Waiting on backend (UI ready) | PRD §15 (sections 7, 9), TRD §24–25 | With the agreed B2 response, the report shows summary, interpretation, personal learnings, confounders and next experiment; **Run this experiment** opens a prefilled proposal | Must | Yes: B2 |
-| F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish lists only days that actually passed without a check-in | Must | Yes: B4, or agree the frontend filters |
+| F2 | Open the seeded completed experiment | Waiting on backend; UI must switch from the `{experiment, report}` wrapper to the bare `LabReport` | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 |
+| F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Partial: UI built against the old proposal; backend now live in a different shape | PRD §15 (sections 7, 9), TRD §24–25 | Frontend types and `lib/data/reports.ts` match the real `LabReport` (see [Report API as built](#report-api-as-built)): read `report.narrative.*`, not flat fields. After `POST /complete`, call `POST /report` to write the narrative, then show summary, interpretation, personal learnings, confounders and next experiment; **Run this experiment** opens a prefilled proposal. Mocks and the e2e fixture updated to the real shape | Must | No: the backend side is done |
+| F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish shows the `missing_days` the API returns, with no frontend filtering (the backend is the source of truth, I3). Once B4 lands this is a check and a test, not a new rule | Must | Yes: B4 |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
 | F7 | Rhythm ring hydration mismatch under reduced motion | Done | PRD §21; our quality floor | No server/client mismatch with reduced motion on; the skipped e2e test is turned back on | Nice | No |
-| F8 | Tests for check-in, dashboard and report | Not started | TRD §43 (frontend owns these screens) | Component and e2e tests cover these three screens; the contract test covers `CheckinIn`/`CheckinOut`/`ReportOut` | Nice | No |
-| F9 | Magic-link sign-in | Not started | TRD §6, §27 | A user can sign in from an emailed link | Nice | Yes: redirect URL set in the Supabase project |
+| F8 | Tests for check-in, dashboard and report | Not started | TRD §43 (frontend owns these screens) | Component and e2e tests cover these three screens; the contract test covers `CheckinIn`/`CheckinOut`/`LabReport` | Nice | No |
+| F9 | Magic-link sign-in | Skipped for V1 (decided) | TRD §6, §27 | A user can sign in from an emailed link | Nice | Yes: redirect URL set in the Supabase project |
 | F10 | Edit the AI proposal before starting | Not started | PRD §23 (nice to have) | The user can adjust the proposal before **Start** | Nice | Maybe: whether the backend re-checks edits |
 | F11 | Share or export the Lab Report | Not started | PRD §23 (nice to have) | A report can be shared or saved | Nice | No |
 | F12 | Clean-up | Partial | none | Unused `auth-panel.tsx` and `backend-status.tsx` deleted, one `signedPercent`, keyboard e2e test fixed and turned back on | Nice | No |
@@ -76,16 +76,16 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 ### Open, most important first
 
+B2 and B5 are done and moved to the Done table below; their IDs are not reused.
+
 | # | Item | Status | Source | Done means | Priority | Depends on Nazmul |
 |---|---|---|---|---|---|---|
-| B1 | Seeded demo: `POST /api/demo/reset` and seed data | Not started | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
-| B2 | AI report: interpretation, learnings, next experiment | Not started | PRD §15, TRD §24–25, §31 | `/complete` returns the agreed typed B2 report from calculated facts, validated by Pydantic; generated prose cannot change the classification | Must | Yes: F3, agree the shape (I2) |
+| B1 | Seeded demo: `POST /api/demo/reset` and seed data | Not started; next priority after the basic backend features (B3, B4) | PRD §18, TRD §28–29 | One call gives the signed-in user a completed "walk after dinner" experiment with 10 check-ins and a report, in the normal tables | Must | Yes: F2 |
 | B3 | Past experiments as context for new predictions | Not started | PRD §5.6, §16, §23, TRD §19 | `/propose` passes up to 5 relevant completed experiments to the model | Must | No |
-| B4 | Don't count future days as missing when finished early | Partial (bug) | PRD §14 ("missing days") | `adherence.missing_days` only lists days before the completion day | Must | Yes: F4 |
-| B5 | Chart-ready data in the report | Not started | TRD §26 | The report includes the `chart` array | Nice | No; the frontend builds the chart from check-ins today |
+| B4 | Don't count future days as missing when finished early | Partial (bug) | PRD §14 ("missing days") | `adherence.missing_days` only lists days whose 24-hour interval had ended by the completion time, and `coverage_rate` uses elapsed days only, so future days neither count as missing nor lower coverage. The backend is the single source of truth; the frontend renders it as returned | Must | No (F4 just displays the result) |
 | B6 | Regenerate the prediction before start | Not started | TRD §18 | A proposed experiment's prediction can be regenerated; after start it can't | Nice | Yes, if the UI offers it |
-| B7 | Structured request logging | Partial | TRD §37 | Each request logs request_id, user_id, experiment_id, operation, duration_ms, status (today only AI calls are logged) | Nice | No |
-| B8 | One full-flow integration test | Partial | TRD §42 | One test runs profile → propose → save → start → check-ins → complete → report with mocked AI | Nice | No |
+| B7 | Structured request logging | Deferred: only if time permits (decided) | TRD §37 | Each request logs request_id, user_id, experiment_id, operation, duration_ms, status (today only AI calls are logged) | Nice | No |
+| B8 | One full-flow integration test | Partial; last step, after all features and the frontend are ready (decided) | TRD §42 | One test runs profile → propose → save → start → check-ins → complete → report with mocked AI | Nice | No |
 | B9 | Optional AI safety assessment | Not started | TRD §15 (marked optional) | An AI check runs after the rules for borderline requests | Nice | No |
 | B10 | Deployment | Not started | TRD §39 | Frontend on Vercel, backend on Railway, CORS set to those origins (TRD §40). The README says localhost only for now | Nice | Yes: env values on Vercel |
 
@@ -100,8 +100,11 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | Save, list, get, start | TRD §27 | Start is atomic, with a clear 409 for a second active experiment |
 | Day and phase, calculated on read | TRD §11, §20 | See I4 about day boundaries |
 | Check-ins: submit or replace today, list | TRD §20, §34 | Validated against the experiment's own metrics |
-| Complete: deterministic analysis, signal, prediction accuracy | TRD §21–23 | Needs at least 2 baseline and 3 test check-ins |
-| `GET /report` (calculated analysis only) | TRD §27 | |
+| Complete: deterministic analysis, signal, prediction accuracy | TRD §21–23 | Needs at least 2 baseline and 3 test check-ins (fewer if the plan has fewer days) |
+| `POST /complete` | TRD §21–23, §27 | Deterministic only; no model call, so it is fast and can't fail on the AI service. Returns the `LabReport` with `narrative: null`. Saves the report row and marks the experiment completed |
+| `GET /report` | TRD §27 | Returns the `LabReport`: experiment, analysis, `narrative` (null until written), `chart`, `created_at`. 404 until completed |
+| B2. `POST /report?regenerate=false`: AI narrative | PRD §15, TRD §24–25, §31 | One reasoning-model call explains the stored analysis (summary, interpretation, personal learnings, confounders, next experiment). Pydantic-validated with one retry; wording and safety checks reject over-claiming, "you predicted", an unsafe next experiment, or a narrative that disagrees with the signal. Idempotent (returns the saved narrative unless `regenerate=true`); 409 until completed, 404 if no report, 503/502 on AI failure. The analysis is never rewritten |
+| B5. Chart-ready data | TRD §26 | `chart` in every `LabReport`: primary metric and metric list, per-day points (phase, logged, intervention done, value, all values, note), baseline and intervention means, and the predicted band |
 | `/health` and `/health/supabase` | TRD §39 | |
 
 ---
@@ -110,34 +113,56 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Item | Why | Priority |
 |---|---|---|---|
-| I1 | Seeded demo end to end (B1 + F2) | F2 is wired to the proposed reset contract; the backend endpoint and seed data are still needed for the 5 Nov demo | Must; waiting on Shakeb |
-| I2 | Agree the AI report JSON shape (B2 + F3) | F3 is implemented against the proposal in [DECISIONS.md](DECISIONS.md#b2--report-response); current `ReportOut` still has loose fields and doesn't include all the proposed narrative fields | Must; waiting on Shakeb |
-| I3 | Missing days after an early finish (B4 + F4) | Decide whether the backend fixes `missing_days` or the frontend filters it, so the two don't disagree | Must |
-| I4 | Day boundaries | A day is 24 hours from the start time, not a calendar day. Start at 11pm and "day 2" begins at 11pm the next night | Must (decision) |
+| I1 | Seeded demo end to end (B1 + F2) | F2 is wired to the earlier `{experiment, report}` wrapper and must switch to the decided bare `LabReport`; the backend endpoint and seed data are still needed for the 5 Nov demo | Must; waiting on Shakeb |
+| I2 | Move the frontend to the real report shape (B2 + F3) | The backend shape was settled by the implementation and differs from the original proposal, recorded as superseded in [DECISIONS.md](DECISIONS.md#b2--report-response-decided-built) (now rewritten to match the build): nested `narrative`, embedded `experiment`, `chart`, and narrative written by a separate `POST /report`. F3 still reads the old flat fields | Must; waiting on Nazmul |
+| I3 | Missing days after an early finish (B4 + F4) | **Decided:** the backend is the source of truth for `missing_days`; the frontend does not filter it. Remaining work is B4 itself (backend), then confirming F4 shows the result | Must (B4 still to build) |
+| I4 | Day boundaries | **Accepted V1 decision:** a day is a rolling 24 hours from `started_at`, not a calendar day (start at 11pm and "day 2" begins at 11pm the next night). No profile time zone is used. Timestamps are shown in the viewer's local time | Decided |
 | I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
-| I6 | Keep `frontend/tests/contracts/openapi.json` in step with the backend | The contract test catches drift, but only if the snapshot is refreshed when schemas change | Nice |
+| I6 | Refresh `frontend/tests/contracts/openapi.json` | The snapshot is stale: it still has `ReportOut` and `/complete` returning `{experiment, report}`, and has no `LabReport` or `POST /report`. The contract test only catches drift if the snapshot is refreshed | Nice; do with F3 |
 
-### Request for Shakeb: B1 seeded demo reset
+### B1 seeded demo reset: decided, not built
 
-Please confirm and implement the proposed B1 contract in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset), or reply with a corrected shape:
+Contract (recorded in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset-decided-not-built)):
 
-- Add authenticated `POST /api/demo/reset` with an empty JSON request body `{}`. Do not accept a user or profile ID; use the bearer token to identify the signed-in user.
-- Return `{ experiment: ExperimentOut, report: ReportOut }` for the completed seeded experiment.
-- Create/reset only the authenticated user's seeded profile values where appropriate, completed experiment, baseline and intervention check-ins, and report using the normal tables and schemas. Make reset idempotent and preserve all non-seeded experiments, especially any active one.
-- Please confirm these reset and active-experiment preservation rules and document the request/response contract in TRD §28.
+- Authenticated `POST /api/demo/reset` with an empty JSON body `{}`; no user or profile ID, the bearer token identifies the user.
+- Returns the bare `LabReport` for the completed seeded experiment (it already embeds the experiment). No `{ experiment, report }` wrapper.
+- Creates or resets only the signed-in user's seeded demo data, using the normal tables and schemas; idempotent. All non-seeded experiments are preserved, including an active one.
+- Still to do: Shakeb builds the endpoint and seed data; Nazmul changes `frontend/lib/data/demo.ts`, its tests and the e2e fixture to the bare `LabReport`; TRD §28 gets the JSON.
 
-PRD §18 requires an example that can be explored without waiting for a multi-day experiment; TRD §28 names this endpoint but does not specify its JSON or reset collision behavior. F2 is implemented and tested against this proposal, but cannot be verified with the live backend until B1 exists.
+PRD §18 requires an example that can be explored without waiting for a multi-day experiment. Until the endpoint exists, F2 can't be verified against the live backend.
 
-### Request for Shakeb: B2 report contract
+### Report API as built
 
-Please confirm and implement the proposed B2 contract in [DECISIONS.md](DECISIONS.md#b2--report-response), or reply with a corrected shape:
+This replaces the earlier B2 proposal. Source: `backend/app/schemas/lab_report.py`, `backend/app/api/reports.py`. All endpoints need the bearer token; no user or profile id is accepted.
 
-- Keep the existing authenticated endpoints and request bodies: `GET /api/experiments/{id}/report` returns the report, and `POST /api/experiments/{id}/complete` returns `{ experiment, report }`. The nested report and GET response should use the same shape; no user or profile ID is added to either request.
-- Return `{ experiment_id, analysis, summary, interpretation, personal_learnings, confounders, next_experiment, created_at }`. `summary` and `interpretation` are strings; `personal_learnings` and `confounders` are string arrays; `next_experiment` is `{ question, reason }`.
-- Keep deterministic `analysis` and its classification authoritative. Validate generated narrative fields with Pydantic and do not allow generated prose to alter the calculation.
-- Confirm the proposed budget of one report-generation model call, with at most one schema-validation retry, and update TRD §§24–25 to match the agreed response and cost.
+| Call | Request | Response | Errors |
+|---|---|---|---|
+| `POST /api/experiments/{id}/complete` | none | `LabReport` with `narrative: null` | 409 not enough check-ins (detail has the counts), already completed, or not active |
+| `POST /api/experiments/{id}/report?regenerate=false` | none | `LabReport` with `narrative` filled | 409 not completed; 404 no report; 503 AI unavailable; 502 AI output invalid after retry |
+| `GET /api/experiments/{id}/report` | none | `LabReport` (`narrative` null until written) | 404 no report yet |
 
-This is needed to populate PRD §15's personal-learning section 7 and follow-up question/CTA section 9 from real report data. Until B2 is agreed and served, F3's UI is tested only with mocked responses and shows an honest unavailable message for missing narrative fields.
+```
+LabReport = {
+  experiment: ExperimentOut,
+  analysis: Analysis,                 // authoritative, deterministic
+  narrative: null | {
+    summary: string, interpretation: string,
+    personal_learnings: string[], confounders: string[],
+    next_experiment: { question: string, reason: string }
+  },
+  chart: {
+    primary_metric: Metric, metrics: Metric[],
+    baseline_days: number, intervention_days: number,
+    points: { day, phase, logged, intervention_completed, value, values, note }[],
+    baseline_mean, intervention_mean,
+    predicted_band: null | { min_percent, max_percent, midpoint_percent,
+                             expected_value_min, expected_value_max }
+  },
+  created_at: string
+}
+```
+
+Differences from the old proposal: there is no top-level `experiment_id` (use `experiment.id`); the narrative fields sit under `narrative`; `/complete` returns the report, not `{ experiment, report }`; and the narrative is a separate call. Narrative storage reuses the existing columns (`interpretation = {summary, interpretation, confounders}`, `learnings` = list, `next_experiment`); no new migration.
 
 ---
 
@@ -148,12 +173,14 @@ This is needed to populate PRD §15's personal-learning section 7 and follow-up 
 | Proposal AI calls | Design, then a separate prediction call (TRD §13, §17) | One call returns both, validated together (`backend/app/services/experiment_designer.py`) |
 | Jev config | `JEV_API_KEY`, `JEV_API_URL` (TRD §36, §38) | Jev runs through OpenRouter's Decisions API, set by `OPENROUTER_JEV_MODEL` |
 | Fast model | `OPENROUTER_FAST_MODEL` (TRD §30, §38) | Not used; only the reasoning model (TRD §31 allows this) |
-| Backend files | `predictor.py`, `report_generator.py`, `api/demo.py`, `demo/*.json` (TRD §5) | Not present; the prediction lives in `experiment_designer.py` |
+| Backend files | `predictor.py`, `report_generator.py`, `api/demo.py`, `demo/*.json` (TRD §5) | `predictor.py` and `report_generator.py` not present: the prediction lives in `experiment_designer.py`, the narrative in `services/report_writer.py` and `services/lab_report.py`. `api/demo.py` and `demo/*.json` still absent (`backend/app/demo/` is empty) |
 | Experiment length | "Default for V1: 7 days" (PRD §8) | 3 baseline + 7 test days, per TRD §11 |
-| Days | Not defined | Rolling 24 hours from `started_at` (`backend/app/services/progress.py`) |
+| Days | Not defined | Rolling 24 hours from `started_at` (`backend/app/services/progress.py`); accepted V1 decision (I4) |
 | Finishing early | Not covered | Allowed once there are 2 baseline and 3 test check-ins; the UI warns first |
 | `draft` status | First lifecycle state (TRD §10) | Allowed by the schema, never used; experiments are saved as `proposed` |
-| Report chart data | `chart` array (TRD §26) | Not returned; the frontend draws from check-ins |
+| Report chart data | `chart` array (TRD §26) | Returned as a `chart` object (metrics, per-day points, means, predicted band), not a bare array. The frontend still draws from check-ins |
+| Completion and the AI report | `/complete` generates the interpretation (TRD §24) | Split: `/complete` is deterministic only; `POST /report` writes the narrative afterwards |
+| Report shape | Flat `summary`, `personal_learnings`, `confounders`, `next_experiment` (TRD §25) | Nested under `narrative`, alongside `experiment`, `analysis`, `chart` |
 | Sign-in methods | Email/password and magic link (TRD §6) | Email/password only |
 | Deployment | Vercel and Railway (TRD §39) | Localhost only |
 | Confounders | "Potential confounders from user notes" (PRD §14) | Notes are stored and shown, but the analysis doesn't use them |
@@ -166,10 +193,12 @@ This is needed to populate PRD §15's personal-learning section 7 and follow-up 
 |---|---|---|---|
 | R2 | `backend/app/services/analysis.py:98`, shown at `frontend/components/report/lab-report.tsx:184` | `missing_days` covers every planned day, including ones not reached yet | An early finish says days 6–10 were "Missed" (B4/F4) |
 | R3 | `frontend/components/rhythm-ring.tsx` | Resolved: CSS controls arrival motion; the server and browser render identical SVG | F7 regression passes and the reduced-motion browser test is enabled again |
-| R4 | `backend/app/services/progress.py:34` | Days are 24 hours from the start time | A late-evening start shifts every day (I4) |
+| R4 | `backend/app/services/progress.py:34` | Days are 24 hours from the start time | A late-evening start shifts every day. Accepted V1 behavior (I4); worth knowing when demoing |
 | R5 | `backend/app/api/checkins.py:29` | Only today's check-in can be submitted | A missed day can't be filled in later. By design, but worth knowing for the demo |
 | R6 | Schedule | A real experiment needs about 5 days of check-ins before it can finish | The 5 Nov demo depends on the seed (I1) |
-| R7 | `frontend/tests/contracts/api-contract.test.ts` | The contract test covers profile and experiment schemas only | Check-in and report shape drift wouldn't be caught (F8) |
+| R7 | `frontend/tests/contracts/api-contract.test.ts`, `openapi.json` | The contract test covers profile and experiment schemas only, and its snapshot predates `LabReport` | Check-in and report shape drift wouldn't be caught (F8, I6) |
+| R11 | `frontend/lib/types/api.ts`, `frontend/components/report/lab-report.tsx` | Frontend `Report` and `CompleteResponse` types describe the old shape; the code reads flat fields via an `unknown` cast | Against the real backend the narrative sections show as unavailable and `completeExperiment`'s result is mistyped (F3) |
+| R12 | `backend/app/services/report_writer.py` | Nothing in code checks that numbers quoted in the narrative match the analysis (the signal classification and wording are checked) | A model could misquote a figure; checked by hand only |
 | R8 | `frontend/tests/e2e/onboarding-experiment.spec.ts:30` | Keyboard-only onboarding test skipped: Chromium leaves the time fields empty | Keyboard path through the sleep-schedule step isn't covered automatically (F12) |
 | R9 | `frontend/components/experiments/new-experiment.tsx:17` vs `frontend/lib/report/copy.ts:51` | Two `signedPercent` functions; only one rounds | A range could read "+7.5%" on the proposal and "+8%" on the report (F12) |
 | R10 | `frontend/components/auth-panel.tsx`, `frontend/components/backend-status.tsx` | Not imported anywhere | Dead code (F12) |

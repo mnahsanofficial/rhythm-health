@@ -62,6 +62,13 @@ class FakeDb:
     def get_report(self, experiment_id):
         return self.reports.get(experiment_id)
 
+    def save_narrative(self, experiment_id, columns):
+        row = self.reports.get(experiment_id)
+        if row is None:
+            return None
+        row.update(columns)
+        return row
+
     def complete(self, profile_id, experiment_id, completed_at):
         e = self.get_experiment(profile_id, experiment_id)
         if e is None or e["status"] != "active":
@@ -79,6 +86,7 @@ def db(monkeypatch):
     monkeypatch.setattr(checkins, "list_for_experiment", fake.list_checkins)
     monkeypatch.setattr(reports, "upsert", fake.upsert_report)
     monkeypatch.setattr(reports, "get", fake.get_report)
+    monkeypatch.setattr(reports, "save_narrative", fake.save_narrative)
     app.dependency_overrides[get_current_user] = lambda: fake.current
     yield fake
     app.dependency_overrides.clear()
@@ -101,13 +109,14 @@ def test_complete_runs_analysis_saves_report_and_marks_completed(db):
     assert body["experiment"]["status"] == "completed"
     assert body["experiment"]["completed_at"] is not None
     assert body["experiment"]["progress"]["state"] == "completed"
-    analysis = body["report"]["analysis"]
+    analysis = body["analysis"]
     assert analysis["signal"]["classification"] == "likely_signal"
     assert analysis["prediction"]["within_predicted_range"] is True
     assert analysis["adherence"]["intervention_days_completed"] == 6
     assert db.experiment["status"] == "completed"
     assert EXP_ID in db.reports
-    assert body["report"]["interpretation"] is None  # AI parts come later
+    assert body["narrative"] is None  # written afterwards by POST /report
+    assert len(body["chart"]["points"]) == 10
 
 
 def test_report_can_be_read_back(db):
