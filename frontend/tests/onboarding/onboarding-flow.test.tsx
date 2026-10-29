@@ -16,54 +16,7 @@ const { getProfileMock, saveProfileMock, sessionState } = vi.hoisted(() => ({
 vi.mock("@/lib/auth/session", () => ({ useSession: () => sessionState }));
 vi.mock("@/lib/data/profile", () => ({ getProfile: getProfileMock, saveProfile: saveProfileMock }));
 vi.mock("@/components/rhythm-ring", () => ({ RhythmRing: () => null }));
-vi.mock("motion/react", async () => {
-  const React = await import("react");
-  const components = new Map<string, React.ComponentType<Record<string, unknown>>>();
-  const ignoredMotionProps = new Set([
-    "animate",
-    "custom",
-    "exit",
-    "initial",
-    "layout",
-    "layoutId",
-    "onUpdate",
-    "transition",
-    "variants",
-    "viewport",
-    "whileFocus",
-    "whileHover",
-    "whileInView",
-    "whileTap",
-  ]);
-  const motion = new Proxy(
-    {},
-    {
-      get: (_target, element) => {
-        const tag = String(element);
-        if (!components.has(tag)) {
-          const component = React.forwardRef<HTMLElement, Record<string, unknown>>((props, ref) => {
-            const domProps = Object.fromEntries(
-              Object.entries(props).filter(([key]) => !ignoredMotionProps.has(key)),
-            );
-            return React.createElement(tag, { ...domProps, ref }, props.children as React.ReactNode);
-          });
-          component.displayName = `Motion(${tag})`;
-          components.set(tag, component);
-        }
-        return components.get(tag);
-      },
-    },
-  );
-  const passThrough = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children);
-  return {
-    motion,
-    AnimatePresence: passThrough,
-    MotionConfig: passThrough,
-    useInView: () => true,
-    useReducedMotion: () => true,
-  };
-});
+vi.mock("motion/react", async () => import("../support/motion-mock"));
 
 function renderFlow() {
   return render(
