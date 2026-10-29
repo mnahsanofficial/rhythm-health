@@ -1,6 +1,6 @@
 # Remaining work
 
-Status as of **29 Oct 2026**, based on `origin/main` (`5843ec6`) plus the current F3 changes. Final demo: **Thu 5 Nov**.
+Status as of **29 Oct 2026**, based on `origin/main` (`0dcad8a`) plus the current F2 changes. Final demo: **Thu 5 Nov**.
 
 The core loop, in the order this list follows: **onboarding → propose an experiment → daily check-ins → see results and progress.** 8x judges "a core loop that works end to end", so open items that block the loop come first.
 
@@ -17,8 +17,8 @@ The core loop, in the order this list follows: **onboarding → propose an exper
 **How "Done" was checked.** Backend checks below were last run on `main`; frontend checks were run on this branch:
 
 - Backend: `uv run pytest`, 168 tests.
-- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (44 tests).
-- Playwright: `npm run test:e2e`, 9 flows passed, including report takeaways and next-question handoff at 390px and 1440px. Two existing flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
+- Frontend: `npm run lint`, `npm run typecheck`, `npm test` (49 tests).
+- Playwright: `npm run test:e2e`, 12 flows passed, including the seeded demo and report flows at 390px and 1440px. Two existing flows remain skipped in the code; see [Bugs and risks](#bugs-and-risks).
 
 The main account flows were also tried by hand at 390px and 1440px, signed in with a real account:
 
@@ -27,7 +27,7 @@ The main account flows were also tried by hand at 390px and 1440px, signed in wi
 | Profile, propose, save, start | The real backend |
 | Check-in, finish, report | Real backend reads; writes mocked, so no fake health data went into the shared database |
 
-The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states. The report's proposed B2 narrative sections and the prefilled next-question handoff were also checked at both widths with mocked responses. The live backend still does not provide the proposed B2 fields.
+The history screen was checked in Playwright at both widths with typed mocked API responses, including empty, error, missing-report and retry states. The report's proposed B2 narrative sections and the prefilled next-question handoff were checked at both widths with mocked responses. The F2 home entry point and seeded Lab Report were also checked at both widths with the proposed B1 response mocked. The live backend still provides neither the proposed B1 endpoint nor B2 fields.
 
 Nobody has finished a real experiment against the real database yet. The earliest that's possible is about 3 Nov.
 
@@ -41,7 +41,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
-| F2 | Open the seeded completed experiment | Not started | PRD §18, TRD §28–29 | A signed-in user can load the demo experiment and open its full Lab Report from the app | Must | Yes: B1 |
+| F2 | Open the seeded completed experiment | Waiting on backend (UI ready) | PRD §18, TRD §28–29 | With the agreed B1 endpoint, a signed-in user can prepare the seeded demo from home and open its completed experiment and Lab Report | Must | Yes: B1 |
 | F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Waiting on backend (UI ready) | PRD §15 (sections 7, 9), TRD §24–25 | With the agreed B2 response, the report shows summary, interpretation, personal learnings, confounders and next experiment; **Run this experiment** opens a prefilled proposal | Must | Yes: B2 |
 | F4 | Don't show future days as "Missed" after finishing early | Partial (bug) | PRD §13, §15 section 5 | An early finish lists only days that actually passed without a check-in | Must | Yes: B4, or agree the frontend filters |
 | F6 | Primary-metric trend on the experiment dashboard | Partial | PRD §11 | The dashboard shows the primary metric day by day (today it's only in each day's details), without calling a result early | Nice | No |
@@ -110,12 +110,23 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Item | Why | Priority |
 |---|---|---|---|
-| I1 | Seeded demo end to end (B1 + F2) | A real experiment can't reach a Lab Report before about 3 Nov. The seed is the only reliable way to demo results on 5 Nov | Must |
+| I1 | Seeded demo end to end (B1 + F2) | F2 is wired to the proposed reset contract; the backend endpoint and seed data are still needed for the 5 Nov demo | Must; waiting on Shakeb |
 | I2 | Agree the AI report JSON shape (B2 + F3) | F3 is implemented against the proposal in [DECISIONS.md](DECISIONS.md#b2--report-response); current `ReportOut` still has loose fields and doesn't include all the proposed narrative fields | Must; waiting on Shakeb |
 | I3 | Missing days after an early finish (B4 + F4) | Decide whether the backend fixes `missing_days` or the frontend filters it, so the two don't disagree | Must |
 | I4 | Day boundaries | A day is 24 hours from the start time, not a calendar day. Start at 11pm and "day 2" begins at 11pm the next night | Must (decision) |
 | I5 | History data source (F5) | Resolved: frontend fetches completed experiments, then each existing report; no backend change is needed | Resolved |
 | I6 | Keep `frontend/tests/contracts/openapi.json` in step with the backend | The contract test catches drift, but only if the snapshot is refreshed when schemas change | Nice |
+
+### Request for Shakeb: B1 seeded demo reset
+
+Please confirm and implement the proposed B1 contract in [DECISIONS.md](DECISIONS.md#b1--seeded-demo-reset), or reply with a corrected shape:
+
+- Add authenticated `POST /api/demo/reset` with an empty JSON request body `{}`. Do not accept a user or profile ID; use the bearer token to identify the signed-in user.
+- Return `{ experiment: ExperimentOut, report: ReportOut }` for the completed seeded experiment.
+- Create/reset only the authenticated user's seeded profile values where appropriate, completed experiment, baseline and intervention check-ins, and report using the normal tables and schemas. Make reset idempotent and preserve all non-seeded experiments, especially any active one.
+- Please confirm these reset and active-experiment preservation rules and document the request/response contract in TRD §28.
+
+PRD §18 requires an example that can be explored without waiting for a multi-day experiment; TRD §28 names this endpoint but does not specify its JSON or reset collision behavior. F2 is implemented and tested against this proposal, but cannot be verified with the live backend until B1 exists.
 
 ### Request for Shakeb: B2 report contract
 

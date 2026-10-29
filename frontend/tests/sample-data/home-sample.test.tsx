@@ -4,6 +4,7 @@ import Home from "@/app/page";
 
 vi.mock("@/lib/auth/session", () => ({ useSession: () => ({ session: null, loading: false }) }));
 vi.mock("@/components/rhythm-ring", () => ({ RhythmRing: () => <svg role="img" aria-label="Sample rhythm illustration" /> }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
     <a href={href} {...props}>{children}</a>
