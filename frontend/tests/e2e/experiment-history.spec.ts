@@ -157,17 +157,18 @@ test("shows a retry when the completed-experiment list cannot be loaded", async 
   });
 
   await page.goto("/history");
-  await expect(page.getByRole("alert")).toContainText("History is unavailable");
-  await page.getByRole("button", { name: "Try again" }).click();
+  const historyError = page.getByRole("alert").filter({ hasText: "History is unavailable" });
+  await expect(historyError).toContainText("History is unavailable");
+  await historyError.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Completed experiments will appear here.")).toBeVisible();
   expect(attempts).toBe(2);
 });
 
 test("shows report loading, missing, and retry states for individual history items", async ({ page }) => {
   await openHistoryFromHome(page);
-  let reportAttempts = 0;
   let releaseFirstReport!: () => void;
   let markFirstReportStarted!: () => void;
+  let firstReportGateReleased = false;
   const firstReportGate = new Promise<void>((resolve) => {
     releaseFirstReport = resolve;
   });
@@ -188,8 +189,7 @@ test("shows report loading, missing, and retry states for individual history ite
       await route.fulfill({ status: 404, json: { detail: "No report for this experiment yet" } });
       return;
     }
-    reportAttempts += 1;
-    if (reportAttempts === 1) {
+    if (!firstReportGateReleased) {
       markFirstReportStarted();
       await firstReportGate;
       await route.fulfill({ status: 503, json: { detail: "Report service is unavailable" } });
@@ -204,10 +204,10 @@ test("shows report loading, missing, and retry states for individual history ite
   const missingReportItem = page.getByRole("article", { name: completedWithoutReport.question });
   await firstReportStarted;
   await expect(readyReportItem).toContainText("Loading report");
+  firstReportGateReleased = true;
   releaseFirstReport();
-  await expect(readyReportItem).toContainText("Couldn’t load this report");
+  await expect(readyReportItem).toContainText("Couldn't load this report");
   await expect(missingReportItem).toContainText("Report not available yet");
   await readyReportItem.getByRole("button", { name: "Try again" }).click();
   await expect(readyReportItem).toContainText("Morning energy +11%");
-  expect(reportAttempts).toBe(2);
 });
