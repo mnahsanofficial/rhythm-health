@@ -54,7 +54,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | Item | Source | Notes |
 |---|---|---|
-| Blank Supabase values no longer crash the app | TRD §38 | Missing or blank public Supabase settings show a clear setup message; covered by F0 tests in PR #12 |
+| Blank Supabase environment values | TRD §38 | Missing or blank public settings no longer crash pages; sign-in names the missing variables. Covered by F0 tests and checked at 390px and 1440px in PR #12. |
 | Onboarding: 7 questions, saved on the device, account created at the end, sent as `PUT /api/profile` | PRD §6, TRD §12.1 | Returning users start from their saved profile |
 | Sign up, sign in and sign out with email and password | TRD §6 | A 401 sends you to `/sign-in?next=…` and back afterwards (TRD §33) |
 | Home: new, returning and active states | PRD §20 | Active shows "Check in for day X", or "Done for today" |

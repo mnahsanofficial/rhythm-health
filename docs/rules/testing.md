@@ -30,7 +30,7 @@ There is one shared Supabase project and a paid OpenRouter key.
 
 ## Writing tests
 
-- Frontend feature work and bug fixes follow red-before-green TDD: write a user-visible test first, run it and confirm it fails for the expected behavior, then make the smallest product change and run the full frontend suite. If a test exposes an issue outside the current item, skip it with a one-line reason and report the bug instead of fixing it.
+- **Frontend work is test-first:** write a user-visible behavior test, run it, and confirm it fails for the intended reason before changing product code. Then implement the smallest change that makes it pass and run the full frontend suite. If a test exposes an issue outside the current item, skip it with a one-line reason and report the bug instead of fixing it.
 - Backend tests mock OpenRouter and Supabase, so they are deterministic (TRD §42).
 - Frontend tests use the shared fixtures in `frontend/tests/support/fixtures.ts`.
 - Keep fixtures valid against the backend's OpenAPI snapshot; the contract test fails if they drift.

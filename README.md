@@ -90,7 +90,7 @@ npm ci
 cp .env.example .env.local
 ```
 
-Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `frontend/.env.local` **before** starting. If they're left blank, every page answers 500 (a known bug, R11 in the remaining-work list). Then start it:
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `frontend/.env.local` before signing in. If either is blank, the app still loads and the sign-in page names the missing variable. Authentication is unavailable until both values are set. Then start it:
 
 ```bash
 npm run dev

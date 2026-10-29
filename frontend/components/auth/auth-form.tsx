@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { isAuthConfigured, supabase } from "@/lib/auth/supabase";
+import { isAuthConfigured, missingAuthVariables, supabase } from "@/lib/auth/supabase";
 
 export type AuthMode = "sign-in" | "sign-up";
 
@@ -37,7 +37,8 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
   if (!isAuthConfigured) {
     return (
       <p role="alert" className="rounded-card border border-line bg-paper p-4 text-body text-muted">
-        Sign-in isn&apos;t set up on this machine. Add the Supabase values to <code>frontend/.env.local</code>.
+        Sign-in isn&apos;t set up on this machine. Set {missingAuthVariables.join(" and ")} in{" "}
+        <code>frontend/.env.local</code>.
       </p>
     );
   }
