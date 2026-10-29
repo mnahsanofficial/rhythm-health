@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 import { AuthForm, type AuthMode } from "@/components/auth/auth-form";
@@ -22,12 +21,9 @@ type Props = {
 
 type SaveState = "idle" | "saving" | "saved" | { error: string };
 
-// The ring draws first (about 1.1s, markers until ~1.5s); the summary follows it in.
-const SUMMARY_DELAY = 1.3;
 
-/** End of onboarding: the ring assembles from the answers, then the summary and the save button arrive. */
+/** The completed rhythm arrives once; answers and save controls are immediately available. */
 export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
-  const reduce = useReducedMotion();
   const [save, setSave] = useState<SaveState>("idle");
   const { session, loading: sessionLoading } = useSession();
   const [authMode, setAuthMode] = useState<AuthMode>("sign-up");
@@ -50,12 +46,6 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
     { step: 7, label: "Limits", value: draft.constraints?.length ? draft.constraints.join(", ") : "None" },
     { step: 1, label: "Age", value: AGE_OPTIONS.find((o) => o.value === draft.age_range)?.label },
   ];
-
-  const appear = (i: number) => ({
-    initial: reduce ? false : { opacity: 0, y: 8 },
-    animate: { opacity: 1, y: 0 },
-    transition: { delay: reduce ? 0 : SUMMARY_DELAY + i * 0.08, duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
-  });
 
   async function handleSave() {
     if (!input) return;
@@ -85,32 +75,32 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_1fr] lg:gap-16">
         <div className="rounded-card border border-line bg-paper p-5 sm:p-8">
           <div className="mx-auto max-w-[340px]">
-            <RhythmRing schedule={schedule} sleepHours={draft.usual_sleep_hours} habits={placed} assemble />
+            <RhythmRing schedule={schedule} sleepHours={draft.usual_sleep_hours} habits={placed} />
           </div>
           {placed.length > 0 && (
             <ul className="mt-6 flex flex-col gap-2 text-body">
-              {placed.map((h, i) => (
-                <motion.li key={h.label} {...appear(i)} className="flex items-center justify-between gap-4">
+              {placed.map((h) => (
+                <li key={h.label} className="flex items-center justify-between gap-4">
                   <span className="flex items-center gap-2 text-muted">
                     <span aria-hidden="true" className="size-3 shrink-0 rounded-full border border-ink bg-sun" />
                     {h.label}
                   </span>
                   <span className="font-mono tabular-nums">{h.time}</span>
-                </motion.li>
+                </li>
               ))}
             </ul>
           )}
           {unplaced.length > 0 && (
-            <motion.p {...appear(placed.length)} className="mt-3 text-caption text-muted">
+            <p className="mt-3 text-caption text-muted">
               No set time, so not on the ring: {unplaced.join(", ")}.
-            </motion.p>
+            </p>
           )}
         </div>
 
         <div>
           <dl className="divide-y divide-line border-y border-line">
-            {rows.map((row, i) => (
-              <motion.div key={row.label} {...appear(i)} className="flex items-start gap-4 py-4">
+            {rows.map((row) => (
+              <div key={row.label} className="flex items-start gap-4 py-4">
                 <dt className="w-20 shrink-0 pt-0.5 text-caption font-medium text-muted">{row.label}</dt>
                 <dd className="flex-1 text-body text-ink">{row.value ?? "Not answered"}</dd>
                 <button
@@ -121,11 +111,11 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                 >
                   Change
                 </button>
-              </motion.div>
+              </div>
             ))}
           </dl>
 
-          <motion.div {...appear(rows.length)} className="mt-8">
+          <div className="mt-8">
             {save === "saved" ? (
               <div role="status" className="rounded-card bg-moss-tint p-5">
                 <p className="text-lead font-medium text-ink">Saved.</p>
@@ -138,7 +128,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                 </Link>
               </div>
             ) : sessionLoading ? (
-              <div aria-hidden="true" className="h-12 w-48 animate-pulse rounded-pill bg-line" />
+              <div aria-hidden="true" className="h-12 w-48 rounded-pill bg-line" />
             ) : !session ? (
               // Answers are kept on the device until there's an account to save them to (TRD §6).
               <div className="rounded-card border border-line bg-paper p-5 sm:p-6">
@@ -175,7 +165,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                 </p>
               </>
             )}
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

@@ -8,18 +8,36 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** Per-field messages, keyed by field name, when the backend names the fields at fault. */
+    readonly fieldErrors: Record<string, string> = {},
+    /** The backend's `detail` as sent, for errors that carry data (e.g. check-in counts). */
+    readonly detail: unknown = null,
   ) {
     super(message);
     this.name = "ApiError";
   }
 }
 
-/** FastAPI sends `{detail: string}`, or `{detail: [{msg}]}` for validation errors. */
-function detailOf(body: unknown, status: number): string {
+/**
+ * The backend's `detail` comes in four shapes:
+ * a string; FastAPI validation `[{msg, loc}]`; check-in validation `[{field, message}]`;
+ * or an object with a `message` plus data (e.g. "not enough check-ins" with counts).
+ */
+function parseDetail(body: unknown, status: number): { message: string; fieldErrors: Record<string, string> } {
   const detail = (body as { detail?: unknown } | null)?.detail;
-  if (typeof detail === "string") return detail;
-  if (Array.isArray(detail) && typeof detail[0]?.msg === "string") return detail[0].msg;
-  return `Request failed (${status})`;
+  const fieldErrors: Record<string, string> = {};
+  if (typeof detail === "string") return { message: detail, fieldErrors };
+  if (Array.isArray(detail)) {
+    for (const item of detail) {
+      if (typeof item?.field === "string" && typeof item?.message === "string") fieldErrors[item.field] = item.message;
+    }
+    if (Object.keys(fieldErrors).length > 0) return { message: "Some answers need another look.", fieldErrors };
+    if (typeof detail[0]?.msg === "string") return { message: detail[0].msg, fieldErrors };
+  }
+  if (detail && typeof detail === "object" && typeof (detail as { message?: unknown }).message === "string") {
+    return { message: (detail as { message: string }).message, fieldErrors };
+  }
+  return { message: `Request failed (${status})`, fieldErrors };
 }
 
 async function request<T>(method: string, path: string, opts: { auth: boolean; body?: unknown }): Promise<T> {
@@ -43,7 +61,10 @@ async function request<T>(method: string, path: string, opts: { auth: boolean; b
   }
 
   const body: unknown = await res.json().catch(() => null);
-  if (!res.ok) throw new ApiError(res.status, detailOf(body, res.status));
+  if (!res.ok) {
+    const { message, fieldErrors } = parseDetail(body, res.status);
+    throw new ApiError(res.status, message, fieldErrors, (body as { detail?: unknown } | null)?.detail ?? null);
+  }
   return body as T;
 }
 

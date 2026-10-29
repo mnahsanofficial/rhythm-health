@@ -14,6 +14,8 @@
   --color-night: #263a6b;
   --color-night-tint: #e4e7f0;
   --color-sun: #f2c14e;
+  /* Illustration only: the landing character's skin. */
+  --color-skin: #b9825e;
   /* Errors only: 7.6:1 text on tint. */
   --color-clay: #7a2e1f;
   --color-clay-tint: #f7e4df;
@@ -22,21 +24,22 @@
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Type scale: 14 / 16 / 18 / 24 / 32 / 44 / 60 */
+  /* Type scale: 14 / 16 / 18, then fluid headings that grow with the screen up to
+     24 / 32 / 44 / 60. Each clamp mixes rem and vw, so browser zoom still enlarges them. */
   --text-caption: 0.875rem;
   --text-caption--line-height: 1.35rem;
   --text-body: 1rem;
   --text-body--line-height: 1.6rem;
   --text-lead: 1.125rem;
   --text-lead--line-height: 1.75rem;
-  --text-title: 1.5rem;
-  --text-title--line-height: 2rem;
-  --text-headline: 2rem;
-  --text-headline--line-height: 2.4rem;
-  --text-display-sm: 2.75rem;
-  --text-display-sm--line-height: 3rem;
-  --text-display: 3.75rem;
-  --text-display--line-height: 4rem;
+  --text-title: clamp(1.375rem, 1.25rem + 0.5vw, 1.5rem);
+  --text-title--line-height: 1.33;
+  --text-headline: clamp(1.75rem, 1.45rem + 1.2vw, 2rem);
+  --text-headline--line-height: 1.2;
+  --text-display-sm: clamp(2.25rem, 1.75rem + 2vw, 2.75rem);
+  --text-display-sm--line-height: 1.09;
+  --text-display: clamp(2.75rem, 2rem + 3vw, 3.75rem);
+  --text-display--line-height: 1.07;
 
   --radius-card: 1.25rem;
   --radius-pill: 999px;
@@ -44,7 +47,25 @@
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Seconds in lib/motion.ts, milliseconds here. Keep both representations aligned. */
+:root {
+  --motion-press: 150ms;
+  --motion-exit: 120ms;
+  --motion-panel: 200ms;
+  --motion-response: 280ms;
+  --motion-step: 350ms;
+  --motion-reveal: 480ms;
+
+  /* The fixed header's height. Sticky content and scroll targets sit below it. */
+  --header-h: 4rem;
+
+  /* Page side gutter: 16px on a 320px phone, growing with the screen to 64px. */
+  --gutter: clamp(1rem, 4vw, 4rem);
+}
+
 html {
+  /* Focused headings and #anchors land below the fixed header, not under it. */
+  scroll-padding-top: calc(var(--header-h) + 1rem);
   background: var(--color-oat);
   color: var(--color-ink);
   -webkit-text-size-adjust: 100%;
@@ -58,6 +79,13 @@ body {
 
 /* In the base layer so utilities (e.g. outline-none on focus-target headings) can override it. */
 @layer base {
+  /* Reading width: a paragraph never runs past about 75 characters a line, however wide the
+     screen. Grids and cards can use the extra width; text can't. Instrument Sans's "0" is wide,
+     so 48ch holds roughly 65-75 average characters. Don't widen a paragraph past this. */
+  p {
+    max-inline-size: 48ch;
+  }
+
   :focus-visible {
     outline: 2px solid var(--color-moss);
     outline-offset: 3px;
@@ -78,4 +106,20 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* One arrival after an answer or summary state change; never loops. */
+@keyframes rhythm-arrive {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* The shared page frame: content up to 90rem wide (or --frame for focused pages), centred,
+   with the fluid gutter. Backgrounds and illustrations sit outside it, so they always reach
+   both screen edges. */
+@utility page-frame {
+  margin-inline: auto;
+  width: 100%;
+  max-width: calc(var(--frame, 90rem) + 2 * var(--gutter));
+  padding-inline: var(--gutter);
 }

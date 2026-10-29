@@ -1,7 +1,8 @@
 "use client";
 
-import { useId, useState } from "react";
-import { isAuthConfigured, supabase } from "@/lib/auth/supabase";
+import { useId, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { isAuthConfigured, missingAuthVariables, supabase } from "@/lib/auth/supabase";
 
 export type AuthMode = "sign-in" | "sign-up";
 
@@ -11,6 +12,9 @@ type Props = {
   /** Called once Supabase returns a session. */
   onSignedIn?: () => void;
 };
+
+/** Shared by both fields, so the password looks exactly like the email. */
+const FIELD = "min-h-12 w-full rounded-card border border-line bg-paper px-4 text-lead text-ink focus-visible:border-moss";
 
 const COPY = {
   "sign-in": { submit: "Sign in", busy: "Signing in…", switchPrompt: "New here?", switchLabel: "Create an account" },
@@ -30,6 +34,7 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "error" | "info"; text: string } | null>(null);
   const copy = COPY[mode];
@@ -37,9 +42,21 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
   if (!isAuthConfigured) {
     return (
       <p role="alert" className="rounded-card border border-line bg-paper p-4 text-body text-muted">
-        Sign-in isn&apos;t set up on this machine. Add the Supabase values to <code>frontend/.env.local</code>.
+        Sign-in isn&apos;t set up on this machine. Set {missingAuthVariables.join(" and ")} in{" "}
+        <code>frontend/.env.local</code>.
       </p>
     );
+  }
+
+  /** Swapping the input type can reset the caret, so put it back where the person left it. */
+  function togglePassword() {
+    const input = passwordRef.current;
+    const typing = input !== null && document.activeElement === input;
+    const range = typing ? ([input.selectionStart, input.selectionEnd, input.selectionDirection] as const) : null;
+    flushSync(() => setShowPassword((shown) => !shown));
+    if (input && range && range[0] !== null && range[1] !== null) {
+      input.setSelectionRange(range[0], range[1], range[2] ?? undefined);
+    }
   }
 
   async function submit() {
@@ -89,15 +106,16 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="min-h-12 rounded-card border border-line bg-paper px-4 text-lead text-ink focus-visible:border-moss"
+          className={FIELD}
         />
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor={passwordId} className="text-caption font-medium text-ink">
           Password
         </label>
-        <div className="flex gap-2">
+        <div className="relative">
           <input
+            ref={passwordRef}
             id={passwordId}
             type={showPassword ? "text" : "password"}
             required
@@ -105,15 +123,21 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
             autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="min-h-12 min-w-0 flex-1 rounded-card border border-line bg-paper px-4 text-lead text-ink focus-visible:border-moss"
+            className={`${FIELD} pr-12`}
           />
           <button
             type="button"
-            onClick={() => setShowPassword((s) => !s)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
             aria-pressed={showPassword}
-            className="min-h-12 shrink-0 rounded-pill px-4 text-caption font-medium text-moss hover:bg-moss-tint"
+            aria-controls={passwordId}
+            // A mouse or tap on the eye leaves focus (and the caret) in the field being typed in.
+            onMouseDown={(e) => {
+              if (document.activeElement === passwordRef.current) e.preventDefault();
+            }}
+            onClick={togglePassword}
+            className="absolute top-1/2 right-0.5 grid size-11 -translate-y-1/2 place-items-center rounded-card text-muted hover:text-ink"
           >
-            {showPassword ? "Hide" : "Show"}
+            <EyeIcon crossed={showPassword} />
           </button>
         </div>
         {mode === "sign-up" && <p className="text-caption text-muted">At least 6 characters.</p>}
@@ -152,5 +176,16 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
         </button>
       </p>
     </form>
+  );
+}
+
+/** An open eye while the password is hidden; crossed out once it is shown. */
+function EyeIcon({ crossed }: { crossed: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx={12} cy={12} r={3} />
+      {crossed && <path d="M4 4l16 16" />}
+    </svg>
   );
 }

@@ -36,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${fraunces.variable} ${instrument.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      {/* Extensions such as ColorZilla add attributes to <body> before React hydrates. This only
+          ignores attribute differences on <body> itself; mismatches inside the page still report. */}
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-3 focus:text-oat"

@@ -1,6 +1,8 @@
 "use client";
 
-import { motion } from "motion/react";
+import { MOTION_DURATION } from "@/lib/motion";
+
+import { motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
 
 type Option<T extends string> = { value: T; label: string; hint?: string };
@@ -18,6 +20,7 @@ type Props<T extends string> = {
  */
 export function ChoiceGroup<T extends string>({ legend, options, value, onChange }: Props<T>) {
   const name = useId();
+  const reduce = useReducedMotion();
 
   return (
     <fieldset>
@@ -30,11 +33,11 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
             // which steals focus from the radio and breaks arrow keys.
             <label
               key={option.value}
-              className="relative flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-line bg-paper px-4 py-3 transition-[scale] duration-150 active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss"
+              className="relative flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-line bg-paper px-4 py-3 transition-[scale] duration-[var(--motion-press)] active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss"
             >
               {selected && (
                 <motion.span
-                  layoutId={`${name}-selected`}
+                  layoutId={reduce ? undefined : `${name}-selected`}
                   className="absolute inset-0 rounded-card border-2 border-moss bg-moss-tint"
                   transition={{ type: "spring", stiffness: 500, damping: 38 }}
                 />
@@ -66,8 +69,8 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     initial={false}
-                    animate={{ pathLength: selected ? 1 : 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    animate={{ opacity: selected ? 1 : 0 }}
+                    transition={{ duration: reduce ? 0 : MOTION_DURATION.press, ease: "easeOut" }}
                   />
                 </svg>
               </span>

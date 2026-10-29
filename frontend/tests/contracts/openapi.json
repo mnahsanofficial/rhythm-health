@@ -1,0 +1,2061 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Rhythm Health Lab API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/me": {
+      "get": {
+        "summary": "Me",
+        "description": "Protected test endpoint: echoes the user id from the verified token.",
+        "operationId": "me_api_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Me Api Me Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "summary": "Get Profile",
+        "operationId": "get_profile_api_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "Put Profile",
+        "operationId": "put_profile_api_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/experiments/propose": {
+      "post": {
+        "summary": "Propose Experiment",
+        "operationId": "propose_experiment_api_experiments_propose_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/experiments": {
+      "post": {
+        "summary": "Save Experiment",
+        "operationId": "save_experiment_api_experiments_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveExperimentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List Experiments",
+        "operationId": "list_experiments_api_experiments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "draft",
+                    "proposed",
+                    "active",
+                    "completed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExperimentOut"
+                  },
+                  "title": "Response List Experiments Api Experiments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/{experiment_id}": {
+      "get": {
+        "summary": "Get Experiment",
+        "operationId": "get_experiment_api_experiments__experiment_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/{experiment_id}/start": {
+      "post": {
+        "summary": "Start Experiment",
+        "operationId": "start_experiment_api_experiments__experiment_id__start_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/{experiment_id}/checkins": {
+      "post": {
+        "summary": "Submit Checkin",
+        "description": "Submit today's check-in, or replace it if one already exists for today.",
+        "operationId": "submit_checkin_api_experiments__experiment_id__checkins_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckinIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckinOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List Checkins",
+        "description": "All check-ins for an owned experiment, oldest day first.",
+        "operationId": "list_checkins_api_experiments__experiment_id__checkins_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CheckinOut"
+                  },
+                  "title": "Response List Checkins Api Experiments  Experiment Id  Checkins Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/{experiment_id}/complete": {
+      "post": {
+        "summary": "Complete Experiment",
+        "description": "Run the deterministic analysis, save the report, and mark the experiment completed.",
+        "operationId": "complete_experiment_api_experiments__experiment_id__complete_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompleteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/experiments/{experiment_id}/report": {
+      "get": {
+        "summary": "Get Report",
+        "operationId": "get_report_api_experiments__experiment_id__report_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/supabase": {
+      "get": {
+        "summary": "Health Supabase",
+        "operationId": "health_supabase_health_supabase_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Supabase Health Supabase Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Adherence": {
+        "properties": {
+          "baseline_days_planned": {
+            "type": "integer",
+            "title": "Baseline Days Planned"
+          },
+          "baseline_days_logged": {
+            "type": "integer",
+            "title": "Baseline Days Logged"
+          },
+          "intervention_days_planned": {
+            "type": "integer",
+            "title": "Intervention Days Planned"
+          },
+          "intervention_days_logged": {
+            "type": "integer",
+            "title": "Intervention Days Logged"
+          },
+          "intervention_days_completed": {
+            "type": "integer",
+            "title": "Intervention Days Completed"
+          },
+          "adherence_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adherence Rate"
+          },
+          "coverage_rate": {
+            "type": "number",
+            "title": "Coverage Rate"
+          },
+          "missing_days": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Missing Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "baseline_days_planned",
+          "baseline_days_logged",
+          "intervention_days_planned",
+          "intervention_days_logged",
+          "intervention_days_completed",
+          "coverage_rate",
+          "missing_days"
+        ],
+        "title": "Adherence"
+      },
+      "Analysis": {
+        "properties": {
+          "primary_metric": {
+            "type": "string",
+            "title": "Primary Metric"
+          },
+          "success_criteria_percent": {
+            "type": "number",
+            "title": "Success Criteria Percent"
+          },
+          "adherence": {
+            "$ref": "#/components/schemas/Adherence"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricAnalysis"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signal": {
+            "$ref": "#/components/schemas/Signal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "primary_metric",
+          "success_criteria_percent",
+          "adherence",
+          "metrics",
+          "signal"
+        ],
+        "title": "Analysis"
+      },
+      "CheckinIn": {
+        "properties": {
+          "intervention_completed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intervention Completed"
+          },
+          "metric_values": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metric Values"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metric_values"
+        ],
+        "title": "CheckinIn",
+        "description": "Today's check-in. No day, phase, experiment or user id: the backend derives them."
+      },
+      "CheckinOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "experiment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Experiment Id"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "intervention"
+            ],
+            "title": "Phase"
+          },
+          "day_number": {
+            "type": "integer",
+            "title": "Day Number"
+          },
+          "intervention_completed": {
+            "type": "boolean",
+            "title": "Intervention Completed"
+          },
+          "metric_values": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metric Values"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "experiment_id",
+          "phase",
+          "day_number",
+          "intervention_completed",
+          "metric_values",
+          "note",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CheckinOut"
+      },
+      "Classification": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "energy",
+              "focus",
+              "exercise",
+              "nutrition",
+              "stress",
+              "routine",
+              "other"
+            ],
+            "title": "Category"
+          },
+          "intent": {
+            "type": "string",
+            "enum": [
+              "behavior_change",
+              "goal",
+              "question",
+              "other"
+            ],
+            "title": "Intent"
+          },
+          "risk": {
+            "type": "string",
+            "enum": [
+              "low",
+              "review",
+              "blocked"
+            ],
+            "title": "Risk"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "category",
+          "intent",
+          "risk"
+        ],
+        "title": "Classification"
+      },
+      "CompleteResponse": {
+        "properties": {
+          "experiment": {
+            "$ref": "#/components/schemas/ExperimentOut"
+          },
+          "report": {
+            "$ref": "#/components/schemas/ReportOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment",
+          "report"
+        ],
+        "title": "CompleteResponse"
+      },
+      "ExperimentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "proposed",
+              "active",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "energy",
+              "focus",
+              "exercise",
+              "nutrition",
+              "stress",
+              "routine",
+              "other"
+            ],
+            "title": "Category"
+          },
+          "hypothesis": {
+            "type": "string",
+            "title": "Hypothesis"
+          },
+          "intervention": {
+            "$ref": "#/components/schemas/Intervention"
+          },
+          "baseline_days": {
+            "type": "integer",
+            "title": "Baseline Days"
+          },
+          "intervention_days": {
+            "type": "integer",
+            "title": "Intervention Days"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "success_criteria": {
+            "$ref": "#/components/schemas/SuccessCriteria"
+          },
+          "prediction": {
+            "$ref": "#/components/schemas/Prediction"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "is_seeded": {
+            "type": "boolean",
+            "title": "Is Seeded"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ExperimentProgress"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "question",
+          "category",
+          "hypothesis",
+          "intervention",
+          "baseline_days",
+          "intervention_days",
+          "metrics",
+          "success_criteria",
+          "prediction",
+          "started_at",
+          "completed_at",
+          "is_seeded",
+          "progress",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ExperimentOut",
+        "description": "A saved experiment. profile_id is deliberately not exposed."
+      },
+      "ExperimentProgress": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "ended",
+              "completed"
+            ],
+            "title": "State"
+          },
+          "day_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day Number"
+          },
+          "phase": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "baseline",
+                  "intervention"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase"
+          },
+          "phase_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Day"
+          },
+          "phase_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Days"
+          },
+          "total_days": {
+            "type": "integer",
+            "title": "Total Days"
+          },
+          "days_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Remaining"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "total_days"
+        ],
+        "title": "ExperimentProgress",
+        "description": "Where an experiment is right now. Computed on read, never stored."
+      },
+      "ExperimentProposal": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "hypothesis": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Hypothesis"
+          },
+          "intervention": {
+            "$ref": "#/components/schemas/Intervention"
+          },
+          "baseline_days": {
+            "type": "integer",
+            "maximum": 14.0,
+            "minimum": 1.0,
+            "title": "Baseline Days"
+          },
+          "intervention_days": {
+            "type": "integer",
+            "maximum": 28.0,
+            "minimum": 1.0,
+            "title": "Intervention Days"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/Metric"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Metrics"
+          },
+          "success_criteria": {
+            "$ref": "#/components/schemas/SuccessCriteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "hypothesis",
+          "intervention",
+          "baseline_days",
+          "intervention_days",
+          "metrics",
+          "success_criteria"
+        ],
+        "title": "ExperimentProposal"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Intervention": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Action"
+          },
+          "timing": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Timing"
+          },
+          "frequency": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Frequency"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "timing",
+          "frequency"
+        ],
+        "title": "Intervention"
+      },
+      "Metric": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "scale",
+              "number",
+              "boolean",
+              "duration"
+            ],
+            "title": "Type"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "primary": {
+            "type": "boolean",
+            "title": "Primary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "type",
+          "min",
+          "max",
+          "primary"
+        ],
+        "title": "Metric"
+      },
+      "MetricAnalysis": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "primary": {
+            "type": "boolean",
+            "title": "Primary"
+          },
+          "baseline": {
+            "$ref": "#/components/schemas/PhaseStats"
+          },
+          "intervention": {
+            "$ref": "#/components/schemas/PhaseStats"
+          },
+          "absolute_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absolute Change"
+          },
+          "percent_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Change"
+          },
+          "median_change_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Change Percent"
+          },
+          "pooled_sd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pooled Sd"
+          },
+          "effect_size": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect Size"
+          },
+          "direction_consistency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direction Consistency"
+          },
+          "outliers": {
+            "items": {
+              "$ref": "#/components/schemas/Outlier"
+            },
+            "type": "array",
+            "title": "Outliers",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "type",
+          "primary",
+          "baseline",
+          "intervention"
+        ],
+        "title": "MetricAnalysis"
+      },
+      "Outlier": {
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "intervention"
+            ],
+            "title": "Phase"
+          },
+          "day_number": {
+            "type": "integer",
+            "title": "Day Number"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phase",
+          "day_number",
+          "value"
+        ],
+        "title": "Outlier"
+      },
+      "PhaseStats": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          },
+          "sd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "n"
+        ],
+        "title": "PhaseStats"
+      },
+      "Prediction": {
+        "properties": {
+          "target_metric": {
+            "type": "string",
+            "title": "Target Metric"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "increase",
+              "decrease",
+              "no_change"
+            ],
+            "title": "Direction"
+          },
+          "expected_change_min": {
+            "type": "number",
+            "maximum": 200.0,
+            "minimum": -100.0,
+            "title": "Expected Change Min"
+          },
+          "expected_change_max": {
+            "type": "number",
+            "maximum": 200.0,
+            "minimum": -100.0,
+            "title": "Expected Change Max"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "low",
+              "moderate",
+              "high"
+            ],
+            "title": "Confidence"
+          },
+          "reasoning": {
+            "type": "string",
+            "maxLength": 600,
+            "minLength": 1,
+            "title": "Reasoning"
+          },
+          "uncertainty_factors": {
+            "items": {
+              "type": "string",
+              "maxLength": 600,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Uncertainty Factors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_metric",
+          "direction",
+          "expected_change_min",
+          "expected_change_max",
+          "confidence",
+          "reasoning",
+          "uncertainty_factors"
+        ],
+        "title": "Prediction"
+      },
+      "PredictionComparison": {
+        "properties": {
+          "predicted_direction": {
+            "type": "string",
+            "enum": [
+              "increase",
+              "decrease",
+              "no_change"
+            ],
+            "title": "Predicted Direction"
+          },
+          "predicted_min": {
+            "type": "number",
+            "title": "Predicted Min"
+          },
+          "predicted_max": {
+            "type": "number",
+            "title": "Predicted Max"
+          },
+          "predicted_midpoint": {
+            "type": "number",
+            "title": "Predicted Midpoint"
+          },
+          "observed_change_percent": {
+            "type": "number",
+            "title": "Observed Change Percent"
+          },
+          "error_points": {
+            "type": "number",
+            "title": "Error Points"
+          },
+          "within_predicted_range": {
+            "type": "boolean",
+            "title": "Within Predicted Range"
+          },
+          "direction_correct": {
+            "type": "boolean",
+            "title": "Direction Correct"
+          },
+          "accuracy_percent": {
+            "type": "number",
+            "title": "Accuracy Percent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "predicted_direction",
+          "predicted_min",
+          "predicted_max",
+          "predicted_midpoint",
+          "observed_change_percent",
+          "error_points",
+          "within_predicted_range",
+          "direction_correct",
+          "accuracy_percent"
+        ],
+        "title": "PredictionComparison"
+      },
+      "ProfileIn": {
+        "properties": {
+          "age_range": {
+            "type": "string",
+            "enum": [
+              "18-24",
+              "25-34",
+              "35-44",
+              "45-54",
+              "55-64",
+              "65+"
+            ],
+            "title": "Age Range"
+          },
+          "usual_sleep_hours": {
+            "type": "number",
+            "maximum": 14.0,
+            "minimum": 3.0,
+            "title": "Usual Sleep Hours"
+          },
+          "usual_sleep_schedule": {
+            "$ref": "#/components/schemas/SleepSchedule"
+          },
+          "activity_level": {
+            "type": "string",
+            "enum": [
+              "sedentary",
+              "lightly_active",
+              "moderately_active",
+              "very_active"
+            ],
+            "title": "Activity Level"
+          },
+          "goals": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Goals"
+          },
+          "regular_habits": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Regular Habits"
+          },
+          "constraints": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Constraints"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "age_range",
+          "usual_sleep_hours",
+          "usual_sleep_schedule",
+          "activity_level",
+          "goals",
+          "regular_habits",
+          "constraints"
+        ],
+        "title": "ProfileIn",
+        "description": "PUT body. No user_id: the user comes from the verified token."
+      },
+      "ProfileOut": {
+        "properties": {
+          "age_range": {
+            "type": "string",
+            "enum": [
+              "18-24",
+              "25-34",
+              "35-44",
+              "45-54",
+              "55-64",
+              "65+"
+            ],
+            "title": "Age Range"
+          },
+          "usual_sleep_hours": {
+            "type": "number",
+            "maximum": 14.0,
+            "minimum": 3.0,
+            "title": "Usual Sleep Hours"
+          },
+          "usual_sleep_schedule": {
+            "$ref": "#/components/schemas/SleepSchedule"
+          },
+          "activity_level": {
+            "type": "string",
+            "enum": [
+              "sedentary",
+              "lightly_active",
+              "moderately_active",
+              "very_active"
+            ],
+            "title": "Activity Level"
+          },
+          "goals": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Goals"
+          },
+          "regular_habits": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Regular Habits"
+          },
+          "constraints": {
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Constraints"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "age_range",
+          "usual_sleep_hours",
+          "usual_sleep_schedule",
+          "activity_level",
+          "goals",
+          "regular_habits",
+          "constraints",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProfileOut"
+      },
+      "ProposeRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Question"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "ProposeRequest",
+        "description": "No user_id: the user comes from the verified token."
+      },
+      "ProposeResponse": {
+        "properties": {
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExperimentProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Prediction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "safety": {
+            "$ref": "#/components/schemas/SafetyDecision"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/Classification"
+          }
+        },
+        "type": "object",
+        "required": [
+          "safety",
+          "classification"
+        ],
+        "title": "ProposeResponse"
+      },
+      "ReportOut": {
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Experiment Id"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/Analysis"
+          },
+          "interpretation": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interpretation"
+          },
+          "learnings": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Learnings"
+          },
+          "next_experiment": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Experiment"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "analysis",
+          "created_at"
+        ],
+        "title": "ReportOut",
+        "description": "The AI-written parts (interpretation, learnings, next experiment) come later."
+      },
+      "SafetyDecision": {
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "suggested_alternative": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Alternative"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allowed"
+        ],
+        "title": "SafetyDecision"
+      },
+      "SaveExperimentRequest": {
+        "properties": {
+          "proposal": {
+            "$ref": "#/components/schemas/ExperimentProposal"
+          },
+          "prediction": {
+            "$ref": "#/components/schemas/Prediction"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "sleep",
+              "energy",
+              "focus",
+              "exercise",
+              "nutrition",
+              "stress",
+              "routine",
+              "other"
+            ],
+            "title": "Category"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "proposal",
+          "prediction",
+          "category"
+        ],
+        "title": "SaveExperimentRequest",
+        "description": "Body for saving what /propose returned. No user_id or profile_id: both come from the token."
+      },
+      "Signal": {
+        "properties": {
+          "classification": {
+            "type": "string",
+            "enum": [
+              "likely_signal",
+              "possible_signal",
+              "unclear",
+              "probably_noise"
+            ],
+            "title": "Classification"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "success_criteria_met": {
+            "type": "boolean",
+            "title": "Success Criteria Met"
+          },
+          "matches_predicted_direction": {
+            "type": "boolean",
+            "title": "Matches Predicted Direction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "classification",
+          "reasons",
+          "success_criteria_met",
+          "matches_predicted_direction"
+        ],
+        "title": "Signal"
+      },
+      "SleepSchedule": {
+        "properties": {
+          "bedtime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "Bedtime"
+          },
+          "wake_time": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "Wake Time"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bedtime",
+          "wake_time"
+        ],
+        "title": "SleepSchedule"
+      },
+      "SuccessCriteria": {
+        "properties": {
+          "primary_metric": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,40}$",
+            "title": "Primary Metric"
+          },
+          "minimum_change_percent": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Minimum Change Percent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "primary_metric",
+          "minimum_change_percent"
+        ],
+        "title": "SuccessCriteria"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
