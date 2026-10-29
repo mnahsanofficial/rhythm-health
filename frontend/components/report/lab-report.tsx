@@ -11,20 +11,12 @@ import { listCheckins } from "@/lib/data/checkins";
 import { getExperiment } from "@/lib/data/experiments";
 import { getReport } from "@/lib/data/reports";
 import { reasonText, SIGNAL_COPY, signedPercent } from "@/lib/report/copy";
-import type { Checkin, Experiment, Report, SignalClass } from "@/lib/types/api";
+import type { Checkin, Experiment, LabReport as LabReportData, SignalClass } from "@/lib/types/api";
 
 type Load =
   | { kind: "loading" }
-  | { kind: "ready"; experiment: Experiment; report: Report | null; checkins: Checkin[] }
+  | { kind: "ready"; experiment: Experiment; report: LabReportData | null; checkins: Checkin[] }
   | { kind: "error"; status: number; message: string };
-
-type ReportNarrative = {
-  summary: string | null;
-  interpretation: string | null;
-  personalLearnings: string[];
-  confounders: string[];
-  nextExperiment: { question: string; reason: string } | null;
-};
 
 const SIGNAL_TONE: Record<SignalClass, string> = {
   likely_signal: "bg-moss text-paper",
@@ -120,7 +112,7 @@ export function LabReport({ id }: { id: string }) {
   }
 
   const { analysis } = report;
-  const narrative = reportNarrative(report);
+  const { narrative } = report;
   const primary = analysis.metrics.find((m) => m.key === analysis.primary_metric) ?? analysis.metrics[0];
   const signal = SIGNAL_COPY[analysis.signal.classification];
   const others = analysis.metrics.filter((m) => m.key !== primary?.key);
@@ -235,19 +227,19 @@ export function LabReport({ id }: { id: string }) {
         <h2 id="learning-heading" className="font-display text-title">
           What you learned about you
         </h2>
-        {narrative.summary ? (
-          <p className="mt-3 text-body">{narrative.summary}</p>
+        {narrative ? (
+          <>
+            <p className="mt-3 text-body">{narrative.summary}</p>
+            <p className="mt-3 text-body text-muted">{narrative.interpretation}</p>
+          </>
         ) : (
           <p className="mt-3 text-body text-muted">
             Waiting for your written results. Takeaways will appear when they are available for this report.
           </p>
         )}
-        {narrative.interpretation && (
-          <p className="mt-3 text-body text-muted">{narrative.interpretation}</p>
-        )}
-        {narrative.personalLearnings.length > 0 && (
+        {narrative && narrative.personal_learnings.length > 0 && (
           <ul className="mt-5 flex flex-col gap-3 border-t border-line pt-5">
-            {narrative.personalLearnings.map((learning) => (
+            {narrative.personal_learnings.map((learning) => (
               <li key={learning} className="flex gap-3 text-body">
                 <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-moss" />
                 {learning}
@@ -255,7 +247,7 @@ export function LabReport({ id }: { id: string }) {
             ))}
           </ul>
         )}
-        {narrative.confounders.length > 0 && (
+        {narrative && narrative.confounders.length > 0 && (
           <div className="mt-5 border-t border-line pt-5">
             <h3 className="font-medium">Things that may have shaped the result</h3>
             <ul className="mt-2 flex flex-col gap-2 text-body text-muted">
@@ -272,12 +264,12 @@ export function LabReport({ id }: { id: string }) {
         <h2 id="next-experiment-heading" className="font-display text-title">
           What to test next
         </h2>
-        {narrative.nextExperiment ? (
+        {narrative ? (
           <>
-            <p className="mt-3 text-lead">{narrative.nextExperiment.question}</p>
-            <p className="mt-2 text-body text-muted">{narrative.nextExperiment.reason}</p>
+            <p className="mt-3 text-lead">{narrative.next_experiment.question}</p>
+            <p className="mt-2 text-body text-muted">{narrative.next_experiment.reason}</p>
             <Link
-              href={`/experiments/new?question=${encodeURIComponent(narrative.nextExperiment.question)}`}
+              href={`/experiments/new?question=${encodeURIComponent(narrative.next_experiment.question)}`}
               className={`${linkButton} mt-5`}
             >
               Run this experiment
@@ -296,32 +288,6 @@ export function LabReport({ id }: { id: string }) {
       </section>
     </Page>
   );
-}
-
-function reportNarrative(report: Report): ReportNarrative {
-  const fields = report as unknown as Record<string, unknown>;
-  const next = fields.next_experiment;
-  const nextExperiment = isRecord(next)
-    && typeof next.question === "string"
-    && typeof next.reason === "string"
-    ? { question: next.question, reason: next.reason }
-    : null;
-
-  return {
-    summary: typeof fields.summary === "string" ? fields.summary : null,
-    interpretation: typeof fields.interpretation === "string" ? fields.interpretation : null,
-    personalLearnings: stringList(fields.personal_learnings),
-    confounders: stringList(fields.confounders),
-    nextExperiment,
-  };
-}
-
-function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

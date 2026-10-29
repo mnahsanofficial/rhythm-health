@@ -11,7 +11,7 @@ import { useSession } from "@/lib/auth/session";
 import { listExperiments } from "@/lib/data/experiments";
 import { getReport } from "@/lib/data/reports";
 import { SIGNAL_COPY, signedPercent } from "@/lib/report/copy";
-import type { Experiment, Report } from "@/lib/types/api";
+import type { Experiment, LabReport } from "@/lib/types/api";
 
 type HistoryLoad =
   | { kind: "loading" }
@@ -138,7 +138,7 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
   const reduce = useReducedMotion();
   const [reportState, setReportState] = useState<
     | { kind: "loading" }
-    | { kind: "ready"; report: Report | null }
+    | { kind: "ready"; report: LabReport | null }
     | { kind: "error"; message: string }
   >({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);

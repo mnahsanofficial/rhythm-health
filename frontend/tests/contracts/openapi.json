@@ -439,7 +439,7 @@
     "/api/experiments/{experiment_id}/complete": {
       "post": {
         "summary": "Complete Experiment",
-        "description": "Run the deterministic analysis, save the report, and mark the experiment completed.",
+        "description": "Run the deterministic analysis, save the report, and mark the experiment completed.\n\nThe AI-written part is added afterwards by POST /report, so completing stays fast\nand never depends on the AI service.",
         "operationId": "complete_experiment_api_experiments__experiment_id__complete_post",
         "security": [
           {
@@ -464,7 +464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CompleteResponse"
+                  "$ref": "#/components/schemas/LabReport"
                 }
               }
             }
@@ -485,6 +485,7 @@
     "/api/experiments/{experiment_id}/report": {
       "get": {
         "summary": "Get Report",
+        "description": "The Lab Report: analysis, chart data, and the written narrative once it exists.",
         "operationId": "get_report_api_experiments__experiment_id__report_get",
         "security": [
           {
@@ -509,7 +510,61 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReportOut"
+                  "$ref": "#/components/schemas/LabReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Write Report",
+        "description": "Have the reasoning model explain the stored analysis, and save it on the report.\n\nIdempotent: if the narrative already exists it is returned without calling the model,\nunless ?regenerate=true. The analysis itself is never touched.",
+        "operationId": "write_report_api_experiments__experiment_id__report_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          },
+          {
+            "name": "regenerate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Regenerate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabReport"
                 }
               }
             }
@@ -674,6 +729,201 @@
           "signal"
         ],
         "title": "Analysis"
+      },
+      "ChartData": {
+        "properties": {
+          "primary_metric": {
+            "$ref": "#/components/schemas/ChartMetric"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/ChartMetric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "baseline_days": {
+            "type": "integer",
+            "title": "Baseline Days"
+          },
+          "intervention_days": {
+            "type": "integer",
+            "title": "Intervention Days"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ChartPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "baseline_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Mean"
+          },
+          "intervention_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intervention Mean"
+          },
+          "predicted_band": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictedBand"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "primary_metric",
+          "metrics",
+          "baseline_days",
+          "intervention_days",
+          "points"
+        ],
+        "title": "ChartData"
+      },
+      "ChartMetric": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "type"
+        ],
+        "title": "ChartMetric"
+      },
+      "ChartPoint": {
+        "properties": {
+          "day": {
+            "type": "integer",
+            "title": "Day"
+          },
+          "phase": {
+            "type": "string",
+            "title": "Phase"
+          },
+          "logged": {
+            "type": "boolean",
+            "title": "Logged"
+          },
+          "intervention_completed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intervention Completed"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Values"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "phase",
+          "logged"
+        ],
+        "title": "ChartPoint"
       },
       "CheckinIn": {
         "properties": {
@@ -851,22 +1101,6 @@
           "risk"
         ],
         "title": "Classification"
-      },
-      "CompleteResponse": {
-        "properties": {
-          "experiment": {
-            "$ref": "#/components/schemas/ExperimentOut"
-          },
-          "report": {
-            "$ref": "#/components/schemas/ReportOut"
-          }
-        },
-        "type": "object",
-        "required": [
-          "experiment",
-          "report"
-        ],
-        "title": "CompleteResponse"
       },
       "ExperimentOut": {
         "properties": {
@@ -1202,6 +1436,43 @@
         ],
         "title": "Intervention"
       },
+      "LabReport": {
+        "properties": {
+          "experiment": {
+            "$ref": "#/components/schemas/ExperimentOut"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/Analysis"
+          },
+          "narrative": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReportNarrative"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "chart": {
+            "$ref": "#/components/schemas/ChartData"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment",
+          "analysis",
+          "chart",
+          "created_at"
+        ],
+        "title": "LabReport",
+        "description": "Everything the Lab Report screen needs, in one response."
+      },
       "Metric": {
         "properties": {
           "key": {
@@ -1374,6 +1645,24 @@
         ],
         "title": "MetricAnalysis"
       },
+      "NextExperiment": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "reason"
+        ],
+        "title": "NextExperiment"
+      },
       "Outlier": {
         "properties": {
           "phase": {
@@ -1446,6 +1735,39 @@
           "n"
         ],
         "title": "PhaseStats"
+      },
+      "PredictedBand": {
+        "properties": {
+          "min_percent": {
+            "type": "number",
+            "title": "Min Percent"
+          },
+          "max_percent": {
+            "type": "number",
+            "title": "Max Percent"
+          },
+          "midpoint_percent": {
+            "type": "number",
+            "title": "Midpoint Percent"
+          },
+          "expected_value_min": {
+            "type": "number",
+            "title": "Expected Value Min"
+          },
+          "expected_value_max": {
+            "type": "number",
+            "title": "Expected Value Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_percent",
+          "max_percent",
+          "midpoint_percent",
+          "expected_value_min",
+          "expected_value_max"
+        ],
+        "title": "PredictedBand"
       },
       "Prediction": {
         "properties": {
@@ -1797,70 +2119,44 @@
         ],
         "title": "ProposeResponse"
       },
-      "ReportOut": {
+      "ReportNarrative": {
         "properties": {
-          "experiment_id": {
+          "summary": {
             "type": "string",
-            "format": "uuid",
-            "title": "Experiment Id"
-          },
-          "analysis": {
-            "$ref": "#/components/schemas/Analysis"
+            "title": "Summary"
           },
           "interpretation": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Interpretation"
           },
-          "learnings": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "items": {},
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Learnings"
+          "personal_learnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Personal Learnings"
+          },
+          "confounders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confounders"
           },
           "next_experiment": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Experiment"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
+            "$ref": "#/components/schemas/NextExperiment"
           }
         },
         "type": "object",
         "required": [
-          "experiment_id",
-          "analysis",
-          "created_at"
+          "summary",
+          "interpretation",
+          "personal_learnings",
+          "confounders",
+          "next_experiment"
         ],
-        "title": "ReportOut",
-        "description": "The AI-written parts (interpretation, learnings, next experiment) come later."
+        "title": "ReportNarrative",
+        "description": "The AI-written part of the Lab Report, as stored and returned.\n\nDeliberately plain: it is read back from the database, and rows written under older\ngeneration rules must keep loading. The strict rules live on NarrativeDraft."
       },
       "SafetyDecision": {
         "properties": {

@@ -179,7 +179,7 @@ export const MAX_NOTE_LENGTH = 500;
 export const MAX_DURATION_MINUTES = 24 * 60;
 export const MAX_NUMBER = 1_000_000;
 
-// ---- Analysis and report (schemas/analysis.py, report.py) ----
+// ---- Analysis (schemas/analysis.py) ----
 
 export type SignalClass = "likely_signal" | "possible_signal" | "unclear" | "probably_noise";
 
@@ -273,20 +273,64 @@ export type Analysis = {
   signal: Signal;
 };
 
-/** GET /api/experiments/{id}/report. The AI-written parts are null until the backend adds them. */
-export type Report = {
-  experiment_id: string;
-  analysis: Analysis;
-  interpretation: Record<string, unknown> | null;
-  learnings: Record<string, unknown> | unknown[] | null;
-  next_experiment: Record<string, unknown> | null;
-  created_at: string;
+// ---- Lab Report (schemas/lab_report.py) ----
+
+/** The AI-written part of the report. Its prose is never a source of numbers: use `analysis`. */
+export type ReportNarrative = {
+  summary: string;
+  interpretation: string;
+  personal_learnings: string[];
+  confounders: string[];
+  next_experiment: { question: string; reason: string };
 };
 
-/** POST /api/experiments/{id}/complete. */
-export type CompleteResponse = {
+export type ChartMetric = {
+  key: string;
+  label: string;
+  type: string;
+  min: number | null;
+  max: number | null;
+};
+
+/** One planned day, logged or not. */
+export type ChartPoint = {
+  day: number;
+  phase: string;
+  logged: boolean;
+  intervention_completed: boolean | null;
+  /** The primary metric's value. */
+  value: number | null;
+  values: Record<string, MetricValue> | null;
+  note: string | null;
+};
+
+/** The predicted range, in percent and in primary-metric units around the baseline mean. */
+export type PredictedBand = {
+  min_percent: number;
+  max_percent: number;
+  midpoint_percent: number;
+  expected_value_min: number;
+  expected_value_max: number;
+};
+
+export type ChartData = {
+  primary_metric: ChartMetric;
+  metrics: ChartMetric[];
+  baseline_days: number;
+  intervention_days: number;
+  points: ChartPoint[];
+  baseline_mean: number | null;
+  intervention_mean: number | null;
+  predicted_band: PredictedBand | null;
+};
+
+/** POST /complete, GET /report and POST /report. `narrative` is null until POST /report writes it. */
+export type LabReport = {
   experiment: Experiment;
-  report: Report;
+  analysis: Analysis;
+  narrative: ReportNarrative | null;
+  chart: ChartData;
+  created_at: string;
 };
 
 /** The `detail` of a 409 from /complete when there aren't enough check-ins yet. */
