@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { AuthNav } from "@/components/auth-nav";
 
 /** The mark: a 24-hour dial (midnight at the top) with night from 22:00 to 06:00 and a midday sun. */
@@ -23,8 +24,17 @@ export function SiteHeader() {
           <Mark />
           Rhythm
         </Link>
-        <AuthNav />
+        {/* AuthNav reads the pathname, which isn't known while prerendering /experiments/[id]
+            pages. The boundary lets the rest of the header prerender and the nav stream in. */}
+        <Suspense fallback={<NavPlaceholder />}>
+          <AuthNav />
+        </Suspense>
       </div>
     </header>
   );
+}
+
+/** Holds the nav's place while it streams in; the same shape AuthNav shows while loading. */
+function NavPlaceholder() {
+  return <span aria-hidden="true" className="ml-auto h-9 w-20 rounded-pill bg-line" />;
 }
