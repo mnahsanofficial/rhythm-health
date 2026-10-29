@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/data/profile";
+import { listCheckins } from "@/lib/data/checkins";
 import { listExperiments } from "@/lib/data/experiments";
 import type { Experiment } from "@/lib/types/api";
 import { useSession } from "@/lib/auth/session";
@@ -11,7 +12,7 @@ type State =
   | { kind: "loading" }
   | { kind: "new" }
   | { kind: "returning" }
-  | { kind: "active"; experiment: Experiment }
+  | { kind: "active"; experiment: Experiment; doneToday: boolean }
   | { kind: "error"; message: string };
 
 const primary =
@@ -33,9 +34,15 @@ export function HomeCta() {
           setState({ kind: "new" });
           return;
         }
-        const active = await listExperiments("active");
+        const [active] = await listExperiments("active");
+        if (!active) {
+          if (!cancelled) setState({ kind: "returning" });
+          return;
+        }
+        const checkins = await listCheckins(active.id);
         if (cancelled) return;
-        setState(active.length ? { kind: "active", experiment: active[0] } : { kind: "returning" });
+        const doneToday = checkins.some((c) => c.day_number === active.progress.day_number);
+        setState({ kind: "active", experiment: active, doneToday });
       })
       .catch((e: Error) => !cancelled && setState({ kind: "error", message: e.message }));
     return () => {
@@ -81,17 +88,46 @@ export function HomeCta() {
     );
   }
 
+  // One experiment at a time (TRD §2.5), so no "Test a new question" while one is running.
   if (view.kind === "active") {
-    const { experiment } = view;
-    const day = experiment.progress.day_number ?? experiment.progress.total_days;
+    const { experiment, doneToday } = view;
+    const { progress } = experiment;
+    const path = `/experiments/${encodeURIComponent(experiment.id)}`;
+    const secondaryLink = "text-body font-medium text-moss underline-offset-4 hover:underline";
+
+    if (progress.state === "in_progress" && progress.day_number !== null) {
+      return doneToday ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+          <Link href={path} className={primary}>
+            See your experiment
+          </Link>
+          <p className="flex items-center gap-2 text-body text-muted">
+            <span aria-hidden="true" className="text-moss">
+              ✓
+            </span>
+            Done for today · day {progress.day_number} of {progress.total_days}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+          <Link href={`${path}/check-in`} className={primary}>
+            Check in for day {progress.day_number}
+          </Link>
+          <Link href={path} className={secondaryLink}>
+            See your experiment
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-        <Link href={`/experiments/${encodeURIComponent(experiment.id)}`} className={primary}>
-          Day {day} of {experiment.progress.total_days}
+        <Link href={path} className={primary}>
+          {progress.state === "ended" ? "Finish and see results" : "See your experiment"}
         </Link>
-        <Link href="/experiments/new" className="text-body font-medium text-moss underline-offset-4 hover:underline">
-          Test a new question
-        </Link>
+        {progress.state === "ended" && (
+          <p className="text-body text-muted">All {progress.total_days} days are done.</p>
+        )}
       </div>
     );
   }

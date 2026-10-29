@@ -146,3 +146,154 @@ export type Experiment = ExperimentProposal & {
   created_at: string;
   updated_at: string;
 };
+
+// ---- Check-ins (schemas/checkin.py) ----
+
+export type MetricValue = boolean | number;
+
+/** POST /api/experiments/{id}/checkins body. Day, phase and ids come from the backend. */
+export type CheckinInput = {
+  /** Required on test (intervention) days; leave out on baseline days. */
+  intervention_completed?: boolean | null;
+  /** One value per metric key of the experiment, all required. */
+  metric_values: Record<string, MetricValue>;
+  /** Up to 500 characters. */
+  note?: string | null;
+};
+
+/** A saved check-in. One per experiment day; sending again replaces today's. */
+export type Checkin = {
+  id: string;
+  experiment_id: string;
+  phase: "baseline" | "intervention";
+  day_number: number;
+  intervention_completed: boolean;
+  metric_values: Record<string, MetricValue>;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const MAX_NOTE_LENGTH = 500;
+/** Backend bounds for non-scale metrics (services/checkins.py). */
+export const MAX_DURATION_MINUTES = 24 * 60;
+export const MAX_NUMBER = 1_000_000;
+
+// ---- Analysis and report (schemas/analysis.py, report.py) ----
+
+export type SignalClass = "likely_signal" | "possible_signal" | "unclear" | "probably_noise";
+
+export type PhaseStats = {
+  n: number;
+  mean: number | null;
+  median: number | null;
+  /** Sample standard deviation; needs n >= 2. */
+  sd: number | null;
+};
+
+export type Outlier = {
+  phase: "baseline" | "intervention";
+  day_number: number;
+  value: number;
+};
+
+export type MetricAnalysis = {
+  key: string;
+  label: string;
+  type: string;
+  primary: boolean;
+  baseline: PhaseStats;
+  intervention: PhaseStats;
+  /** Test-phase mean minus baseline mean. */
+  absolute_change: number | null;
+  /** Relative to the baseline mean. */
+  percent_change: number | null;
+  median_change_percent: number | null;
+  pooled_sd: number | null;
+  /** Signed Cohen's d: change in units of normal day-to-day variation. */
+  effect_size: number | null;
+  /** Share of test days on the same side of the baseline mean as the change. */
+  direction_consistency: number | null;
+  outliers: Outlier[];
+};
+
+export type Adherence = {
+  baseline_days_planned: number;
+  baseline_days_logged: number;
+  intervention_days_planned: number;
+  intervention_days_logged: number;
+  intervention_days_completed: number;
+  /** Completed / logged test days; null if none logged. */
+  adherence_rate: number | null;
+  /** All logged days / all planned days. */
+  coverage_rate: number;
+  missing_days: number[];
+};
+
+export type PredictionComparison = {
+  predicted_direction: "increase" | "decrease" | "no_change";
+  predicted_min: number;
+  predicted_max: number;
+  predicted_midpoint: number;
+  observed_change_percent: number;
+  /** Observed minus midpoint, in percentage points. */
+  error_points: number;
+  within_predicted_range: boolean;
+  direction_correct: boolean;
+  /** 0–100: how close the forecast was. Not scientific confidence. */
+  accuracy_percent: number;
+};
+
+/** Reason codes behind a classification, from services/analysis.py. */
+export type SignalReason =
+  | "insufficient_data"
+  | "change_meets_success_criteria"
+  | "change_below_success_criteria"
+  | "consistent_direction"
+  | "inconsistent_direction"
+  | "larger_than_normal_variation"
+  | "within_normal_variation"
+  | "low_adherence"
+  | "few_intervention_days"
+  | "moved_opposite_to_prediction";
+
+export type Signal = {
+  classification: SignalClass;
+  reasons: SignalReason[];
+  success_criteria_met: boolean;
+  matches_predicted_direction: boolean;
+};
+
+export type Analysis = {
+  primary_metric: string;
+  success_criteria_percent: number;
+  adherence: Adherence;
+  metrics: MetricAnalysis[];
+  prediction: PredictionComparison | null;
+  signal: Signal;
+};
+
+/** GET /api/experiments/{id}/report. The AI-written parts are null until the backend adds them. */
+export type Report = {
+  experiment_id: string;
+  analysis: Analysis;
+  interpretation: Record<string, unknown> | null;
+  learnings: Record<string, unknown> | unknown[] | null;
+  next_experiment: Record<string, unknown> | null;
+  created_at: string;
+};
+
+/** POST /api/experiments/{id}/complete. */
+export type CompleteResponse = {
+  experiment: Experiment;
+  report: Report;
+};
+
+/** The `detail` of a 409 from /complete when there aren't enough check-ins yet. */
+export type NotEnoughCheckins = {
+  message: string;
+  baseline_checkins: number;
+  baseline_required: number;
+  intervention_checkins: number;
+  intervention_required: number;
+};
