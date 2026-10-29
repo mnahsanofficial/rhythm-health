@@ -19,6 +19,14 @@ type Load =
   | { kind: "ready"; experiment: Experiment; report: Report | null; checkins: Checkin[] }
   | { kind: "error"; status: number; message: string };
 
+type ReportNarrative = {
+  summary: string | null;
+  interpretation: string | null;
+  personalLearnings: string[];
+  confounders: string[];
+  nextExperiment: { question: string; reason: string } | null;
+};
+
 const SIGNAL_TONE: Record<SignalClass, string> = {
   likely_signal: "bg-moss text-paper",
   possible_signal: "bg-moss-tint text-moss",
@@ -113,6 +121,7 @@ export function LabReport({ id }: { id: string }) {
   }
 
   const { analysis } = report;
+  const narrative = reportNarrative(report);
   const primary = analysis.metrics.find((m) => m.key === analysis.primary_metric) ?? analysis.metrics[0];
   const signal = SIGNAL_COPY[analysis.signal.classification];
   const others = analysis.metrics.filter((m) => m.key !== primary?.key);
@@ -220,18 +229,100 @@ export function LabReport({ id }: { id: string }) {
         </section>
       )}
 
-      <section className="mt-6 rounded-card bg-moss-tint p-6 sm:p-8">
-        <h2 className="font-display text-title">What we learned, and what to test next</h2>
-        <p className="mt-2 max-w-2xl text-body text-muted">
-          Written takeaways and a suggested next experiment are on the way. Until then, the numbers above are the
-          result, and you can test a follow-up question now.
-        </p>
-        <Link href="/experiments/new" className={`${linkButton} mt-5`}>
-          Test a new question
-        </Link>
+      <section
+        aria-labelledby="learning-heading"
+        className="mt-6 rounded-card bg-moss-tint p-6 sm:p-8"
+      >
+        <h2 id="learning-heading" className="font-display text-title">
+          What you learned about you
+        </h2>
+        {narrative.summary ? (
+          <p className="mt-3 max-w-2xl text-body">{narrative.summary}</p>
+        ) : (
+          <p className="mt-3 max-w-2xl text-body text-muted">
+            Written takeaways will appear when they are available for this report.
+          </p>
+        )}
+        {narrative.interpretation && (
+          <p className="mt-3 max-w-2xl text-body text-muted">{narrative.interpretation}</p>
+        )}
+        {narrative.personalLearnings.length > 0 && (
+          <ul className="mt-5 flex flex-col gap-3 border-t border-line pt-5">
+            {narrative.personalLearnings.map((learning) => (
+              <li key={learning} className="flex gap-3 text-body">
+                <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-moss" />
+                {learning}
+              </li>
+            ))}
+          </ul>
+        )}
+        {narrative.confounders.length > 0 && (
+          <div className="mt-5 border-t border-line pt-5">
+            <h3 className="font-medium">Things that may have shaped the result</h3>
+            <ul className="mt-2 flex flex-col gap-2 text-body text-muted">
+              {narrative.confounders.map((confounder) => <li key={confounder}>{confounder}</li>)}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      <section
+        aria-labelledby="next-experiment-heading"
+        className="mt-6 rounded-card border border-line bg-paper p-6 sm:p-8"
+      >
+        <h2 id="next-experiment-heading" className="font-display text-title">
+          What to test next
+        </h2>
+        {narrative.nextExperiment ? (
+          <>
+            <p className="mt-3 max-w-2xl text-lead">{narrative.nextExperiment.question}</p>
+            <p className="mt-2 max-w-2xl text-body text-muted">{narrative.nextExperiment.reason}</p>
+            <Link
+              href={`/experiments/new?question=${encodeURIComponent(narrative.nextExperiment.question)}`}
+              className={`${linkButton} mt-5`}
+            >
+              Run this experiment
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="mt-3 max-w-2xl text-body text-muted">
+              A follow-up question will appear here when it is available for this report.
+            </p>
+            <Link href="/experiments/new" className={`${linkButton} mt-5`}>
+              Ask a new question
+            </Link>
+          </>
+        )}
       </section>
     </Page>
   );
+}
+
+function reportNarrative(report: Report): ReportNarrative {
+  const fields = report as unknown as Record<string, unknown>;
+  const next = fields.next_experiment;
+  const nextExperiment = isRecord(next)
+    && typeof next.question === "string"
+    && typeof next.reason === "string"
+    ? { question: next.question, reason: next.reason }
+    : null;
+
+  return {
+    summary: typeof fields.summary === "string" ? fields.summary : null,
+    interpretation: typeof fields.interpretation === "string" ? fields.interpretation : null,
+    personalLearnings: stringList(fields.personal_learnings),
+    confounders: stringList(fields.confounders),
+    nextExperiment,
+  };
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
