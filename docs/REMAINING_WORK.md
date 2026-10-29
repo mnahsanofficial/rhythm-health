@@ -38,6 +38,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 
 | # | Item | Status | Source | Done means | Priority | Depends on Shakeb |
 |---|---|---|---|---|---|---|
+| F0 | Blank Supabase values in `.env.local` crash every page | Partial (bug) | TRD §38 | Copying `.env.example` unchanged and running `npm run dev` gives a working app with "Sign-in isn't set up" | Must | No |
 | F1 | Check for an active experiment **before** proposing | Partial | TRD §2.5 | `/experiments/new` says "you already have an active experiment" before any AI call | Must | No |
 | F2 | Open the seeded completed experiment | Not started | PRD §18, TRD §28–29 | A signed-in user can load the demo experiment and open its full Lab Report from the app | Must | Yes: B1 |
 | F3 | Lab Report sections 7 and 9: what we learned, and what to test next | Partial | PRD §15 (sections 6, 7, 9), TRD §24–25 | The report shows the AI summary, learnings and next experiment, and a **Run this experiment** button that starts a new proposal from it | Must | Yes: B2 |
@@ -148,6 +149,7 @@ Nobody has finished a real experiment against the real database yet. The earlies
 | R8 | `frontend/tests/e2e/onboarding-experiment.spec.ts:30` | Keyboard-only onboarding test skipped: Chromium leaves the time fields empty | Keyboard path through the sleep-schedule step isn't covered automatically (F12) |
 | R9 | `frontend/components/experiments/new-experiment.tsx:17` vs `frontend/lib/report/copy.ts:51` | Two `signedPercent` functions; only one rounds | A range could read "+7.5%" on the proposal and "+8%" on the report (F12) |
 | R10 | `frontend/components/auth-panel.tsx`, `frontend/components/backend-status.tsx` | Not imported anywhere | Dead code (F12) |
+| R11 | `frontend/lib/auth/supabase.ts:10` | `url ?? "http://localhost:54321"` doesn't catch an empty string, and `.env.example` ships `NEXT_PUBLIC_SUPABASE_URL=` blank | From a clean clone, `cp .env.example .env.local && npm run dev` answers 500 on every page ("supabaseUrl is required"), and `npm run build` fails. Found while testing the README; the README tells people to fill the values in first (F0) |
 
 ---
 
