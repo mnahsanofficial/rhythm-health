@@ -35,7 +35,24 @@ Run these from `frontend/`.
 | Command | What it does |
 |---|---|
 | `npm run dev` / `lint` / `typecheck` / `build` (in `frontend/`) | Next.js dev server, ESLint, route types + `tsc`, production build |
+| `npm test` / `npm run test:watch` (in `frontend/`) | Frontend unit and component tests (Vitest, Testing Library, MSW) |
+| `npm run test:e2e` (in `frontend/`) | Playwright browser flows, using fake Supabase and API responses from `.env.test` |
 | `uv run pytest` (in `backend/`) | Backend tests |
+
+Frontend tests never contact Supabase or OpenRouter. The Playwright flows mock auth and API requests, so they do not need a test account or shared database. Install Chromium once with `npx playwright install chromium` before the first E2E run.
+
+## Testing
+
+Run the frontend suites from `frontend/`:
+
+```bash
+npm test                 # unit and component tests
+npm run test:watch        # watch unit and component tests
+npx playwright install chromium  # one-time browser install
+npm run test:e2e          # mocked browser flows at mobile and desktop widths
+```
+
+Run backend tests from `backend/` with `uv run pytest`. Frontend automated tests use fake credentials in `frontend/.env.test`; they do not use a Supabase project or call OpenRouter.
 
 ## Agent logs
 
