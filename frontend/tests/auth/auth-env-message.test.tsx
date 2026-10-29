@@ -6,7 +6,9 @@ const config = vi.hoisted(() => ({ missingVariables: [] as string[] }));
 
 vi.mock("@/lib/auth/supabase", () => ({
   isAuthConfigured: false,
-  missingAuthVariables: config.missingVariables,
+  get missingAuthVariables() {
+    return config.missingVariables;
+  },
   supabase: { auth: {} },
 }));
 
