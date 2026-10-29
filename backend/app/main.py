@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import checkins, experiments, me, profile
+from app.api import checkins, experiments, me, profile, reports
 from app.config import settings
 from app.integrations import supabase
 
@@ -11,6 +11,7 @@ app.include_router(me.router)
 app.include_router(profile.router)
 app.include_router(experiments.router)
 app.include_router(checkins.router)
+app.include_router(reports.router)
 
 app.add_middleware(
     CORSMiddleware,
