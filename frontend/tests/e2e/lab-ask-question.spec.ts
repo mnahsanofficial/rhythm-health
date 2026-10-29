@@ -75,7 +75,15 @@ for (const width of [390, 768, 1440]) {
       await expect(page.getByRole("link", { name: "Check in for day 1" })).toBeVisible();
       const toggle = page.getByRole("button", { name: "Test another habit" });
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
-      expect((await toggle.boundingBox())!.y).toBeLessThan((await page.getByRole("heading", { name: experiment.question }).boundingBox())!.y);
+      await page.mouse.move(0, 0); // Check the normal fill, not the hover colour.
+      const actionBox = (await toggle.boundingBox())!;
+      const dayBox = (await page.getByText("Day 1 of 10", { exact: true }).boundingBox())!;
+      const questionBox = (await page.getByRole("heading", { name: experiment.question }).boundingBox())!;
+      expect.soft(Math.abs(actionBox.y + actionBox.height / 2 - dayBox.y - dayBox.height / 2), "the action aligns with the experiment day").toBeLessThan(2);
+      expect.soft(actionBox.x, "the action sits to the right of the day").toBeGreaterThan(dayBox.x + dayBox.width);
+      expect.soft(actionBox.x + actionBox.width, "the action stays inside the experiment column").toBeLessThanOrEqual(questionBox.x + questionBox.width + 1);
+      await expect.soft(toggle).toHaveCSS("background-color", "rgb(47, 107, 79)");
+      await expect.soft(toggle).toHaveCSS("color", "rgb(255, 253, 248)");
       await capture("active-lab");
       await toggle.focus();
       await page.keyboard.press("Enter");

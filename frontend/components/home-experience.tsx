@@ -149,27 +149,27 @@ function ActiveLab({ profile, experiment, checkins }: {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-body text-muted">Your lab</p>
-        <button
-          ref={toggle}
-          type="button"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={toggleQuestion}
-          className="min-h-12 rounded-pill border border-moss px-6 font-medium text-moss transition-transform duration-[var(--motion-press)] hover:bg-moss-tint active:scale-[0.98] motion-reduce:transition-none"
-        >
-          {open ? "Close question" : "Test another habit"}
-        </button>
-      </div>
+      <p className="text-body text-muted">Your lab</p>
       <div className="mt-4 grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
         <div className="min-w-0">
-          <section hidden={open}>
-            <p className="font-mono text-caption text-moss tabular-nums">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p hidden={open} className="font-mono text-caption text-moss tabular-nums">
               {progress.state === "in_progress"
                 ? `Day ${progress.day_number} of ${progress.total_days}`
                 : progress.state === "ended" ? "Experiment days ended" : progress.state === "completed" ? "Completed" : "Not started"}
             </p>
+            <button
+              ref={toggle}
+              type="button"
+              aria-expanded={open}
+              aria-controls={panelId}
+              onClick={toggleQuestion}
+              className="ml-auto min-h-12 rounded-pill bg-moss px-6 font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+            >
+              {open ? "Close question" : "Test another habit"}
+            </button>
+          </div>
+          <section hidden={open}>
             <h1 className="mt-3 font-display text-headline tracking-tight text-balance sm:text-display-sm">
               {experiment.question}
             </h1>
