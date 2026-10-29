@@ -211,3 +211,51 @@ test("shows report loading, missing, and retry states for individual history ite
   await readyReportItem.getByRole("button", { name: "Try again" }).click();
   await expect(readyReportItem).toContainText("Morning energy +11%");
 });
+
+for (const width of [390, 1440]) {
+  for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    test(`orders completed experiments at ${width}px with motion ${reducedMotion}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const counts = await openHistoryFromHome(page);
+      await page.emulateMedia({ reducedMotion });
+      const older: Experiment = {
+        ...completedWithoutReport, completed_at: "2026-10-20T12:00:00Z", is_seeded: true,
+      };
+      await page.route(completedListRoute, async route => {
+        if (new URL(route.request().url()).searchParams.get("status") === "completed") {
+          await route.fulfill({ json: [older, completedExperiment] });
+        } else await route.fallback();
+      });
+      await page.route(`${API}/api/experiments/${experiment.id}/report`, route => route.fulfill({ json: report }));
+      await page.route(`${API}/api/experiments/${older.id}/report`, route => route.fulfill({ status: 404, json: { detail: "Not ready" } }));
+      await page.goto("/history");
+      const articles = page.getByRole("article");
+      await expect(articles.first()).toHaveAccessibleName(completedExperiment.question);
+      await expect(page.getByText("Sample experiment", { exact: true })).toBeVisible();
+      const capture = async (frame: string) => {
+        if (!process.env.CAPTURE_UI_MOTION || reducedMotion === "reduce") return;
+        await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+        await page.screenshot({ path: `../docs/screenshots/ui-motion/history/${width}/${frame}.png`, fullPage: true });
+      };
+      await expect(articles.first()).toContainText("Morning energy +11%");
+      await capture("before");
+      const oldest = page.getByRole("radio", { name: "Oldest first" });
+      await oldest.focus();
+      await page.keyboard.press("Space");
+      await expect(articles.first()).toHaveAccessibleName(older.question);
+      await capture("during");
+      await expect(page.getByRole("status").filter({ hasText: "2 completed experiments" })).toContainText("oldest first");
+      await expect.poll(() => page.getByRole("list", { name: "Completed experiments" }).evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
+      await expect.poll(() => page.getByRole("list", { name: "Completed experiments" }).getByRole("listitem").evaluateAll(items => items.every(item => {
+        const transform = getComputedStyle(item).transform;
+        const matrix = new DOMMatrixReadOnly(transform === "none" ? undefined : transform);
+        return Math.abs(matrix.m41) < 0.01 && Math.abs(matrix.m42) < 0.01;
+      }))).toBe(true);
+      await capture("after");
+      await expect(oldest).toBeFocused();
+      await page.getByText("Newest first", { exact: true }).click();
+      await expect(articles.first()).toHaveAccessibleName(completedExperiment.question);
+      expect(counts.proposals).toBe(0);
+    });
+  }
+}

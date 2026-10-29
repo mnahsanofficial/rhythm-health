@@ -157,3 +157,9 @@ Night identifies the original forecast; moss identifies the observation. The ver
 The public hero explains the daily effort and the standard 3-baseline/7-test-day format. An explicitly labelled sample rhythm can be explored using native habit checkboxes; this only updates the example's local component state. No request or onboarding draft is written. Checkmarks respond over 150ms and added ring markers over 280ms, using transform/opacity with reduced motion respected. There is no ambient animation.
 
 Example questions follow the product explanation. The primary action starts onboarding; signed-in visitors see their personal dashboard instead of the public hero.
+
+### History
+
+History uses divider rows instead of repeating card shells. Night identifies the original forecast and moss the observation; dates, questions and result labels stay readable without opening a report. Seeded experiments are explicitly labelled as samples.
+
+Newest/oldest ordering uses native radio controls. Existing rows move with a 280ms transform on the settle curve; reduced motion changes their order immediately. No entrance fade, looping skeleton or repeated result reveal competes with the Lab Report's signature moment. Missing reports and report retries remain visible within their own rows.
