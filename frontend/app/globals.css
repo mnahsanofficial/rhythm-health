@@ -14,6 +14,8 @@
   --color-night: #263a6b;
   --color-night-tint: #e4e7f0;
   --color-sun: #f2c14e;
+  /* Illustration only: the landing character's skin. */
+  --color-skin: #b9825e;
   /* Errors only: 7.6:1 text on tint. */
   --color-clay: #7a2e1f;
   --color-clay-tint: #f7e4df;
@@ -52,6 +54,9 @@
   --motion-response: 280ms;
   --motion-step: 350ms;
   --motion-reveal: 480ms;
+
+  /* Page side gutter: 16px on a 320px phone, growing with the screen to 64px. */
+  --gutter: clamp(1rem, 4vw, 4rem);
 }
 
 html {
@@ -94,4 +99,13 @@ body {
 @keyframes rhythm-arrive {
   from { opacity: 0; transform: scale(0.94); }
   to { opacity: 1; transform: scale(1); }
+}
+
+/* The shared page frame: content up to 80rem wide, centred, with the fluid gutter.
+   Backgrounds and illustrations sit outside it so they always reach both screen edges. */
+@utility page-frame {
+  margin-inline: auto;
+  width: 100%;
+  max-width: calc(80rem + 2 * var(--gutter));
+  padding-inline: var(--gutter);
 }

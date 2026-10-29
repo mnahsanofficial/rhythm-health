@@ -1,7 +1,6 @@
 import { HomeCta } from "@/components/home-cta";
 import { HomeExperience } from "@/components/home-experience";
-import { LandingRhythm } from "@/components/landing-rhythm";
-import { exampleProfile } from "@/lib/data/profile";
+import { DayStory } from "@/components/landing/day-story";
 
 const EXAMPLE_QUESTIONS = [
   "Does walking after dinner improve my sleep?",
@@ -27,44 +26,16 @@ const STEPS = [
 export default function Home() {
   return (
     <HomeExperience>
-      <div className="mx-auto w-full max-w-6xl px-4 pb-20 sm:px-8">
-        <section className="grid items-center gap-10 pt-8 pb-14 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-12">
-          <div>
-            <h1 className="font-display text-display-sm tracking-tight text-balance sm:text-display">
-              Stop guessing what works for you.
-              <span className="block text-muted">Test it.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lead text-muted">
-              Turn a habit question into a small personal experiment. Record your usual routine,
-              test one change, then compare the forecast with your own observations.
-            </p>
-            <div className="mt-8">
-              <HomeCta />
+      <DayStory />
 
-            </div>
-
-            <div className="mt-10 grid grid-cols-2 gap-5 border-t border-line pt-5">
-              <div>
-                <p className="font-mono text-title tabular-nums">3 + 7</p>
-                <p className="mt-1 text-caption text-muted">Normal days, then test days.</p>
-              </div>
-              <div>
-                <p className="font-mono text-title tabular-nums">30 seconds</p>
-                <p className="mt-1 text-caption text-muted">A small daily check-in.</p>
-              </div>
-            </div>
-          </div>
-
-          <LandingRhythm profile={exampleProfile} />
-        </section>
-
-        <section aria-labelledby="how-it-works" className="border-t border-line pt-12">
+      <div className="page-frame pt-16 pb-20">
+        <section aria-labelledby="how-it-works">
           <h2 id="how-it-works" className="font-display text-headline tracking-tight">
             How it works
           </h2>
           <ol className="mt-8 grid gap-8 md:grid-cols-3 md:gap-10">
             {STEPS.map((step, i) => (
-              <li key={step.title}>
+              <li key={step.title} className="max-w-prose">
                 <p className="font-mono text-caption text-moss tabular-nums">0{i + 1}</p>
                 <h3 className="mt-2 font-display text-title tracking-tight">{step.title}</h3>
                 <p className="mt-2 text-body text-muted">{step.body}</p>
@@ -84,6 +55,12 @@ export default function Home() {
               ))}
             </ul>
           </div>
+        </section>
+        <section aria-labelledby="start" className="mt-12 border-t border-line pt-10">
+          <h2 id="start" className="max-w-prose font-display text-headline tracking-tight text-balance">
+            Your first question takes about a minute to set up.
+          </h2>
+          <div className="mt-6"><HomeCta /></div>
         </section>
       </div>
     </HomeExperience>

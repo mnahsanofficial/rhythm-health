@@ -27,6 +27,7 @@ Colour, type, shape and easing live in `frontend/app/globals.css`. Use Tailwind 
 | `night` | `#263a6b` | Sleep on the rhythm ring, the predicted range |
 | `night-tint` | `#e4e7f0` | Soft night backgrounds |
 | `sun` | `#f2c14e` | Daylight markers (habit dots on the ring, the ring round the selected day in the timeline). **Never text**: 1.5:1 on oat |
+| `skin` | `#b9825e` | Illustration only: the landing character's skin |
 | `clay` | `#7a2e1f` | Error text only (7.6:1 on `clay-tint`) |
 | `clay-tint` | `#f7e4df` | Error backgrounds only |
 
@@ -88,7 +89,7 @@ Small existing selection springs, chart fades and panel departures keep their lo
 | Proposal | Waiting explains what goes into the response without claiming live stage completion. The finished plan replaces entry and restores focus appropriately. Forecast endpoints remain readable while the range fills. |
 | Onboarding | Steps move in the direction of navigation; focus moves to the heading. Habits follow morning, afternoon and evening; constraints explain how the plan should fit life. Choices retain native keyboard behavior and Skip. |
 | Lab Report | Comparison first; verdict, adherence and daily evidence follow. Written sections without backend content show waiting states. |
-| Public landing | A labelled sample rhythm can be explored with native habit checkboxes. Only the example's component state changes; no request or onboarding draft is written. |
+| Public landing | "A day in the life": scrolling moves one example day from night to morning, noon, evening and back to night. Sky, light, sun and moon follow the scroll position directly (`useScroll` + `useTransform`, opacity and transforms only), so stopping the scroll stops the scene. No snapping or scroll-jacking. Only the sets near the current position are mounted. With reduced motion, the stage is not mounted and each scene shows a still illustration above its text. |
 | History | Native newest/oldest controls reorder existing rows through position transforms. Report state stays with each experiment; seeded rows are labelled as samples. |
 
 Do not add global page entrance effects. Preserve context through persistent questions, directional step transitions, focused headings and stable panels.
