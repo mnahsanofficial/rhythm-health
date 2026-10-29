@@ -48,13 +48,13 @@ for (const width of [320, 390, 1440]) {
     await expect(panel.getByText("learner@example.invalid")).toBeVisible();
     await expect(panel.getByRole("button", { name: "Sign out" })).toBeVisible();
     if (width < 768) await expect(panel.getByRole("link", { name: "History" })).toBeVisible();
-    if (process.env.CAPTURE_HEADER) await page.screenshot({ path: `../docs/screenshots/header/${width}-menu-open.png` });
+    if (process.env.CAPTURE_HEADER) await page.screenshot({ path: `../docs/screenshots/landing-day/header/${width}-menu-open.png` });
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
     await expect(account).toBeFocused();
 
     await page.goto("/history");
     await expect(page.getByRole("heading", { name: "Your experiment history" })).toBeVisible();
-    if (process.env.CAPTURE_HEADER) await page.screenshot({ path: `../docs/screenshots/header/${width}-signed-in.png` });
+    if (process.env.CAPTURE_HEADER) await page.screenshot({ path: `../docs/screenshots/landing-day/header/${width}-signed-in.png` });
   });
 }

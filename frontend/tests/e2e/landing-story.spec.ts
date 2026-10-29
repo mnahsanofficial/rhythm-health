@@ -41,7 +41,7 @@ async function noHorizontalScroll(page: Page) {
 
 const capture = async (page: Page, width: number, frame: string) => {
   if (!process.env.CAPTURE_LANDING) return;
-  await page.screenshot({ path: `../docs/screenshots/landing-day/${width}/${frame}.png` });
+  await page.screenshot({ path: `../docs/screenshots/landing-day/landing/${width}/${frame}.png` });
 };
 
 for (const width of [320, 390, 1440]) {
@@ -101,7 +101,7 @@ for (const width of [320, 390, 1440]) {
     expect(running).toBe(0);
     if (process.env.CAPTURE_LANDING) {
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.screenshot({ path: `../docs/screenshots/landing-day/${width}/reduced-motion.png`, fullPage: true });
+      await page.screenshot({ path: `../docs/screenshots/landing-day/landing/${width}/reduced-motion.png`, fullPage: true });
     }
     expect(problems).toEqual([]);
   });

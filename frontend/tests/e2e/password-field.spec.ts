@@ -65,9 +65,9 @@ for (const width of [320, 390, 1440]) {
 
     if (process.env.CAPTURE_PASSWORD) {
       await page.getByRole("button", { name: "Show password" }).click();
-      await page.screenshot({ path: `../docs/screenshots/password-field/${width}-shown.png` });
+      await page.screenshot({ path: `../docs/screenshots/landing-day/password/${width}-shown.png` });
       await page.getByRole("button", { name: "Hide password" }).click();
-      await page.screenshot({ path: `../docs/screenshots/password-field/${width}-hidden.png` });
+      await page.screenshot({ path: `../docs/screenshots/landing-day/password/${width}-hidden.png` });
     }
   });
 }
