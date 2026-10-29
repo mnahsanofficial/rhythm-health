@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import type { Checkin, Experiment, Report } from "@/lib/types/api";
-import { experiment } from "../support/fixtures";
+import type { Checkin, Experiment, LabReport } from "@/lib/types/api";
+import { experiment, labReport } from "../support/fixtures";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
 
 /** Every width the layout must hold at, plus 1280px and 1440px windows zoomed to 200%. */
@@ -141,8 +141,8 @@ test("signed-in pages fill the screen and stay readable at every width", async (
     metric_values: { morning_energy: 5 + day, sleep_quality: 6 }, note: "A quiet evening.",
     created_at: `2026-10-2${4 + day}T12:00:00Z`, updated_at: `2026-10-2${4 + day}T12:00:00Z`,
   }));
-  const report: Report = {
-    experiment_id: completedId,
+  const report: LabReport = {
+    experiment: completed,
     analysis: {
       primary_metric: "morning_energy", success_criteria_percent: 10,
       adherence: {
@@ -152,7 +152,7 @@ test("signed-in pages fill the screen and stay readable at every width", async (
       metrics: [], prediction: null,
       signal: { classification: "possible_signal", reasons: ["change_meets_success_criteria"], success_criteria_met: true, matches_predicted_direction: true },
     },
-    interpretation: null, learnings: null, next_experiment: null, created_at: "2026-10-20T10:00:00Z",
+    narrative: null, chart: labReport.chart, created_at: "2026-10-20T10:00:00Z",
   };
 
   await page.route(`${API}/api/experiments?**`, route => {

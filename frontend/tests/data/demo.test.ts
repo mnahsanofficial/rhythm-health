@@ -2,51 +2,23 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { resetDemo } from "@/lib/data/demo";
-import type { Report } from "@/lib/types/api";
-import { experiment } from "../support/fixtures";
+import type { LabReport } from "@/lib/types/api";
+import { completedExperiment, writtenLabReport } from "../support/fixtures";
 import { server } from "../support/server";
 
 const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/supabase", () => ({ supabase: { auth: { getSession } } }));
 
 const api = "http://api.test.invalid";
-const report: Report = {
-  experiment_id: experiment.id,
-  analysis: {
-    primary_metric: "morning_energy",
-    success_criteria_percent: 10,
-    adherence: {
-      baseline_days_planned: 3,
-      baseline_days_logged: 3,
-      intervention_days_planned: 7,
-      intervention_days_logged: 7,
-      intervention_days_completed: 7,
-      adherence_rate: 1,
-      coverage_rate: 1,
-      missing_days: [],
-    },
-    metrics: [],
-    prediction: null,
-    signal: {
-      classification: "likely_signal",
-      reasons: ["change_meets_success_criteria"],
-      success_criteria_met: true,
-      matches_predicted_direction: true,
-    },
-  },
-  interpretation: null,
-  learnings: null,
-  next_experiment: null,
-  created_at: "2026-10-28T12:00:00Z",
-};
-const response = { experiment: { ...experiment, status: "completed" as const, is_seeded: true }, report };
+// B1 contract (docs/DECISIONS.md): the bare LabReport of the seeded experiment, narrative written.
+const response: LabReport = { ...writtenLabReport, experiment: { ...completedExperiment, is_seeded: true } };
 
 beforeEach(() => {
   getSession.mockResolvedValue({ data: { session: { access_token: "fake-session-token" } }, error: null });
 });
 
 describe("demo data", () => {
-  it("posts an authenticated empty reset request and returns the seeded report", async () => {
+  it("posts an authenticated empty reset request and returns the seeded Lab Report", async () => {
     server.use(
       http.post(`${api}/api/demo/reset`, async ({ request }) => {
         expect(request.headers.get("authorization")).toBe("Bearer fake-session-token");

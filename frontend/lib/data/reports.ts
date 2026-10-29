@@ -1,19 +1,27 @@
 import { apiGet, apiSend, ApiError } from "@/lib/api/client";
-import type { CompleteResponse, NotEnoughCheckins, Report } from "@/lib/types/api";
+import type { LabReport, NotEnoughCheckins } from "@/lib/types/api";
 
 /** The experiment's Lab Report, or null if it hasn't been completed yet (the API answers 404). */
-export async function getReport(experimentId: string): Promise<Report | null> {
+export async function getReport(experimentId: string): Promise<LabReport | null> {
   try {
-    return await apiGet<Report>(`/api/experiments/${encodeURIComponent(experimentId)}/report`, true);
+    return await apiGet<LabReport>(`/api/experiments/${encodeURIComponent(experimentId)}/report`, true);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return null;
     throw e;
   }
 }
 
-/** Run the analysis and mark the experiment completed. */
-export function completeExperiment(experimentId: string): Promise<CompleteResponse> {
+/** Run the deterministic analysis and mark the experiment completed. No model call; narrative is null. */
+export function completeExperiment(experimentId: string): Promise<LabReport> {
   return apiSend("POST", `/api/experiments/${encodeURIComponent(experimentId)}/complete`);
+}
+
+/**
+ * Have the backend write the narrative: one paid model call. Idempotent on the backend, so a
+ * repeat returns the stored narrative. We never send ?regenerate=true.
+ */
+export function writeReport(experimentId: string): Promise<LabReport> {
+  return apiSend("POST", `/api/experiments/${encodeURIComponent(experimentId)}/report`);
 }
 
 /** The check-in counts from a 409 "not enough check-ins", or null for any other error. */

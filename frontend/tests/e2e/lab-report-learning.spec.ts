@@ -1,15 +1,7 @@
 import { expect, test } from "@playwright/test";
-import type { Checkin, Experiment, Report } from "@/lib/types/api";
+import type { Checkin, Experiment, LabReport } from "@/lib/types/api";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
-import { experiment } from "../support/fixtures";
-
-type ProposedB2Report = Omit<Report, "interpretation" | "learnings" | "next_experiment"> & {
-  summary: string;
-  interpretation: string;
-  personal_learnings: string[];
-  confounders: string[];
-  next_experiment: { question: string; reason: string };
-};
+import { experiment, labReport } from "../support/fixtures";
 
 const nextQuestion = "Keep the evening walk, but move it closer to dinner?";
 const completedExperiment: Experiment = {
@@ -27,8 +19,8 @@ const completedExperiment: Experiment = {
   },
 };
 
-const report: ProposedB2Report = {
-  experiment_id: experiment.id,
+const report: LabReport = {
+  experiment: completedExperiment,
   analysis: {
     primary_metric: "morning_energy",
     success_criteria_percent: 10,
@@ -67,17 +59,20 @@ const report: ProposedB2Report = {
       matches_predicted_direction: true,
     },
   },
-  summary: "Your morning energy was higher during the test days.",
-  interpretation: "Evening movement appears to support your next-morning energy.",
-  personal_learnings: [
-    "Evening movement appears to be positively associated with your next-morning energy.",
-    "Bedtime consistency may matter more than walk duration.",
-  ],
-  confounders: ["Bedtime varied during the experiment."],
-  next_experiment: {
-    question: nextQuestion,
-    reason: "The next test can narrow down when the walk works best.",
+  narrative: {
+    summary: "Your morning energy was higher during the test days.",
+    interpretation: "Evening movement appears to support your next-morning energy.",
+    personal_learnings: [
+      "Evening movement appears to be positively associated with your next-morning energy.",
+      "Bedtime consistency may matter more than walk duration.",
+    ],
+    confounders: ["Bedtime varied during the experiment."],
+    next_experiment: {
+      question: nextQuestion,
+      reason: "The next test can narrow down when the walk works best.",
+    },
   },
+  chart: labReport.chart,
   created_at: "2026-10-28T12:00:00Z",
 };
 
@@ -100,8 +95,8 @@ for (const width of [390, 1440]) {
 
     await page.goto(`/experiments/${experiment.id}/report`);
     await expect(page.getByRole("heading", { name: "What you learned about you" })).toBeVisible();
-    await expect(page.getByText(report.summary)).toBeVisible();
-    await expect(page.getByText(report.personal_learnings[1])).toBeVisible();
+    await expect(page.getByText(report.narrative!.summary)).toBeVisible();
+    await expect(page.getByText(report.narrative!.personal_learnings[1])).toBeVisible();
     await expect(page.getByRole("heading", { name: "What to test next" })).toBeVisible();
     await expect(page.getByText(nextQuestion)).toBeVisible();
     const runNextExperiment = page.getByRole("link", { name: "Run this experiment" });
@@ -126,7 +121,7 @@ for (const width of [390, 1440]) {
       await page.emulateMedia({ reducedMotion });
       const calculatedReport = {
         ...report,
-        summary: null, interpretation: null, personal_learnings: [], confounders: [], next_experiment: null,
+        narrative: null,
         analysis: { ...report.analysis, prediction: {
           predicted_direction: "increase", predicted_min: 8, predicted_max: 15, predicted_midpoint: 11.5,
           observed_change_percent: 11, error_points: -0.5, within_predicted_range: true,
@@ -173,8 +168,9 @@ for (const width of [390, 1440]) {
       if (reducedMotion === "reduce") {
         expect(await comparison.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
       }
-      await expect(page.getByRole("region", { name: "What you learned about you" })).toContainText("Waiting for your written results");
-      await expect(page.getByRole("region", { name: "What to test next" })).toContainText("Waiting for your follow-up results");
+      // Before the narrative is written, the report offers to write it rather than waiting.
+      await expect(page.getByRole("region", { name: "What you learned about you" }).getByRole("button", { name: "Write my report" })).toBeEnabled();
+      await expect(page.getByRole("region", { name: "What to test next" })).toContainText("appears once your report is written");
       await expect(page.getByRole("link", { name: "Run this experiment" })).toHaveCount(0);
       expect(counts.proposals).toBe(0);
     });

@@ -1,13 +1,7 @@
 import { apiSend } from "@/lib/api/client";
-import type { Experiment, Report } from "@/lib/types/api";
+import type { LabReport } from "@/lib/types/api";
 
-/** The proposed B1 response from POST /api/demo/reset. */
-export type DemoResetResponse = {
-  experiment: Experiment;
-  report: Report;
-};
-
-/** Prepare the authenticated user's seeded completed experiment. */
-export function resetDemo(): Promise<DemoResetResponse> {
+/** Prepare the signed-in user's seeded completed experiment. B1: returns its bare LabReport. */
+export function resetDemo(): Promise<LabReport> {
   return apiSend("POST", "/api/demo/reset", {});
 }

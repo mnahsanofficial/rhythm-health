@@ -2,29 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DayChart } from "@/components/report/day-chart";
 import { PredictionVsReality } from "@/components/report/prediction-vs-reality";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
-import { listCheckins } from "@/lib/data/checkins";
-import { getExperiment } from "@/lib/data/experiments";
-import { getReport } from "@/lib/data/reports";
+import { getExperiment, listExperiments } from "@/lib/data/experiments";
+import { getReport, writeReport } from "@/lib/data/reports";
 import { reasonText, SIGNAL_COPY, signedPercent } from "@/lib/report/copy";
-import type { Checkin, Experiment, Report, SignalClass } from "@/lib/types/api";
+import type { Experiment, LabReport as LabReportData, ReportNarrative, SignalClass } from "@/lib/types/api";
 
 type Load =
   | { kind: "loading" }
-  | { kind: "ready"; experiment: Experiment; report: Report | null; checkins: Checkin[] }
+  | { kind: "ready"; report: LabReportData }
+  | { kind: "not-finished"; experiment: Experiment }
   | { kind: "error"; status: number; message: string };
-
-type ReportNarrative = {
-  summary: string | null;
-  interpretation: string | null;
-  personalLearnings: string[];
-  confounders: string[];
-  nextExperiment: { question: string; reason: string } | null;
-};
 
 const SIGNAL_TONE: Record<SignalClass, string> = {
   likely_signal: "bg-moss text-paper",
@@ -32,6 +24,9 @@ const SIGNAL_TONE: Record<SignalClass, string> = {
   unclear: "bg-line text-ink",
   probably_noise: "bg-oat text-muted border border-line",
 };
+
+const secondaryLink =
+  "inline-flex min-h-12 items-center justify-center rounded-pill border border-line bg-paper px-6 text-body font-medium text-ink hover:border-moss hover:text-moss";
 
 const linkButton =
   "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-[background-color,scale] hover:bg-moss-deep active:scale-[0.98]";
@@ -50,8 +45,12 @@ export function LabReport({ id }: { id: string }) {
       return;
     }
     let cancelled = false;
-    Promise.all([getExperiment(id), getReport(id), listCheckins(id)])
-      .then(([experiment, report, checkins]) => !cancelled && setLoad({ kind: "ready", experiment, report, checkins }))
+    // One call: the report embeds the experiment and the chart. Only a missing report needs the experiment.
+    getReport(id)
+      .then(async (report) => {
+        const next: Load = report ? { kind: "ready", report } : { kind: "not-finished", experiment: await getExperiment(id) };
+        if (!cancelled) setLoad(next);
+      })
       .catch((e: unknown) => {
         if (cancelled) return;
         if (e instanceof ApiError && e.status === 401) {
@@ -101,9 +100,8 @@ export function LabReport({ id }: { id: string }) {
     );
   }
 
-  const { experiment, report, checkins } = load;
-
-  if (!report) {
+  if (load.kind === "not-finished") {
+    const { experiment } = load;
     return (
       <Page back={path}>
         <h1 className="font-display text-headline tracking-tight">No results yet.</h1>
@@ -119,8 +117,8 @@ export function LabReport({ id }: { id: string }) {
     );
   }
 
-  const { analysis } = report;
-  const narrative = reportNarrative(report);
+  const { report } = load;
+  const { analysis, experiment, narrative } = report;
   const primary = analysis.metrics.find((m) => m.key === analysis.primary_metric) ?? analysis.metrics[0];
   const signal = SIGNAL_COPY[analysis.signal.classification];
   const others = analysis.metrics.filter((m) => m.key !== primary?.key);
@@ -202,7 +200,7 @@ export function LabReport({ id }: { id: string }) {
 
       {primary && (
         <div className="mt-6">
-          <DayChart experiment={experiment} checkins={checkins} primary={primary} comparison={analysis.prediction} />
+          <DayChart chart={report.chart} missingDays={analysis.adherence.missing_days} />
         </div>
       )}
 
@@ -228,100 +226,203 @@ export function LabReport({ id }: { id: string }) {
         </section>
       )}
 
-      <section
-        aria-labelledby="learning-heading"
-        className="mt-6 rounded-card bg-moss-tint p-6 sm:p-8"
-      >
-        <h2 id="learning-heading" className="font-display text-title">
-          What you learned about you
-        </h2>
-        {narrative.summary ? (
-          <p className="mt-3 text-body">{narrative.summary}</p>
-        ) : (
-          <p className="mt-3 text-body text-muted">
-            Waiting for your written results. Takeaways will appear when they are available for this report.
-          </p>
-        )}
-        {narrative.interpretation && (
-          <p className="mt-3 text-body text-muted">{narrative.interpretation}</p>
-        )}
-        {narrative.personalLearnings.length > 0 && (
-          <ul className="mt-5 flex flex-col gap-3 border-t border-line pt-5">
-            {narrative.personalLearnings.map((learning) => (
-              <li key={learning} className="flex gap-3 text-body">
-                <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-moss" />
-                {learning}
-              </li>
-            ))}
-          </ul>
-        )}
-        {narrative.confounders.length > 0 && (
-          <div className="mt-5 border-t border-line pt-5">
-            <h3 className="font-medium">Things that may have shaped the result</h3>
-            <ul className="mt-2 flex flex-col gap-2 text-body text-muted">
-              {narrative.confounders.map((confounder) => <li key={confounder}>{confounder}</li>)}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      <section
-        aria-labelledby="next-experiment-heading"
-        className="mt-6 rounded-card border border-line bg-paper p-6 sm:p-8"
-      >
-        <h2 id="next-experiment-heading" className="font-display text-title">
-          What to test next
-        </h2>
-        {narrative.nextExperiment ? (
-          <>
-            <p className="mt-3 text-lead">{narrative.nextExperiment.question}</p>
-            <p className="mt-2 text-body text-muted">{narrative.nextExperiment.reason}</p>
-            <Link
-              href={`/experiments/new?question=${encodeURIComponent(narrative.nextExperiment.question)}`}
-              className={`${linkButton} mt-5`}
-            >
-              Run this experiment
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className="mt-3 text-body text-muted">
-              Waiting for your follow-up results. A new question will appear when it is available for this report.
-            </p>
-            <Link href="/experiments/new" className={`${linkButton} mt-5`}>
-              Ask a new question
-            </Link>
-          </>
-        )}
-      </section>
+      <LearningSection
+        experimentId={experiment.id}
+        narrative={narrative}
+        onWritten={(written) => setLoad({ kind: "ready", report: written })}
+      />
+      <NextExperimentSection narrative={narrative} />
     </Page>
   );
 }
 
-function reportNarrative(report: Report): ReportNarrative {
-  const fields = report as unknown as Record<string, unknown>;
-  const next = fields.next_experiment;
-  const nextExperiment = isRecord(next)
-    && typeof next.question === "string"
-    && typeof next.reason === "string"
-    ? { question: next.question, reason: next.reason }
-    : null;
+type Writing = { kind: "idle" } | { kind: "writing" } | { kind: "error"; status: number; message: string };
 
-  return {
-    summary: typeof fields.summary === "string" ? fields.summary : null,
-    interpretation: typeof fields.interpretation === "string" ? fields.interpretation : null,
-    personalLearnings: stringList(fields.personal_learnings),
-    confounders: stringList(fields.confounders),
-    nextExperiment,
-  };
+/** Why POST /report failed, in plain words. The analysis is already saved, so say so. */
+function writeErrorText(status: number, message: string): string {
+  if (status === 503) return "The writing service isn't available right now.";
+  if (status === 502) return "We couldn't write a report that matched your results.";
+  if (status === 409) return "This experiment needs to be finished before its report can be written.";
+  if (status === 404) return "There are no results to write about yet.";
+  if (status === 0) return "We couldn't reach the server. Check your connection.";
+  return message || "Something went wrong while writing your report.";
 }
 
-function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+/**
+ * Sections 7 of the report. The narrative is null until POST /report writes it: one paid model
+ * call, so it is the person's choice, it can't fire twice, and a failure keeps the results.
+ */
+function LearningSection({
+  experimentId,
+  narrative,
+  onWritten,
+}: {
+  experimentId: string;
+  narrative: ReportNarrative | null;
+  onWritten: (report: LabReportData) => void;
+}) {
+  const router = useRouter();
+  const [writing, setWriting] = useState<Writing>({ kind: "idle" });
+  const inFlight = useRef(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const justWritten = useRef(false);
+
+  useEffect(() => {
+    if (narrative && justWritten.current) {
+      justWritten.current = false;
+      heading.current?.focus();
+    }
+  }, [narrative]);
+
+  async function write() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setWriting({ kind: "writing" });
+    try {
+      const written = await writeReport(experimentId);
+      justWritten.current = true;
+      setWriting({ kind: "idle" });
+      onWritten(written);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        router.replace(`/sign-in?next=${encodeURIComponent(`/experiments/${encodeURIComponent(experimentId)}/report`)}`);
+        return;
+      }
+      setWriting({
+        kind: "error",
+        status: e instanceof ApiError ? e.status : 0,
+        message: e instanceof Error ? e.message : "",
+      });
+    } finally {
+      inFlight.current = false;
+    }
+  }
+
+  const busy = writing.kind === "writing";
+
+  return (
+    <section aria-labelledby="learning-heading" className="mt-6 rounded-card bg-moss-tint p-6 sm:p-8">
+      <h2 id="learning-heading" ref={heading} tabIndex={-1} className="font-display text-title outline-none">
+        What you learned about you
+      </h2>
+      {narrative ? (
+        <>
+          <p className="mt-3 text-body">{narrative.summary}</p>
+          <p className="mt-3 text-body text-muted">{narrative.interpretation}</p>
+          {narrative.personal_learnings.length > 0 && (
+            <ul className="mt-5 flex flex-col gap-3 border-t border-line pt-5">
+              {narrative.personal_learnings.map((learning) => (
+                <li key={learning} className="flex gap-3 text-body">
+                  <span aria-hidden="true" className="mt-2.5 size-1.5 shrink-0 rounded-full bg-moss" />
+                  {learning}
+                </li>
+              ))}
+            </ul>
+          )}
+          {narrative.confounders.length > 0 && (
+            <div className="mt-5 border-t border-line pt-5">
+              <h3 className="font-medium">Things that may have shaped the result</h3>
+              <ul className="mt-2 flex flex-col gap-2 text-body text-muted">
+                {narrative.confounders.map((confounder) => <li key={confounder}>{confounder}</li>)}
+              </ul>
+            </div>
+          )}
+          <p className="mt-5 text-caption text-muted">Written from the results above. The figures on this page come from your check-ins.</p>
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-body text-muted">
+            Your results are in. We can write them up in plain words: what they suggest about you, what may have
+            shaped them, and what to test next.
+          </p>
+          {writing.kind === "error" && (
+            <div role="alert" className="mt-4 rounded-card bg-clay-tint p-4 text-clay">
+              <p>
+                {writeErrorText(writing.status, writing.message)} Your results above are saved.
+              </p>
+              {writing.status !== 409 && writing.status !== 404 && (
+                <button type="button" onClick={() => void write()} className="mt-3 min-h-11 rounded-pill bg-paper px-5 font-medium text-ink">
+                  Try again
+                </button>
+              )}
+            </div>
+          )}
+          {writing.kind !== "error" && (
+            <button
+              type="button"
+              onClick={() => void write()}
+              disabled={busy}
+              aria-busy={busy}
+              className={`${linkButton} mt-5 disabled:cursor-wait disabled:opacity-70`}
+            >
+              {busy ? "Writing your report…" : "Write my report"}
+            </button>
+          )}
+          <p role="status" className="mt-3 text-caption text-muted">
+            {busy ? "Writing your report from your results. This can take a little while; you can stay on this page." : ""}
+          </p>
+        </>
+      )}
+    </section>
+  );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+type ActiveCheck = { kind: "checking" } | { kind: "free" } | { kind: "busy"; active: Experiment } | { kind: "unknown" };
+
+/** Section 9. "Run this experiment" prefills a new proposal, unless another experiment is running (F1). */
+function NextExperimentSection({ narrative }: { narrative: ReportNarrative | null }) {
+  const [check, setCheck] = useState<ActiveCheck>({ kind: "checking" });
+  const hasNext = narrative !== null;
+
+  useEffect(() => {
+    if (!hasNext) return;
+    let cancelled = false;
+    listExperiments("active")
+      .then((active) => !cancelled && setCheck(active[0] ? { kind: "busy", active: active[0] } : { kind: "free" }))
+      // The proposal page checks again before its paid call, so a failed check doesn't block.
+      .catch(() => !cancelled && setCheck({ kind: "unknown" }));
+    return () => { cancelled = true; };
+  }, [hasNext]);
+
+  return (
+    <section aria-labelledby="next-experiment-heading" className="mt-6 rounded-card border border-line bg-paper p-6 sm:p-8">
+      <h2 id="next-experiment-heading" className="font-display text-title">
+        What to test next
+      </h2>
+      {narrative ? (
+        <>
+          <p className="mt-3 text-lead">{narrative.next_experiment.question}</p>
+          <p className="mt-2 text-body text-muted">{narrative.next_experiment.reason}</p>
+          {check.kind === "checking" ? (
+            <p role="status" className="mt-5 text-caption text-muted">Checking whether another experiment is running…</p>
+          ) : check.kind === "busy" ? (
+            <div className="mt-5 rounded-card bg-oat p-4">
+              <p className="text-body">
+                You&apos;re already running an experiment. Finish it before starting this one, so each result stays clear.
+              </p>
+              <Link href={`/experiments/${encodeURIComponent(check.active.id)}`} className={`${secondaryLink} mt-3`}>
+                Go to your current experiment
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href={`/experiments/new?question=${encodeURIComponent(narrative.next_experiment.question)}`}
+              className={`${linkButton} mt-5`}
+            >
+              Run this experiment
+            </Link>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-body text-muted">A suggested next question appears once your report is written.</p>
+          <Link href="/experiments/new" className={`${secondaryLink} mt-5`}>
+            Ask your own question
+          </Link>
+        </>
+      )}
+    </section>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

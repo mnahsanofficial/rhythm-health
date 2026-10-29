@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import type { Experiment, Report } from "@/lib/types/api";
+import type { Experiment, LabReport } from "@/lib/types/api";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
-import { experiment } from "../support/fixtures";
+import { experiment, labReport } from "../support/fixtures";
 
 const question = "Does walking after dinner improve morning energy?";
 const demoExperiment: Experiment = {
@@ -25,8 +25,8 @@ const demoExperiment: Experiment = {
   },
 };
 
-const demoReport: Report = {
-  experiment_id: experiment.id,
+const demoReport: LabReport = {
+  experiment: demoExperiment,
   analysis: {
     primary_metric: "morning_energy",
     success_criteria_percent: 10,
@@ -49,9 +49,8 @@ const demoReport: Report = {
       matches_predicted_direction: true,
     },
   },
-  interpretation: null,
-  learnings: null,
-  next_experiment: null,
+  narrative: null,
+  chart: labReport.chart,
   created_at: "2026-10-28T12:00:00Z",
 };
 
@@ -72,7 +71,7 @@ function mockDemoReset(page: import("@playwright/test").Page, status = 200) {
       await route.fulfill({ status, json: { detail: "Demo reset is unavailable" } });
       return;
     }
-    await route.fulfill({ status: 200, json: { experiment: demoExperiment, report: demoReport } });
+    await route.fulfill({ status: 200, json: demoReport });
   });
 }
 
@@ -128,7 +127,7 @@ test("shows loading and retry states when preparing the demo", async ({ page }) 
       await route.fulfill({ status: 503, json: { detail: "Demo reset is unavailable" } });
       return;
     }
-    await route.fulfill({ status: 200, json: { experiment: demoExperiment, report: demoReport } });
+    await route.fulfill({ status: 200, json: demoReport });
   });
 
   const button = page.getByRole("button", { name: /Explore a completed example|Preparing the demo/ });

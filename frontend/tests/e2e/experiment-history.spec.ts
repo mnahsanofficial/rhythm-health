@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import type { Experiment, Report } from "@/lib/types/api";
+import type { Experiment, LabReport } from "@/lib/types/api";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
-import { experiment } from "../support/fixtures";
+import { experiment, labReport } from "../support/fixtures";
 
 const completedExperiment: Experiment = {
   ...experiment,
@@ -23,8 +23,8 @@ const completedWithoutReport: Experiment = {
   question: "Does a quiet evening routine help me wind down?",
 };
 
-const report: Report = {
-  experiment_id: experiment.id,
+const report: LabReport = {
+  experiment: completedExperiment,
   analysis: {
     primary_metric: "morning_energy",
     success_criteria_percent: 10,
@@ -73,9 +73,8 @@ const report: Report = {
       matches_predicted_direction: true,
     },
   },
-  interpretation: null,
-  learnings: null,
-  next_experiment: null,
+  narrative: null,
+  chart: labReport.chart,
   created_at: "2026-10-28T12:00:00Z",
 };
 

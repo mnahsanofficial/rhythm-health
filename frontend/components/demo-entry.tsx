@@ -22,7 +22,7 @@ export function DemoEntry() {
     setPreparing(true);
     setError(null);
     try {
-      const { experiment } = await resetDemo();
+      const { experiment } = await resetDemo(); // the LabReport embeds the experiment
       router.push(`/experiments/${encodeURIComponent(experiment.id)}/report`);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {

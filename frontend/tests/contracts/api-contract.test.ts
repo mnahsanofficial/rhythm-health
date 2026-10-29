@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import openApi from "./openapi.json";
 import {
   experiment,
+  labReport,
+  writtenLabReport,
   profile,
   profileInput,
   proposeResponse,
@@ -35,5 +37,12 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
     assertContract("Prediction", prediction);
     assertContract("SaveExperimentRequest", saveExperimentRequest);
     assertContract("ExperimentOut", experiment);
+  });
+
+  it("validates the Lab Report with and without the written narrative", () => {
+    assertContract("LabReport", labReport);
+    assertContract("LabReport", writtenLabReport);
+    assertContract("ReportNarrative", writtenLabReport.narrative);
+    assertContract("ChartData", labReport.chart);
   });
 });
