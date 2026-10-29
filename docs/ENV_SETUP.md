@@ -23,7 +23,7 @@ Read in `frontend/lib/api/client.ts` and `frontend/lib/auth/supabase.ts`. Next.j
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL, for sign-in in the browser | Supabase → Project Settings → API | No |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key, for sign-in in the browser | Supabase → Project Settings → API → anon / public key | No (public by design; RLS protects the data) |
 
-**Fill in both Supabase values before `npm run dev` or `npm run build`.** Leaving them blank (`NEXT_PUBLIC_SUPABASE_URL=` with nothing after it, as in `.env.example`) makes every page answer 500 with "supabaseUrl is required". The fallback in `frontend/lib/auth/supabase.ts:10` uses `??`, which only catches a missing variable, not an empty one. If you don't have the values yet, delete those two lines instead. The app then runs, and sign-in says "Sign-in isn't set up on this machine". The bug is tracked as R11 in [`REMAINING_WORK.md`](REMAINING_WORK.md).
+Fill in both Supabase values before signing in. If either is missing or blank, the app still loads and the sign-in page names the variable that needs to be set. Authentication remains unavailable until both values are configured.
 
 ## backend/.env.local
 
