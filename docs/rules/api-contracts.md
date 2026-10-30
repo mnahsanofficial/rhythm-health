@@ -56,5 +56,5 @@ Then run `npm test` in `frontend/`.
 
 ## Changing the contract
 
-- **Backend changes** (new fields, endpoints, error shapes) are Shakeb's. If the frontend needs one, write a short request in your PR or an issue: what, and why. Don't edit `backend/` yourself.
+- **Backend changes** (new fields, endpoints, error shapes) ship with the feature that needs them, by whoever builds it. If that's the other person's area, tell them in the team chat when the PR opens (see the [pair rule](pair-rule.md)), and refresh the contract snapshot in the same PR.
 - **Shapes both sides depend on:** agree the JSON shape before either side builds. The AI report fields in TRD §25 are the current example.
