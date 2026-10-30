@@ -37,22 +37,23 @@ The backend sends `detail` in four shapes, and `frontend/lib/api/client.ts` hand
 
 ## Types and data layer
 
-- **Shared types:** `frontend/lib/types/api.ts` mirrors the Pydantic schemas in `backend/app/schemas/`. When a backend schema changes, update this file in the same PR or the next one.
+- **Shared types:** `@rhythm-health/contract` derives types from FastAPI OpenAPI. `frontend/lib/types/api.ts` is a compatibility re-export; data functions and fixtures import the package directly. Regenerate after a backend schema change; do not edit generated types.
 - **Data layer:** screens call `frontend/lib/data/*`, never `lib/api/client.ts` or `lib/mock/` directly. A 404 that means "none yet" (profile, report) comes back as `null`.
 - **Sample data:** lives in `frontend/lib/mock/`, and only the home page uses it, labelled as sample.
 
 ## The contract test
 
-- `frontend/tests/contracts/openapi.json` is a snapshot of the backend's OpenAPI schema.
+- `packages/contract/openapi.json` is a generated snapshot of the backend's OpenAPI schema.
 - `api-contract.test.ts` checks the frontend's test fixtures against it.
 
-To refresh the snapshot after a backend schema change, run from `backend/`:
+To refresh the snapshot after a backend schema change, run from the repository root (after `cd backend && uv sync`):
 
 ```bash
-uv run python -c "import json; from app.main import app; print(json.dumps(app.openapi(), indent=2))" > ../frontend/tests/contracts/openapi.json
+npm run contract:generate
+npm run contract:check
 ```
 
-Then run `npm test` in `frontend/`.
+Then run root `npm test`. The freshness check exports the actual local API with an isolated interpreter, blocks env-file reads and network connections, and compares both generated files without writing. No running API or credentials are needed. See [`packages/contract/README.md`](../../packages/contract/README.md) for defaults and the current OpenAPI gaps.
 
 ## Changing the contract
 

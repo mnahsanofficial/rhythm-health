@@ -8,7 +8,7 @@ import type {
   ProfileInput,
   ProposeResponse,
   SaveExperimentRequest,
-} from "@/lib/types/api";
+} from "@rhythm-health/contract";
 
 export const profileInput: ProfileInput = {
   age_range: "25-34",

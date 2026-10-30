@@ -89,13 +89,16 @@ Diagrams, data model, AI budgets, code/TRD differences and test evidence: [docs/
 
 ## Getting started
 
-You need Node 20.9+, [uv](https://docs.astral.sh/uv/) and git, plus collaborator access to the repo and the env values from your teammate. Run these from a clean clone.
+**Install JavaScript dependencies from the repository root with `npm ci`.** The root [lockfile](package-lock.json) covers every npm workspace; do not run a separate install in `frontend/`. Stop dev servers before migrating an existing checkout to the root install, then restart them afterward. After installing, the existing `npm run dev`, lint, typecheck and test commands still run from `frontend/`.
+
+You need Node 22.18+, [uv](https://docs.astral.sh/uv/) and git, plus collaborator access to the repo and the env values from your teammate. Run these from a clean clone.
 
 **1. Clone and set your git identity.** Agent logs record it.
 
 ```bash
 git clone https://github.com/mnahsanofficial/rhythm-health.git
 cd rhythm-health
+npm ci
 git config user.name "Your Name"
 git config user.email "you@example.com"
 ```
@@ -122,7 +125,6 @@ Check `http://localhost:8001/health` returns `{"status":"ok"}`, and `http://loca
 
 ```bash
 cd frontend
-npm ci
 cp .env.example .env.local
 ```
 
@@ -134,13 +136,19 @@ npm run dev
 
 Open http://localhost:3000 and choose **Run your first experiment**.
 
-`npm ci` installs exactly what's in `package-lock.json` without rewriting it. Use `npm install` only when you're adding a package.
+Root `npm ci` installs exactly what's in `package-lock.json` without rewriting it. To add a frontend dependency, run `npm install <package> --workspace=rhythm-health-frontend` from the root.
 
 The shared project's earlier migration setup is recorded in [DECISIONS Q1](docs/DECISIONS.md#questions-for-shakeb). For a new project, apply the [migrations](supabase/migrations/) including grants; Shakeb confirms the live schema.
 
 ## Running tests
 
-The suites mock Supabase and OpenRouter. Runs on **30 Oct 2026**: **218 backend tests**, **121 frontend tests**, **70 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
+From the root, `npm test` checks contract/brand freshness and runs the frontend, contract and brand suites. `npm run lint`, `npm run typecheck`, `npm run test:e2e` and `npm run build` delegate to the workspaces. Backend tests remain separate. Existing frontend commands below are unchanged.
+
+After an API schema change, run `npm run contract:generate` from the root and commit the generated schema/types with the change. `npm run contract:check` fails if either differs from the current FastAPI code; it does not rewrite files. Both require `cd backend && uv sync` once, but never start the server, load real env files or contact Supabase/OpenRouter. Package details: [shared contract](packages/contract/README.md).
+
+After a design-token change, edit `packages/brand/src/tokens.json`, run root `npm run brand:generate`, and commit the generated CSS. `npm run brand:check` rejects stale output. Native-ready numeric exports and web integration: [shared brand](packages/brand/README.md).
+
+The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **218 backend tests**, **138 frontend tests**, **6 contract-tool tests**, **11 brand-tool tests**, **73 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
 
 ```bash
 cd backend && uv run pytest           # backend: analysis, safety, progress, auth, endpoints
@@ -163,7 +171,7 @@ F2/F4 verification, including the live demo evidence, isolated early-finish fixt
 
 ## Project structure
 
-The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
+The npm workspaces are `frontend/`, `packages/contract/` and `packages/brand/`. The approved Expo app will be added under `apps/mobile/` after the shared-package PR merges. The backend stays a separate uv project. The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
 
 ## Documentation
 

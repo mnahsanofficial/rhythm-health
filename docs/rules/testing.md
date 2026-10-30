@@ -2,9 +2,14 @@
 
 ## The suites
 
+Install npm dependencies from the root with `npm ci`. Root `npm test` first runs `contract:check` and `brand:check`, then the frontend, contract and brand suites. Existing `frontend/` scripts remain available.
+
 | Where | Command | What it covers | Talks to real services? |
 |---|---|---|---|
 | `backend/` | `uv run pytest` | Analysis, safety, progress, auth, ownership, every endpoint | No: Supabase and OpenRouter are faked |
+| root | `npm run contract:check` | Detects backend/OpenAPI/generated-TypeScript drift; local export blocks env-file reads and network | No |
+| `packages/brand/` | `npm test`; root `npm run brand:check` | Token-to-CSS conversion, generated-file drift and numeric motion/layout values | No |
+| `packages/contract/` | `npm test` | Generation and read-only drift detection | No |
 | `frontend/` | `npm test` | Vitest, Testing Library and MSW: data layer, onboarding, auth, the proposal flow, the API contract | No |
 | `frontend/` | `npm run test:e2e` | Playwright: sign up, onboarding, propose and start, at 390px and 1440px | No: Supabase and API responses are mocked, using `frontend/.env.test` |
 | `frontend/` | `npm run lint`, `npm run typecheck`, `npm run build` | ESLint, route types and `tsc`, production build | No |

@@ -1,5 +1,5 @@
 import { apiGet, apiSend } from "@/lib/api/client";
-import type { Experiment, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@/lib/types/api";
+import type { Experiment, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
 
 export function proposeExperiment(question: string): Promise<ProposeResponse> {
   return apiSend("POST", "/api/experiments/propose", { question });
