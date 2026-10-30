@@ -269,6 +269,7 @@ The [PRD §8](../PRD.md#8-ai-experiment-designer) says a seven-day V1 default. T
 | [packages/brand/](../packages/brand/) | Portable design tokens from DESIGN.md, generated web CSS, shared motion units and fixed native Text styles (`NATIVE_TYPOGRAPHY`). Web fonts/reduced-motion behavior remain app-owned; no native app is built in this PR |
 | [packages/contract/](../packages/contract/) | Generated FastAPI schema and TypeScript, shared request/response aliases, runtime form constants and drift checks |
 | [package.json](../package.json) and [package-lock.json](../package-lock.json) | npm workspaces (`frontend`, `apps/*`, `packages/*`); install once with root `npm ci`. No Expo app is built in this chunk |
+| `apps/mobile/` (planned) | The Expo app for the daily loop: sign in, Today, Check-in, Progress and a local daily reminder. It uses the same FastAPI endpoints, `@rhythm-health/contract` types and `@rhythm-health/brand` tokens. Scope, screens, risks and build order: [MOBILE_PLAN.md](MOBILE_PLAN.md) |
 | [backend/app/api/](../backend/app/api/) | FastAPI endpoints and ownership dependencies; composed by [main.py](../backend/app/main.py) |
 | [backend/app/services/](../backend/app/services/) | Safety, proposal/history, progress, check-in validation, deterministic analysis, chart/report assembly, narrative generation and demo reset |
 | [backend/app/schemas/](../backend/app/schemas/) | Pydantic request, response and generation-validation models |
