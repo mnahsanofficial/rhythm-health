@@ -2,7 +2,7 @@
 
 import { apiGet, apiSend, ApiError } from "@/lib/api/client";
 import { sampleProfile } from "@/lib/mock/profile";
-import type { Profile, ProfileInput } from "@/lib/types/api";
+import type { Profile, ProfileInput } from "@rhythm-health/contract";
 
 /** The signed-in user's profile, or null if they haven't created one (the API answers 404). */
 export async function getProfile(): Promise<Profile | null> {

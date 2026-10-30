@@ -1415,14 +1415,14 @@
           },
           "baseline_days": {
             "type": "integer",
-            "maximum": 14.0,
-            "minimum": 1.0,
+            "maximum": 14,
+            "minimum": 1,
             "title": "Baseline Days"
           },
           "intervention_days": {
             "type": "integer",
-            "maximum": 28.0,
-            "minimum": 1.0,
+            "maximum": 28,
+            "minimum": 1,
             "title": "Intervention Days"
           },
           "metrics": {
@@ -1844,14 +1844,14 @@
           },
           "expected_change_min": {
             "type": "number",
-            "maximum": 200.0,
-            "minimum": -100.0,
+            "maximum": 200,
+            "minimum": -100,
             "title": "Expected Change Min"
           },
           "expected_change_max": {
             "type": "number",
-            "maximum": 200.0,
-            "minimum": -100.0,
+            "maximum": 200,
+            "minimum": -100,
             "title": "Expected Change Max"
           },
           "confidence": {
@@ -1968,8 +1968,8 @@
           },
           "usual_sleep_hours": {
             "type": "number",
-            "maximum": 14.0,
-            "minimum": 3.0,
+            "maximum": 14,
+            "minimum": 3,
             "title": "Usual Sleep Hours"
           },
           "usual_sleep_schedule": {
@@ -2046,8 +2046,8 @@
           },
           "usual_sleep_hours": {
             "type": "number",
-            "maximum": 14.0,
-            "minimum": 3.0,
+            "maximum": 14,
+            "minimum": 3,
             "title": "Usual Sleep Hours"
           },
           "usual_sleep_schedule": {
@@ -2351,8 +2351,8 @@
           },
           "minimum_change_percent": {
             "type": "number",
-            "maximum": 100.0,
-            "exclusiveMinimum": 0.0,
+            "maximum": 100,
+            "exclusiveMinimum": 0,
             "title": "Minimum Change Percent"
           }
         },

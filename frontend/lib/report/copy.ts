@@ -22,7 +22,7 @@ export const SIGNAL_COPY: Record<SignalClass, { label: string; summary: string }
   },
 };
 
-export function reasonText(reason: SignalReason, criteriaPercent: number): string {
+export function reasonText(reason: SignalReason, criteriaPercent: number): string | undefined {
   switch (reason) {
     case "insufficient_data":
       return "One of the phases didn't have enough check-ins to compare.";

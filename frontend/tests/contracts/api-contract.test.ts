@@ -1,7 +1,17 @@
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
-import openApi from "./openapi.json";
+import openApi from "@rhythm-health/contract/openapi.json";
+import {
+  ACTIVITY_LEVELS,
+  AGE_RANGES,
+  CATEGORIES,
+  MAX_LIST_ITEMS,
+  MAX_LIST_ITEM_LENGTH,
+  MAX_NOTE_LENGTH,
+  MAX_SLEEP_HOURS,
+  MIN_SLEEP_HOURS,
+} from "@rhythm-health/contract";
 import earlyFinish from "../support/early-finish-reports.json";
 import {
   experiment,
@@ -27,6 +37,24 @@ function assertContract(component: string, value: unknown) {
 }
 
 describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
+  it("keeps shared form choices aligned with backend enums", () => {
+    const { ProfileIn, Classification } = openApi.components.schemas;
+    expect(AGE_RANGES).toEqual(ProfileIn.properties.age_range.enum);
+    expect(ACTIVITY_LEVELS).toEqual(ProfileIn.properties.activity_level.enum);
+    expect(CATEGORIES).toEqual(Classification.properties.category.enum);
+  });
+
+  it("keeps shared form limits aligned with backend validation", () => {
+    const { ProfileIn, CheckinIn } = openApi.components.schemas;
+    expect(MIN_SLEEP_HOURS).toBe(ProfileIn.properties.usual_sleep_hours.minimum);
+    expect(MAX_SLEEP_HOURS).toBe(ProfileIn.properties.usual_sleep_hours.maximum);
+    for (const field of ["goals", "regular_habits", "constraints"] as const) {
+      expect(MAX_LIST_ITEMS).toBe(ProfileIn.properties[field].maxItems);
+      expect(MAX_LIST_ITEM_LENGTH).toBe(ProfileIn.properties[field].items.maxLength);
+    }
+    expect(MAX_NOTE_LENGTH).toBe(CheckinIn.properties.note.anyOf[0].maxLength);
+  });
+
   it("validates the profile request and response", () => {
     assertContract("ProfileIn", profileInput);
     assertContract("ProfileOut", profile);

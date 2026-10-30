@@ -1,67 +1,7 @@
 @import "tailwindcss";
 
-/* Palette from a day's light: oat paper, ink, moss for actions, night for sleep,
-   sun for daylight markers (never text: 1.5:1 on oat). Light mode only for V1. */
-@theme {
-  --color-oat: #f6f3ec;
-  --color-paper: #fffdf8;
-  --color-ink: #1b2421;
-  --color-muted: #5c6661;
-  --color-line: #dcd6ca;
-  --color-moss: #2f6b4f;
-  --color-moss-deep: #24563f;
-  --color-moss-tint: #e3ece5;
-  --color-night: #263a6b;
-  --color-night-tint: #e4e7f0;
-  --color-sun: #f2c14e;
-  /* Illustration only: the landing character's skin. */
-  --color-skin: #b9825e;
-  /* Errors only: 7.6:1 text on tint. */
-  --color-clay: #7a2e1f;
-  --color-clay-tint: #f7e4df;
-
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
-  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
-
-  /* Type scale: 14 / 16 / 18, then fluid headings that grow with the screen up to
-     24 / 32 / 44 / 60. Each clamp mixes rem and vw, so browser zoom still enlarges them. */
-  --text-caption: 0.875rem;
-  --text-caption--line-height: 1.35rem;
-  --text-body: 1rem;
-  --text-body--line-height: 1.6rem;
-  --text-lead: 1.125rem;
-  --text-lead--line-height: 1.75rem;
-  --text-title: clamp(1.375rem, 1.25rem + 0.5vw, 1.5rem);
-  --text-title--line-height: 1.33;
-  --text-headline: clamp(1.75rem, 1.45rem + 1.2vw, 2rem);
-  --text-headline--line-height: 1.2;
-  --text-display-sm: clamp(2.25rem, 1.75rem + 2vw, 2.75rem);
-  --text-display-sm--line-height: 1.09;
-  --text-display: clamp(2.75rem, 2rem + 3vw, 3.75rem);
-  --text-display--line-height: 1.07;
-
-  --radius-card: 1.25rem;
-  --radius-pill: 999px;
-
-  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Seconds in lib/motion.ts, milliseconds here. Keep both representations aligned. */
-:root {
-  --motion-press: 150ms;
-  --motion-exit: 120ms;
-  --motion-panel: 200ms;
-  --motion-response: 280ms;
-  --motion-step: 350ms;
-  --motion-reveal: 480ms;
-
-  /* The fixed header's height. Sticky content and scroll targets sit below it. */
-  --header-h: 4rem;
-
-  /* Page side gutter: 16px on a 320px phone, growing with the screen to 64px. */
-  --gutter: clamp(1rem, 4vw, 4rem);
-}
+/* Generated from the shared brand package; layout rules below remain web-specific. */
+@import "@rhythm-health/brand/tokens.css";
 
 html {
   /* Focused headings and #anchors land below the fixed header, not under it. */
@@ -87,9 +27,9 @@ body {
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-moss);
-    outline-offset: 3px;
-    border-radius: 6px;
+    outline: var(--focus-width) solid var(--color-moss);
+    outline-offset: var(--focus-offset);
+    border-radius: var(--focus-radius);
   }
 }
 
@@ -120,6 +60,6 @@ body {
 @utility page-frame {
   margin-inline: auto;
   width: 100%;
-  max-width: calc(var(--frame, 90rem) + 2 * var(--gutter));
+  max-width: calc(var(--frame, var(--content-width)) + 2 * var(--gutter));
   padding-inline: var(--gutter);
 }

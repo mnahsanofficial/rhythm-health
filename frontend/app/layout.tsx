@@ -1,3 +1,4 @@
+import { COLORS } from "@rhythm-health/brand";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Instrument_Sans } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f6f3ec",
+  themeColor: COLORS.oat,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
