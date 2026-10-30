@@ -89,7 +89,12 @@ def get_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)
 
 @router.get("/{experiment_id}/progress", response_model=ExperimentTimeline)
 def get_progress(experiment_id: UUID, user_id: str = Depends(get_current_user)):
-    row = owned_experiment(user_id, experiment_id)
+    try:
+        row = owned_experiment(user_id, experiment_id)
+    except HTTPException as error:
+        if error.status_code == 409:  # No profile means no experiment can belong to this user.
+            raise HTTPException(status_code=404, detail="Experiment not found") from error
+        raise
     try:
         logged = checkins.list_for_experiment(str(experiment_id))
     except SupabaseUnavailable:
