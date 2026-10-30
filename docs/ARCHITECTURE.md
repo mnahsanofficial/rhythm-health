@@ -265,7 +265,7 @@ The [PRD §8](../PRD.md#8-ai-experiment-designer) says a seven-day V1 default. T
 | [frontend/lib/auth/](../frontend/lib/auth/) | Supabase browser client, session subscription and redirect-path handling |
 | [frontend/lib/calendar/](../frontend/lib/calendar/) | Builds the "next day opens" calendar event (`.ics`) in the browser, offered on Done for today. No backend or account integration; the event names the day, never the habit question |
 | [frontend/lib/mock/profile.ts](../frontend/lib/mock/profile.ts) | Remaining illustrative sample profile, exposed by [profile data module](../frontend/lib/data/profile.ts). The public landing currently uses [DayStory](../frontend/components/landing/day-story.tsx); signed-in home uses API data |
-| [packages/brand/](../packages/brand/) | Portable design tokens from DESIGN.md, generated web CSS and shared motion units. Web fonts/reduced-motion behavior remain app-owned; no native app is built in this PR |
+| [packages/brand/](../packages/brand/) | Portable design tokens from DESIGN.md, generated web CSS, shared motion units and fixed native Text styles (`NATIVE_TYPOGRAPHY`). Web fonts/reduced-motion behavior remain app-owned; no native app is built in this PR |
 | [packages/contract/](../packages/contract/) | Generated FastAPI schema and TypeScript, shared request/response aliases, runtime form constants and drift checks |
 | [package.json](../package.json) and [package-lock.json](../package-lock.json) | npm workspaces (`frontend`, `apps/*`, `packages/*`); install once with root `npm ci`. No Expo app is built in this chunk |
 | [backend/app/api/](../backend/app/api/) | FastAPI endpoints and ownership dependencies; composed by [main.py](../backend/app/main.py) |
@@ -276,7 +276,7 @@ The [PRD §8](../PRD.md#8-ai-experiment-designer) says a seven-day V1 default. T
 | [frontend/tests/](../frontend/tests/) and [backend/tests/](../backend/tests/) | Browser/component/data/contract coverage and isolated Python/API tests |
 | [docs/](./), [scripts/](../scripts/) and [.claude-logs/](../.claude-logs/) | Decisions/rules/evidence, automatic logging scripts and committed agent session history; see [logging.md](logging.md) |
 
-Ownership remains **Nazmul: frontend and UI; Shakeb: backend and features**, as recorded in [AGENTS.md](../AGENTS.md#pair-rule) and the [README team table](../README.md#team).
+V1 was split by layer: Nazmul on frontend/UI and Shakeb on backend/features. V2 is split by feature, with both working across frontend, backend and database: [pair rule](rules/pair-rule.md), [AGENTS.md](../AGENTS.md#pair-rule) and the [README team table](../README.md#team).
 
 ## 7. Tests and current evidence
 
@@ -285,7 +285,7 @@ Counts below are from shared-workspace verification on **31 Oct 2026**, based on
 | Suite / run directory | Command | Result | What it actually checks |
 |---|---|---|---|
 | Backend, `backend/` | `uv run pytest` | **218 passed**, one existing Starlette/httpx deprecation warning | Statistics, progress, safety, auth/ownership, profile/experiment/check-in/completion/report/demo endpoints and history. FastAPI TestClient uses dependency overrides, monkeypatched repositories/in-memory fakes, and fake AI transport: [auth](../backend/tests/test_auth.py), [proposal](../backend/tests/test_propose.py), [completion](../backend/tests/test_completion.py), [report](../backend/tests/test_report.py), [history](../backend/tests/test_history.py), [demo](../backend/tests/test_demo.py) |
-| Frontend, `frontend/` | `npm test` | **138 passed** in **25 files** | Vitest + Testing Library in jsdom, MSW HTTP mocks and mocked Supabase auth. Data/auth/onboarding/experiment/report/home behavior plus API fixture validation: [tests](../frontend/tests/), [MSW server](../frontend/tests/support/server.ts), [contract assertions](../frontend/tests/contracts/api-contract.test.ts) |
+| Frontend, `frontend/` | `npm test` | **142 passed** in **25 files** | Vitest + Testing Library in jsdom, MSW HTTP mocks and mocked Supabase auth. Data/auth/onboarding/experiment/report/home behavior plus API fixture validation: [tests](../frontend/tests/), [MSW server](../frontend/tests/support/server.ts), [contract assertions](../frontend/tests/contracts/api-contract.test.ts) |
 | Brand, `packages/brand/` | `npm test` | **11 passed** | CSS unit conversion/fluid type, token propagation and read-only freshness checks: [tests](../packages/brand/tests/). [Frontend checks](../frontend/tests/brand/tokens.test.ts) cover timing units, text contrast and numeric sizing |
 | Contract, `packages/contract/` | `npm test` | **6 passed** | Generation writes schema/types; the read-only freshness check rejects missing artifacts, schema drift and type drift without rewriting them: [tests](../packages/contract/tests/artifacts.test.mjs) |
 | Browser, `frontend/` | `npm run test:e2e` | **73 passed, 1 skipped** (74 scenarios) | Real Next.js in Chromium with intercepted auth/API calls. Onboarding → proposal → start, check-ins, reports, history/demo, errors, layout and reduced motion: [helpers](../frontend/tests/e2e/helpers.ts), [core flow](../frontend/tests/e2e/onboarding-experiment.spec.ts), [report writing](../frontend/tests/e2e/report-writing.spec.ts), [early finish/timezones](../frontend/tests/e2e/early-finish-days.spec.ts) |
