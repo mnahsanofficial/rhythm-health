@@ -26,7 +26,7 @@ cd backend && uv sync && uv run uvicorn app.main:app --reload --port 8001  # htt
 ```
 
 Checks:
-- root: `npm run contract:check`, `npm test` (contract freshness, frontend and contract tests)
+- root: `npm run contract:check`, `npm run brand:check`, `npm test` (generated-file freshness and all workspace unit suites)
 - frontend: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`, `npm run build`
 - backend: `uv run pytest`
 
@@ -75,6 +75,7 @@ Design tokens and component conventions are in [`DESIGN.md`](DESIGN.md).
 
 ## Code layout
 
+- `packages/brand/`: shared numeric design tokens, web CSS generation and motion units. Edit `src/tokens.json`, then run root `npm run brand:generate`; never edit generated CSS. See `DESIGN.md`.
 - `packages/contract/`: generated FastAPI API types and the shared OpenAPI schema. Run root `npm run contract:generate` after backend schema changes, and `npm run contract:check` before handing over; never edit generated files.
 - `apps/*`: reserved for the approved Expo app, built only after the shared-package PR merges.
 - `frontend/`: the Next.js app. Read [`frontend/AGENTS.md`](frontend/AGENTS.md) before writing code there.

@@ -18,7 +18,8 @@
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "@rhythm-health/contract": "*"
+    "@rhythm-health/contract": "*",
+    "@rhythm-health/brand": "*"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

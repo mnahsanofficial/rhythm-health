@@ -22,7 +22,7 @@ These apply to the web app and the mobile app alike. A screen that breaks one re
 
 ## Visual tokens
 
-Colour, type, shape and easing live in `frontend/app/globals.css`. Use Tailwind token classes; do not put literal colours in components.
+Colour, type, spacing, shape and motion values live in [`packages/brand/src/tokens.json`](packages/brand/src/tokens.json). The web imports its generated CSS through `frontend/app/globals.css`; native-ready numeric exports come from `@rhythm-health/brand`. Edit the JSON and run root `npm run brand:generate`; `npm run brand:check` rejects stale CSS. Use Tailwind token classes on the web; do not put literal colours in components.
 
 ### Colour
 
@@ -88,7 +88,7 @@ Every page works at any width from 320px to 2560px, and at 200% browser zoom. Th
 
 Motion answers a user action or shows a real state change. It never delays a decision, invents progress or obscures data. Animate **transform and opacity only**. The library is `motion/react`; native controls and the rhythm SVG also use CSS.
 
-JavaScript tokens are in `frontend/lib/motion.ts`, in seconds. Their CSS mirrors are in `globals.css`, in milliseconds. Keep the two representations aligned. Use `MOTION_DURATION` / `MOTION_EASE` in Motion and `var(--motion-…)` / `var(--ease-settle)` in CSS.
+The shared brand JSON stores durations in milliseconds and easing as numeric tuples. `@rhythm-health/brand` exports `MOTION_DURATION_MS` for native APIs and `MOTION_DURATION` in seconds for Motion; `frontend/lib/motion.ts` is a compatibility re-export. The generated CSS provides `var(--motion-…)` / `var(--ease-settle)`. Regenerate CSS after token edits; do not maintain separate values by hand.
 
 | Name | JS seconds | CSS | Role |
 |---|---:|---|---|

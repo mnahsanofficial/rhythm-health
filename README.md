@@ -142,11 +142,13 @@ The shared project's earlier migration setup is recorded in [DECISIONS Q1](docs/
 
 ## Running tests
 
-From the root, `npm test` checks contract freshness and runs the frontend and contract suites. `npm run lint`, `npm run typecheck`, `npm run test:e2e` and `npm run build` delegate to the workspaces. Backend tests remain separate. Existing frontend commands below are unchanged.
+From the root, `npm test` checks contract/brand freshness and runs the frontend, contract and brand suites. `npm run lint`, `npm run typecheck`, `npm run test:e2e` and `npm run build` delegate to the workspaces. Backend tests remain separate. Existing frontend commands below are unchanged.
 
 After an API schema change, run `npm run contract:generate` from the root and commit the generated schema/types with the change. `npm run contract:check` fails if either differs from the current FastAPI code; it does not rewrite files. Both require `cd backend && uv sync` once, but never start the server, load real env files or contact Supabase/OpenRouter. Package details: [shared contract](packages/contract/README.md).
 
-The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **218 backend tests**, **135 frontend tests**, **6 contract-tool tests**, **73 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
+After a design-token change, edit `packages/brand/src/tokens.json`, run root `npm run brand:generate`, and commit the generated CSS. `npm run brand:check` rejects stale output. Native-ready numeric exports and web integration: [shared brand](packages/brand/README.md).
+
+The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **218 backend tests**, **138 frontend tests**, **6 contract-tool tests**, **11 brand-tool tests**, **73 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
 
 ```bash
 cd backend && uv run pytest           # backend: analysis, safety, progress, auth, endpoints
@@ -169,7 +171,7 @@ F2/F4 verification, including the live demo evidence, isolated early-finish fixt
 
 ## Project structure
 
-The npm workspaces are `frontend/` and `packages/contract/`; `apps/*` and `packages/*` are reserved for the approved mobile/shared packages. The backend stays a separate uv project. The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
+The npm workspaces are `frontend/`, `packages/contract/` and `packages/brand/`. The approved Expo app will be added under `apps/mobile/` after the shared-package PR merges. The backend stays a separate uv project. The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
 
 ## Documentation
 
