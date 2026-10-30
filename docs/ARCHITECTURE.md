@@ -1,6 +1,6 @@
 # Architecture as implemented
 
-Checked **30 Oct 2026** against `origin/main` at `02b97d0`, on `docs/architecture-v1-v2`. Workspace/contract/brand sections and test evidence updated **31 Oct 2026** on `chore/shared-packages`, based on `origin/main` at `d6ecf5e`. This describes the checked-in implementation, not a deployed service or the PRD/TRD's planned architecture. Product decisions are recorded in [DECISIONS.md](DECISIONS.md); known gaps and live-check limits are in [REMAINING_WORK.md](REMAINING_WORK.md) and [F2_F4_VERIFICATION.md](F2_F4_VERIFICATION.md).
+Checked **30 Oct 2026** against `origin/main` at `02b97d0`, on `docs/architecture-v1-v2`. Native type styles, review notes and test evidence updated **31 Oct 2026** on `chore/brand-native-tokens`, based on `origin/main` at `891d1aa`. This describes the checked-in implementation, not a deployed service or the PRD/TRD's planned architecture. Product decisions are recorded in [DECISIONS.md](DECISIONS.md); known gaps and live-check limits are in [REMAINING_WORK.md](REMAINING_WORK.md) and [F2_F4_VERIFICATION.md](F2_F4_VERIFICATION.md).
 
 ## 1. System overview and trust boundaries
 
@@ -280,7 +280,7 @@ V1 was split by layer: Nazmul on frontend/UI and Shakeb on backend/features. V2 
 
 ## 7. Tests and current evidence
 
-Counts below are from shared-workspace verification on **31 Oct 2026**, based on main at `d6ecf5e`. Commands are the existing suites; no real OpenRouter request or shared Supabase write is needed. Sources: [pytest configuration](../backend/pyproject.toml), [frontend scripts](../frontend/package.json), [Vitest config](../frontend/vitest.config.mts), [MSW lifecycle](../frontend/tests/setup.ts) and [Playwright config](../frontend/playwright.config.mts).
+Counts below are from native-token review verification on **31 Oct 2026**, on `chore/brand-native-tokens` based on main at `891d1aa`. Commands are the existing suites; no real OpenRouter request or shared Supabase write is needed. Sources: [pytest configuration](../backend/pyproject.toml), [frontend scripts](../frontend/package.json), [Vitest config](../frontend/vitest.config.mts), [MSW lifecycle](../frontend/tests/setup.ts) and [Playwright config](../frontend/playwright.config.mts).
 
 | Suite / run directory | Command | Result | What it actually checks |
 |---|---|---|---|

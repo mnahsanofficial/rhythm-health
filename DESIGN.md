@@ -51,7 +51,7 @@ Colour, type, spacing, shape and motion values live in [`packages/brand/src/toke
 | `font-sans` | Instrument Sans | Body text (the default) |
 | `font-mono` | Geist Mono | Times, counts, percentages, step numbers; always with `tabular-nums` |
 
-Fonts load through `next/font/google` in `frontend/app/layout.tsx`. Native consumers use `NATIVE_TYPOGRAPHY` from the shared brand package: fixed numeric `fontSize` and absolute `lineHeight`, ready for Text styles. Headings take the web minimum size and resolve the ratio once (title: 22px, line height 29.26px); fixed body styles retain their existing absolute line heights. `WEB_TYPOGRAPHY` / compatibility `TYPOGRAPHY` preserve the web clamps and ratios. Font loading and system font scaling remain app-owned.
+Fonts load through `next/font/google` in `frontend/app/layout.tsx`. Native consumers use `NATIVE_TYPOGRAPHY` from the shared brand package: fixed numeric `fontSize` and absolute `lineHeight`, ready for Text styles. Headings take the web minimum size and resolve the ratio once (title: `fontSize: 22`, `lineHeight: 29.26`); fixed body styles retain their existing absolute line heights. `WEB_TYPOGRAPHY` / compatibility `TYPOGRAPHY` preserve the web clamps and ratios. Font loading and system font scaling remain app-owned.
 
 Scale: `text-caption` 14, `text-body` 16, `text-lead` 18 (px, fixed). Headings are fluid: `text-title` 22–24, `text-headline` 28–32, `text-display-sm` 36–44, `text-display` 44–60, each a `clamp()` of rem and vw, so they grow smoothly with the screen and still enlarge with browser zoom. Each size sets its own line height. Large headings use `tracking-tight` and often `text-balance`.
 
