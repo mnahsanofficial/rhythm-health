@@ -43,6 +43,26 @@ beforeEach(() => {
 });
 
 describe("Lab Report flow", () => {
+  it.each(["a_new_backend_reason", ""])("explains an unknown signal reason (%j) without an empty bullet", async (reason) => {
+    server.use(
+      http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
+        ...labReport,
+        analysis: {
+          ...labReport.analysis,
+          signal: { ...labReport.analysis.signal, reasons: ["consistent_direction", reason] },
+        },
+      })),
+    );
+    render(<LabReport id={id} />);
+
+    const verdict = await screen.findByRole("region", { name: "Likely signal" });
+    expect(within(verdict).getByText("Most test days moved in the same direction.")).toBeVisible();
+    expect(within(verdict).getByText("We don't have an explanation for this detail yet.")).toBeVisible();
+    const details = within(verdict).getAllByRole("listitem");
+    expect(details).toHaveLength(2);
+    for (const detail of details) expect(detail.textContent?.trim()).not.toBe("");
+  });
+
   it("keeps seeded demo results visibly labelled as a sample after opening the report", async () => {
     server.use(http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
       ...writtenLabReport,
