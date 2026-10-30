@@ -287,6 +287,51 @@
         }
       }
     },
+    "/api/experiments/{experiment_id}/progress": {
+      "get": {
+        "summary": "Get Progress",
+        "operationId": "get_progress_api_experiments__experiment_id__progress_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentTimeline"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/experiments/{experiment_id}/start": {
       "post": {
         "summary": "Start Experiment",
@@ -1160,6 +1205,40 @@
         "title": "DemoResetRequest",
         "description": "Empty on purpose: the user comes from the verified token, never from the body."
       },
+      "ExperimentDay": {
+        "properties": {
+          "day_number": {
+            "type": "integer",
+            "title": "Day Number"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "test"
+            ],
+            "title": "Phase"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "recorded",
+              "missed",
+              "current",
+              "future",
+              "not_observed"
+            ],
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day_number",
+          "phase",
+          "state"
+        ],
+        "title": "ExperimentDay"
+      },
       "ExperimentOut": {
         "properties": {
           "id": {
@@ -1450,6 +1529,55 @@
           "success_criteria"
         ],
         "title": "ExperimentProposal"
+      },
+      "ExperimentTimeline": {
+        "properties": {
+          "progress": {
+            "$ref": "#/components/schemas/ExperimentProgress"
+          },
+          "next_day_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Day At"
+          },
+          "recorded_days": {
+            "type": "integer",
+            "title": "Recorded Days"
+          },
+          "missed_days": {
+            "type": "integer",
+            "title": "Missed Days"
+          },
+          "remaining_days": {
+            "type": "integer",
+            "title": "Remaining Days"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentDay"
+            },
+            "type": "array",
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "progress",
+          "next_day_at",
+          "recorded_days",
+          "missed_days",
+          "remaining_days",
+          "days"
+        ],
+        "title": "ExperimentTimeline",
+        "description": "Read-only day states shared by web and mobile.\n\nRemaining includes an unrecorded current day and future days. Unobserved days\nafter completion are excluded. next_day_at is null when no next day can open."
       },
       "HTTPValidationError": {
         "properties": {

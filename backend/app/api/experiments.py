@@ -3,17 +3,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.deps import db_error, profile_id_for
+from app.api.deps import db_error, owned_experiment, profile_id_for
 from app.auth.supabase import get_current_user
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
 from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
-from app.repositories import experiments, profiles
+from app.repositories import checkins, experiments, profiles
 from app.schemas.experiment import ExperimentOut, ExperimentStatus, ProposeRequest
 from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
+from app.schemas.progress import ExperimentTimeline
 from app.services import safety
 from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
+from app.services.timeline import experiment_timeline
 
 router = APIRouter(prefix="/api/experiments")
 
@@ -83,6 +85,16 @@ def get_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)
     if row is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return with_progress(row)
+
+
+@router.get("/{experiment_id}/progress", response_model=ExperimentTimeline)
+def get_progress(experiment_id: UUID, user_id: str = Depends(get_current_user)):
+    row = owned_experiment(user_id, experiment_id)
+    try:
+        logged = checkins.list_for_experiment(str(experiment_id))
+    except SupabaseUnavailable:
+        raise db_error()
+    return experiment_timeline(row, logged, datetime.now(UTC))
 
 
 @router.post("/{experiment_id}/start", response_model=ExperimentOut)
