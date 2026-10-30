@@ -263,6 +263,7 @@ The [PRD §8](../PRD.md#8-ai-experiment-designer) says a seven-day V1 default. T
 | [frontend/components/](../frontend/components/) | UI, forms, charts, shared experiment flow and motion; [home](../frontend/components/home-experience.tsx) switches between public content and private account state |
 | [frontend/lib/data/](../frontend/lib/data/) | Product data functions; [API client](../frontend/lib/api/client.ts) adds Bearer auth and normalizes errors; [types](../frontend/lib/types/api.ts) mirror backend response models |
 | [frontend/lib/auth/](../frontend/lib/auth/) | Supabase browser client, session subscription and redirect-path handling |
+| [frontend/lib/calendar/](../frontend/lib/calendar/) | Builds the "next day opens" calendar event (`.ics`) in the browser, offered on Done for today. No backend or account integration; the event names the day, never the habit question |
 | [frontend/lib/mock/profile.ts](../frontend/lib/mock/profile.ts) | Remaining illustrative sample profile, exposed by [profile data module](../frontend/lib/data/profile.ts). The public landing currently uses [DayStory](../frontend/components/landing/day-story.tsx); signed-in home uses API data |
 | [backend/app/api/](../backend/app/api/) | FastAPI endpoints and ownership dependencies; composed by [main.py](../backend/app/main.py) |
 | [backend/app/services/](../backend/app/services/) | Safety, proposal/history, progress, check-in validation, deterministic analysis, chart/report assembly, narrative generation and demo reset |

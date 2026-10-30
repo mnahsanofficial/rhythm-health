@@ -5,6 +5,7 @@ import { MOTION_DURATION } from "@/lib/motion";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useId, useState } from "react";
+import { checkInReminder } from "@/lib/calendar/check-in-reminder";
 import type { Checkin, Experiment, MetricValue } from "@/lib/types/api";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -21,6 +22,23 @@ function nextDayOpens(experiment: Experiment): Date | null {
 function formatValue(value: MetricValue): string {
   if (typeof value === "boolean") return value ? "Yes" : "No";
   return String(value);
+}
+
+/** Save a calendar event for when the next day opens, so coming back doesn't rely on memory. */
+function downloadReminder(experiment: Experiment, day: number, opens: Date, checkInPath: string) {
+  const { ics, fileName } = checkInReminder({
+    experimentId: experiment.id,
+    day,
+    totalDays: experiment.progress.total_days,
+    opens,
+    url: new URL(checkInPath, window.location.origin).toString(),
+  });
+  const href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(href);
 }
 
 /** The one thing to do now: check in, wait for tomorrow, finish, or read the results. */
@@ -72,14 +90,30 @@ export function TodayCard({ experiment, checkins, path }: { experiment: Experime
           Done for today
         </p>
         <h2 className="mt-2 font-display text-title">Day {day} is recorded.</h2>
-        {opensText && progress.days_remaining ? (
-          <p className="mt-2 text-body text-muted">Day {day + 1} opens {opensText}.</p>
+        {opens && opensText && progress.days_remaining ? (
+          <>
+            <p className="mt-2 text-body text-muted">Day {day + 1} opens {opensText}.</p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => downloadReminder(experiment, day + 1, opens, `${path}/check-in`)}
+                className={primaryButton}
+              >
+                Add day {day + 1} to your calendar
+              </button>
+              <Link href={`${path}/check-in`} className={secondaryButton}>
+                Change today&apos;s answers
+              </Link>
+            </div>
+          </>
         ) : (
-          <p className="mt-2 text-body text-muted">That was the last day.</p>
+          <>
+            <p className="mt-2 text-body text-muted">That was the last day.</p>
+            <Link href={`${path}/check-in`} className={`${secondaryButton} mt-5`}>
+              Change today&apos;s answers
+            </Link>
+          </>
         )}
-        <Link href={`${path}/check-in`} className={`${secondaryButton} mt-5`}>
-          Change today&apos;s answers
-        </Link>
       </section>
     );
   }
