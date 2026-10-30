@@ -62,3 +62,12 @@ None of these has been applied; `TRD.md` and `PRD.md` are unchanged since the fi
 - **PRD §14 / TRD §§21, 24:** state B4's elapsed-day rule and that coverage uses elapsed days only (Q6).
 - **TRD §§6, 37, 42:** mark magic-link sign-in out of V1, structured request logs deferred (time permitting), and the mocked full-flow test as the final step (Q12).
 - **TRD §38 / `docs/ENV_SETUP.md`:** remove `APP_ENV` (Q13). Deployment: Q11 is decided as localhost for C2, so TRD §39's Vercel/Railway plan can be marked out of scope for this milestone.
+
+## V2 roadmap inputs
+
+Recorded **30 Oct 2026** from Nazmul's architecture/README documentation request, which supplied these call agreements. This is a record of that supplied decision, not an independently checked transcript; no transcript file is present in the repo. Neither item has an agreed detailed implementation contract here.
+
+| Direction | Supplied source / status | Current implementation boundary |
+|---|---|---|
+| Dedicated fitness/gym tracking | Shakeb, call on **28 Oct**; agreed future direction | Current [classification](../backend/app/schemas/classification.py) accepts exercise questions, but the [schema](../supabase/migrations/) and [UI routes](../frontend/app/) implement personal experiments, not a dedicated gym-tracking feature |
+| Several active experiments at once | Pair call on **29 Oct**; agreed future direction | Current [unique index](../supabase/migrations/20261028000300_one_active_experiment_per_profile.sql), [start endpoint](../backend/app/api/experiments.py), [single-experiment home](../frontend/components/home-experience.tsx) and [proposal preflight](../frontend/components/experiments/experiment-flow.tsx) still enforce or assume one active experiment; this needs a coordinated backend/database/frontend change |
