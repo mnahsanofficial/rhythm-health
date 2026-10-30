@@ -8,12 +8,12 @@ Ask a question like "Does walking after dinner improve my sleep?" and Rhythm tur
 
 ## Team
 
-| | Owns |
+| | V1 contribution |
 |---|---|
 | **Nazmul** ([@mnahsanofficial](https://github.com/mnahsanofficial)) | Frontend and UI: visual direction, onboarding, dashboard, check-in, Lab Report, motion ([frontend/](frontend/)) |
 | **Shakeb** | Backend and features: architecture, experiment model, AI design and prediction, analysis, data model ([backend/](backend/), [supabase/](supabase/)) |
 
-Product decisions are made together ([PRD §27](PRD.md#27-team-ownership)).
+V2 is split by feature: both people work across frontend, backend and database ([pair rule](docs/rules/pair-rule.md)). Product decisions are made together ([PRD §27](PRD.md#27-team-ownership)).
 
 ## V1 status
 
@@ -89,9 +89,11 @@ Diagrams, data model, AI budgets, code/TRD differences and test evidence: [docs/
 
 ## Getting started
 
-**Install JavaScript dependencies from the repository root with `npm ci`.** The root [lockfile](package-lock.json) covers every npm workspace; do not run a separate install in `frontend/`. Stop dev servers before migrating an existing checkout to the root install, then restart them afterward. After installing, the existing `npm run dev`, lint, typecheck and test commands still run from `frontend/`.
+**Prerequisites: Node 22.18+ and backend Python dependencies.** Run `npm ci` from the repository root, then `(cd backend && uv sync)` before root `npm test`: the contract freshness check imports FastAPI through `backend/.venv/bin/python`. Tests and contract generation need no real env values or running services.
 
-You need Node 22.18+, [uv](https://docs.astral.sh/uv/) and git, plus collaborator access to the repo and the env values from your teammate. Run these from a clean clone.
+The root [lockfile](package-lock.json) covers every npm workspace; do not install separately in `frontend/`. Stop dev servers before migrating an existing checkout to the root install, then restart them afterward. Existing frontend commands still run from `frontend/`.
+
+You also need [uv](https://docs.astral.sh/uv/), git and collaborator access. The two local env files described in [ENV_SETUP](docs/ENV_SETUP.md) are needed to run the real app. Run setup from a clean clone.
 
 **1. Clone and set your git identity.** Agent logs record it.
 
@@ -99,6 +101,7 @@ You need Node 22.18+, [uv](https://docs.astral.sh/uv/) and git, plus collaborato
 git clone https://github.com/mnahsanofficial/rhythm-health.git
 cd rhythm-health
 npm ci
+(cd backend && uv sync)
 git config user.name "Your Name"
 git config user.email "you@example.com"
 ```
@@ -109,7 +112,6 @@ Before your first agent session, also do the [teammate setup in docs/logging.md]
 
 ```bash
 cd backend
-uv sync
 cp .env.example .env.local
 ```
 
@@ -148,7 +150,7 @@ After an API schema change, run `npm run contract:generate` from the root and co
 
 After a design-token change, edit `packages/brand/src/tokens.json`, run root `npm run brand:generate`, and commit the generated CSS. `npm run brand:check` rejects stale output. Native-ready numeric exports and web integration: [shared brand](packages/brand/README.md).
 
-The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **218 backend tests**, **138 frontend tests**, **6 contract-tool tests**, **11 brand-tool tests**, **73 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
+The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **218 backend tests**, **142 frontend tests**, **6 contract-tool tests**, **11 brand-tool tests**, **73 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
 
 ```bash
 cd backend && uv run pytest           # backend: analysis, safety, progress, auth, endpoints

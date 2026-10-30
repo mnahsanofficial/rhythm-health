@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as brand from "@rhythm-health/brand";
 import { COLORS, LAYOUT, MOTION_DURATION_MS, SPACING, TYPOGRAPHY } from "@rhythm-health/brand";
 import { MOTION_DURATION } from "@/lib/motion";
 
@@ -35,5 +36,31 @@ describe("shared brand in the web app", () => {
     expect(LAYOUT.tapTarget).toBeGreaterThanOrEqual(44);
     expect(LAYOUT.primaryAction).toBeGreaterThanOrEqual(LAYOUT.tapTarget);
     expect(SPACING.md).toBe(SPACING.unit * 4);
+  });
+});
+
+
+describe("native typography", () => {
+  it("offers fixed font sizes and absolute line heights alongside the web scale", () => {
+    const native = Reflect.get(brand, "NATIVE_TYPOGRAPHY");
+    expect(native).toEqual(expect.objectContaining({
+      caption: { fontSize: 14, lineHeight: 21.6 },
+      body: { fontSize: 16, lineHeight: 25.6 },
+      title: { fontSize: 22, lineHeight: 29.26 },
+      "display-sm": { fontSize: 36, lineHeight: 39.24 },
+      display: { fontSize: 44, lineHeight: 47.08 },
+    }));
+  });
+
+  it("makes every native type role a numeric Text style with no fluid terms", () => {
+    const native = Reflect.get(brand, "NATIVE_TYPOGRAPHY") as
+      Record<string, { fontSize: number; lineHeight: number }> | undefined;
+    expect(Object.keys(native ?? {}).sort()).toEqual(Object.keys(TYPOGRAPHY).sort());
+    for (const style of Object.values(native ?? {})) {
+      expect(Object.keys(style).sort()).toEqual(["fontSize", "lineHeight"]);
+      expect(Number.isFinite(style.fontSize)).toBe(true);
+      expect(Number.isFinite(style.lineHeight)).toBe(true);
+      expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize);
+    }
   });
 });

@@ -21,7 +21,7 @@ Web fonts still load through the existing static `next/font/google` calls. Their
 import {
   COLORS,
   FONT_FAMILIES,
-  TYPOGRAPHY,
+  NATIVE_TYPOGRAPHY,
   SPACING,
   RADII,
   LAYOUT,
@@ -31,9 +31,12 @@ import {
 ```
 
 - Colour roles keep the exact palette. `sun` is a marker, never text; clay colours are for errors.
-- Fixed typography uses numeric `size` and `lineHeight`. Heading tokens expose numeric min/max and a preferred base/vw term: web CSS retains the existing fluid clamps. A native screen can adapt presentation to its available width; it must not pass CSS `rem`/`clamp` strings to React Native.
+- `NATIVE_TYPOGRAPHY` provides a fixed `{ fontSize, lineHeight }` Text style for every role. Both values are absolute numbers. Headings use the web minimum size (the mobile-first size at 390px), multiplying its line-height ratio into an absolute value rounded to two decimals. For example, title is 22 / 29.26; body is 16 / 25.6. There are no viewport terms or ratios to interpret in a native screen.
+- `WEB_TYPOGRAPHY` retains the existing web descriptors, including fluid min/preferred/max sizes and heading line-height ratios. `TYPOGRAPHY` remains a compatibility alias for web consumers. Native screens use `NATIVE_TYPOGRAPHY` rather than spreading the web descriptors into Text styles.
 - Spacing, radii and layout sizes are numeric. Generated web sizes use rems where the existing design did, based on 16px; the pill radius remains 999px. The 4px spacing unit is Tailwind's existing default.
 - `MOTION_DURATION_MS` serves native timing APIs and generated CSS. `MOTION_DURATION` converts those same values to seconds for Motion on the web. `MOTION_EASE.settle` is the shared cubic-bezier tuple.
 - The package contains no React/DOM dependency, animation, media-query subscription or font loader. Apps handle reduced motion and font loading. No mobile app is implemented in this PR.
+
+A native Text style can use `...NATIVE_TYPOGRAPHY.body` together with `fontFamily: FONT_FAMILIES.sans`. Native font loading and system font scaling remain the app's responsibility.
 
 Tests cover unit conversion, fluid type, token edits, generated-file freshness, portable numeric sizing, contrast pairings and web/native timing agreement. Browser checks verify that the extraction preserves the existing pages.

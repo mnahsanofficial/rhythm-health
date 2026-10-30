@@ -21,6 +21,7 @@ Install JavaScript dependencies once at the repository root with `npm ci`; the r
 
 ```bash
 npm ci
+(cd backend && uv sync)  # root contract checks import FastAPI
 cd frontend && npm run dev                                             # http://localhost:3000
 cd backend && uv sync && uv run uvicorn app.main:app --reload --port 8001  # http://localhost:8001
 ```
@@ -39,9 +40,9 @@ See [`docs/rules/testing.md`](docs/rules/testing.md).
    - Never gitignore it, edit it or delete files from it.
    - Don't change `scripts/extract-log.py`. It is the 8x guide's script, byte for byte.
 2. **A branch and a PR per feature, merged with a merge commit.**
-   - Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly. The people review and merge.
-   - Agents never merge, never force-push, and never push to `main`. Always include `.claude-logs/` in the commits.
-   - Before opening any PR: fetch, merge the latest `origin/main` into the branch, and rerun the checks.
+   - Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly, and refresh their own feature branch by merging `origin/main`. The people review and merge PRs.
+   - Agents never merge PRs, never force-push, and never push to `main`. Always include `.claude-logs/` in the commits. Commit failing behavior tests separately before the green implementation.
+   - Before opening any PR: fetch, merge the latest `origin/main` into the branch, resolve conflicts (retain the newer complete copy for session logs), and rerun the checks.
    - Never squash or rebase-merge. We're rated individually, and squashing collapses the code and log history that shows who did what.
    - Cursor may only be used as an agent if its sessions are logged to `.claude-logs/`. Check this before its first use (see [`docs/logging.md`](docs/logging.md)).
 3. **No secrets in prompts, logs or commits.**
@@ -55,7 +56,7 @@ V2 work is split by feature, not by layer: Shakeb and Nazmul both work across fr
 
 - Don't change files the other person is actively working on; check their open PRs and branches first. If you have to, say so in your PR description.
 - Whoever changes the other's area tells them in the team chat when the PR opens.
-- A database migration is never applied to the shared Supabase project without telling the other person first, because it affects them immediately.
+- A database migration is never applied to the shared Supabase project without telling the other person first, because it affects them immediately. Agents must also tell the requesting person before applying one.
 
 ## Product principles
 

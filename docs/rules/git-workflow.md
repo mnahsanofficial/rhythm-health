@@ -8,9 +8,9 @@
 
 ## What agents may do
 
-Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly. The people review and merge.
+Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly. They perform the required `origin/main` merge into their own feature branch. The people review and merge PRs.
 
-- **Agents never merge**, never force-push, and never push to `main`.
+- **Agents never merge PRs**, never force-push, and never push to `main`.
 - Every agent commit includes `.claude-logs/`.
 - Cursor may only be used as an agent if its sessions are logged to `.claude-logs/`. Check this before its first use, with the canary in [`docs/logging.md`](../logging.md#teammate-setup).
 
@@ -24,7 +24,7 @@ Claude Code, Codex and Cursor may commit, push their own branches and open PRs d
   - `feat(frontend): add the daily check-in screen`
   - `feat: complete experiments with deterministic analysis`
   - `fix(frontend): prevent duplicate experiment saves`
-- A few deliberate commits per PR, each one a step someone can review on its own.
+- A few deliberate commits per PR, each one a step someone can review on its own. For behavior changes, commit the tests after confirming the intended failure (red), then commit the implementation after the checks pass (green).
 - Every commit includes `.claude-logs/`. Never an env file.
 
 ## Session logs
@@ -52,7 +52,7 @@ If a session's log changes after your last commit, add a `chore(logs): …` comm
 Before opening any PR:
 
 1. Fetch: `git fetch origin`.
-2. Merge the latest main into the branch: `git merge origin/main`. Never rebase. If the merge conflicts, stop and ask before resolving it.
+2. Merge the latest main into your feature branch: `git merge origin/main`. Never rebase. Resolve conflicts before running checks. For session-log conflicts, keep the newer complete copy unchanged; do not combine or rewrite exchanges.
 3. Rerun the checks: frontend lint, typecheck, the full unit and Playwright suites and the production build, plus `uv run pytest` if the backend changed.
 
 Open the PR only when they pass. Opening a PR never authorizes merging it.
@@ -60,6 +60,6 @@ Open the PR only when they pass. Opening a PR never authorizes merging it.
 ## Merging
 
 - **Merge commits only.** Never squash or rebase-merge. Squashing collapses the code and log history that shows who did what, and we're rated individually.
-- Only people merge. Agents never merge.
+- Only people merge PRs. Agents may merge `origin/main` into their own feature branch for the required refresh above.
 - Never force-push, and never rewrite someone else's commits.
 - Delete the branch after merging if you like. The merge commit keeps its history.

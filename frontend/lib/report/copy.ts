@@ -22,7 +22,7 @@ export const SIGNAL_COPY: Record<SignalClass, { label: string; summary: string }
   },
 };
 
-export function reasonText(reason: SignalReason, criteriaPercent: number): string | undefined {
+export function reasonText(reason: SignalReason, criteriaPercent: number): string {
   switch (reason) {
     case "insufficient_data":
       return "One of the phases didn't have enough check-ins to compare.";
@@ -44,6 +44,8 @@ export function reasonText(reason: SignalReason, criteriaPercent: number): strin
       return "Fewer than 5 test days were logged, so treat this as a first look.";
     case "moved_opposite_to_prediction":
       return "It moved the opposite way to the prediction.";
+    default:
+      return "We don't have an explanation for this detail yet.";
   }
 }
 
