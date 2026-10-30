@@ -56,12 +56,7 @@ def analyze(experiment: dict, checkins: list[dict], completed_at: datetime | Non
     metrics = [Metric.model_validate(m) for m in experiment["metrics"]]
     criteria = SuccessCriteria.model_validate(experiment["success_criteria"])
     prediction = Prediction.model_validate(experiment["prediction"])
-    baseline_days = experiment["baseline_days"]
-    intervention_days = experiment["intervention_days"]
-
-    adherence = _adherence(
-        checkins, baseline_days, intervention_days, _days_elapsed(experiment, completed_at)
-    )
+    adherence = adherence_for(experiment, checkins, completed_at)
     results = [_analyze_metric(m, checkins) for m in metrics]
     primary = next(r for r in results if r.primary)
 
@@ -83,6 +78,16 @@ def analyze(experiment: dict, checkins: list[dict], completed_at: datetime | Non
 
 
 # --- adherence --------------------------------------------------------------
+
+
+def adherence_for(
+    experiment: dict, checkins: list[dict], observed_at: datetime | None = None
+) -> Adherence:
+    """One elapsed-day/coverage rule for completion analysis and live progress."""
+    return _adherence(
+        checkins, experiment["baseline_days"], experiment["intervention_days"],
+        _days_elapsed(experiment, observed_at),
+    )
 
 
 def _days_elapsed(experiment: dict, completed_at: datetime | None) -> int | None:

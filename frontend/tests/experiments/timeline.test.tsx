@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Timeline } from "@/components/experiments/experiment-progress";
 import type { Checkin, Experiment } from "@/lib/types/api";
+import { timelineFixture } from "../support/timeline-fixture";
 import { experiment } from "../support/fixtures";
 
 vi.mock("motion/react", async () => import("../support/motion-mock"));
@@ -27,7 +28,7 @@ const recorded = [day(1, 5, "A quiet evening."), day(2, 6, null), day(3, 4, "Lat
 
 describe("timeline day details", () => {
   it("opens on the latest recorded day instead of an empty panel", () => {
-    render(<Timeline experiment={active} checkins={recorded} />);
+    render(<Timeline experiment={active} checkins={recorded} timeline={timelineFixture(active, { recorded: [1, 2, 3] })} />);
     const details = screen.getByRole("region", { name: "Recorded day" });
     expect(within(details).getByRole("article", { name: "Day 3 answers" })).toBeInTheDocument();
     expect(within(details).getByText(/Late dinner/)).toBeInTheDocument();
@@ -37,7 +38,7 @@ describe("timeline day details", () => {
 
   it("switches days, and choosing the open day again keeps it open", async () => {
     const user = userEvent.setup();
-    render(<Timeline experiment={active} checkins={recorded} />);
+    render(<Timeline experiment={active} checkins={recorded} timeline={timelineFixture(active, { recorded: [1, 2, 3] })} />);
     const first = screen.getByRole("button", { name: "Day 1, baseline, logged" });
     await user.click(first);
     expect(screen.getByRole("article", { name: "Day 1 answers" })).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe("timeline day details", () => {
   });
 
   it("has no details panel before the first check-in", () => {
-    render(<Timeline experiment={active} checkins={[]} />);
+    render(<Timeline experiment={active} checkins={[]} timeline={timelineFixture(active)} />);
     expect(screen.queryByRole("region", { name: "Recorded day" })).not.toBeInTheDocument();
   });
 });

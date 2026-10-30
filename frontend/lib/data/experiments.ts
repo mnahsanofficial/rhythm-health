@@ -1,5 +1,5 @@
 import { apiGet, apiSend } from "@/lib/api/client";
-import type { Experiment, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
+import type { Experiment, ExperimentTimeline, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
 
 export function proposeExperiment(question: string): Promise<ProposeResponse> {
   return apiSend("POST", "/api/experiments/propose", { question });
@@ -19,4 +19,9 @@ export function getExperiment(id: string): Promise<Experiment> {
 
 export function listExperiments(status?: ExperimentStatus): Promise<Experiment[]> {
   return apiGet(`/api/experiments${status ? `?status=${status}` : ""}`, true);
+}
+
+/** Backend-owned rolling days, counts and timeline states for web and mobile. */
+export function getExperimentProgress(id: string): Promise<ExperimentTimeline> {
+  return apiGet(`/api/experiments/${encodeURIComponent(id)}/progress`, true);
 }

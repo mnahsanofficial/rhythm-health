@@ -1,3 +1,4 @@
+import { timelineFixture } from "../support/timeline-fixture";
 import { expect, test } from "@playwright/test";
 import type { Checkin, Experiment } from "@/lib/types/api";
 import { experiment, labReport, writtenLabReport } from "../support/fixtures";
@@ -25,6 +26,9 @@ for (const width of [390, 768, 1440]) {
     }));
     let completed = false;
     await page.route(`${API}/api/experiments/${experiment.id}`, route => route.fulfill({ json: completed ? labReport.experiment : ended }));
+    await page.route(`${API}/api/experiments/${experiment.id}/progress`, route => route.fulfill({
+      json: timelineFixture(completed ? labReport.experiment : ended, { recorded: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }),
+    }));
     await page.route(`${API}/api/experiments/${experiment.id}/checkins`, route => route.fulfill({ json: checkins }));
     await page.route(`${API}/api/experiments/${experiment.id}/complete`, route => {
       completed = true;

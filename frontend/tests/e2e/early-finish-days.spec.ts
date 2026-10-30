@@ -26,6 +26,7 @@ for (const timezoneId of ["Asia/Dhaka", "America/Toronto"]) {
         const first = backend.first_day.experiment;
         await page.route(`${API}/api/experiments/${first.id}`, route => route.fulfill({ json: first }));
         await page.route(`${API}/api/experiments/${first.id}/checkins`, route => route.fulfill({ json: [] }));
+        await page.route(`${API}/api/experiments/${first.id}/progress`, route => route.fulfill({ json: backend.first_day.timeline }));
         await page.clock.setFixedTime(new Date(backend.first_day.clock));
         await page.goto(`/experiments/${first.id}`);
         await expect(page.getByLabel("Day 1, baseline, today, not logged yet", { exact: true })).toBeVisible();
@@ -43,6 +44,7 @@ for (const timezoneId of ["Asia/Dhaka", "America/Toronto"]) {
           await page.route(`${API}/api/experiments/${id}`, route => route.fulfill({ json: report.experiment }));
           await page.route(`${API}/api/experiments/${id}/checkins`, route => route.fulfill({ json: logged }));
           await page.route(`${API}/api/experiments/${id}/report`, route => route.fulfill({ json: report }));
+          await page.route(`${API}/api/experiments/${id}/progress`, route => route.fulfill({ json: scenario.timeline }));
           await page.clock.setFixedTime(new Date(scenario.clock));
           await page.goto(`/experiments/${id}/report`);
           const chart = page.getByRole("region", { name: "Day by day", exact: true });

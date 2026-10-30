@@ -38,6 +38,7 @@ beforeEach(() => {
     http.get(`${api}/api/experiments/${id}`, () => HttpResponse.json(report.experiment)),
     http.get(`${api}/api/experiments/${id}/checkins`, () => HttpResponse.json(checkins)),
     http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(report)),
+    http.get(`${api}/api/experiments/${id}/progress`, () => HttpResponse.json(scenario.timeline)),
   );
 });
 
@@ -53,20 +54,20 @@ describe("completed experiment timeline", () => {
     expect(screen.getByRole("button", { name: "Day 1, baseline, logged" })).toBeVisible();
   });
 
-  it("shows an explicit unavailable status rather than inventing missed days without a report", async () => {
-    server.use(http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({ detail: "No report yet" }, { status: 404 })));
+  it("shows a progress error rather than inventing missed days when progress is unavailable", async () => {
+    server.use(http.get(`${api}/api/experiments/${id}/progress`, () => HttpResponse.json({ detail: "Progress unavailable" }, { status: 503 })));
     render(<ExperimentDetail id={id} />);
-    expect(await screen.findByText("Completed-day status will appear when your report is available.")).toHaveAttribute("role", "status");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Progress unavailable");
     expect(screen.queryAllByLabelText(/, missed$/)).toHaveLength(0);
   });
 
-  it("retries a completed report lookup failure instead of silently guessing day status", async () => {
+  it("retries a completed progress lookup failure instead of silently guessing day status", async () => {
     const user = userEvent.setup();
     let attempts = 0;
-    server.use(http.get(`${api}/api/experiments/${id}/report`, () => ++attempts === 1
-      ? HttpResponse.json({ detail: "Report unavailable" }, { status: 503 }) : HttpResponse.json(report)));
+    server.use(http.get(`${api}/api/experiments/${id}/progress`, () => ++attempts === 1
+      ? HttpResponse.json({ detail: "Progress unavailable" }, { status: 503 }) : HttpResponse.json(scenario.timeline)));
     render(<ExperimentDetail id={id} />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Report unavailable");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Progress unavailable");
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByLabelText("Day 2, baseline, missed")).toBeVisible();
     expect(attempts).toBe(2);
@@ -78,6 +79,7 @@ describe("completed experiment timeline", () => {
     server.use(
       http.get(`${api}/api/experiments/${first.id}`, () => HttpResponse.json(first)),
       http.get(`${api}/api/experiments/${first.id}/checkins`, () => HttpResponse.json([])),
+      http.get(`${api}/api/experiments/${first.id}/progress`, () => HttpResponse.json(backend.first_day.timeline)),
       http.get(`${api}/api/experiments/${first.id}/report`, reportReads),
     );
     render(<ExperimentDetail id={first.id} />);

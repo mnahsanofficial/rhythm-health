@@ -1,3 +1,4 @@
+import { timelineFixture } from "../support/timeline-fixture";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import type { Checkin, Experiment } from "@/lib/types/api";
@@ -27,6 +28,9 @@ for (const width of [390, 768, 1440]) {
     await page.route(`${API}/api/experiments?status=active`, route => route.fulfill({ json: [active] }));
     await page.route(`${API}/api/experiments/${experiment.id}/checkins`, route => route.fulfill({ json: [today] }));
 
+    await page.route(`${API}/api/experiments/${experiment.id}/progress`, route => route.fulfill({
+      json: timelineFixture(active, { recorded: [4], missed: [1, 2, 3], nextDayAt: "2026-10-30T08:00:00Z" }),
+    }));
     await page.goto("/");
     await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
     await expect(page.getByText("Done for today", { exact: true })).toBeVisible();

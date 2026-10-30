@@ -81,10 +81,12 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
   });
   it("validates the first-day experiment from the real progress service", () => {
     assertContract("ExperimentOut", earlyFinish.first_day.experiment);
+    assertContract("ExperimentTimeline", earlyFinish.first_day.timeline);
   });
 
   it.each(earlyFinish.cases)("validates the backend-generated F4 case: $name", (scenario) => {
     assertContract("LabReport", scenario.report);
+    assertContract("ExperimentTimeline", scenario.timeline);
     expect(scenario.report.analysis.adherence.missing_days).toEqual(scenario.expected.missing_days);
     expect(scenario.report.analysis.adherence.coverage_rate).toBeCloseTo(scenario.expected.coverage_rate, 3);
   });

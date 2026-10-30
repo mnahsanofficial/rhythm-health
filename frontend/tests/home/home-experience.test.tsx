@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeExperience } from "@/components/home-experience";
 import type { Experiment } from "@/lib/types/api";
 import { experiment, profile, proposeResponse, saveExperimentRequest } from "../support/fixtures";
+import { timelineFixture } from "../support/timeline-fixture";
 import { server } from "../support/server";
 
 const { getSession, router, sessionState } = vi.hoisted(() => ({
@@ -67,6 +68,7 @@ beforeEach(() => {
       return HttpResponse.json([activeExperiment]);
     }),
     http.get(`${api}/api/experiments/${experiment.id}/checkins`, () => HttpResponse.json([])),
+    http.get(`${api}/api/experiments/${experiment.id}/progress`, () => HttpResponse.json(timelineFixture(activeExperiment))),
   );
 });
 

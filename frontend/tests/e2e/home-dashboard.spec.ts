@@ -1,3 +1,4 @@
+import { timelineFixture } from "../support/timeline-fixture";
 import { expect, test } from "@playwright/test";
 import type { Checkin, Experiment } from "@/lib/types/api";
 import { experiment } from "../support/fixtures";
@@ -28,6 +29,9 @@ for (const width of [390, 1440]) {
       await page.route(`${API}/api/experiments?status=active`, route => route.fulfill({ json: [active] }));
       await page.route(`${API}/api/experiments/${experiment.id}/checkins`, route => route.fulfill({
         json: doneToday ? [recorded, { ...recorded, id: "today", day_number: 4, phase: "intervention" }] : [recorded],
+      }));
+      await page.route(`${API}/api/experiments/${experiment.id}/progress`, route => route.fulfill({
+        json: timelineFixture(active, { recorded: doneToday ? [1, 4] : [1], missed: [2, 3], nextDayAt: "2026-10-29T10:00:00Z" }),
       }));
       await page.goto("/");
       await expect(page.getByRole("heading", { name: experiment.question })).toBeVisible();

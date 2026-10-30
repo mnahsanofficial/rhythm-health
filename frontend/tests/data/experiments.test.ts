@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import {
   getExperiment,
+  getExperimentProgress,
   listExperiments,
   proposeExperiment,
   saveExperiment,
   startExperiment,
 } from "@/lib/data/experiments";
+import { timelineFixture } from "../support/timeline-fixture";
 import { server } from "../support/server";
 import {
   experiment,
@@ -111,5 +113,34 @@ describe("experiment data", () => {
 
     await expect(listExperiments()).rejects.toMatchObject({ status: 401 });
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("authoritative progress data", () => {
+  const url = `${api}/api/experiments/${experiment.id}/progress`;
+
+  it("gets the shared contract with bearer auth and no user or profile id", async () => {
+    const progress = timelineFixture(experiment);
+    server.use(http.get(url, ({ request }) => {
+      expect(request.headers.get("authorization")).toBe("Bearer fake-session-token");
+      expect(new URL(request.url).search).toBe("");
+      return HttpResponse.json(progress);
+    }));
+    await expect(getExperimentProgress(experiment.id)).resolves.toEqual(progress);
+  });
+
+  it.each([401, 404, 422, 500, 503])("preserves progress failure status %i", async status => {
+    server.use(http.get(url, () => HttpResponse.json({ detail: "Progress unavailable" }, { status })));
+    await expect(getExperimentProgress(experiment.id)).rejects.toMatchObject({ status, message: "Progress unavailable" });
+  });
+
+  it("reports offline separately from an expired local session", async () => {
+    server.use(http.get(url, () => HttpResponse.error()));
+    await expect(getExperimentProgress(experiment.id)).rejects.toMatchObject({ status: 0 });
+    getSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    const fetch = vi.spyOn(globalThis, "fetch");
+    await expect(getExperimentProgress(experiment.id)).rejects.toMatchObject({ status: 401 });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 # Remaining work
 
-Status as of **30 Oct 2026**. F2/F4 checked against latest `origin/main` at `137befa`, including merged backend PR #24 and follow-up PR #25. Other rows retain their stated evidence. Final demo: **Thu 5 Nov**.
+Status updated **31 Oct 2026**, based on latest `origin/main` at `65bc328`. F2/F4 checked against latest `origin/main` at `137befa`, including merged backend PR #24 and follow-up PR #25. Other rows retain their stated evidence. Final demo: **Thu 5 Nov**.
 
 The core loop, in the order this list follows: **onboarding → propose an experiment → daily check-ins → see results and progress.** 8x judges "a core loop that works end to end", so open items that block the loop come first.
 
@@ -28,6 +28,10 @@ Earlier profile/proposal/start checks used the real backend; check-in/finish/rep
 **Priority:** **Must** = needed for the 5 Nov demo. **Nice** = nice to have.
 
 ---
+
+## Mobile prerequisite: authoritative progress
+
+Built on `feat/progress-endpoint`: authenticated owner-only `GET /api/experiments/{id}/progress`, with server-owned per-day states, recorded/missed/remaining counts and `next_day_at`. The web home/detail timeline and calendar reminder consume it. It reuses the existing rolling-day and adherence rules, including early completion and Toronto DST; no migration, shared writes or AI calls. See [contract and evidence](PROGRESS_API.md). The Expo app remains the next separate PR; this does not claim mobile screens are built. Historical F2/F4 live-check limits above still apply.
 
 ## Frontend (owner: Nazmul)
 

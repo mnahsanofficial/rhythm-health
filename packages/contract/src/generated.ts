@@ -90,6 +90,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/experiments/{experiment_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Progress */
+        get: operations["get_progress_api_experiments__experiment_id__progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/experiments/{experiment_id}/start": {
         parameters: {
             query?: never;
@@ -394,6 +411,21 @@ export interface components {
          * @description Empty on purpose: the user comes from the verified token, never from the body.
          */
         DemoResetRequest: Record<string, never>;
+        /** ExperimentDay */
+        ExperimentDay: {
+            /** Day Number */
+            day_number: number;
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "baseline" | "test";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "recorded" | "missed" | "current" | "future" | "not_observed";
+        };
         /**
          * ExperimentOut
          * @description A saved experiment. profile_id is deliberately not exposed.
@@ -486,6 +518,26 @@ export interface components {
             /** Metrics */
             metrics: components["schemas"]["Metric"][];
             success_criteria: components["schemas"]["SuccessCriteria"];
+        };
+        /**
+         * ExperimentTimeline
+         * @description Read-only day states shared by web and mobile.
+         *
+         *     Remaining includes an unrecorded current day and future days. Unobserved days
+         *     after completion are excluded. next_day_at is null when no next day can open.
+         */
+        ExperimentTimeline: {
+            progress: components["schemas"]["ExperimentProgress"];
+            /** Next Day At */
+            next_day_at: string | null;
+            /** Recorded Days */
+            recorded_days: number;
+            /** Missed Days */
+            missed_days: number;
+            /** Remaining Days */
+            remaining_days: number;
+            /** Days */
+            days: components["schemas"]["ExperimentDay"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1011,6 +1063,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExperimentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_progress_api_experiments__experiment_id__progress_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentTimeline"];
                 };
             };
             /** @description Validation Error */

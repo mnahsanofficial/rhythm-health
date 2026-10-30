@@ -8,9 +8,9 @@ import { ForecastCard } from "@/components/experiments/new-experiment";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins } from "@/lib/data/checkins";
-import { getExperiment } from "@/lib/data/experiments";
-import { completeExperiment, getReport, notEnoughCheckins } from "@/lib/data/reports";
-import type { Checkin, Experiment } from "@/lib/types/api";
+import { getExperiment, getExperimentProgress } from "@/lib/data/experiments";
+import { completeExperiment, notEnoughCheckins } from "@/lib/data/reports";
+import type { Checkin, Experiment, ExperimentTimeline } from "@/lib/types/api";
 
 // Mirrors backend/app/services/analysis.py: results need this many check-ins per phase.
 const MIN_BASELINE_CHECKINS = 2;
@@ -23,7 +23,7 @@ const secondaryButton =
 
 type Load =
   | { kind: "loading" }
-  | { kind: "ready"; experiment: Experiment; checkins: Checkin[]; completedMissingDays: number[] | null }
+  | { kind: "ready"; experiment: Experiment; checkins: Checkin[]; timeline: ExperimentTimeline }
   | { kind: "error"; status: number; message: string };
 
 function counts(experiment: Experiment, checkins: Checkin[]) {
@@ -55,14 +55,13 @@ export function ExperimentDetail({ id }: { id: string }) {
       return;
     }
     let cancelled = false;
-    Promise.all([getExperiment(id), listCheckins(id)])
-      .then(async ([experiment, checkins]) => {
-        // Completion freezes the backend's elapsed-day analysis. Reuse it rather than
-        // marking every unlogged planned day missed or calculating a second date rule.
-        const report = experiment.status === "completed" ? await getReport(id) : null;
+    Promise.all([getExperiment(id), listCheckins(id), getExperimentProgress(id)])
+      .then(([experiment, checkins, timeline]) => {
         if (!cancelled) setLoad({
-          kind: "ready", experiment, checkins,
-          completedMissingDays: report?.analysis.adherence.missing_days ?? null,
+          kind: "ready",
+          experiment: { ...experiment, progress: timeline.progress },
+          checkins,
+          timeline,
         });
       })
       .catch((cause: unknown) => {
@@ -115,7 +114,7 @@ export function ExperimentDetail({ id }: { id: string }) {
     );
   }
 
-  const { experiment, checkins, completedMissingDays } = load;
+  const { experiment, checkins, timeline } = load;
   const { progress } = experiment;
   const c = counts(experiment, checkins);
 
@@ -136,7 +135,7 @@ export function ExperimentDetail({ id }: { id: string }) {
       <h1 className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{experiment.question}</h1>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-        <TodayCard experiment={experiment} checkins={checkins} path={path} />
+        <TodayCard experiment={experiment} timeline={timeline} path={path} />
         <FinishCard
           experiment={experiment}
           counts={c}
@@ -151,16 +150,11 @@ export function ExperimentDetail({ id }: { id: string }) {
             Your timeline
           </h2>
           <p className="text-caption text-muted tabular-nums">
-            {checkins.length} of {progress.total_days} days logged
+            {timeline.recorded_days} of {progress.total_days} days logged
             {c.test > 0 && ` · change made on ${c.changeMade} of ${c.test} test days`}
           </p>
         </div>
-        {experiment.status === "completed" && completedMissingDays === null && (
-          <p role="status" className="mt-4 text-body text-muted">
-            Completed-day status will appear when your report is available.
-          </p>
-        )}
-        <Timeline experiment={experiment} checkins={checkins} missingDays={completedMissingDays} />
+        <Timeline experiment={experiment} checkins={checkins} timeline={timeline} />
       </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

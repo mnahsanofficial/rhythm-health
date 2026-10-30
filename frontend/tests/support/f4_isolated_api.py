@@ -21,6 +21,7 @@ PROFILE = {
     "activity_level": "lightly_active", "goals": ["Better focus"], "regular_habits": [], "constraints": [],
     "created_at": "2026-10-26T05:30:00Z", "updated_at": "2026-10-26T05:30:00Z",
 }
+TIMELINES = {item["report"]["experiment"]["id"]: item["timeline"] for item in DATA["cases"]}
 REPORTS = {item["report"]["experiment"]["id"]: item["report"] for item in DATA["cases"]}
 
 
@@ -68,6 +69,8 @@ class Handler(BaseHTTPRequestHandler):
             if report:
                 if len(parts) == 4:
                     return self.reply(200, report["experiment"])
+                if parts[4] == "progress":
+                    return self.reply(200, TIMELINES[parts[3]])
                 if parts[4] == "report":
                     return self.reply(200, report)
                 if parts[4] == "checkins":

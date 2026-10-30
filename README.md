@@ -28,7 +28,7 @@ Code checked **30 Oct 2026**, base `02b97d0`. **Done** means implemented in the 
 | One active experiment | Must | Done | [Database index](supabase/migrations/20261028000300_one_active_experiment_per_profile.sql) enforces it; the [UI preflight](frontend/components/experiments/experiment-flow.tsx) blocks a paid proposal while one is active |
 | Short multi-day structure | Must | Done | [Designer](backend/app/services/experiment_designer.py) defaults to 3 baseline + 7 test days; [progress](backend/app/services/progress.py) uses saved durations |
 | Manual daily check-ins | Must | Done | [Form](frontend/components/checkins/checkin-form.tsx) and [API](backend/app/api/checkins.py) record or replace today's metric values |
-| Experiment timeline | Must | Done | [Timeline](frontend/components/experiments/experiment-progress.tsx) distinguishes recorded, missed, current and future days; recorded days open their answers |
+| Experiment timeline | Must | Done | [Server-owned progress](docs/PROGRESS_API.md) supplies the [timeline](frontend/components/experiments/experiment-progress.tsx), distinguishing recorded, missed, current and future days; recorded days open their answers |
 | Lightweight N-of-1 analysis | Must | Done | [Python analysis](backend/app/services/analysis.py) calculates phase statistics, change, adherence, signal and forecast accuracy |
 | Prediction vs actual | Must | Done | [Comparison reveal](frontend/components/report/prediction-vs-reality.tsx) reads the backend's structured prediction comparison |
 | Interactive Lab Report | Must | Done | [Report](frontend/components/report/lab-report.tsx) shows calculated results and separately requests the written narrative |
@@ -150,7 +150,7 @@ After an API schema change, run `npm run contract:generate` from the root and co
 
 After a design-token change, edit `packages/brand/src/tokens.json`, run root `npm run brand:generate`, and commit the generated CSS. `npm run brand:check` rejects stale output. Native-ready numeric exports and web integration: [shared brand](packages/brand/README.md).
 
-The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **218 backend tests**, **142 frontend tests**, **6 contract-tool tests**, **11 brand-tool tests**, **73 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
+The suites mock Supabase and OpenRouter. Workspace verification on **31 Oct 2026**: **243 backend tests**, **157 frontend tests**, **6 contract-tool tests**, **11 brand-tool tests**, **76 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
 
 ```bash
 cd backend && uv run pytest           # backend: analysis, safety, progress, auth, endpoints
@@ -173,7 +173,7 @@ F2/F4 verification, including the live demo evidence, isolated early-finish fixt
 
 ## Project structure
 
-The npm workspaces are `frontend/`, `packages/contract/` and `packages/brand/`. The approved Expo app will be added under `apps/mobile/` after the shared-package PR merges. The backend stays a separate uv project. The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
+The npm workspaces are `frontend/`, `packages/contract/` and `packages/brand/`. The approved Expo app is next under `apps/mobile/`; its [progress endpoint](docs/PROGRESS_API.md) is available for both clients. The backend stays a separate uv project. The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
 
 ## Documentation
 
@@ -184,6 +184,7 @@ The npm workspaces are `frontend/`, `packages/contract/` and `packages/brand/`. 
 | [PRD.md](PRD.md) / [TRD.md](TRD.md) | Full product requirements and technical architecture |
 | [DESIGN.md](DESIGN.md) | Design tokens and component conventions |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Implemented system, sequence and data diagrams; AI budgets, decisions, tests and backend review checklist |
+| [docs/PROGRESS_API.md](docs/PROGRESS_API.md) | Authoritative day states, counts and next-day boundary for web/mobile |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Decisions, deferred work and the supplied V2 call agreements |
 | [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md) | What's done, what's left, bugs and risks |
 | [docs/ENV_SETUP.md](docs/ENV_SETUP.md) | Every environment variable, by name |
