@@ -15,14 +15,18 @@ If you're about to write a rule into a per-tool file, it belongs here instead.
 
 ## Run it
 
-You need Node 20.9+, [uv](https://docs.astral.sh/uv/) and the two `.env.local` files described in [`docs/ENV_SETUP.md`](docs/ENV_SETUP.md).
+You need Node 22.18+, [uv](https://docs.astral.sh/uv/) and the two `.env.local` files described in [`docs/ENV_SETUP.md`](docs/ENV_SETUP.md).
+
+Install JavaScript dependencies once at the repository root with `npm ci`; the root lockfile covers all npm workspaces. Do not install separately in `frontend/`.
 
 ```bash
-cd frontend && npm install && npm run dev                                  # http://localhost:3000
+npm ci
+cd frontend && npm run dev                                             # http://localhost:3000
 cd backend && uv sync && uv run uvicorn app.main:app --reload --port 8001  # http://localhost:8001
 ```
 
 Checks:
+- root: `npm run contract:check`, `npm test` (contract freshness, frontend and contract tests)
 - frontend: `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:e2e`, `npm run build`
 - backend: `uv run pytest`
 
@@ -71,6 +75,8 @@ Design tokens and component conventions are in [`DESIGN.md`](DESIGN.md).
 
 ## Code layout
 
+- `packages/contract/`: generated FastAPI API types and the shared OpenAPI schema. Run root `npm run contract:generate` after backend schema changes, and `npm run contract:check` before handing over; never edit generated files.
+- `apps/*`: reserved for the approved Expo app, built only after the shared-package PR merges.
 - `frontend/`: the Next.js app. Read [`frontend/AGENTS.md`](frontend/AGENTS.md) before writing code there.
 - `backend/`: the FastAPI app, per [`TRD.md`](TRD.md). Owned by Shakeb.
 - `supabase/migrations/`: the database schema. Owned by Shakeb.

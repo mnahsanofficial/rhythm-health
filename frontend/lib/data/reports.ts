@@ -1,5 +1,5 @@
 import { apiGet, apiSend, ApiError } from "@/lib/api/client";
-import type { LabReport, NotEnoughCheckins } from "@/lib/types/api";
+import type { LabReport, NotEnoughCheckins } from "@rhythm-health/contract";
 
 /** The experiment's Lab Report, or null if it hasn't been completed yet (the API answers 404). */
 export async function getReport(experimentId: string): Promise<LabReport | null> {

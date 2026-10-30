@@ -1,5 +1,5 @@
 import { apiGet, apiSend } from "@/lib/api/client";
-import type { Checkin, CheckinInput } from "@/lib/types/api";
+import type { Checkin, CheckinInput } from "@rhythm-health/contract";
 
 /** All check-ins for an owned experiment, oldest day first. */
 export function listCheckins(experimentId: string): Promise<Checkin[]> {
