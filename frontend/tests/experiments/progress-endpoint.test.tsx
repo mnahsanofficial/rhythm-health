@@ -29,9 +29,9 @@ const active: Experiment = {
     phase_days: 7, days_remaining: 6, started_at: "2026-10-28T09:00:00Z",
   },
 };
-const timeline = timelineFixture(active, { missed: [2, 3], nextDayAt: "2026-11-01T09:00:00Z" });
-// Day 1 is deliberately future, not inferred as missed from day_number=4.
-// Rendering must follow the response, even if another request has a stale summary.
+const timeline = timelineFixture(active, { missed: [1, 2, 3], nextDayAt: "2026-11-01T09:00:00Z" });
+// A valid day-4 response can arrive after a cached day-1 experiment snapshot.
+// Rendering must follow the progress response, not that older snapshot.
 const stale = { ...active, progress: { ...active.progress, day_number: 1, phase: "baseline" as const } };
 const url = `${api}/api/experiments/${experiment.id}/progress`;
 
@@ -56,8 +56,9 @@ for (const view of ["detail", "home"] as const) {
     it("uses the endpoint's summary, counts and individual states instead of inferring days", async () => {
       show();
       expect(await screen.findByLabelText("Day 4, test, today, not logged yet")).toBeVisible();
-      expect(screen.getByLabelText("Day 1, baseline, upcoming")).toBeVisible();
+      expect(screen.getByLabelText("Day 1, baseline, missed")).toBeVisible();
       expect(screen.getByLabelText("Day 2, baseline, missed")).toBeVisible();
+      expect(screen.getByLabelText("Day 5, test, upcoming")).toBeVisible();
       expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
       expect(screen.getByText(/0 of 10 days (logged|recorded)/)).toBeVisible();
     });
