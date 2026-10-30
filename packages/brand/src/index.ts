@@ -7,7 +7,23 @@ export const FONT_FAMILIES = {
   sans: tokens.fonts.sans.family,
   mono: tokens.fonts.mono.family,
 } as const;
-export const TYPOGRAPHY = tokens.typography;
+/** Web sizes retain fluid terms and unitless heading line-height ratios. */
+export const WEB_TYPOGRAPHY = tokens.typography;
+/** Existing web import; native consumers use NATIVE_TYPOGRAPHY. */
+export const TYPOGRAPHY = WEB_TYPOGRAPHY;
+
+export type NativeTextStyle = { fontSize: number; lineHeight: number };
+
+/** Fixed mobile-first sizes: headings use the web minimum, with absolute line heights. */
+export const NATIVE_TYPOGRAPHY = Object.fromEntries(
+  Object.entries(WEB_TYPOGRAPHY).map(([name, type]) => {
+    const fontSize = "size" in type ? type.size : type.min;
+    const lineHeight = "size" in type
+      ? type.lineHeight
+      : Math.round(fontSize * type.lineHeight * 100) / 100;
+    return [name, { fontSize, lineHeight }];
+  }),
+) as Record<keyof typeof WEB_TYPOGRAPHY, NativeTextStyle>;
 export const SPACING = tokens.spacing;
 export const RADII = tokens.radii;
 export const LAYOUT = tokens.layout;
