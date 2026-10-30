@@ -138,6 +138,17 @@ export async function installApiMocks(page: Page) {
   return counts;
 }
 
+/** Open a main section the way a signed-in person would: the header nav, or its menu on phones. */
+export async function openSection(page: Page, name: "Your lab" | "History" | "Demo") {
+  const main = page.getByRole("navigation", { name: "Main" });
+  if (await main.isVisible()) {
+    await main.getByRole("link", { name, exact: true }).click();
+    return;
+  }
+  await page.getByRole("button", { name: /Account menu for/ }).click();
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name, exact: true }).click();
+}
+
 export async function answerOnboardingWithMouse(page: Page) {
   await page.goto("/onboarding");
   await page.getByRole("button", { name: "Start" }).click();

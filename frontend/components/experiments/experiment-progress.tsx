@@ -110,9 +110,12 @@ export function Timeline({ experiment, checkins, missingDays }: {
 }) {
   const panelId = useId();
   const reduceMotion = useReducedMotion();
-  const [open, setOpen] = useState<number | null>(null);
   const { progress } = experiment;
   const byDay = new Map(checkins.map((ch) => [ch.day_number, ch]));
+  // Show the latest recorded day until another is chosen, so the panel is never an empty box.
+  const latest = checkins.reduce<number | null>((max, ch) => (max === null || ch.day_number > max ? ch.day_number : max), null);
+  const [chosen, setChosen] = useState<number | null>(null);
+  const open = chosen !== null && byDay.has(chosen) ? chosen : latest;
   const today = progress.state === "in_progress" ? progress.day_number : null;
   const pastThrough =
     progress.state === "in_progress" ? (progress.day_number ?? 1) - 1 : progress.state === "not_started" ? 0 : progress.total_days;
@@ -157,9 +160,9 @@ export function Timeline({ experiment, checkins, missingDays }: {
                 <button
                   type="button"
                   aria-label={label}
-                  aria-expanded={open === day}
+                  aria-pressed={open === day}
                   aria-controls={panelId}
-                  onClick={() => setOpen(open === day ? null : day)}
+                  onClick={() => setChosen(day)}
                   className="grid min-h-11 w-full place-items-center rounded-card transition-transform active:scale-95 motion-reduce:transition-none"
                 >
                   {circle}
@@ -185,54 +188,53 @@ export function Timeline({ experiment, checkins, missingDays }: {
         <span>✓ logged · – missed · tap a logged day to see it</span>
       </p>
 
-      <div
-        id={panelId}
-        role="region"
-        aria-label="Recorded day"
-        aria-live="polite"
-        className={checkins.length ? "mt-5 min-h-56 border-t border-line pt-5" : ""}
-      >
-        {!selected && checkins.length > 0 && (
-          <p className="text-body text-muted">Choose a recorded day to revisit your answers.</p>
-        )}
-        <AnimatePresence initial={false} mode="wait">
-          {selected && (
-            <motion.article
-              aria-label={`Day ${selected.day_number} answers`}
-              key={selected.day_number}
-              initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: -6, transition: { duration: MOTION_DURATION.exit } }}
-              transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.panel }}
-              className="rounded-card bg-oat p-4 sm:p-5"
-            >
-              <p className="font-mono text-caption text-moss">
-                Day {selected.day_number} · {selected.phase === "intervention" ? "Test" : "Baseline"}
-              </p>
-              <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
-                {selected.phase === "intervention" && (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted">Made the change</dt>
-                    <dd className="font-medium">{selected.intervention_completed ? "Yes" : "No"}</dd>
-                  </div>
-                )}
-                {experiment.metrics.map((m) =>
-                  selected.metric_values[m.key] === undefined ? null : (
-                    <div key={m.key} className="flex justify-between gap-4">
-                      <dt className="text-muted">{m.label}</dt>
-                      <dd className="shrink-0 font-mono font-medium tabular-nums">
-                        {formatValue(selected.metric_values[m.key])}
-                        {m.type === "scale" && m.max !== null && <span className="text-muted">/{m.max}</span>}
-                      </dd>
+      {checkins.length > 0 && (
+        <div
+          id={panelId}
+          role="region"
+          aria-label="Recorded day"
+          aria-live="polite"
+          className="mt-5 min-h-40 border-t border-line pt-5"
+        >
+          <AnimatePresence initial={false} mode="wait">
+            {selected && (
+              <motion.article
+                aria-label={`Day ${selected.day_number} answers`}
+                key={selected.day_number}
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -6, transition: { duration: MOTION_DURATION.exit } }}
+                transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.panel }}
+                className="rounded-card bg-oat p-4 sm:p-5"
+              >
+                <p className="font-mono text-caption text-moss">
+                  Day {selected.day_number} · {selected.phase === "intervention" ? "Test" : "Baseline"}
+                </p>
+                <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                  {selected.phase === "intervention" && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted">Made the change</dt>
+                      <dd className="font-medium">{selected.intervention_completed ? "Yes" : "No"}</dd>
                     </div>
-                  ),
-                )}
-              </dl>
-              {selected.note && <p className="mt-3 border-t border-line pt-3 text-body">“{selected.note}”</p>}
-            </motion.article>
-          )}
-        </AnimatePresence>
-      </div>
+                  )}
+                  {experiment.metrics.map((m) =>
+                    selected.metric_values[m.key] === undefined ? null : (
+                      <div key={m.key} className="flex justify-between gap-4">
+                        <dt className="text-muted">{m.label}</dt>
+                        <dd className="shrink-0 font-mono font-medium tabular-nums">
+                          {formatValue(selected.metric_values[m.key])}
+                          {m.type === "scale" && m.max !== null && <span className="text-muted">/{m.max}</span>}
+                        </dd>
+                      </div>
+                    ),
+                  )}
+                </dl>
+                {selected.note && <p className="mt-3 border-t border-line pt-3 text-body">“{selected.note}”</p>}
+              </motion.article>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </>
   );
 }

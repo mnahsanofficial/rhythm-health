@@ -100,6 +100,16 @@ describe("home session gate", () => {
     expect(screen.queryByRole("link", { name: "Test a new question" })).not.toBeInTheDocument();
   });
 
+  it("doesn't repeat the header's navigation or its Your lab label", async () => {
+    signedIn();
+    render(home());
+
+    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Experiment history" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Your lab", { exact: true })).not.toBeInTheDocument();
+  });
+
   it("offers a new question when the profile has no active experiment", async () => {
     signedIn();
     server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([])));

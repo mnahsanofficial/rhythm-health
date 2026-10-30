@@ -71,7 +71,6 @@ function SignedInHome() {
 
   return (
     <div className="page-frame pt-8 pb-16 sm:pt-14">
-      {state.kind !== "active" && <p className="text-body text-muted">Your lab</p>}
       {state.kind === "active" ? (
         <ActiveLab
           profile={state.profile}
@@ -108,11 +107,6 @@ function SignedInHome() {
           </Link>
         </section>
       )}
-      <nav aria-label="Your lab" className="mt-10 flex flex-wrap gap-x-7 gap-y-1 border-t border-line pt-4">
-        <Link href="/history" className={textLink}>Experiment history</Link>
-        <Link href="/onboarding" className={textLink}>Update your rhythm</Link>
-        <Link href="/demo" className={textLink}>Demo</Link>
-      </nav>
     </div>
   );
 }
@@ -149,8 +143,7 @@ function ActiveLab({ profile, experiment, checkins }: {
 
   return (
     <>
-      <p className="text-body text-muted">Your lab</p>
-      <div className="mt-4 grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p hidden={open} className="font-mono text-caption text-moss tabular-nums">
