@@ -172,3 +172,11 @@ def test_database_failure_is_503(db, monkeypatch, repository, name):
 
 def test_invalid_id_is_422(db):
     assert client.get("/api/experiments/not-a-uuid/progress").status_code == 422
+
+
+def test_user_without_a_profile_cannot_distinguish_unowned_or_missing_ids(db, monkeypatch):
+    monkeypatch.setattr(profiles, "get_by_user_id", lambda user: None)
+    for experiment_id in [EXP_ID, "22222222-2222-2222-2222-222222222222"]:
+        response = client.get(f"/api/experiments/{experiment_id}/progress")
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Experiment not found"}
