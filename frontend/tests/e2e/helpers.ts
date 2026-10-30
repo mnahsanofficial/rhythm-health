@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
+import { timelineFixture } from "../support/timeline-fixture";
 import { experiment, proposeResponse } from "../support/fixtures";
 
 export const API = "http://api.test.invalid";
@@ -94,6 +95,13 @@ export async function installApiMocks(page: Page) {
         prediction: body.prediction,
       };
       await route.fulfill({ status: 201, json: savedExperiment });
+      return;
+    }
+
+    if (url.pathname.endsWith("/progress") && method === "GET") {
+      await route.fulfill(activeExperiment
+        ? { status: 200, json: timelineFixture(activeExperiment, { nextDayAt: "2026-10-30T10:00:00Z" }) }
+        : { status: 404, json: { detail: "Not found" } });
       return;
     }
 

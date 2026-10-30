@@ -1,3 +1,4 @@
+import { timelineFixture } from "../support/timeline-fixture";
 import { expect, test, type Page } from "@playwright/test";
 import type { Checkin, Experiment, LabReport } from "@/lib/types/api";
 import { experiment, labReport } from "../support/fixtures";
@@ -160,6 +161,9 @@ test("signed-in pages fill the screen and stay readable at every width", async (
     return route.fulfill({ json: status === "active" ? [active] : status === "completed" ? [completed] : [active, completed] });
   });
   await page.route(`${API}/api/experiments/${experiment.id}`, route => route.fulfill({ json: active }));
+  await page.route(`${API}/api/experiments/${experiment.id}/progress`, route => route.fulfill({
+    json: timelineFixture(active, { recorded: [1, 2, 3], nextDayAt: "2026-10-29T10:00:00Z" }),
+  }));
   await page.route(`${API}/api/experiments/${experiment.id}/checkins`, route => route.fulfill({ json: checkins }));
   await page.route(`${API}/api/experiments/${completedId}`, route => route.fulfill({ json: completed }));
   await page.route(`${API}/api/experiments/${completedId}/checkins`, route => route.fulfill({ json: [] }));

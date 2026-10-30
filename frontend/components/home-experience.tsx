@@ -8,15 +8,15 @@ import { Timeline, TodayCard } from "@/components/experiments/experiment-progres
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins } from "@/lib/data/checkins";
-import { listExperiments } from "@/lib/data/experiments";
+import { getExperimentProgress, listExperiments } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
-import type { Checkin, Experiment, Profile } from "@/lib/types/api";
+import type { Checkin, Experiment, ExperimentTimeline, Profile } from "@/lib/types/api";
 
 type State =
   | { kind: "loading" }
   | { kind: "new" }
   | { kind: "ready"; profile: Profile }
-  | { kind: "active"; profile: Profile; experiment: Experiment; checkins: Checkin[] }
+  | { kind: "active"; profile: Profile; experiment: Experiment; timeline: ExperimentTimeline; checkins: Checkin[] }
   | { kind: "error"; message: string };
 
 const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
@@ -52,8 +52,16 @@ function SignedInHome() {
           setState({ kind: "ready", profile });
           return;
         }
-        const checkins = await listCheckins(experiment.id);
-        if (!cancelled) setState({ kind: "active", profile, experiment, checkins });
+        const [checkins, timeline] = await Promise.all([
+          listCheckins(experiment.id), getExperimentProgress(experiment.id),
+        ]);
+        if (!cancelled) setState({
+          kind: "active",
+          profile,
+          experiment: { ...experiment, progress: timeline.progress },
+          timeline,
+          checkins,
+        });
       } catch (error) {
         if (cancelled) return;
         if (error instanceof ApiError && error.status === 401) {
@@ -76,6 +84,7 @@ function SignedInHome() {
           profile={state.profile}
           experiment={state.experiment}
           checkins={state.checkins}
+          timeline={state.timeline}
         />
       ) : state.kind === "error" ? (
         <section role="alert" className="mt-5 max-w-2xl rounded-card bg-clay-tint p-6 text-clay">
@@ -112,9 +121,10 @@ function SignedInHome() {
 }
 
 /** The question form replaces the summary in place; daily evidence stays visible. */
-function ActiveLab({ profile, experiment, checkins }: {
+function ActiveLab({ profile, experiment, timeline, checkins }: {
   profile: Profile;
   experiment: Experiment;
+  timeline: ExperimentTimeline;
   checkins: Checkin[];
 }) {
   const [open, setOpen] = useState(false);
@@ -137,7 +147,7 @@ function ActiveLab({ profile, experiment, checkins }: {
 
   const { progress } = experiment;
   const path = `/experiments/${encodeURIComponent(experiment.id)}`;
-  const logged = new Set(checkins.map((day) => day.day_number)).size;
+  const logged = timeline.recorded_days;
   const testDays = checkins.filter((day) => day.phase === "intervention");
   const followed = testDays.filter((day) => day.intervention_completed).length;
 
@@ -191,7 +201,7 @@ function ActiveLab({ profile, experiment, checkins }: {
             />
           </div>
         </div>
-        <TodayCard experiment={experiment} checkins={checkins} path={path} />
+        <TodayCard experiment={experiment} timeline={timeline} path={path} />
       </div>
       <section aria-labelledby="lab-progress" className="mt-10 border-t border-line pt-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -206,7 +216,7 @@ function ActiveLab({ profile, experiment, checkins }: {
             {testDays.length > 0 && <p>Change made on {followed} of {testDays.length} test days</p>}
           </div>
         </div>
-        <Timeline experiment={experiment} checkins={checkins} />
+        <Timeline experiment={experiment} checkins={checkins} timeline={timeline} />
       </section>
     </>
   );

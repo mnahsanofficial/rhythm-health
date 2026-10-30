@@ -16,7 +16,8 @@ from app.demo import seed  # noqa: E402
 from app.schemas.experiment import ExperimentOut  # noqa: E402
 from app.services.analysis import analyze, required_checkins  # noqa: E402
 from app.services.lab_report import build_lab_report  # noqa: E402
-from app.services.progress import with_progress  # noqa: E402
+from app.services.progress import with_progress
+from app.services.timeline import experiment_timeline  # noqa: E402
 
 START = datetime(2026, 10, 26, 5, 30, tzinfo=UTC)
 DAY = timedelta(hours=24)
@@ -83,10 +84,11 @@ def generate():
                 "logged_days": logged_days,
             },
             "report": report,
+            "timeline": experiment_timeline(row, logged, clock).model_dump(mode="json"),
         })
     return {
-        "source": "backend/app/services/analysis.py and backend/app/services/lab_report.py; no DB/AI calls",
-        "first_day": {"clock": START.isoformat(), "experiment": first_out},
+        "source": "backend/app/services/{analysis,lab_report,timeline}.py; no DB/AI calls",
+        "first_day": {"clock": START.isoformat(), "experiment": first_out, "timeline": experiment_timeline(first, [], START).model_dump(mode="json")},
         "cases": cases,
     }
 

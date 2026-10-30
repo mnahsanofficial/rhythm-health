@@ -6,18 +6,10 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { checkInReminder } from "@/lib/calendar/check-in-reminder";
-import type { Checkin, Experiment, MetricValue } from "@/lib/types/api";
+import type { Checkin, Experiment, ExperimentTimeline, MetricValue } from "@/lib/types/api";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const primaryButton = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
 const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
-
-/** When the next rolling 24-hour day begins (days count from the start time, not midnight). */
-function nextDayOpens(experiment: Experiment): Date | null {
-  const { started_at, day_number } = experiment.progress;
-  if (!started_at || day_number === null) return null;
-  return new Date(new Date(started_at).getTime() + day_number * DAY_MS);
-}
 
 function formatValue(value: MetricValue): string {
   if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -42,8 +34,12 @@ function downloadReminder(experiment: Experiment, day: number, opens: Date, chec
 }
 
 /** The one thing to do now: check in, wait for tomorrow, finish, or read the results. */
-export function TodayCard({ experiment, checkins, path }: { experiment: Experiment; checkins: Checkin[]; path: string }) {
-  const { progress } = experiment;
+export function TodayCard({ experiment, timeline, path }: {
+  experiment: Experiment;
+  timeline: ExperimentTimeline;
+  path: string;
+}) {
+  const { progress } = timeline;
 
   if (progress.state === "completed") {
     return (
@@ -76,8 +72,8 @@ export function TodayCard({ experiment, checkins, path }: { experiment: Experime
   }
 
   const day = progress.day_number;
-  const doneToday = checkins.some((ch) => ch.day_number === day);
-  const opens = nextDayOpens(experiment);
+  const doneToday = timeline.days.some((entry) => entry.day_number === day && entry.state === "recorded");
+  const opens = timeline.next_day_at ? new Date(timeline.next_day_at) : null;
   const opensText = opens?.toLocaleString(undefined, { weekday: "long", hour: "numeric", minute: "2-digit" });
 
   if (doneToday) {
@@ -136,38 +132,35 @@ export function TodayCard({ experiment, checkins, path }: { experiment: Experime
 }
 
 /** Every day of the experiment. Logged days open to show what was recorded (PRD §13). */
-export function Timeline({ experiment, checkins, missingDays }: {
+export function Timeline({ experiment, checkins, timeline }: {
   experiment: Experiment;
   checkins: Checkin[];
-  /** Stored completion analysis; never infer completed missing days from the plan length. */
-  missingDays?: readonly number[] | null;
+  timeline: ExperimentTimeline;
 }) {
   const panelId = useId();
   const reduceMotion = useReducedMotion();
-  const { progress } = experiment;
+  const { progress } = timeline;
   const byDay = new Map(checkins.map((ch) => [ch.day_number, ch]));
   // Show the latest recorded day until another is chosen, so the panel is never an empty box.
   const latest = checkins.reduce<number | null>((max, ch) => (max === null || ch.day_number > max ? ch.day_number : max), null);
   const [chosen, setChosen] = useState<number | null>(null);
   const open = chosen !== null && byDay.has(chosen) ? chosen : latest;
   const today = progress.state === "in_progress" ? progress.day_number : null;
-  const pastThrough =
-    progress.state === "in_progress" ? (progress.day_number ?? 1) - 1 : progress.state === "not_started" ? 0 : progress.total_days;
   const selected = open !== null ? byDay.get(open) : undefined;
 
   return (
     <>
       <ol className="mt-5 grid grid-cols-5 gap-2 sm:grid-cols-10">
-        {Array.from({ length: progress.total_days }, (_, i) => {
-          const day = i + 1;
-          const baseline = day <= experiment.baseline_days;
+        {timeline.days.map((entry) => {
+          const day = entry.day_number;
+          const baseline = entry.phase === "baseline";
           const logged = byDay.get(day);
           const isToday = day === today;
-          const completed = progress.state === "completed";
-          const missed = !logged && (completed ? missingDays?.includes(day) === true : day <= pastThrough);
-          const state = logged ? "logged" : isToday ? "today, not logged yet" : missed ? "missed"
-            : completed ? "not recorded before completion" : "upcoming";
-          const tone = logged
+          const recorded = entry.state === "recorded";
+          const missed = entry.state === "missed";
+          const state = recorded ? "logged" : entry.state === "current" ? "today, not logged yet" : missed ? "missed"
+            : entry.state === "not_observed" ? "not recorded before completion" : "upcoming";
+          const tone = recorded
             ? baseline
               ? "bg-night text-paper"
               : "bg-moss text-paper"
@@ -185,12 +178,12 @@ export function Timeline({ experiment, checkins, missingDays }: {
           const label = `Day ${day}, ${baseline ? "baseline" : "test"}, ${state}`;
           const circle = (
             <span className={`mx-auto grid size-10 place-items-center rounded-full font-mono text-caption tabular-nums ${tone} ${ring}`}>
-              {logged ? "✓" : missed ? "–" : day}
+              {recorded ? "✓" : missed ? "–" : day}
             </span>
           );
           return (
             <li key={day} className="min-w-0 text-center">
-              {logged ? (
+              {recorded && logged ? (
                 <button
                   type="button"
                   aria-label={label}
