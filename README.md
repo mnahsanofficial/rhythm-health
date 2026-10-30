@@ -10,45 +10,82 @@ Ask a question like "Does walking after dinner improve my sleep?" and Rhythm tur
 
 | | Owns |
 |---|---|
-| **Nazmul** ([@mnahsanofficial](https://github.com/mnahsanofficial)) | Frontend and UI: visual direction, onboarding, dashboard, check-in, Lab Report, motion (`frontend/`) |
-| **Shakeb** | Backend and features: architecture, experiment model, AI design and prediction, analysis, data model (`backend/`, `supabase/`) |
+| **Nazmul** ([@mnahsanofficial](https://github.com/mnahsanofficial)) | Frontend and UI: visual direction, onboarding, dashboard, check-in, Lab Report, motion ([frontend/](frontend/)) |
+| **Shakeb** | Backend and features: architecture, experiment model, AI design and prediction, analysis, data model ([backend/](backend/), [supabase/](supabase/)) |
 
-Product decisions are made together (PRD §27).
+Product decisions are made together ([PRD §27](PRD.md#27-team-ownership)).
 
-## Current status
+## V1 status
 
-The core loop works end to end on localhost: onboarding, ask a question, see the prediction, start, daily check-ins, finish, and the Lab Report's calculated sections.
+Code checked **30 Oct 2026**, base `02b97d0`. **Done** means implemented in the cited code; automated and live-check evidence has separate limits below. Priorities come from [PRD §23](PRD.md#23-v1-scope); the dashboard gap comes from [§11](PRD.md#11-experiment-dashboard).
 
-Signed-in users can ask directly on Your lab (`/`); `/experiments/new` uses the same form and proposal flow. With an active experiment, Your lab keeps today's check-in visible and offers “Test another habit” at the top, replacing the experiment summary with the form in place until closed. Until the backend allows more than one active experiment, the form explains the limit and blocks paid proposal requests.
+| Feature | Priority | Status | Implemented behavior / missing part |
+|---|---|---|---|
+| Persona creation | Must | Done | [Onboarding summary](frontend/components/onboarding/rhythm-summary.tsx) signs in/up and saves the profile |
+| Natural-language question | Must | Done | [Shared form](frontend/components/experiments/question-form.tsx) accepts 5–500 characters on Your lab and `/experiments/new` via the [shared flow](frontend/components/experiments/experiment-flow.tsx) |
+| AI-generated experiment | Must | Done | [Proposal pipeline](backend/app/services/proposal.py) classifies, safety-checks and designs the plan |
+| Predictive forecast | Must | Done | [Preview](frontend/components/experiments/experiment-flow.tsx) shows a range, confidence, reasoning and uncertainty before start |
+| One active experiment | Must | Done | [Database index](supabase/migrations/20261028000300_one_active_experiment_per_profile.sql) enforces it; the [UI preflight](frontend/components/experiments/experiment-flow.tsx) blocks a paid proposal while one is active |
+| Short multi-day structure | Must | Done | [Designer](backend/app/services/experiment_designer.py) defaults to 3 baseline + 7 test days; [progress](backend/app/services/progress.py) uses saved durations |
+| Manual daily check-ins | Must | Done | [Form](frontend/components/checkins/checkin-form.tsx) and [API](backend/app/api/checkins.py) record or replace today's metric values |
+| Experiment timeline | Must | Done | [Timeline](frontend/components/experiments/experiment-progress.tsx) distinguishes recorded, missed, current and future days; recorded days open their answers |
+| Lightweight N-of-1 analysis | Must | Done | [Python analysis](backend/app/services/analysis.py) calculates phase statistics, change, adherence, signal and forecast accuracy |
+| Prediction vs actual | Must | Done | [Comparison reveal](frontend/components/report/prediction-vs-reality.tsx) reads the backend's structured prediction comparison |
+| Interactive Lab Report | Must | Done | [Report](frontend/components/report/lab-report.tsx) shows calculated results and separately requests the written narrative |
+| Experiment history | Must | Done | [History](frontend/components/experiments/experiment-history.tsx) lists completed experiments with each report's outcome |
+| Prior results inform predictions | Must | Done | [History retrieval](backend/app/services/history.py) supplies up to five relevant completed experiments to the [designer](backend/app/services/experiment_designer.py) |
+| Mobile-responsive experience | Must | Done | [Width checks](frontend/tests/e2e/layout-widths.spec.ts) cover public/private pages; screen/flow evidence is in [docs](docs/F2_F4_VERIFICATION.md) |
+| Seeded completed experiment | Must | Done | [Demo reset](backend/app/services/demo.py) prepares a completed sample; [real-backend verification](docs/F2_F4_VERIFICATION.md) covers report/history and preserving the real active experiment |
+| Notes/confounder logging | Should | Done | [Check-in note](backend/app/schemas/checkin.py) is stored and supplied to the [narrative writer](backend/app/services/report_writer.py) as context |
+| Confidence explanation | Should | Done | [Forecast card](frontend/components/experiments/experiment-flow.tsx) displays confidence, reasoning and uncertainty factors |
+| Suggested next experiment | Should | Done | [Written report](frontend/components/report/lab-report.tsx) offers a follow-up question that can prefill the next proposal |
+| Safety checks | Should | Done | [Rules](backend/app/services/safety.py), [proposal checks](backend/app/services/proposal.py) and [report validation](backend/app/services/report_writer.py) guard generation; [limits](docs/ARCHITECTURE.md#guards-and-their-limits) remain |
+| Interactive charts | Should | Done | [Day chart](frontend/components/report/day-chart.tsx) shows baseline/test values, skipped days and forecast band; tapping reveals values and notes |
+| Dashboard, including primary-metric trend (§11) | Required screen | Partial | [Detail](frontend/components/experiments/experiment-detail.tsx) shows progress, prediction and recorded-day details; the across-days metric trend is missing |
+| Edit generated plan before start | Nice | Not started | [Preview](frontend/components/experiments/experiment-flow.tsx) supports starting or asking again, without plan editing |
+| Compare experiments | Nice | Not started | [History](frontend/components/experiments/experiment-history.tsx) lists individual results; no comparison view |
+| Share/export Lab Report | Nice | Not started | [Report](frontend/components/report/lab-report.tsx) has no share/export action |
+| Richer personal-pattern visualization | Nice | Not started | [History](frontend/components/experiments/experiment-history.tsx) has no aggregate patterns view |
 
-Signed-in home focuses on your experiment and today’s check-in. Open **Demo** in the lab navigation (`/demo`) to explore the seeded completed example.
+**Demo and verification limits:** the [signed-in home](frontend/components/home-experience.tsx) keeps the real experiment/check-in visible and opens the question form in place. The [Demo entry](frontend/components/demo-entry.tsx) is `/demo`. Seed reset/report/history were checked against the real backend; early completion was checked with isolated backend-generated data, not a genuine live early finish ([evidence](docs/F2_F4_VERIFICATION.md)). The [keyboard-only onboarding test](frontend/tests/e2e/onboarding-experiment.spec.ts) remains skipped. Narrative-number verification is deferred; result figures use structured analysis/chart data, while generated prose can still quote numbers ([architecture](docs/ARCHITECTURE.md#guards-and-their-limits)).
 
-The written report, past-experiment context and history are built. The seeded demo has been verified against the real backend. Early-finish missed days have been verified with isolated backend-generated data; a genuine live early finish remains unchecked. See the remaining-work list for other gaps and limitations.
+**To confirm with Shakeb before merging:** live migration/grant state and the accepted report concurrency/persistence limits listed in the [backend review checklist](docs/ARCHITECTURE.md#backend-review-before-the-docs-pr-is-merged). Full backlog: [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md).
 
-Full list, with owners and priorities: [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md).
+## V2
 
-## Tech stack and architecture
+Future directions, with their provenance. “Optional” or “deferred” does not commit a V2 delivery date.
 
-```text
-Browser ── Next.js 16 (frontend/) ──── signs in with ────▶ Supabase Auth
-               │                                              │
-               │ JSON + Bearer token                          │ JWT, checked against Supabase's keys
-               ▼                                              ▼
-           FastAPI (backend/) ───────────────────────────────────┐
-               ├── Supabase Postgres (profiles, experiments, check-ins, reports; RLS on)
-               └── OpenRouter ── Jev (classify the question) + reasoning model (design and predict)
+| Direction | Source / scope |
+|---|---|
+| Health-data integration, especially Apple Health; keep manual subjective check-ins | **PRD V2:** [§25](PRD.md#25-v2) names sleep, steps, workouts and other health metrics |
+| Reminder infrastructure | **PRD later:** [§22](PRD.md#22-notifications); push notifications remain outside initial V1 |
+| Optional Google OAuth | **TRD later:** [authentication under §4](TRD.md#authentication) |
+| Dedicated fitness/gym tracking | **Pair agreement:** Shakeb, call on **28 Oct**, supplied by Nazmul and [recorded here](docs/DECISIONS.md#v2-roadmap-inputs); detailed scope is not specified |
+| Several active experiments at once | **Pair agreement:** call on **29 Oct**, supplied by Nazmul and [recorded here](docs/DECISIONS.md#v2-roadmap-inputs); requires coordinated database, backend and UI changes |
+| Structured request logging; verification of numbers quoted in report prose | **Deferred engineering:** [DECISIONS Q12/Q17](docs/DECISIONS.md#questions-for-shakeb), time permitting; not promised V2 product features |
+
+Magic-link sign-in remains skipped for V1; the full backend flow integration test remains a V1 wrap-up task ([DECISIONS Q12](docs/DECISIONS.md#questions-for-shakeb)). Existing [Claude suggestions](docs/REMAINING_WORK.md#suggestions) remain unapproved ideas, not roadmap commitments.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["Next.js browser UI<br/>Public anon key and user session"]
+    AUTH["Supabase Auth"]
+    API["FastAPI<br/>Service-role and OpenRouter keys stay here"]
+    DB[("Supabase Postgres")]
+    AI["OpenRouter<br/>Jev and reasoning model"]
+    UI <-->|"Sign-in and refresh"| AUTH
+    UI <-->|"JSON and Bearer JWT"| API
+    API -->|"Public signing keys"| AUTH
+    API <-->|"PostgREST; ownership-scoped queries"| DB
+    API <-->|"Backend AI requests"| AI
 ```
 
-| Part | What it is |
-|---|---|
-| **Frontend** | Next.js 16 (App Router, Cache Components), React 19, TypeScript, Tailwind CSS 4, `motion`, `@supabase/supabase-js` for sign-in only |
-| **Backend** | Python 3.11+, FastAPI, Pydantic, managed with `uv`. Checks the Supabase JWT, owns the experiment lifecycle, safety rules, and the deterministic analysis and classification |
-| **Supabase** | Auth (email and password) and Postgres. The backend reads and writes with the service-role key, scoped to the signed-in user. The schema is in `supabase/migrations/` |
-| **OpenRouter** | One backend client for the reasoning model (experiment design and prediction) and Jev (category, intent and risk), with validated JSON output only |
-
-The rule: **AI proposes, Python measures** (TRD §2.2). The frontend never talks to the database or OpenRouter directly. Details: [TRD.md](TRD.md), [docs/rules/api-contracts.md](docs/rules/api-contracts.md).
-
-Nothing is deployed yet. Everything runs and demos on localhost.
+[Browser components](frontend/lib/api/client.ts) call FastAPI directly. Supabase handles sign-in/session refresh with `NEXT_PUBLIC_SUPABASE_ANON_KEY` ([auth client](frontend/lib/auth/supabase.ts)).
+[FastAPI](backend/app/main.py) owns validation, lifecycle and analysis; `SUPABASE_SERVICE_ROLE_KEY` and `OPENROUTER_API_KEY` remain [backend settings](backend/app/config.py).
+[Completion](backend/app/api/reports.py) is deterministic; the written report is generated separately from stored analysis. Localhost is the C2 demo target ([DECISIONS Q11](docs/DECISIONS.md#questions-for-shakeb)).
+Diagrams, data model, AI budgets, code/TRD differences and test evidence: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Getting started
 
@@ -99,11 +136,11 @@ Open http://localhost:3000 and choose **Run your first experiment**.
 
 `npm ci` installs exactly what's in `package-lock.json` without rewriting it. Use `npm install` only when you're adding a package.
 
-The shared Supabase project already has the database migrations applied, so there's nothing to run for the database.
+The shared project's earlier migration setup is recorded in [DECISIONS Q1](docs/DECISIONS.md#questions-for-shakeb). For a new project, apply the [migrations](supabase/migrations/) including grants; Shakeb confirms the live schema.
 
 ## Running tests
 
-None of these call Supabase or OpenRouter.
+The suites mock Supabase and OpenRouter. Runs on **30 Oct 2026**: **218 backend tests**, **121 frontend tests**, **70 browser tests passed; 1 existing browser skip**. Coverage, mock boundaries and limits: [architecture testing](docs/ARCHITECTURE.md#7-tests-and-current-evidence).
 
 ```bash
 cd backend && uv run pytest           # backend: analysis, safety, progress, auth, endpoints
@@ -126,24 +163,7 @@ F2/F4 verification, including the live demo evidence, isolated early-finish fixt
 
 ## Project structure
 
-```text
-frontend/                 Next.js app
-  app/                    routes: /, /onboarding, /sign-in, /experiments/new, /experiments/[id], …/check-in, …/report
-  components/             UI by area: onboarding, auth, experiments, checkins, report
-  lib/                    api client, auth, data layer (lib/data), types, sample data (lib/mock), helpers
-  tests/                  unit, component, contract and e2e tests
-backend/                  FastAPI app
-  app/api/                routes
-  app/services/           analysis, safety, progress, check-in validation, experiment design
-  app/integrations/       OpenRouter, Jev, Supabase
-  app/repositories/       database access, always scoped to the user
-  app/schemas/            Pydantic request and response models
-  tests/                  pytest
-supabase/migrations/      database schema, RLS policies
-scripts/                  agent session-log hooks
-.claude-logs/             agent session logs (committed)
-docs/                     rules, setup, remaining work, logging
-```
+The [folder map](docs/ARCHITECTURE.md#6-project-structure) covers the Next.js UI/data layer, FastAPI routes/services/repositories, SQL migrations and both test trees.
 
 ## Documentation
 
@@ -153,6 +173,8 @@ docs/                     rules, setup, remaining work, logging
 | [PRODUCT.md](PRODUCT.md) | One-page product summary |
 | [PRD.md](PRD.md) / [TRD.md](TRD.md) | Full product requirements and technical architecture |
 | [DESIGN.md](DESIGN.md) | Design tokens and component conventions |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Implemented system, sequence and data diagrams; AI budgets, decisions, tests and backend review checklist |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Decisions, deferred work and the supplied V2 call agreements |
 | [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md) | What's done, what's left, bugs and risks |
 | [docs/ENV_SETUP.md](docs/ENV_SETUP.md) | Every environment variable, by name |
 | [docs/rules/](docs/rules/) | Git workflow, secrets, API contracts, testing, UI quality, health content |
