@@ -49,7 +49,7 @@ for (const width of [390, 1440]) {
       await capture("during");
       await expect(details.getByRole("article")).toHaveCSS("opacity", "1");
       await capture("after");
-      await expect(page.getByRole("button", { name: "Day 1, baseline, logged" })).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByRole("button", { name: "Day 1, baseline, logged" })).toHaveAttribute("aria-pressed", "true");
       if (reducedMotion === "reduce") {
         expect(await details.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
       }

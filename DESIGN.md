@@ -8,6 +8,18 @@ Rhythm Health Lab turns a daily habit question into a small personal experiment.
 
 Design at 390px first, then make the layout hold at every width (see [Layout](#layout)). Use type, spacing and dividers to establish hierarchy. Cards group a decision or comparison; history uses rows. Avoid decorative gradients, repeated shadows, all-caps labels and a fade-up on every section.
 
+### Ours, not AI-default
+
+These apply to the web app and the mobile app alike. A screen that breaks one reads as a template.
+
+1. **No placeholders as content.** An empty panel never takes more than one line. Show the latest real data (the timeline opens on the latest recorded day) or leave the space out.
+2. **Cards only for a decision or a comparison** (today's check-in, prediction versus reality). Information uses sections, rows and dividers.
+3. **Mono only for numbers, times and counts** ("Day 4 of 10", "+8% to +15%"). Word labels and eyebrows use Instrument Sans.
+4. **Every scale names both ends in plain words**, such as "1 drained · 10 full of energy". Never a bare 1–10.
+5. **No glass, gradients, glows or decorative shadows.** Pinned bars use a solid background and a border.
+6. **No navigation repeated on the same screen.** The header (or its menu on phones) is the one place for the main sections.
+7. **Copy says what will happen, with real numbers.** "Results after 2 normal days and 3 test days", not "Results unlock soon". No "unlock", "journey", "discover" or "transform".
+
 ## Visual tokens
 
 Colour, type, shape and easing live in `frontend/app/globals.css`. Use Tailwind token classes; do not put literal colours in components.
@@ -100,7 +112,7 @@ Small existing selection springs, chart fades and panel departures keep their lo
 | Screen | Interaction and feedback |
 |---|---|
 | Check-in | Native choices respond to selection; the answered count tracks valid answers. Progress uses scaleX. A successful save lands a tick and today's marker and focuses the confirmation heading. “Not today” counts as an answer, not adherence. |
-| Personal home | Own question, today's action, phase and recorded days. Selecting a logged day reveals its values with a 6px/opacity panel transition. Space is reserved so surrounding navigation stays stable. |
+| Personal home | Own question, today's action, phase and recorded days. Day details open on the latest recorded day; choosing another day swaps them with a 6px/opacity panel transition. Space is reserved so the page doesn't jump between days. |
 | Proposal | Waiting explains what goes into the response without claiming live stage completion. The finished plan replaces entry and restores focus appropriately. Forecast endpoints remain readable while the range fills. |
 | Onboarding | Steps move in the direction of navigation; focus moves to the heading. Habits follow morning, afternoon and evening; constraints explain how the plan should fit life. Choices retain native keyboard behavior and Skip. |
 | Lab Report | Comparison first; verdict, adherence and daily evidence follow. Written sections without backend content show waiting states. |

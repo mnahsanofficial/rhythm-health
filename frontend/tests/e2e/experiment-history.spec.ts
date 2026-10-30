@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Experiment, LabReport } from "@/lib/types/api";
-import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
+import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks, openSection } from "./helpers";
 import { experiment, labReport } from "../support/fixtures";
 
 const completedExperiment: Experiment = {
@@ -104,9 +104,7 @@ for (const width of [390, 1440]) {
       route.fulfill({ status: 200, json: report }),
     );
 
-    const historyLink = page.getByRole("link", { name: "Experiment history" });
-    await expect(historyLink).toBeVisible();
-    await historyLink.click();
+    await openSection(page, "History");
     await expect(page).toHaveURL(/\/history$/);
 
     const item = page.getByRole("article", { name: experiment.question });

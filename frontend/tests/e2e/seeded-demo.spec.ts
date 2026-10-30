@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Experiment, LabReport } from "@/lib/types/api";
-import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
+import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks, openSection } from "./helpers";
 import { experiment, labReport } from "../support/fixtures";
 
 const question = "Does walking after dinner improve morning energy?";
@@ -59,7 +59,7 @@ async function prepareSignedInHome(page: import("@playwright/test").Page) {
   await answerOnboardingWithMouse(page);
   await createAccountAndSaveProfile(page, counts);
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Your lab" }).getByRole("link", { name: "Demo", exact: true }).click();
+  await openSection(page, "Demo");
 }
 
 function mockDemoReset(page: import("@playwright/test").Page, status = 200) {
