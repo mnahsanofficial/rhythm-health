@@ -41,7 +41,9 @@ test('sign-out removes the manifest and encrypted session chunks', async () => {
 test('a partially missing session reports storage corruption rather than restoring a fragment', async () => {
   const native = driver(); const storage = createSecureSessionStorage(native);
   await storage.setItem('session', 'fake-token'.repeat(500));
-  const [firstChunk] = native.setItemAsync.mock.calls[0];
-  native.values.delete(firstChunk);
+  expect(native.values.size).toBeGreaterThan(0);
+  const chunk = [...native.values].find(([, value]) => value.includes('fake-token'));
+  expect(chunk).toBeDefined();
+  native.values.delete(chunk![0]);
   await expect(createSecureSessionStorage(native).getItem('session')).rejects.toThrow();
 });

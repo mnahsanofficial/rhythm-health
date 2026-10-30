@@ -35,7 +35,7 @@ beforeEach(() => {
 async function signIn() {
   fireEvent.changeText(await screen.findByLabelText('Email'), '  learner@example.invalid  ');
   fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
-  fireEvent.press(screen.getByRole('button', { name: 'Sign in', exact: true }));
+  fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
 }
 
 test('signs in with existing credentials and reads only the authenticated profile', async () => {
@@ -55,9 +55,9 @@ test('requires email and password, and keeps the password masked by default', as
   const email = await screen.findByLabelText('Email');
   const password = screen.getByLabelText('Password');
   expect(password.props.secureTextEntry).toBe(true);
-  expect(screen.getByRole('button', { name: 'Sign in', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled();
   fireEvent.changeText(email, 'not-an-email'); fireEvent.changeText(password, 'fake-password');
-  expect(screen.getByRole('button', { name: 'Sign in', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled();
   expect(mockAuth.signInWithPassword).not.toHaveBeenCalled();
 });
 
@@ -77,7 +77,7 @@ test('shows a plain wrong-password error and allows another attempt', async () =
   render(<MobileApp />); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent("Email or password wasn't recognised.");
   expect(global.fetch).not.toHaveBeenCalled();
-  fireEvent.press(screen.getByRole('button', { name: 'Sign in', exact: true }));
+  fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
   expect(await screen.findByText('Your rhythm is ready.')).toBeVisible();
 });
 
@@ -87,7 +87,7 @@ test('shows No connection offline and never sends credentials or a profile reque
   expect(await screen.findByText('No connection')).toBeVisible();
   fireEvent.changeText(screen.getByLabelText('Email'), 'learner@example.invalid');
   fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
-  expect(screen.getByRole('button', { name: 'Sign in', exact: true })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled();
   expect(mockAuth.signInWithPassword).not.toHaveBeenCalled();
   expect(global.fetch).not.toHaveBeenCalled();
 });
