@@ -3,8 +3,16 @@
 ## Branches
 
 - One branch per feature, cut from the latest `main`: `feat/…`, `fix/…`, `docs/…`, `test/…`, `chore/…`.
-- Never commit to `main` directly.
-- Before you start, check the other person's open PRs and branches. Don't change files they're working on. If you have to, say so in your PR description.
+- Never commit or push to `main` directly.
+- Before you start, check the other person's open PRs and branches, and follow the [pair rule](pair-rule.md).
+
+## What agents may do
+
+Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly. The people review and merge.
+
+- **Agents never merge**, never force-push, and never push to `main`.
+- Every agent commit includes `.claude-logs/`.
+- Cursor may only be used as an agent if its sessions are logged to `.claude-logs/`. Check this before its first use, with the canary in [`docs/logging.md`](../logging.md#teammate-setup).
 
 ## Commits
 
@@ -37,20 +45,21 @@ If a session's log changes after your last commit, add a `chore(logs): …` comm
   - anything you couldn't check;
   - any requests for the other person.
 - A PR that changes what people see says which screens and widths you checked.
-- The other person reviews before merging when the PR touches their area or shared files (`AGENTS.md`, `README.md`, the API contract).
+- If the PR changes the other person's area, tell them in the team chat when it opens (see the [pair rule](pair-rule.md)).
 
 ## Refresh main before opening a PR
 
-This is a required handover for every agent, even if the branch started from the latest main:
+Before opening any PR:
 
-1. Run `git fetch origin` before opening the PR.
-2. Give the person the exact command `git merge origin/main` to run on the feature branch. The person runs the merge; the agent does not run it. Never rebase or force-push.
-3. If the merge reports conflicts, show every conflicted file and the conflicting changes, then wait for direction before resolving them.
-4. After the merge, rerun frontend lint, typecheck, the full unit/component and Playwright suites, and the production build. Check the changed pages in a browser at mobile, tablet and desktop widths. Report failures and fix them before proceeding.
-5. Only after those checks pass, open the PR with `gh`. Publication must be authorized; opening a PR never authorizes merging it.
+1. Fetch: `git fetch origin`.
+2. Merge the latest main into the branch: `git merge origin/main`. Never rebase. If the merge conflicts, stop and ask before resolving it.
+3. Rerun the checks: frontend lint, typecheck, the full unit and Playwright suites and the production build, plus `uv run pytest` if the backend changed.
+
+Open the PR only when they pass. Opening a PR never authorizes merging it.
 
 ## Merging
 
 - **Merge commits only.** Never squash or rebase-merge. Squashing collapses the code and log history that shows who did what, and we're rated individually.
-- Never force-push a shared branch, and never rewrite someone else's commits.
+- Only people merge. Agents never merge.
+- Never force-push, and never rewrite someone else's commits.
 - Delete the branch after merging if you like. The merge commit keeps its history.

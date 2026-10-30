@@ -10,7 +10,7 @@ If you're about to write a rule into a per-tool file, it belongs here instead.
 
 **Context:**
 - 8x Playmakers C2, track "Health habits" (fitness, sleep, food), theme "Learning that sticks".
-- Built by a pair, Nazmul (frontend and UI) and Shakeb (backend and features), each rated on their own work.
+- Built by a pair, Nazmul and Shakeb, each rated on their own work. V1 was split by layer (Nazmul frontend, Shakeb backend); V2 is split by feature, and both work across frontend, backend and database.
 - What's left to build: [`docs/REMAINING_WORK.md`](docs/REMAINING_WORK.md).
 
 ## Run it
@@ -39,8 +39,11 @@ See [`docs/rules/testing.md`](docs/rules/testing.md).
    - Never gitignore it, edit it or delete files from it.
    - Don't change `scripts/extract-log.py`. It is the 8x guide's script, byte for byte.
 2. **A branch and a PR per feature, merged with a merge commit.**
-   - Never commit to `main`.
+   - Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly. The people review and merge.
+   - Agents never merge, never force-push, and never push to `main`. Always include `.claude-logs/` in the commits.
+   - Before opening any PR: fetch, merge the latest `origin/main` into the branch, and rerun the checks.
    - Never squash or rebase-merge. We're rated individually, and squashing collapses the code and log history that shows who did what.
+   - Cursor may only be used as an agent if its sessions are logged to `.claude-logs/`. Check this before its first use (see [`docs/logging.md`](docs/logging.md)).
 3. **No secrets in prompts, logs or commits.**
    - Secrets go in `.env.local` only.
    - Never print, echo or paste a secret value, not even in a response: these logs are public.
@@ -48,7 +51,11 @@ See [`docs/rules/testing.md`](docs/rules/testing.md).
 
 ## Pair rule
 
-Don't change files the other person is actively working on; check their open PRs and branches first. If you have to, say so in your PR description. The backend (`backend/`, `supabase/`) is Shakeb's. If the frontend needs a field or endpoint the backend doesn't have, write it up as a request for Shakeb instead of editing his files.
+V2 work is split by feature, not by layer: Shakeb and Nazmul both work across frontend, backend and database. Full rule: [`docs/rules/pair-rule.md`](docs/rules/pair-rule.md).
+
+- Don't change files the other person is actively working on; check their open PRs and branches first. If you have to, say so in your PR description.
+- Whoever changes the other's area tells them in the team chat when the PR opens.
+- A database migration is never applied to the shared Supabase project without telling the other person first, because it affects them immediately.
 
 ## Product principles
 
@@ -63,7 +70,8 @@ Don't change files the other person is actively working on; check their open PRs
 
 Each line is a summary. Read the file before you work in that area.
 
-- **[Git workflow](docs/rules/git-workflow.md):** branch names, Conventional Commit messages, session logs, and the required [latest-main merge handover before every PR](docs/rules/git-workflow.md#refresh-main-before-opening-a-pr). The person runs the merge; agents wait on conflicts and repeat checks afterward.
+- **[Git workflow](docs/rules/git-workflow.md):** branch names, Conventional Commit messages, session logs, what agents may do (commit, push their own branches, open PRs; never merge), and the [latest-main merge before every PR](docs/rules/git-workflow.md#refresh-main-before-opening-a-pr).
+- **[Pair rule](docs/rules/pair-rule.md):** V2 split by feature, telling the other person when you change their area, and never applying a shared-database migration unannounced.
 - **[Secrets](docs/rules/secrets.md):** which values are secret, where they live, and how to check one is set without printing it.
 - **[API contracts](docs/rules/api-contracts.md):** how the frontend and the FastAPI backend talk. Covers auth, error shapes, the shared types and the contract test.
 - **[Testing](docs/rules/testing.md):** the suites, what they mock, testing by hand, and keeping paid AI calls to a minimum. Frontend changes follow red-before-green: prove the behavior with a failing test before changing product code.
@@ -79,6 +87,6 @@ Design tokens and component conventions are in [`DESIGN.md`](DESIGN.md).
 - `packages/contract/`: generated FastAPI API types and the shared OpenAPI schema. Run root `npm run contract:generate` after backend schema changes, and `npm run contract:check` before handing over; never edit generated files.
 - `apps/*`: reserved for the approved Expo app, built only after the shared-package PR merges.
 - `frontend/`: the Next.js app. Read [`frontend/AGENTS.md`](frontend/AGENTS.md) before writing code there.
-- `backend/`: the FastAPI app, per [`TRD.md`](TRD.md). Owned by Shakeb.
-- `supabase/migrations/`: the database schema. Owned by Shakeb.
+- `backend/`: the FastAPI app, per [`TRD.md`](TRD.md).
+- `supabase/migrations/`: the database schema. Tell the other person before applying a migration to the shared project (see the [pair rule](docs/rules/pair-rule.md)).
 - `scripts/`, `.claude/`, `.codex/`, `.cursor/`: agent session logging. Don't change these without reading [`docs/logging.md`](docs/logging.md).
