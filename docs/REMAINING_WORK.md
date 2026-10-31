@@ -40,7 +40,9 @@ Sources: the Oct 30 reviewer call (points supplied by Nazmul; the call transcrip
 
 ## Plan to Thursday 5 Nov
 
-Mobile core loop first. **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
+Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 is in progress on `feat/baseline-context`, with no migration.
+
+Original schedule: **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
 
 | Date | Must work | Owner |
 |---|---|---|
@@ -264,9 +266,9 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 
 | # | Feature | Why it helps learning stick | Rough effort | Before Thursday? |
 |---|---|---|---|---|
-| S6 | **Your own guess.** Before the report is revealed, the person predicts their own result on the same scale as the AI's forecast. The report then shows three things side by side: the AI's prediction, theirs, and what happened | Committing to a guess makes the result a surprise or a confirmation about your own judgement. That's how calibration is learned, and it's the "learning that sticks" theme made literal | Medium: one stored number per experiment (a migration, announced first), a step before the report on web, a third marker on the comparison | Yes, if chosen by Monday |
+| S6 | **Your own guess.** Before the AI forecast is revealed, the person enters a primary-metric guess (31 Oct approval). The report then shows three things side by side: the AI's prediction, theirs, and what happened | Committing to a guess makes the result a surprise or a confirmation about your own judgement. That's how calibration is learned, and it's the "learning that sticks" theme made literal | Medium: one stored number per experiment (a migration, announced first), a step before the report on web, a third marker on the comparison | Yes, if chosen by Monday |
 | S7 | **What you now know about yourself.** One page that gathers the conclusion of every finished experiment ("A walk after dinner: likely signal, energy +21%") with its signal strength | Turns one-off reports into a personal evidence base that grows, and it's the same data the AI already uses as context, made visible to the person | Small: history and reports already exist; a new web page reading them | Yes |
-| S8 | **Your normal, on day 4.** When the baseline ends, show the person's own baseline range for the primary metric: "On normal days your energy was 5–6. Now let's see if the walk moves it" | A concrete reason to come back on day 4, and it makes the test days' question personal before any result exists | Small: the baseline values are in the check-ins; one card on Today (web and mobile) | Yes |
+| S8 | **Your normal, on day 4.** When the baseline ends, show the person's own baseline for each metric (31 Oct approval): "On normal days your energy was 5–6. Now let's see if the walk moves it" | A concrete reason to come back on day 4, and it makes the test days' question personal before any result exists | Small: the baseline values are in the check-ins; one card on Today (web and mobile) | Yes |
 | S9 | **Run it again to be sure.** When the result is a *possible* signal or unclear, the report offers the same experiment again, explaining why one more run separates signal from noise | Teaches the idea that one short test isn't proof, which our honest wording already says, and turns it into an action | Small: a report button that prefills the same question with a note; the prediction already uses past results | Yes |
 | S10 | **Keep it or drop it, then a two-week check.** After the report, the person decides to keep or drop the habit. Two weeks later, one question asks whether they still do it and whether it still helps | Measures whether the learning changed behaviour, the real test of "does it help". The answer feeds future predictions | Medium to large: a stored decision and a scheduled follow-up (best as a mobile reminder) | Decision step only; the follow-up after Thursday |
 
