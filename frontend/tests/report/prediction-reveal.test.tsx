@@ -38,3 +38,8 @@ it("compares the user's committed guess, AI range and observed change using anal
   expect(screen.getByRole("status")).toHaveTextContent("23 percentage points");
   expect(screen.getByRole("img")).toHaveAccessibleName(/your guess -12%/i);
 });
+
+it("preserves a fractional personal guess in the report", () => {
+  render(<PredictionVsReality comparison={comparison} metricLabel="Morning energy" personalGuess={{ guessed_change_percent: -12.5, observed_change_percent: 11, error_points: 23.5 }} />);
+  expect(screen.getByText("-12.5%", { exact: true })).toBeVisible();
+});
