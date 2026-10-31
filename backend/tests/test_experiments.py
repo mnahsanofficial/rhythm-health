@@ -277,3 +277,25 @@ def test_start_database_down_is_503(db, monkeypatch):
 
     monkeypatch.setattr(experiments, "start", boom)
     assert client.post(f"/api/experiments/{saved['id']}/start").status_code == 503
+
+
+@pytest.mark.parametrize("guess", [-100, -12.5, 0, 200])
+def test_personal_guess_is_saved_and_returned(db, guess):
+    res = client.post("/api/experiments", json={**BODY, "personal_guess_percent": guess})
+    assert res.status_code == 201
+    assert res.json()["personal_guess_percent"] == guess
+    assert db.rows[0]["personal_guess_percent"] == guess
+    assert client.get(f"/api/experiments/{res.json()['id']}").json()["personal_guess_percent"] == guess
+
+
+@pytest.mark.parametrize("guess", [-101, 201, True, "10"])
+def test_invalid_personal_guess_never_writes(db, guess):
+    assert client.post("/api/experiments", json={**BODY, "personal_guess_percent": guess}).status_code == 422
+    assert not db.rows
+
+
+def test_old_database_save_omits_guess_column(db):
+    res = client.post("/api/experiments", json=BODY)
+    assert res.status_code == 201
+    assert res.json()["personal_guess_percent"] is None
+    assert "personal_guess_percent" not in db.rows[0]
