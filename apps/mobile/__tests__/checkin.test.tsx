@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { notifications, notificationState, preferences } from './support/notifications';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
@@ -210,4 +211,24 @@ test.each([true, false])('save confirmation stays immediate with reduced motion 
   expect(screen.getByText('Check-in saved.')).toBeVisible();
   if (reduced) expect(timing).not.toHaveBeenCalled();
   else expect(timing).toHaveBeenCalled();
+});
+
+
+test('the first saved check-in offers reminders without prompting the OS automatically', async () => {
+  await open(); expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: 'Enable daily reminders' })).toBeNull();
+  await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  expect(await screen.findByRole('button', { name: 'Enable daily reminders' })).toBeVisible();
+  expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+});
+
+test('a saved check-in reschedules the opted-in reminder from refreshed progress', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-31T12:00:00Z'));
+  preferences.set('rhythm.reminders.fake-user', 'on'); notificationState.granted = true;
+  await open(); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
+  const before = notifications.scheduleNotificationAsync.mock.calls.length;
+  await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  await screen.findByText('Done for today');
+  await waitFor(() => expect(notifications.scheduleNotificationAsync.mock.calls.length).toBeGreaterThan(before));
+  expect(notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger).toMatchObject({ date: new Date('2026-11-02T18:45:00Z') });
 });

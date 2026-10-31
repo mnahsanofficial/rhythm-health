@@ -16,7 +16,7 @@ let timeline: ExperimentTimeline;
 let listeners: Set<(state: AppStateStatus) => void>;
 let hasExperiment: boolean;
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.clearAllMocks(); jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-31T12:00:00Z'));
   timeline = timelineFixture(active, { recorded: [1], nextDayAt: '2027-11-01T06:30:00Z' }); hasExperiment = true;
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
   mockAuth.signInWithPassword.mockResolvedValue({ data: { session }, error: null });
@@ -143,4 +143,33 @@ test.each(['Asia/Dhaka', 'America/Toronto'])('the DST opening stays the same UTC
     const trigger = notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger;
     expect(trigger).toMatchObject({ type: 'date', date: new Date('2026-11-01T06:30:00Z') });
   } finally { process.env.TZ = original; }
+});
+
+
+test('the OS prompt happens only after an explicit opt-in', async () => {
+  notifications.requestPermissionsAsync.mockImplementationOnce(async () => { notificationState.granted = true; return { granted: true, canAskAgain: true }; });
+  render(<MobileApp />); await settings(); expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true);
+  await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
+  expect(notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+});
+
+test('a scheduling request that finishes after sign-out is cancelled', async () => {
+  notificationState.granted = true; let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
+  notifications.scheduleNotificationAsync.mockImplementationOnce(async () => { await gate; return 'rhythm.next-day'; });
+  render(<MobileApp />); await settings(); fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true);
+  await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
+  fireEvent.press(screen.getByRole('button', { name: 'Sign out' })); await screen.findByLabelText('Email');
+  await act(async () => { release(); });
+  await waitFor(() => expect(mockAuth.signOut).toHaveBeenCalled());
+  expect(Math.max(...notifications.cancelScheduledNotificationAsync.mock.invocationCallOrder)).toBeGreaterThan(Math.max(...notifications.scheduleNotificationAsync.mock.invocationCallOrder));
+});
+
+test('a cancellation failure stays visible after signing out and can be retried', async () => {
+  render(<MobileApp />); await enable();
+  notifications.cancelScheduledNotificationAsync.mockRejectedValueOnce(new Error('native cancel failed'));
+  fireEvent.press(screen.getByRole('button', { name: 'Sign out' })); await screen.findByLabelText('Email');
+  expect(await screen.findByText(/Couldn't update your reminder/)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' }));
+  await waitFor(() => expect(screen.queryByText(/Couldn't update your reminder/)).toBeNull());
 });
