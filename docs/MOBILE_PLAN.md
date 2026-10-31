@@ -1,6 +1,6 @@
 # Mobile app plan (V1)
 
-The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Nothing under `apps/` exists yet; everything below is a plan. Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
+The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Step 1 now exists under [`apps/mobile/`](../apps/mobile/README.md): Expo Go sign-in and profile loading. Steps 2–5 below remain the plan and each gets its own later PR. Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
 
 ## Why mobile
 

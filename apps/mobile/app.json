@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Rhythm",
+    "slug": "rhythm-health-lab",
+    "scheme": "rhythm",
+    "version": "0.1.0",
+    "platforms": ["ios", "android", "web"],
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "web": { "bundler": "metro", "output": "single" }
+  }
+}

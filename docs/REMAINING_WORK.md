@@ -269,3 +269,7 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 | S10 | **Keep it or drop it, then a two-week check.** After the report, the person decides to keep or drop the habit. Two weeks later, one question asks whether they still do it and whether it still helps | Measures whether the learning changed behaviour, the real test of "does it help". The answer feeds future predictions | Medium to large: a stored decision and a scheduled follow-up (best as a mobile reminder) | Decision step only; the follow-up after Thursday |
 
 **If we pick two for Thursday:** S6 (most innovative, and the clearest answer to "how do we make sure it helps") and S8 (small, and it improves the daily loop on both apps).
+
+## Mobile step 1 implementation
+
+On `feat/mobile-sign-in`: Expo Go SDK 58 workspace, existing-account sign-in, encrypted session restoration, profile read with loading/error/offline/missing states, local-device sign-out, and web setup/lab handoff. No backend files, migrations or paid AI endpoints are changed. [Setup and test boundaries](../apps/mobile/README.md). Real-device verification is recorded separately from mocked tests. Today → Check-in → local reminder → Progress remain separate, unstarted PRs in the [approved order](MOBILE_PLAN.md#build-order-with-something-to-demo-by-monday-2-nov).

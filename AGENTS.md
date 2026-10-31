@@ -86,7 +86,7 @@ Design tokens and component conventions are in [`DESIGN.md`](DESIGN.md).
 
 - `packages/brand/`: shared numeric design tokens, web CSS generation and motion units. Edit `src/tokens.json`, then run root `npm run brand:generate`; never edit generated CSS. See `DESIGN.md`.
 - `packages/contract/`: generated FastAPI API types and the shared OpenAPI schema. Run root `npm run contract:generate` after backend schema changes, and `npm run contract:check` before handing over; never edit generated files.
-- `apps/*`: reserved for the approved Expo app, built only after the shared-package PR merges.
+- `apps/mobile/`: Expo Go mobile app. Read `docs/MOBILE_PLAN.md` and `apps/mobile/README.md`; use shared contract types and native brand tokens. Install from root, test with `npm test --workspace=@rhythm-health/mobile`, and never use a service-role key or calculate experiment days here.
 - `frontend/`: the Next.js app. Read [`frontend/AGENTS.md`](frontend/AGENTS.md) before writing code there.
 - `backend/`: the FastAPI app, per [`TRD.md`](TRD.md).
 - `supabase/migrations/`: the database schema. Tell the other person before applying a migration to the shared project (see the [pair rule](docs/rules/pair-rule.md)).

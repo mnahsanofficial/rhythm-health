@@ -2,7 +2,7 @@
 
 ## The suites
 
-Install npm dependencies from the root with `npm ci`. Root `npm test` first runs `contract:check` and `brand:check`, then the frontend, contract and brand suites. Existing `frontend/` scripts remain available.
+Install npm dependencies from the root with `npm ci`. Root `npm test` first runs `contract:check` and `brand:check`, then the frontend, mobile, contract and brand suites. Existing `frontend/` scripts remain available.
 
 | Where | Command | What it covers | Talks to real services? |
 |---|---|---|---|
@@ -40,3 +40,7 @@ There is one shared Supabase project and a paid OpenRouter key.
 - Frontend tests use the shared fixtures in `frontend/tests/support/fixtures.ts`.
 - Keep fixtures valid against the backend's OpenAPI snapshot; the contract test fails if they drift.
 - Don't commit a skipped test without the reason in the `test.skip` message.
+
+## Mobile
+
+`apps/mobile/` uses Jest with `jest-expo` and React Native Testing Library. Root `npm test` includes it; `npm test --workspace=@rhythm-health/mobile` runs it alone. Keep native auth, HTTP and SecureStore faked in automation, without real env files or network calls. Test user-visible behavior with accessible queries, never snapshots. Root web checks remain required after native dependency changes; run `npm run export --workspace=@rhythm-health/mobile` to verify both native bundles. Expo web preview cannot verify SecureStore or native permissions: state explicitly what was tested on a physical phone.

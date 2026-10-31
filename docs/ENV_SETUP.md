@@ -58,3 +58,7 @@ curl http://localhost:8001/health/supabase   # {"status":"ok"} when SUPABASE_URL
 
 - The TRD lists `JEV_API_KEY` and `JEV_API_URL`. The code calls Jev through OpenRouter instead, using `OPENROUTER_API_KEY` and `OPENROUTER_JEV_MODEL`.
 - The TRD lists `OPENROUTER_FAST_MODEL`. Nothing uses a fast model yet.
+
+## Mobile public settings
+
+Step 1 uses `apps/mobile/.env.local`, ignored by Git. Set `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_API_URL` locally; never copy a service-role key into the app. Values are not included here. Reuse the web's public Supabase settings. For the API, use the Mac's Wi-Fi hostname/address and port 8001; the phone's localhost is not the Mac. Start the backend with `--host 0.0.0.0`; no backend code or migration changes are required. In this localhost-only setup the web handoff uses the API hostname on port 3000. Restart Expo after setting changes. See [mobile setup and Expo Go instructions](../apps/mobile/README.md).
