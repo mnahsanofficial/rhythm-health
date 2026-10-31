@@ -25,8 +25,8 @@ export function MobileApp() {
 }
 function FontGate({ retry }: { retry: () => void }) {
   const [loaded, error] = useFonts(fontAssets);
-  if (error) return <Frame><Alert>Couldn&apos;t open Rhythm.</Alert><Action label="Try again" onPress={retry} /></Frame>;
-  if (!loaded) return <Frame><Loading message="Opening Rhythm…" /></Frame>;
+  if (error) return <Frame fontsReady={false}><Alert>Couldn&apos;t open Rhythm.</Alert><Action label="Try again" onPress={retry} /></Frame>;
+  if (!loaded) return <Frame fontsReady={false}><Loading message="Opening Rhythm…" /></Frame>;
   let config: ReturnType<typeof readConfig>;
   try { config = readConfig(); }
   catch (cause) { return <Frame><Title>A little setup first.</Title><Alert>{(cause as Error).message}</Alert></Frame>; }

@@ -1,9 +1,13 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 
-export function Copy(props: TextProps) { return <Text {...props} style={[styles.body, props.style]} />; }
+const FontAvailability = createContext(true);
+export function Copy(props: TextProps) {
+  const available = useContext(FontAvailability);
+  return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
+}
 export function Title({ children }: { children: ReactNode }) { return <Copy accessibilityRole="header" style={styles.title}>{children}</Copy>; }
 export function Alert({ children }: { children: ReactNode }) {
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
@@ -25,16 +29,16 @@ export function Action({ label, onPress, disabled = false, secondary = false, li
     </Pressable>
   );
 }
-export function Frame({ children }: { children: ReactNode }) {
+export function Frame({ children, fontsReady = true }: { children: ReactNode; fontsReady?: boolean }) {
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+    <FontAvailability.Provider value={fontsReady}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.column}>
           <Copy style={styles.wordmark}>Rhythm</Copy>
           <View style={styles.content}>{children}</View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView></FontAvailability.Provider>
   );
 }
 export function Loading({ message }: { message: string }) {
