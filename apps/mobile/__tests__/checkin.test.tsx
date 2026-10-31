@@ -1,4 +1,4 @@
-import { notifications, notificationState, preferences } from './support/notifications';
+import { notifications, notificationState, preferences, responses, tapReminder } from './support/notifications';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
@@ -231,4 +231,13 @@ test('a saved check-in reschedules the opted-in reminder from refreshed progress
   await screen.findByText('Done for today');
   await waitFor(() => expect(notifications.scheduleNotificationAsync.mock.calls.length).toBeGreaterThan(before));
   expect(notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger).toMatchObject({ date: new Date('2026-11-02T18:45:00Z') });
+});
+
+
+test("a next-day notification opens a fresh form without copying yesterday's unsaved answers", async () => {
+  await open(); await answer(); serverDay = 5; active.progress = { ...active.progress, phase_day: 2 };
+  await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', active.id))); });
+  expect(await screen.findByText('Day 5 · Test')).toBeVisible();
+  await waitFor(() => expect(screen.getByLabelText('Breaks')).toHaveDisplayValue(''));
+  expect(screen.getByLabelText('Optional note')).toHaveDisplayValue(''); expect(posts).toHaveLength(0);
 });
