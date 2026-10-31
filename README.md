@@ -28,6 +28,8 @@ Checked against `main` on **31 Oct 2026**. Details, owners and the plan to Thurs
 | **Backend** | Auth, profile, propose (with past experiments as context), check-ins, deterministic analysis, report narrative, demo reset, progress endpoint | | `missed` flag on chart points; scale words for check-in metrics; full-flow test |
 | **Mobile** | Expo Go sign-in/profile, encrypted session persistence, Today, Check-in, local reminders and Progress | | Reading the Lab Report and history on the phone (V2) |
 
+After normal days finish, web and mobile Today show the user's own recorded baseline for each metric before the small change. Counts, ranges and plain-word summaries come from the backend; sparse baselines stay labelled ([S8 contract](docs/PROGRESS_API.md#normal-day-context-s8)).
+
 ## Architecture
 
 ```mermaid
@@ -119,7 +121,7 @@ cd backend
 uv run pytest
 ```
 
-Last full run on **31 Oct 2026**: 243 backend, 157 frontend, 93 mobile, 11 brand and 6 contract tests, and 76 browser tests plus 1 existing skip. After a backend schema change, run `npm run contract:generate`; after a token change, `npm run brand:generate`. More: [docs/rules/testing.md](docs/rules/testing.md).
+Last full run on **31 Oct 2026**: 254 backend, 168 frontend, 97 mobile, 11 brand and 6 contract tests, and 82 browser tests plus 1 existing skip. After a backend schema change, run `npm run contract:generate`; after a token change, `npm run brand:generate`. More: [docs/rules/testing.md](docs/rules/testing.md).
 
 ## Project structure
 
