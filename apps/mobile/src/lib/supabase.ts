@@ -1,4 +1,4 @@
-import { createClient, processLock } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import type { readConfig } from './config';
@@ -13,6 +13,6 @@ export function createAuthClient(config: Pick<ReturnType<typeof readConfig>, 'su
     removeItem: async (key: string) => { preview.delete(key); },
   } : createSecureSessionStorage(SecureStore);
   return createClient(config.supabaseUrl, config.anonKey, {
-    auth: { storage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, lock: processLock },
+    auth: { storage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
   });
 }

@@ -5,7 +5,8 @@ type Manifest = { slot: 'a' | 'b'; count: number; otherCount: number };
 /** All payloads and metadata stay in encrypted native storage, below historical
  * iOS limits. Two slots retain the old session until every new chunk is written.
  * Pending chunk counts are recorded first, so interrupted writes can be removed.
- * Supabase's processLock serializes writers; no token is logged or put in AsyncStorage.
+ * Adapter operations serialize independently of SDK refresh coordination.
+ * No token is logged or put in AsyncStorage.
  */
 export function createSecureSessionStorage(driver: Driver) {
   async function manifest(key: string): Promise<Manifest | null> {
@@ -20,7 +21,7 @@ export function createSecureSessionStorage(driver: Driver) {
   async function removeChunks(key: string, slot: 'a' | 'b', count: number) {
     for (let i = 0; i < count; i++) await driver.deleteItemAsync(`${key}.${slot}.${i}`);
   }
-  return {
+  const store = {
     async getItem(key: string): Promise<string | null> {
       const meta = await manifest(key);
       if (!meta || meta.count === 0) return null;
@@ -53,5 +54,17 @@ export function createSecureSessionStorage(driver: Driver) {
       }
       await driver.deleteItemAsync(key);
     },
+  };
+  let pending: Promise<void> = Promise.resolve();
+  function ordered<T>(operation: () => Promise<T>): Promise<T> {
+    const result = pending.then(operation);
+    // Reset the queue after either outcome; the original result/error goes to the caller.
+    pending = result.then(() => undefined, () => undefined);
+    return result;
+  }
+  return {
+    getItem: (key: string) => ordered(() => store.getItem(key)),
+    setItem: (key: string, value: string) => ordered(() => store.setItem(key, value)),
+    removeItem: (key: string) => ordered(() => store.removeItem(key)),
   };
 }
