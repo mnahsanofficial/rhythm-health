@@ -127,3 +127,32 @@ test.each(['not_started', 'ended', 'completed'] as const)('handles %s without of
   expect(screen.queryByRole('button', { name: /Check in for day/ })).toBeNull();
   expect(screen.getByRole('link', { name: state === 'completed' ? 'See your Lab Report on the web' : state === 'ended' ? 'Finish on the web' : 'Open your experiment on the web' })).toBeVisible();
 });
+
+
+const normal = { days_recorded: 2, days_planned: 3, metrics: [
+  { key: 'morning_energy', label: 'Morning energy', n: 2, minimum: 5, maximum: 6, yes_count: null, description: 'Morning energy: 5–6 out of 10 (2 answers).' },
+  { key: 'screen_free', label: 'Screen-free evening', n: 2, minimum: null, maximum: null, yes_count: 1, description: 'Screen-free evening: Yes on 1 of 2 recorded normal days.' },
+] };
+test('Today renders each server baseline description before asking for a test-day check-in', async () => {
+  timeline = { ...timeline, baseline_summary: normal }; render(<MobileApp />);
+  expect(await screen.findByText('Your normal, before the change.')).toBeVisible();
+  expect(screen.getByText('2 of 3 normal days recorded.')).toBeVisible();
+  normal.metrics.forEach(metric => expect(screen.getByText(metric.description)).toBeVisible());
+  expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeEnabled();
+});
+test('a missing baseline stays honest and does not block Check-in', async () => {
+  timeline = { ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } }; render(<MobileApp />);
+  expect(await screen.findByText('No normal-day answers were recorded. There is no personal baseline to compare with yet.')).toBeVisible();
+  expect(screen.queryByText(normal.metrics[0].description)).toBeNull();
+  expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeEnabled();
+});
+test('before the boundary and older progress responses show no invented normal', async () => {
+  Reflect.deleteProperty(timeline, 'baseline_summary'); render(<MobileApp />); await screen.findByText(active.question);
+  expect(screen.queryByText('Your normal, before the change.')).toBeNull();
+});
+test('offline retains the labelled last-loaded baseline and disables Check-in', async () => {
+  timeline = { ...timeline, baseline_summary: normal }; const view = render(<MobileApp />);
+  await screen.findByText(normal.metrics[0].description); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
+  expect(screen.getByText(/Offline, last updated/)).toBeVisible(); expect(screen.getByText(normal.metrics[0].description)).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeDisabled();
+});
