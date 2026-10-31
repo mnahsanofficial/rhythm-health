@@ -1,6 +1,6 @@
 # Remaining work
 
-Status updated **31 Oct 2026** against `main` at `082a878` (after #33). Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
+Status updated **31 Oct 2026** against `main` at `35bb30d` (after #35), with Today/Check-in verified on `feat/mobile-today-checkin`. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
 
 V2 work is split **by feature**: both of us work across frontend, backend and database ([pair rule](rules/pair-rule.md)). Each item names an owner. Owners marked "(proposed)" are to be confirmed together.
 
@@ -8,7 +8,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 
 ---
 
-## Merged since the last update (#28–#33)
+## Merged since the last update (#28–#35)
 
 | PR | What it finished |
 |---|---|
@@ -18,6 +18,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 | #31 | Workflow and pair rules: agents commit, push and open PRs while people merge; V2 split by feature; migrations announced before they're applied |
 | #32 | Native-ready type styles (`NATIVE_TYPOGRAPHY`), a readable fallback for unknown report reasons, and setup prerequisites at the top of the README |
 | #33 | `GET /api/experiments/{id}/progress`, the one source of day states, counts and the next day's opening, for web and mobile ([PROGRESS_API.md](PROGRESS_API.md)). Your lab, the experiment page and the calendar reminder use it; the web no longer works out missed days or the next opening itself |
+| #35 | Expo Go sign-in/profile, secure session persistence and local-device sign-out; verified on iPhone |
 
 ---
 
@@ -63,9 +64,9 @@ Owner: **Nazmul** (built with Codex). Full plan, screens, states and risks: [MOB
 
 | # | Item | Status | Done means | Priority |
 |---|---|---|---|---|
-| MB1 | Scaffold `apps/mobile` and sign in | Planned | Same account as the web on a phone with Expo Go; the session survives a restart; root `npm ci` and the web suites still pass | Must |
-| MB2 | Today | Planned | Day, phase, Done for today and the next opening come only from the progress endpoint; loading, empty, error and offline states | Must |
-| MB3 | Check-in | Planned | All metric types, the test-day question and the note; record or replace today; field errors; answers kept when offline | Must |
+| MB1 | Scaffold `apps/mobile` and sign in | Done (#35) | Same account as the web on a phone with Expo Go; the session survives a restart; root `npm ci` and the web suites still pass | Must |
+| MB2 | Today | Built; iPhone check passed (31 Oct) | Day, phase, Done for today and the next opening come only from the progress endpoint; loading, empty, error and offline states | Must |
+| MB3 | Check-in | Built; iPhone check passed (31 Oct) | All metric types, the test-day question and the note; record or replace today; field errors; answers kept when offline | Must |
 | MB4 | Daily reminder (local notification) | Planned | Fires at `next_day_at`, names the day only, and opens the check-in when tapped; permission asked after the first check-in | Must |
 | MB5 | Progress | Planned | Day states and counts only from the progress endpoint; recorded days show their answers | Must |
 
@@ -270,6 +271,6 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 
 **If we pick two for Thursday:** S6 (most innovative, and the clearest answer to "how do we make sure it helps") and S8 (small, and it improves the daily loop on both apps).
 
-## Mobile step 1 implementation
+## Mobile implementation
 
-On `feat/mobile-sign-in`: Expo Go SDK 58 workspace, existing-account sign-in, encrypted session restoration, profile read with loading/error/offline/missing states, local-device sign-out, and web setup/lab handoff. No backend files, migrations or paid AI endpoints are changed. [Setup and test boundaries](../apps/mobile/README.md). Real-device verification is recorded separately from mocked tests. Today → Check-in → local reminder → Progress remain separate, unstarted PRs in the [approved order](MOBILE_PLAN.md#build-order-with-something-to-demo-by-monday-2-nov).
+#35: Expo Go SDK 58 workspace, existing-account sign-in, encrypted session restoration, profile read with loading/error/offline/missing states, local-device sign-out, and web setup/lab handoff. No backend files, migrations or paid AI endpoints are changed. [Setup and test boundaries](../apps/mobile/README.md). Real-device verification is recorded separately from mocked tests. Today and Check-in are implemented together on `feat/mobile-today-checkin` with separate red/green commits: authoritative day states, foreground refresh, all metric types, prefill, retained answers on failure/offline, and automatic Today refresh after saving. Unsaved drafts are in memory only. The local reminder and Progress remain unstarted follow-ups in the [approved order](MOBILE_PLAN.md#build-order-with-something-to-demo-by-monday-2-nov).
