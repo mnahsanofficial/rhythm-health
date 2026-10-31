@@ -1,6 +1,6 @@
 # Mobile app plan (V1)
 
-The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Step 1 now exists under [`apps/mobile/`](../apps/mobile/README.md): Expo Go sign-in and profile loading. Steps 2–5 below remain the plan and each gets its own later PR. Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
+The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Step 1 shipped in #35. Today and Check-in (steps 2 and 3) are implemented together on `feat/mobile-today-checkin`, as approved by Nazmul for the Monday demo, with separate red/green commits. Reminders and Progress remain later PRs. Setup and verification: [`apps/mobile/`](../apps/mobile/README.md). Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
 
 ## Why mobile
 
@@ -44,7 +44,7 @@ All calls send the Supabase access token as `Authorization: Bearer …`, exactly
 - **Shows:** the question, the small change, "Day 4 of 10" and the phase (normal day or test day). Then one action:
   - **Check in for day N**, if today isn't recorded yet;
   - **Done for today**, with "Day N+1 opens {time}" from `next_day_at`;
-  - **Your results are ready**, with a link to the report on the web, once the days are over or the experiment is complete.
+  - **Your results are ready**, with a link to the report on the web, once the experiment is complete. An ended but unfinished experiment links to finishing on the web first.
 - **Calls:**
   - `GET /api/experiments?status=active`;
   - `GET /api/experiments/{id}/progress`, which supplies the day, phase, states, counts and `next_day_at`.
@@ -66,7 +66,7 @@ All calls send the Supabase access token as `Authorization: Bearer …`, exactly
 - **Done means:**
   - all four metric types work;
   - the test-day question appears only on test days;
-  - after a save, Today shows Done for today and the reminder is rescheduled.
+  - after a save, Today shows Done for today. Rescheduling the reminder is added in step 4.
 
 ### 4. Progress
 
@@ -108,7 +108,7 @@ Reading the Lab Report (a compact view of the comparison, verdict and chart), ex
 
 ## Build order, with something to demo by Monday 2 Nov
 
-Each step is its own small PR, with tests first and a demo under one minute when it works.
+Each step is a small PR, with tests first and a demo under one minute when it works. Exception approved 31 Oct: steps 2 and 3 ship together in one PR, with separate red/green commits.
 
 1. **Scaffold and sign in** (Sat 31 Oct):
    - `apps/mobile` as an npm workspace, with the contract and brand packages wired in;

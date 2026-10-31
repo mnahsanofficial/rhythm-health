@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, KeyboardAvoidingView, Linking, Platform, TextInput, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import type { Profile } from '@rhythm-health/contract';
@@ -8,6 +8,7 @@ import { useNetworkState } from 'expo-network';
 import { Fraunces_400Regular } from '@expo-google-fonts/fraunces/400Regular';
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono/400Regular';
+import { Today } from './today';
 import { readConfig } from './lib/config';
 import { createAuthClient } from './lib/supabase';
 import { ApiError, getProfile } from './lib/profile';
@@ -48,6 +49,15 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   const [authAttempt, setAuthAttempt] = useState(0);
   const [linkError, setLinkError] = useState<string | null>(null);
 
+  const signOut = useCallback(async (reason: string | null = null) => {
+    setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
+    try {
+      const { error } = await client.auth.signOut({ scope: 'local' });
+      if (error) throw error;
+    } catch { setAuthFailure('signout'); }
+  }, [client]);
+  const expire = useCallback(() => { void signOut('Your session has expired. Sign in again.'); }, [signOut]);
+
   useEffect(() => {
     let cancelled = false;
     const { data } = client.auth.onAuthStateChange((_event, current) => {
@@ -80,17 +90,8 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       } else setProfile({ kind: 'error', message: cause instanceof Error ? cause.message : "Couldn't load your profile. Try again." });
     });
     return () => { cancelled = true; };
-    // The only request identity is the token. Retry is explicit; callbacks aren't dependencies.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, offline, profileAttempt]);
+  }, [token, offline, profileAttempt, signOut]);
 
-  async function signOut(reason: string | null = null) {
-    setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
-    try {
-      const { error } = await client.auth.signOut({ scope: 'local' });
-      if (error) throw error;
-    } catch { setAuthFailure('signout'); }
-  }
   function openWeb(path: string) {
     setLinkError(null);
     void Linking.openURL(new URL(path, config.webUrl).toString()).catch(() => setLinkError("Couldn't open the web app. Try again."));
@@ -111,18 +112,16 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
         }}
         openWeb={() => openWeb('/onboarding')}
       /> : <>
-        {offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>
+        {profile.kind === 'ready' && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} openWeb={openWeb} onExpired={expire} />
+          : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>
           : profile.kind === 'loading' ? <Loading message="Loading your profile…" />
           : profile.kind === 'error' ? <><Alert>{profile.message}</Alert><Action label="Try again" onPress={() => { setProfile({ kind: 'loading' }); setProfileAttempt(n => n + 1); }} /></>
           : profile.profile === null ? <>
             <Title>Finish setting up on the web</Title>
             <Copy style={styles.muted}>Your account is ready. Add your rhythm on the web before checking in here.</Copy>
             <Action label="Set up your rhythm on the web" link onPress={() => openWeb('/onboarding')} />
-          </> : <>
-            <Title>Your rhythm is ready.</Title>
-            {profile.profile.goals.length > 0 && <View style={styles.stack}><Copy style={styles.muted}>Your focus</Copy>{profile.profile.goals.map(goal => <Copy key={goal}>{goal}</Copy>)}</View>}
-            <Action label="Open your lab on the web" link onPress={() => openWeb('/')} />
-          </>}
+          </> : null}
+
         <View style={styles.divider}>
           <Copy style={styles.muted}>{session.user.email}</Copy>
           <Action label="Sign out" secondary onPress={() => void signOut()} />
