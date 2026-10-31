@@ -175,3 +175,13 @@ test('a cancellation failure stays visible after signing out and can be retried'
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
   await waitFor(() => expect(screen.queryByText(/Couldn't update your reminder/)).toBeNull());
 });
+
+test('returning from phone Settings refreshes permission even on the last day', async () => {
+  notificationState.denied = true; render(<MobileApp />); await settings();
+  fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true);
+  await screen.findByRole('button', { name: 'Open phone Settings' });
+  notificationState.granted = true; timeline = { ...timeline, next_day_at: null };
+  await act(async () => { listeners.forEach(listener => listener('active')); });
+  await waitFor(() => expect(screen.getByRole('switch', { name: 'Daily reminders' })).toBeChecked());
+  expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+});
