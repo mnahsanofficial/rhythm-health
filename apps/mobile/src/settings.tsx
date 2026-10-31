@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Linking, Platform, Switch, View } from 'react-native';
-import { COLORS } from '@rhythm-health/brand';
+import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
 import { useReminders } from './reminder-context';
 import { Action, Alert, Copy, styles, Title } from './ui';
 export function Settings({ email, signOut }: { email?: string; signOut: () => void }) {
@@ -10,7 +10,7 @@ export function Settings({ email, signOut }: { email?: string; signOut: () => vo
     <Title>Settings.</Title><Copy style={styles.muted}>A reminder when the next day opens, not another thing to remember.</Copy>
     {Platform.OS === 'web' && <Copy>Reminders are available in the phone app.</Copy>}
     <View style={styles.divider}><Copy>Daily reminders</Copy>
-      <Switch accessibilityLabel="Daily reminders" value={state.choice === 'on' && state.permission} disabled={!state.ready || state.busy || Platform.OS === 'web'}
+      <Switch style={{ minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction }} hitSlop={SPACING.sm} accessibilityLabel="Daily reminders" value={state.choice === 'on' && state.permission} disabled={!state.ready || state.busy || Platform.OS === 'web'}
         trackColor={{ false: COLORS.line, true: COLORS.moss }} thumbColor={COLORS.paper} onValueChange={value => void service.choose(value)} />
       <Copy style={styles.muted}>At the next opening returned by your experiment. The lock screen shows the day, never your habit question.</Copy>
     </View>

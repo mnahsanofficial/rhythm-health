@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, View } from 'react-native';
 import { MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
+import { Progress } from './progress';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
 import { CheckinForm } from './checkin';
@@ -14,7 +15,7 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
   token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void;
 }) {
   const { service: reminders, state: reminderState } = useReminders();
-  const [screen, setScreen] = useState<'today' | 'settings'>('today');
+  const [screen, setScreen] = useState<'today' | 'settings' | 'progress'>('today');
   const [loaded, setLoaded] = useState<{ value: DayData | null; at: Date } | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +57,15 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
 
   const disabled = offline || busy || error !== null;
   const data = loaded?.value;
-  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
+  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
   if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} /></View>;
-  if (editing) return <View style={styles.stack}>{nav}<CheckinForm data={editing} token={token} offline={offline} onExpired={onExpired}
+  if (editing) return <CheckinForm data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
-    onSaved={() => { setEditing(null); setSaved(true); void load(); }} /></View>;
+    onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
+  if (screen === 'progress' && data) return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
+    {error && <><Alert>{error}</Alert><Action label="Try again" disabled={offline || busy} onPress={() => void load()} /></>}
+    <Progress key={data.experiment.id} data={data} token={token} offline={offline} onExpired={onExpired} />
+  </View>;
   return (
     <View style={styles.stack}>
       {nav}
