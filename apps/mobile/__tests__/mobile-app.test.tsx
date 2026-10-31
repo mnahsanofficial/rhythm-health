@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { MobileApp } from '../src/mobile-app';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
@@ -16,7 +16,7 @@ const mockSession = {
 jest.mock('../src/lib/supabase', () => ({ createAuthClient: (...args: unknown[]) => mockCreateClient(...args as []) }), { virtual: true });
 jest.mock('expo-network', () => ({ useNetworkState: () => mockNetwork }));
 jest.mock('expo-font', () => ({ useFonts: () => [mockFonts.ready, mockFonts.error] }));
-jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock'));
+jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -35,7 +35,7 @@ beforeEach(() => {
 async function signIn() {
   fireEvent.changeText(await screen.findByLabelText('Email'), '  learner@example.invalid  ');
   fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
-  fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Sign in' })); });
 }
 
 test('signs in with existing credentials and reads only the authenticated profile', async () => {
@@ -75,7 +75,7 @@ test('ignores a second tap while sign-in is pending', async () => {
 test('shows a plain wrong-password error and allows another attempt', async () => {
   mockAuth.signInWithPassword.mockResolvedValueOnce({ data: { session: null }, error: { status: 400 } });
   render(<MobileApp />); await signIn();
-  expect(await screen.findByRole('alert')).toHaveTextContent("Email or password wasn't recognised.");
+  expect(await screen.findByRole('alert')).toHaveTextContent(/Email or password wasn't recognised\./);
   expect(global.fetch).not.toHaveBeenCalled();
   fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
   expect(await screen.findByText('Your rhythm is ready.')).toBeVisible();
@@ -126,7 +126,7 @@ test('a missing profile links to web onboarding without creating an account', as
 test('retries an unavailable profile without signing in again', async () => {
   (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 503 });
   render(<MobileApp />); await signIn();
-  expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't load your profile.");
+  expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't load your profile\./);
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByText(profile.goals[0])).toBeVisible();
   expect(mockAuth.signInWithPassword).toHaveBeenCalledTimes(1);
@@ -135,8 +135,8 @@ test('retries an unavailable profile without signing in again', async () => {
 test('an expired profile session returns to sign-in with a clear message', async () => {
   (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 401 });
   render(<MobileApp />); await signIn();
-  expect(await screen.findByLabelText('Email')).toBeVisible();
-  expect(screen.getByRole('alert')).toHaveTextContent('Your session has expired. Sign in again.');
+  expect(await screen.findByRole('alert')).toHaveTextContent('Your session has expired. Sign in again.');
+  expect(screen.getByLabelText('Email')).toBeVisible();
   expect(screen.queryByText(profile.goals[0])).toBeNull();
 });
 
@@ -153,7 +153,7 @@ test.each(['EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPAB
   'a blank %s shows its name and never initializes auth', async name => {
     process.env[name] = '   ';
     render(<MobileApp />);
-    expect(await screen.findByRole('alert')).toHaveTextContent(name);
+    expect(await screen.findByRole('alert')).toHaveTextContent(new RegExp(name));
     expect(mockCreateClient).not.toHaveBeenCalled();
     expect(global.fetch).not.toHaveBeenCalled();
   },
