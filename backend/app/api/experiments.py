@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import db_error, owned_experiment, profile_id_for
 from app.auth.supabase import get_current_user
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
-from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
+from app.integrations.supabase import PersonalGuessUnavailable, SupabaseConflict, SupabaseUnavailable
 from app.repositories import checkins, experiments, profiles
 from app.schemas.experiment import ExperimentOut, ExperimentStatus, ProposeRequest
 from app.schemas.profile import ProfileOut
@@ -30,7 +30,11 @@ def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_
         raise HTTPException(status_code=409, detail="Create your profile first")
 
     try:
-        return propose(body.question, ProfileOut.model_validate(row))
+        available = experiments.supports_personal_guess(str(row["id"]))
+        result = propose(body.question, ProfileOut.model_validate(row))
+        return result.model_copy(update={"personal_guess_available": available})
+    except SupabaseUnavailable:
+        raise db_error()
     except AIUnavailable:
         raise HTTPException(status_code=503, detail="AI service unavailable, please try again")
     except AIInvalidOutput:
@@ -60,8 +64,16 @@ def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_curr
         "success_criteria": proposal.success_criteria.model_dump(),
         "prediction": body.prediction.model_dump(),
     }
+    # Omit the new column entirely for old clients/databases (including explicit null).
+    if body.personal_guess_percent is not None:
+        values["personal_guess_percent"] = body.personal_guess_percent
     try:
         return with_progress(experiments.create(profile_id, values))
+    except PersonalGuessUnavailable:
+        raise HTTPException(status_code=409, detail={
+            "code": "personal_guess_unavailable",
+            "message": "Your guess could not be saved yet. Retry, or explicitly continue without saving your guess. No experiment was saved.",
+        })
     except SupabaseUnavailable:
         raise db_error()
 

@@ -814,6 +814,16 @@
           },
           "signal": {
             "$ref": "#/components/schemas/Signal"
+          },
+          "personal_guess": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonalGuessComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1388,6 +1398,17 @@
           },
           "prediction": {
             "$ref": "#/components/schemas/Prediction"
+          },
+          "personal_guess_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personal Guess Percent"
           },
           "started_at": {
             "anyOf": [
@@ -1973,6 +1994,41 @@
         ],
         "title": "Outlier"
       },
+      "PersonalGuessComparison": {
+        "properties": {
+          "guessed_change_percent": {
+            "type": "number",
+            "title": "Guessed Change Percent"
+          },
+          "observed_change_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Change Percent"
+          },
+          "error_points": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "guessed_change_percent"
+        ],
+        "title": "PersonalGuessComparison"
+      },
       "PhaseStats": {
         "properties": {
           "n": {
@@ -2368,6 +2424,11 @@
       },
       "ProposeResponse": {
         "properties": {
+          "personal_guess_available": {
+            "type": "boolean",
+            "title": "Personal Guess Available",
+            "default": false
+          },
           "proposal": {
             "anyOf": [
               {
@@ -2497,6 +2558,19 @@
               "other"
             ],
             "title": "Category"
+          },
+          "personal_guess_percent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 200,
+                "minimum": -100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personal Guess Percent"
           }
         },
         "additionalProperties": false,

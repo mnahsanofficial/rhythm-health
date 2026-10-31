@@ -55,6 +55,7 @@ export const prediction: Prediction = {
 };
 
 export const proposeResponse: ProposeResponse = {
+  personal_guess_available: false,
   proposal,
   prediction,
   safety: { allowed: true, reason: null, suggested_alternative: null },
@@ -68,6 +69,7 @@ export const saveExperimentRequest: SaveExperimentRequest = {
 };
 
 export const experiment: Experiment = {
+  personal_guess_percent: null,
   ...proposal,
   id: "33333333-3333-3333-3333-333333333333",
   status: "proposed",
@@ -132,6 +134,7 @@ const chartPoints: ChartPoint[] = energy.map((value, i) => {
 export const labReport: LabReport = {
   experiment: completedExperiment,
   analysis: {
+    personal_guess: null,
     primary_metric: "morning_energy",
     success_criteria_percent: 10,
     adherence: {

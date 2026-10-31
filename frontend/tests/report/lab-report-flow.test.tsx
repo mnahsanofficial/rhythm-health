@@ -245,3 +245,17 @@ describe("day chart", () => {
     await waitFor(() => expect(within(chart).queryByText(/Missed: .*8/)).toBeNull());
   });
 });
+
+it("keeps a zero-baseline report readable without inventing a guess comparison", async () => {
+  server.use(http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
+    ...labReport,
+    analysis: {
+      ...labReport.analysis,
+      prediction: null,
+      personal_guess: { guessed_change_percent: 0, observed_change_percent: null, error_points: null },
+    },
+  })));
+  render(<LabReport id={id} />);
+  expect(await screen.findByText(/Your guess: 0%/)).toHaveTextContent(/percentage comparison is unavailable/);
+  expect(screen.queryByRole("button", { name: "Reveal my result" })).not.toBeInTheDocument();
+});

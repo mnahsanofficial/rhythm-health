@@ -145,6 +145,7 @@ test("signed-in pages fill the screen and stay readable at every width", async (
   const report: LabReport = {
     experiment: completed,
     analysis: {
+    personal_guess: null,
       primary_metric: "morning_energy", success_criteria_percent: 10,
       adherence: {
         baseline_days_planned: 3, baseline_days_logged: 3, intervention_days_planned: 7, intervention_days_logged: 7,

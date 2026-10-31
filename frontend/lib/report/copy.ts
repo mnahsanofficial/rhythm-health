@@ -49,8 +49,8 @@ export function reasonText(reason: SignalReason, criteriaPercent: number): strin
   }
 }
 
-/** +11%, -3%, 0%. Ranges and observations both read in whole percents. */
-export function signedPercent(value: number): string {
-  const n = Math.round(value);
+/** Whole percents by default; preserve up to two decimals for a committed personal guess. */
+export function signedPercent(value: number, decimals = 0): string {
+  const n = decimals === 0 ? Math.round(value) : Number(value.toFixed(decimals));
   return `${n > 0 ? "+" : ""}${n}%`;
 }

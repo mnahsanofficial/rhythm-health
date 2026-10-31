@@ -286,6 +286,7 @@ export interface components {
             metrics: components["schemas"]["MetricAnalysis"][];
             prediction?: components["schemas"]["PredictionComparison"] | null;
             signal: components["schemas"]["Signal"];
+            personal_guess?: components["schemas"]["PersonalGuessComparison"] | null;
         };
         /** BaselineMetric */
         BaselineMetric: {
@@ -485,6 +486,8 @@ export interface components {
             metrics: components["schemas"]["Metric"][];
             success_criteria: components["schemas"]["SuccessCriteria"];
             prediction: components["schemas"]["Prediction"];
+            /** Personal Guess Percent */
+            personal_guess_percent?: number | null;
             /** Started At */
             started_at: string | null;
             /** Completed At */
@@ -662,6 +665,15 @@ export interface components {
             /** Value */
             value: number;
         };
+        /** PersonalGuessComparison */
+        PersonalGuessComparison: {
+            /** Guessed Change Percent */
+            guessed_change_percent: number;
+            /** Observed Change Percent */
+            observed_change_percent?: number | null;
+            /** Error Points */
+            error_points?: number | null;
+        };
         /** PhaseStats */
         PhaseStats: {
             /** N */
@@ -805,6 +817,11 @@ export interface components {
         };
         /** ProposeResponse */
         ProposeResponse: {
+            /**
+             * Personal Guess Available
+             * @default false
+             */
+            personal_guess_available: boolean;
             proposal?: components["schemas"]["ExperimentProposal"] | null;
             prediction?: components["schemas"]["Prediction"] | null;
             safety: components["schemas"]["SafetyDecision"];
@@ -849,6 +866,8 @@ export interface components {
              * @enum {string}
              */
             category: "sleep" | "energy" | "focus" | "exercise" | "nutrition" | "stress" | "routine" | "other";
+            /** Personal Guess Percent */
+            personal_guess_percent?: number | null;
         };
         /** Signal */
         Signal: {

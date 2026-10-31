@@ -10,6 +10,7 @@ from app.services import experiment_designer, history, safety
 
 
 class ProposeResponse(BaseModel):
+    personal_guess_available: bool = False
     proposal: ExperimentProposal | None = None
     prediction: Prediction | None = None
     safety: SafetyDecision

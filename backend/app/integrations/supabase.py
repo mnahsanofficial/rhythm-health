@@ -25,6 +25,10 @@ class SupabaseUnavailable(Exception):
     """The Supabase database could not be reached or returned an error."""
 
 
+class PersonalGuessUnavailable(SupabaseUnavailable):
+    """Only the optional S6 column is missing; callers may offer an explicit opt-out."""
+
+
 class SupabaseConflict(Exception):
     """A uniqueness constraint rejected the write (HTTP 409 from PostgREST)."""
 
@@ -55,6 +59,15 @@ def rest_request(
         )
         res.raise_for_status()
     except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 400 and table == "experiments":
+            try:
+                error = exc.response.json()
+            except ValueError:
+                error = {}
+            message = str(error.get("message", "")) if isinstance(error, dict) else ""
+            if (isinstance(error, dict) and error.get("code") in {"PGRST204", "42703"}
+                    and "personal_guess_percent" in message and "experiments" in message):
+                raise PersonalGuessUnavailable() from exc
         if exc.response.status_code == 409:
             raise SupabaseConflict() from exc
         raise SupabaseUnavailable(type(exc).__name__) from exc

@@ -5,17 +5,21 @@ import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
 import { motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
 import { signedPercent } from "@/lib/report/copy";
-import type { PredictionComparison } from "@/lib/types/api";
+import type { PersonalGuessComparison, PredictionComparison } from "@rhythm-health/contract";
 
 /** The original prediction stays fixed; a user action reveals the measured comparison. */
-export function PredictionVsReality({ comparison, metricLabel }: { comparison: PredictionComparison; metricLabel: string }) {
+export function PredictionVsReality({ comparison, metricLabel, personalGuess }: {
+  comparison: PredictionComparison;
+  metricLabel: string;
+  personalGuess?: PersonalGuessComparison | null;
+}) {
   const reduce = useReducedMotion();
   const [replay, setReplay] = useState(0);
   const resultId = useId();
   const revealed = replay > 0;
   const { predicted_min: min, predicted_max: max, observed_change_percent: observed } = comparison;
-  const lo = Math.min(0, min, observed);
-  const hi = Math.max(0, max, observed);
+  const lo = Math.min(0, min, observed, personalGuess?.guessed_change_percent ?? 0);
+  const hi = Math.max(0, max, observed, personalGuess?.guessed_change_percent ?? 0);
   const pad = Math.max((hi - lo) * 0.15, 4);
   const from = lo - pad;
   const to = hi + pad;
@@ -43,7 +47,16 @@ export function PredictionVsReality({ comparison, metricLabel }: { comparison: P
           {revealed ? "Replay comparison" : "Reveal my result"}
         </button>
       </div>
-      <dl className="mt-7 grid gap-3 sm:grid-cols-2">
+      <dl className={`mt-7 grid gap-3 ${personalGuess ? "lg:grid-cols-3" : "sm:grid-cols-2"}`}>
+        {personalGuess && (
+          <div className="rounded-card border border-line p-5 sm:p-6">
+            <dt className="text-body">Your guess</dt>
+            <dd className="mt-2">
+              <span className="block font-mono text-headline tracking-tight tabular-nums">{signedPercent(personalGuess.guessed_change_percent, 2)}</span>
+              <p className="mt-2 text-caption text-muted">Locked before you saw the AI forecast.</p>
+            </dd>
+          </div>
+        )}
         <div className="rounded-card bg-night-tint p-5 sm:p-6">
           <dt className="text-body text-night">We predicted</dt>
           <dd className="mt-2">
@@ -64,17 +77,22 @@ export function PredictionVsReality({ comparison, metricLabel }: { comparison: P
         </div>
       </dl>
       <p role="status" className="mt-4 min-h-7 text-body font-medium">
-        {revealed ? `Your result, ${signedPercent(observed)}, landed ${comparison.within_predicted_range ? "inside" : "outside"} the predicted range.` : "Compare the original forecast with what you recorded."}
+        {revealed ? `Your result, ${signedPercent(observed)}, landed ${comparison.within_predicted_range ? "inside" : "outside"} the predicted range.${personalGuess?.error_points != null ? ` Your guess was ${Math.abs(personalGuess.error_points)} percentage points away.` : ""}` : "Compare the original forecast with what you recorded."}
       </p>
       <div
         className="relative mt-5 h-16"
         role="img"
-        aria-label={`Predicted range ${signedPercent(min)} to ${signedPercent(max)}${revealed ? `; observed ${signedPercent(observed)}` : "; reveal to compare your result"}.`}
+        aria-label={`${personalGuess ? `Your guess ${signedPercent(personalGuess.guessed_change_percent, 2)}; ` : ""}Predicted range ${signedPercent(min)} to ${signedPercent(max)}${revealed ? `; observed ${signedPercent(observed)}` : "; reveal to compare your result"}.`}
       >
         <div className="absolute inset-x-0 top-6 h-2 rounded-pill bg-line" />
         <div className="absolute top-6 h-2 rounded-pill bg-night" style={{ left: `${at(min)}%`, width: `${Math.max(at(max) - at(min), 1)}%` }} />
         <div className="absolute top-4 h-6 w-px bg-ink/40" style={{ left: `${at(0)}%` }} />
         <span className="absolute top-11 -translate-x-1/2 font-mono text-caption text-muted" style={{ left: `${at(0)}%` }}>0%</span>
+        {personalGuess && (
+          <div className="absolute top-8 -translate-x-1/2" style={{ left: `${at(personalGuess.guessed_change_percent)}%` }}>
+            <span className="block size-3 rotate-45 border-2 border-ink bg-paper" />
+          </div>
+        )}
         {revealed && (
           <motion.div key={replay} {...landing} className="absolute top-0 -translate-x-1/2 text-center" style={{ left: `${at(observed)}%` }}>
             <span className="block font-mono text-caption font-medium text-moss">You</span>
@@ -83,6 +101,7 @@ export function PredictionVsReality({ comparison, metricLabel }: { comparison: P
         )}
       </div>
       <p className="flex flex-wrap gap-x-5 gap-y-2 text-caption text-muted">
+        {personalGuess && <span>Your guess · diamond</span>}
         <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2 w-5 rounded-pill bg-night" />Predicted range</span>
         <span className="flex items-center gap-2"><span aria-hidden="true" className="size-2.5 rounded-pill bg-moss" />What you saw</span>
       </p>

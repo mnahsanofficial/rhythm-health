@@ -140,9 +140,12 @@ export function LabReport({ id }: { id: string }) {
 
       <div className="mt-8">
         {analysis.prediction && primary ? (
-          <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} />
+          <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} personalGuess={analysis.personal_guess} />
         ) : (
           <section className="rounded-card border border-line bg-paper p-6 sm:p-8">
+            {analysis.personal_guess && (
+              <p className="mb-4">Your guess: {signedPercent(analysis.personal_guess.guessed_change_percent, 2)}. A percentage comparison is unavailable because a baseline or test average is missing, or the baseline is zero.</p>
+            )}
             <h2 className="font-display text-title">Prediction vs reality</h2>
             <p className="mt-2 text-body text-muted">
               There wasn&apos;t enough data in both phases to compare with the prediction.

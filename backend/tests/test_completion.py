@@ -199,3 +199,18 @@ def test_early_finish_still_lists_a_missed_elapsed_day(db):
     adherence = client.post(COMPLETE).json()["analysis"]["adherence"]
     assert adherence["missing_days"] == [2]
     assert adherence["coverage_rate"] == pytest.approx(5 / 6, abs=1e-3)
+
+
+def test_complete_stores_guess_comparison_and_get_report_keeps_it(db, monkeypatch):
+    db.experiment["personal_guess_percent"] = -12.5
+    # Completion must remain deterministic even when a personal guess exists.
+    from app.integrations import openrouter
+    def forbidden(**_kwargs):
+        pytest.fail("Completing an experiment must never call a model")
+    monkeypatch.setattr(openrouter, "complete", forbidden)
+    response = client.post(f"/api/experiments/{EXP_ID}/complete")
+    assert response.status_code == 200
+    comparison = response.json()["analysis"]["personal_guess"]
+    assert comparison["guessed_change_percent"] == -12.5
+    assert comparison["observed_change_percent"] == response.json()["analysis"]["prediction"]["observed_change_percent"]
+    assert client.get(f"/api/experiments/{EXP_ID}/report").json()["analysis"]["personal_guess"] == comparison

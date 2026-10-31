@@ -337,3 +337,32 @@ it("explains when guesses are unavailable and still lets an old database start n
   expect(await screen.findByText(/Your own guess is unavailable right now/)).toBeVisible();
   expect(screen.getByRole("button", { name: "Start this experiment" })).toBeEnabled();
 });
+
+it("keeps a committed guess on save failure and requires explicit consent to omit it if rollout changes", async () => {
+  const user = userEvent.setup();
+  const saves: unknown[] = [];
+  server.use(
+    http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+    http.post(`${api}/api/experiments/propose`, () => HttpResponse.json({ ...proposeResponse, personal_guess_available: true })),
+    http.post(`${api}/api/experiments`, async ({ request }) => {
+      saves.push(await request.json());
+      if (saves.length === 1) return HttpResponse.json({ detail: {
+        code: "personal_guess_unavailable", message: "Your guess could not be saved yet. No experiment was saved.",
+      } }, { status: 409 });
+      return HttpResponse.json(experiment, { status: 201 });
+    }),
+    http.post(`${api}/api/experiments/${experiment.id}/start`, () => HttpResponse.json(experiment)),
+  );
+  render(<NewExperiment />);
+  await submitQuestion(user);
+  await user.type(await screen.findByRole("textbox", { name: "Your guess for Morning energy" }), "-12,5");
+  await user.click(screen.getByRole("button", { name: "Reveal the AI prediction" }));
+  await user.click(screen.getByRole("button", { name: "Start this experiment" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("No experiment was saved");
+  expect(screen.getByText("-12.5%", { exact: true })).toBeVisible();
+  expect(saves).toHaveLength(1);
+  expect(saves[0]).toMatchObject({ personal_guess_percent: -12.5 });
+  await user.click(screen.getByRole("button", { name: "Continue without saving my guess" }));
+  await waitFor(() => expect(saves).toHaveLength(2));
+  expect(saves[1]).not.toHaveProperty("personal_guess_percent");
+});
