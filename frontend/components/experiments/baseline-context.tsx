@@ -17,7 +17,7 @@ export function BaselineContext({ timeline }: { timeline: ExperimentTimeline }) 
       ) : (
         <>
           <p className="mt-2 text-caption text-muted">
-            {summary.days_recorded} of {summary.days_planned} normal days recorded.
+            {summary.days_recorded} of {summary.days_planned} normal {summary.days_planned === 1 ? 'day' : 'days'} recorded.
           </p>
           <ul className="mt-4 space-y-3 text-body">
             {summary.metrics.map((metric) => <li key={metric.key}>{metric.description}</li>)}
@@ -25,9 +25,6 @@ export function BaselineContext({ timeline }: { timeline: ExperimentTimeline }) 
           {summary.days_recorded < summary.days_planned && (
             <p className="mt-3 text-caption text-muted">Some normal days are missing, so this starting point is limited.</p>
           )}
-          <p className="mt-3 text-body text-muted">
-            A small starting point, not a result. Now see how your small change compares.
-          </p>
         </>
       )}
     </section>

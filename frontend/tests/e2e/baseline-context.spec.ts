@@ -17,7 +17,7 @@ for (const width of [390, 768, 1440]) for (const reducedMotion of ["reduce", "no
       { key: "breaks", label: "Breaks", type: "number", min: null, max: null, primary: false },
       { key: "sleep_time", label: "Time to fall asleep", type: "duration", min: null, max: null, primary: false },
       { key: "screen_free", label: "Screen-free evening", type: "boolean", min: null, max: null, primary: false },
-    ], status: "active", progress: { ...experiment.progress, state: "in_progress", day_number: 4, phase: "intervention", phase_day: 1, phase_days: 7 } } satisfies import("@rhythm-health/contract").Experiment;
+    ], status: "active", started_at: "2026-10-28T09:00:00Z", progress: { ...experiment.progress, state: "in_progress", day_number: 4, phase: "intervention", phase_day: 1, phase_days: 7, days_remaining: 6, started_at: "2026-10-28T09:00:00Z", ends_at: "2026-11-07T09:00:00Z" } } satisfies import("@rhythm-health/contract").Experiment;
     const normalTimeline: ExperimentTimeline = { ...timelineFixture(active, { recorded: [1, 3], missed: [2] }), baseline_summary: baseline };
     let timeline = normalTimeline;
     const normalCheckins = [1, 3].map(day => ({ id: `44444444-4444-4444-8444-44444444444${day}`, experiment_id: active.id, day_number: day, phase: "baseline",
@@ -35,6 +35,7 @@ for (const width of [390, 768, 1440]) for (const reducedMotion of ["reduce", "no
     });
     const capture = async (state: string) => {
       if (!process.env.CAPTURE_BASELINE || reducedMotion !== "reduce") return;
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
       await page.evaluate(() => scrollTo(0, 0));
       await page.screenshot({ path: `../docs/screenshots/baseline-context/web-${width}-${state}.png`, fullPage: true });
     };

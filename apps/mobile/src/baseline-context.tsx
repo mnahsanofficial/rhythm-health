@@ -8,10 +8,9 @@ export function BaselineContext({ timeline }: { timeline: ExperimentTimeline }) 
   return <View style={styles.divider}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>Your normal, before the change.</Copy>
     {summary.days_recorded === 0 ? <Copy style={styles.muted}>No normal-day answers were recorded. There is no personal baseline to compare with yet.</Copy> : <>
-      <Copy style={styles.muted}>{summary.days_recorded} of {summary.days_planned} normal days recorded.</Copy>
+      <Copy style={styles.muted}>{summary.days_recorded} of {summary.days_planned} normal {summary.days_planned === 1 ? 'day' : 'days'} recorded.</Copy>
       {summary.metrics.map(metric => <Copy key={metric.key}>{metric.description}</Copy>)}
       {summary.days_recorded < summary.days_planned && <Copy style={styles.muted}>Some normal days are missing, so this starting point is limited.</Copy>}
-      <Copy style={styles.muted}>A small starting point, not a result. Now see how your small change compares.</Copy>
     </>}
   </View>;
 }

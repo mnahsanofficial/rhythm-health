@@ -234,7 +234,7 @@ def test_baseline_summary_honest_empty_single_and_missing_metric_answers(db):
                   "metric_values": {"energy": 6, "screen_free": False}}]
     metrics = {metric["key"]: metric for metric in body()["baseline_summary"]["metrics"]}
     assert metrics["energy"]["description"] == "Morning energy: 6 out of 10 (1 answer)."
-    assert metrics["screen_free"]["description"] == "Screen-free evening: Yes on 0 of 1 recorded normal days."
+    assert metrics["screen_free"]["description"] == "Screen-free evening: Yes on 0 of 1 recorded normal day."
     assert metrics["breaks"]["description"] == "Breaks: no normal-day answers recorded."
 
 

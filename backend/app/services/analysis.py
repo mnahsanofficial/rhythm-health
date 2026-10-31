@@ -95,7 +95,7 @@ def baseline_summary(experiment: dict, checkins: list[dict]) -> BaselineSummary:
                               description=f"{metric.label}: no normal-day answers recorded.")
         if n and metric.type == "boolean":
             item.yes_count = sum(values)
-            item.description = f"{metric.label}: Yes on {item.yes_count} of {n} recorded normal days."
+            item.description = f"{metric.label}: Yes on {item.yes_count} of {n} recorded normal {'day' if n == 1 else 'days'}."
         elif n:
             item.minimum, item.maximum = min(map(_numeric, values)), max(map(_numeric, values))
             low, high = _plain_number(item.minimum), _plain_number(item.maximum)
