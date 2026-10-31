@@ -23,6 +23,7 @@ export class Reminders {
   private queue = Promise.resolve();
   private revision = 0;
   private assigned = false;
+  private observed = false;
   private handled = new Set<string>();
   getSnapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -38,18 +39,35 @@ export class Reminders {
   }
   setOwner = (owner: string | null, force = false) => {
     if (this.assigned && owner === this.state.owner && !force) return;
+    const changing = !this.assigned || owner !== this.state.owner;
     this.assigned = true;
     this.revision++;
-    this.patch({ owner, ready: false, choice: null, permission: false, data: null });
+    if (changing) this.observed = false;
+    this.patch({ owner, ready: false, choice: null, permission: false, ...(changing ? { data: null } : {}) });
     return this.run(async () => {
-      if (Platform.OS !== 'web') { await Notifications.cancelScheduledNotificationAsync(DAILY); await Notifications.cancelScheduledNotificationAsync(TEST); }
       const choice = owner ? await read(key(owner)) : null;
       if (owner !== this.state.owner) return;
       this.patch({ choice: choice === 'on' || choice === 'off' ? choice : null, ready: true });
-      await this.reconcile();
+      if (Platform.OS !== 'web') {
+        if (owner && choice === 'on') {
+          // A restored offline session must not erase its own pending reminder.
+          // Remove only our foreign-account IDs; fresh progress will reconcile ours.
+          const pending = await Notifications.getAllScheduledNotificationsAsync();
+          if (owner !== this.state.owner) return;
+          for (const request of pending) if ([DAILY, TEST].includes(request.identifier) && request.content.data?.owner !== owner) await Notifications.cancelScheduledNotificationAsync(request.identifier);
+          const status = await Notifications.getPermissionsAsync();
+          if (owner !== this.state.owner) return;
+          this.patch({ permission: status.granted || status.ios?.status === IosAuthorizationStatus.PROVISIONAL });
+        } else {
+          await Notifications.cancelScheduledNotificationAsync(DAILY);
+          await Notifications.cancelScheduledNotificationAsync(TEST);
+        }
+      }
+      if (this.observed) await this.reconcile();
     });
   };
   refresh = (data: DayData | null) => {
+    this.observed = true;
     this.revision++; this.patch({ data });
     return this.run(() => this.reconcile(), false);
   };
