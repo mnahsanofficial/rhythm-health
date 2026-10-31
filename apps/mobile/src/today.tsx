@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, View } from 'react-native';
 import { MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
+import { Progress } from './progress';
+import { ReminderNotice, Settings } from './settings';
+import { useReminders } from './reminder-context';
 import { CheckinForm } from './checkin';
 import type { Experiment, ExperimentTimeline } from '@rhythm-health/contract';
 import { Action, Alert, Copy, Loading, styles, Title } from './ui';
@@ -8,9 +11,11 @@ import { ApiError } from './lib/api';
 import { getProgress, listActiveExperiments } from './lib/experiments';
 
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
-export function Today({ token, offline, openWeb, onExpired }: {
-  token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void;
+export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
+  token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void;
 }) {
+  const { service: reminders, state: reminderState } = useReminders();
+  const [screen, setScreen] = useState<'today' | 'settings' | 'progress'>('today');
   const [loaded, setLoaded] = useState<{ value: DayData | null; at: Date } | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,13 +29,21 @@ export function Today({ token, offline, openWeb, onExpired }: {
     try {
       const [experiment] = await listActiveExperiments(token);
       const value = experiment ? { experiment, timeline: await getProgress(token, experiment.id) } : null;
-      if (request === generation.current) setLoaded({ value, at: new Date() });
+      if (request === generation.current) {
+        setLoaded({ value, at: new Date() });
+        void reminders.refresh(value);
+        const intent = reminders.getSnapshot().intent;
+        if (intent) {
+          reminders.consume();
+          if (intent.owner === reminders.getSnapshot().owner && value?.experiment.id === intent.experiment && value.timeline.progress.state === 'in_progress') { setScreen('today'); setEditing(value); }
+        }
+      }
     } catch (cause) {
       if (request !== generation.current) return;
       if (cause instanceof ApiError && cause.status === 401) onExpired();
       else setError(cause instanceof Error ? cause.message : "Couldn't load your day. Try again.");
     } finally { if (request === generation.current) setBusy(false); }
-  }, [token, offline, onExpired]);
+  }, [token, offline, onExpired, reminders]);
   useEffect(() => {
     let active = true;
     const requests = generation;
@@ -39,13 +52,24 @@ export function Today({ token, offline, openWeb, onExpired }: {
     return () => { active = false; requests.current++; listener.remove(); };
   }, [load]);
 
+  const intent = reminderState.intent;
+  useEffect(() => { if (intent && !offline) { let active = true; queueMicrotask(() => { if (active) void load(); }); return () => { active = false; }; } }, [intent, offline, load]);
+
   const disabled = offline || busy || error !== null;
   const data = loaded?.value;
-  if (editing) return <CheckinForm data={editing} token={token} offline={offline} onExpired={onExpired}
+  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
+  if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} /></View>;
+  if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
     onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
+  if (screen === 'progress' && data) return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
+    {error && <><Alert>{error}</Alert><Action label="Try again" disabled={offline || busy} onPress={() => void load()} /></>}
+    <Progress key={data.experiment.id} data={data} token={token} offline={offline} onExpired={onExpired} />
+  </View>;
   return (
     <View style={styles.stack}>
+      {nav}
+      <ReminderNotice />
       {saved && <SavedReceipt failed={error !== null} />}
       {offline && <Copy accessibilityLiveRegion="polite" style={styles.muted}>{loaded
         ? `Offline, last updated ${loaded.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`

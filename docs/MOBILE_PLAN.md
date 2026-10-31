@@ -1,6 +1,6 @@
 # Mobile app plan (V1)
 
-The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Step 1 shipped in #35. Today and Check-in (steps 2 and 3) are implemented together on `feat/mobile-today-checkin`, as approved by Nazmul for the Monday demo, with separate red/green commits. Reminders and Progress remain later PRs. Setup and verification: [`apps/mobile/`](../apps/mobile/README.md). Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
+The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Step 1 shipped in #35 and Today/Check-in in #36. Reminders and Progress (steps 4 and 5) are built together on `feat/mobile-reminders-progress`, as requested by Nazmul, with separate red/green commits and an iPhone check before PR creation. Setup and verification: [`apps/mobile/`](../apps/mobile/README.md). Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
 
 ## Why mobile
 
@@ -83,7 +83,7 @@ All calls send the Supabase access token as `Authorization: Bearer …`, exactly
 - **What it is:** a **local** notification scheduled on the phone for `next_day_at` ("Day 5 is open. Your check-in takes about 30 seconds."). No push server is needed.
 - **Scheduling:** reschedule whenever progress loads. Cancel it when there's no next day (`next_day_at` is null), the experiment ends, or the person signs out.
 - **Content:** the day only, never the habit question, because notifications show on the lock screen (the same rule as the web calendar event).
-- **Tapping it:** opens the Check-in screen for the current day, or Today if it's already done.
+- **Tapping it:** opens the Check-in screen for the current day, prefilled if already recorded (Nazmul's 31 Oct request). Fresh progress and ownership are checked after auth; the tap never supplies the day.
 - **States:** ask for notification permission after the first check-in, not on first launch. If permission is refused, Today shows "Reminders are off" with a way to turn them on in Settings.
 - **Done means:** the notification fires at the next day's opening time in the phone's time zone, including across the 1 Nov DST change in America/Toronto, and tapping it opens the right screen.
 
@@ -108,7 +108,7 @@ Reading the Lab Report (a compact view of the comparison, verdict and chart), ex
 
 ## Build order, with something to demo by Monday 2 Nov
 
-Each step is a small PR, with tests first and a demo under one minute when it works. Exception approved 31 Oct: steps 2 and 3 ship together in one PR, with separate red/green commits.
+Each step is a small PR, with tests first and a demo under one minute when it works. Exceptions approved 31 Oct: steps 2/3 shipped together in #36; steps 4/5 ship together in `feat/mobile-reminders-progress`, with separate red/green commits per feature.
 
 1. **Scaffold and sign in** (Sat 31 Oct):
    - `apps/mobile` as an npm workspace, with the contract and brand packages wired in;
@@ -117,7 +117,7 @@ Each step is a small PR, with tests first and a demo under one minute when it wo
    - Demo: sign in on a phone with Expo Go.
 2. **Today** (Sat 31 Oct–Sun 1 Nov): the active experiment and progress. Demo: Today shows the real day and the next opening.
 3. **Check-in** (Sun 1 Nov): all metric types, the test-day question, the note and saving. Demo: a 30-second check-in that flips Today to Done for today.
-4. **Daily reminder** (Sun 1 Nov): local notification at `next_day_at`; tapping it opens the check-in. Demo: a notification set a minute ahead for the demo, opening the check-in.
+4. **Daily reminder** (Sun 1 Nov): local notification at `next_day_at`; tapping it opens the check-in. Demo: a development-only test notification after 10 seconds, opening the check-in. Production uses only `next_day_at`.
 5. **Progress** (Mon 2 Nov morning, if time): the day states and answers. Demo: the timeline fills in after a check-in.
 
 **For the Monday call:** steps 1–4 working on a real phone against the local backend. Step 5 can follow on Tuesday.

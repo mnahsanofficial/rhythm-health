@@ -26,14 +26,14 @@ Checked against `main` on **31 Oct 2026**. Details, owners and the plan to Thurs
 |---|---|---|---|
 | **Web** | The full core loop: onboarding → question → prediction → start → daily check-ins → timeline → finish → Lab Report with the written narrative → next experiment. Also history, the seeded demo and the calendar reminder | | Clean-up (dead code, one percent formatter); the report chart's `missed` flag |
 | **Backend** | Auth, profile, propose (with past experiments as context), check-ins, deterministic analysis, report narrative, demo reset, progress endpoint | | `missed` flag on chart points; scale words for check-in metrics; full-flow test |
-| **Mobile** | Expo Go sign-in/profile, encrypted session persistence, Today and Check-in | Local reminder, Progress | Reading the Lab Report and history on the phone (V2) |
+| **Mobile** | Expo Go sign-in/profile, encrypted session persistence, Today, Check-in, local reminders and Progress | | Reading the Lab Report and history on the phone (V2) |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     UI["Next.js web app<br/>public anon key + user session"]
-    APP["Expo mobile: Today + Check-in<br/>same account and API"]
+    APP["Expo mobile: daily loop<br/>local reminders + Progress"]
     AUTH["Supabase Auth"]
     API["FastAPI<br/>service-role and OpenRouter keys stay here"]
     DB[("Supabase Postgres")]
@@ -90,7 +90,7 @@ Open http://localhost:3000 and choose **Run your first experiment**.
 
 ## Mobile daily loop
 
-Root `npm ci` also installs `apps/mobile/`. Start Expo Go with `npm run start --workspace=@rhythm-health/mobile`; the [mobile setup](apps/mobile/README.md) covers public settings, the Mac/phone network address and the backend's `--host 0.0.0.0` command. SDK 58 works with the current store Expo Go. Today and the native daily Check-in use the same account and authoritative progress API. Local reminders and Progress follow in separate PRs.
+Root `npm ci` also installs `apps/mobile/`. Start Expo Go with `npm run start --workspace=@rhythm-health/mobile`; the [mobile setup](apps/mobile/README.md) covers public settings, the Mac/phone network address and the backend's `--host 0.0.0.0` command. SDK 58 works with the current store Expo Go. Today and the native daily Check-in use the same account and authoritative progress API. Settings controls local next-day reminders; Progress shows server-owned day states and read-only recorded answers. See the mobile setup for the development-only 10-second reminder test.
 
 ## Running tests
 
@@ -119,7 +119,7 @@ cd backend
 uv run pytest
 ```
 
-Last full run on **31 Oct 2026**: 243 backend, 157 frontend, 55 mobile, 11 brand and 6 contract tests, and 76 browser tests plus 1 existing skip. After a backend schema change, run `npm run contract:generate`; after a token change, `npm run brand:generate`. More: [docs/rules/testing.md](docs/rules/testing.md).
+Last full run on **31 Oct 2026**: 243 backend, 157 frontend, 93 mobile, 11 brand and 6 contract tests, and 76 browser tests plus 1 existing skip. After a backend schema change, run `npm run contract:generate`; after a token change, `npm run brand:generate`. More: [docs/rules/testing.md](docs/rules/testing.md).
 
 ## Project structure
 
@@ -130,7 +130,7 @@ Last full run on **31 Oct 2026**: 243 backend, 157 frontend, 55 mobile, 11 brand
 | [supabase/](supabase/) | Database migrations and row-level security |
 | [packages/contract/](packages/contract/) | API types generated from the FastAPI schema, shared by web and mobile |
 | [packages/brand/](packages/brand/) | Design tokens: generated web CSS and native-ready values |
-| [apps/mobile/](apps/mobile/README.md) | Expo Go sign-in, Today and Check-in; remaining screens follow [MOBILE_PLAN.md](docs/MOBILE_PLAN.md) |
+| [apps/mobile/](apps/mobile/README.md) | Expo Go daily loop, local reminders and Progress; scope follows [MOBILE_PLAN.md](docs/MOBILE_PLAN.md) |
 | [docs/](docs/) | Plans, decisions, rules, architecture and evidence |
 
 ## Documentation
