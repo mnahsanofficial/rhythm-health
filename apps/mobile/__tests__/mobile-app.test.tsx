@@ -163,6 +163,7 @@ test('font loading cannot flash sign-in or private content', () => {
   mockFonts.ready = false;
   render(<MobileApp />);
   expect(screen.getByText('Opening Rhythm…')).toBeVisible();
+  expect(screen.getByText('Rhythm')).toHaveStyle({ fontFamily: undefined });
   expect(mockAuth.getSession).not.toHaveBeenCalled();
 });
 
