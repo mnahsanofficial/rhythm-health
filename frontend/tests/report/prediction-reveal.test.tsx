@@ -28,3 +28,13 @@ it.each([
   await user.click(screen.getByRole("button", { name: "Replay comparison" }));
   expect(within(screen.getAllByRole("definition")[1]).getByText(expected, { exact: true })).toBeVisible();
 });
+
+it("compares the user's committed guess, AI range and observed change using analysis values", async () => {
+  const user = userEvent.setup();
+  render(<PredictionVsReality comparison={comparison} metricLabel="Morning energy" personalGuess={{ guessed_change_percent: -12, observed_change_percent: 11, error_points: 23 }} />);
+  expect(screen.getByText("Your guess")).toBeVisible();
+  expect(screen.getByText("-12%", { exact: true })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Reveal my result" }));
+  expect(screen.getByRole("status")).toHaveTextContent("23 percentage points");
+  expect(screen.getByRole("img")).toHaveAccessibleName(/your guess -12%/i);
+});
