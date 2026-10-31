@@ -8,6 +8,7 @@ import { useNetworkState } from 'expo-network';
 import { Fraunces_400Regular } from '@expo-google-fonts/fraunces/400Regular';
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono/400Regular';
+import { ReminderProvider, useReminders } from './reminder-context';
 import { Today } from './today';
 import { readConfig } from './lib/config';
 import { createAuthClient } from './lib/supabase';
@@ -22,7 +23,7 @@ const fontAssets = {
 
 export function MobileApp() {
   const [attempt, setAttempt] = useState(0);
-  return <FontGate key={attempt} retry={() => setAttempt(n => n + 1)} />;
+  return <ReminderProvider><FontGate key={attempt} retry={() => setAttempt(n => n + 1)} /></ReminderProvider>;
 }
 function FontGate({ retry }: { retry: () => void }) {
   const [loaded, error] = useFonts(fontAssets);
@@ -36,6 +37,7 @@ function FontGate({ retry }: { retry: () => void }) {
 
 type ProfileState = { kind: 'loading' } | { kind: 'ready'; profile: Profile | null } | { kind: 'error'; message: string };
 function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
+  const { service: reminders } = useReminders();
   const { supabaseUrl, anonKey } = config;
   const client = useMemo(() => createAuthClient({ supabaseUrl, anonKey }), [supabaseUrl, anonKey]);
   const network = useNetworkState();
@@ -52,10 +54,11 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   const signOut = useCallback(async (reason: string | null = null) => {
     setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
     try {
+      await reminders.signOut();
       const { error } = await client.auth.signOut({ scope: 'local' });
       if (error) throw error;
     } catch { setAuthFailure('signout'); }
-  }, [client]);
+  }, [client, reminders]);
   const expire = useCallback(() => { void signOut('Your session has expired. Sign in again.'); }, [signOut]);
 
   useEffect(() => {
@@ -77,6 +80,8 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
     return () => { cancelled = true; data.subscription.unsubscribe(); subscription.remove(); client.auth.stopAutoRefresh(); };
   }, [client, authAttempt]);
 
+  const owner = session?.user.id ?? null;
+  useEffect(() => { if (ready) void reminders.setOwner(owner); }, [owner, ready, reminders]);
   const token = session?.access_token;
   useEffect(() => {
     if (!token || offline) return;
@@ -112,7 +117,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
         }}
         openWeb={() => openWeb('/onboarding')}
       /> : <>
-        {profile.kind === 'ready' && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} openWeb={openWeb} onExpired={expire} />
+        {profile.kind === 'ready' && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} openWeb={openWeb} onExpired={expire} email={session.user.email} signOut={() => void signOut()} />
           : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>
           : profile.kind === 'loading' ? <Loading message="Loading your profile…" />
           : profile.kind === 'error' ? <><Alert>{profile.message}</Alert><Action label="Try again" onPress={() => { setProfile({ kind: 'loading' }); setProfileAttempt(n => n + 1); }} /></>
@@ -122,10 +127,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
             <Action label="Set up your rhythm on the web" link onPress={() => openWeb('/onboarding')} />
           </> : null}
 
-        <View style={styles.divider}>
-          <Copy style={styles.muted}>{session.user.email}</Copy>
-          <Action label="Sign out" secondary onPress={() => void signOut()} />
-        </View>
+        {!(profile.kind === 'ready' && profile.profile !== null) && <Action label="Sign out" secondary onPress={() => void signOut()} />}
       </>}
       {linkError && <Alert>{linkError}</Alert>}
     </Frame>

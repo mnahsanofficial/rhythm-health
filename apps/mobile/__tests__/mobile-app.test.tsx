@@ -144,6 +144,7 @@ test('an expired profile session returns to sign-in with a clear message', async
 test('signs out only this device and removes private content', async () => {
   render(<MobileApp />); await signIn();
   await screen.findByText('Nothing running yet.');
+  fireEvent.press(await screen.findByRole('button', { name: 'Settings' }));
   fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
   expect(await screen.findByLabelText('Email')).toBeVisible();
   expect(screen.queryByText('Nothing running yet.')).toBeNull();
