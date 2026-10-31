@@ -9,6 +9,7 @@ import { Fraunces_400Regular } from '@expo-google-fonts/fraunces/400Regular';
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono/400Regular';
 import { ReminderProvider, useReminders } from './reminder-context';
+import { ReminderNotice } from './settings';
 import { Today } from './today';
 import { readConfig } from './lib/config';
 import { createAuthClient } from './lib/supabase';
@@ -129,6 +130,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
 
         {!(profile.kind === 'ready' && profile.profile !== null) && <Action label="Sign out" secondary onPress={() => void signOut()} />}
       </>}
+      {ready && !session && <ReminderNotice feedbackOnly />}
       {linkError && <Alert>{linkError}</Alert>}
     </Frame>
   );

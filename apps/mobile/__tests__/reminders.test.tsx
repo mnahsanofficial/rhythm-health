@@ -170,6 +170,8 @@ test('a cancellation failure stays visible after signing out and can be retried'
   notifications.cancelScheduledNotificationAsync.mockRejectedValueOnce(new Error('native cancel failed'));
   fireEvent.press(screen.getByRole('button', { name: 'Sign out' })); await screen.findByLabelText('Email');
   expect(await screen.findByText(/Couldn't update your reminder/)).toBeVisible();
-  fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Retry reminder' })).toBeEnabled());
+  await waitFor(() => expect(mockAuth.signOut).toHaveBeenCalled());
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
   await waitFor(() => expect(screen.queryByText(/Couldn't update your reminder/)).toBeNull());
 });

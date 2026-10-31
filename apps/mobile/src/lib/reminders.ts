@@ -22,6 +22,7 @@ export class Reminders {
   private listeners = new Set<() => void>();
   private queue = Promise.resolve();
   private revision = 0;
+  private assigned = false;
   private handled = new Set<string>();
   getSnapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -35,8 +36,9 @@ export class Reminders {
     });
     return this.queue;
   }
-  setOwner = (owner: string | null) => {
-    if (owner === this.state.owner && this.state.ready) return;
+  setOwner = (owner: string | null, force = false) => {
+    if (this.assigned && owner === this.state.owner && !force) return;
+    this.assigned = true;
     this.revision++;
     this.patch({ owner, ready: false, choice: null, permission: false, data: null });
     return this.run(async () => {
@@ -96,7 +98,7 @@ export class Reminders {
     });
   };
   retry = () => {
-    if (!this.state.ready) return this.setOwner(this.state.owner);
+    if (!this.state.ready) return this.setOwner(this.state.owner, true);
     return this.run(async () => {
       const { owner, choice } = this.state;
       if (owner && choice) await write(key(owner), choice);
