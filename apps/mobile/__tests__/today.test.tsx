@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';

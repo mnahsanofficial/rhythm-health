@@ -1,0 +1,92 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, View } from 'react-native';
+import type { Experiment, ExperimentTimeline } from '@rhythm-health/contract';
+import { Action, Alert, Copy, Loading, styles, Title } from './ui';
+import { ApiError } from './lib/api';
+import { getProgress, listActiveExperiments } from './lib/experiments';
+
+export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
+export function Today({ token, offline, openWeb, onExpired }: {
+  token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void;
+}) {
+  const [loaded, setLoaded] = useState<{ value: DayData | null; at: Date } | null>(null);
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const generation = useRef(0);
+  const load = useCallback(async () => {
+    if (offline) return;
+    const request = ++generation.current;
+    setBusy(true); setError(null);
+    try {
+      const [experiment] = await listActiveExperiments(token);
+      const value = experiment ? { experiment, timeline: await getProgress(token, experiment.id) } : null;
+      if (request === generation.current) setLoaded({ value, at: new Date() });
+    } catch (cause) {
+      if (request !== generation.current) return;
+      if (cause instanceof ApiError && cause.status === 401) onExpired();
+      else setError(cause instanceof Error ? cause.message : "Couldn't load your day. Try again.");
+    } finally { if (request === generation.current) setBusy(false); }
+  }, [token, offline, onExpired]);
+  useEffect(() => {
+    let active = true;
+    const requests = generation;
+    queueMicrotask(() => { if (active) void load(); });
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') void load(); });
+    return () => { active = false; requests.current++; listener.remove(); };
+  }, [load]);
+
+  const disabled = offline || busy || error !== null;
+  const data = loaded?.value;
+  return (
+    <View style={styles.stack}>
+      {offline && <Copy accessibilityLiveRegion="polite" style={styles.muted}>{loaded
+        ? `Offline, last updated ${loaded.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`
+        : 'No connection'}</Copy>}
+      {!offline && error && <><Alert>{error}</Alert><Action label="Try again" onPress={() => void load()} /></>}
+      {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
+        : !data ? <>
+          <Title>Nothing running yet.</Title>
+          <Copy style={styles.muted}>Start your next experiment on the web, then come back here for your daily check-in.</Copy>
+          <Action label="Start an experiment on the web" link onPress={() => openWeb('/experiments/new')} />
+        </> : <>
+          <TodaySummary data={data} disabled={disabled} openWeb={openWeb}
+            onCheckin={() => openWeb(`/experiments/${encodeURIComponent(data.experiment.id)}/check-in`)} />
+          {!offline && busy && <Copy accessibilityLiveRegion="polite" style={styles.muted}>Refreshing your day…</Copy>}
+        </>}
+    </View>
+  );
+}
+
+export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb, onCheckin }: {
+  data: DayData; disabled: boolean; openWeb: (path: string) => void; onCheckin: () => void;
+}) {
+  const { progress } = timeline;
+  const current = timeline.days.find(day => day.day_number === progress.day_number);
+  const next = timeline.days.find(day => progress.day_number !== null && day.day_number > progress.day_number);
+  const path = `/experiments/${encodeURIComponent(experiment.id)}`;
+  return <>
+    <Copy style={styles.muted}>Your lab</Copy>
+    {progress.state === 'in_progress' && <Copy style={styles.number}>Day {progress.day_number} of {progress.total_days}</Copy>}
+    <Title>{experiment.question}</Title>
+    <View style={styles.divider}>
+      {progress.state === 'in_progress' && <Copy>{current?.phase === 'baseline' ? 'Baseline' : 'Test'} day {progress.phase_day} of {progress.phase_days}</Copy>}
+      <Copy style={styles.muted}>{current?.phase === 'baseline' ? 'Keep your usual routine' : 'Your small change'}</Copy>
+      <Copy>{experiment.intervention.action}</Copy>
+      <Copy style={styles.muted}>{experiment.intervention.timing} · {experiment.intervention.frequency}</Copy>
+    </View>
+    {progress.state === 'in_progress' ? current?.state === 'recorded' ? <View style={styles.decision}>
+      <Copy accessibilityRole="header" style={styles.sectionTitle}>Done for today</Copy>
+      {timeline.next_day_at && next ? <Copy>Day {next.day_number} opens {new Date(timeline.next_day_at).toLocaleString(undefined, {
+        weekday: 'long', hour: 'numeric', minute: '2-digit',
+      })}.</Copy> : <Copy>That was the last day. Finish on the web when you&apos;re ready.</Copy>}
+      <Action label="Change today's answers" secondary onPress={onCheckin} disabled={disabled} />
+    </View> : <Action label={`Check in for day ${progress.day_number}`} onPress={onCheckin} disabled={disabled} />
+      : progress.state === 'completed' ? <>
+        <Copy accessibilityRole="header" style={styles.sectionTitle}>Your results are ready.</Copy>
+        <Action label="See your Lab Report on the web" link onPress={() => openWeb(`${path}/report`)} />
+      </> : progress.state === 'ended' ? <>
+        <Copy>Your experiment days are over. Finish on the web to see your results.</Copy>
+        <Action label="Finish on the web" link onPress={() => openWeb(path)} />
+      </> : <><Copy>This experiment hasn&apos;t started.</Copy><Action label="Open your experiment on the web" link onPress={() => openWeb(path)} /></>}
+  </>;
+}

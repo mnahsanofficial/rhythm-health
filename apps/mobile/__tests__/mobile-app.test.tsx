@@ -29,7 +29,7 @@ beforeEach(() => {
   mockAuth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } });
   mockAuth.signInWithPassword.mockResolvedValue({ data: { session: mockSession }, error: null });
   mockAuth.signOut.mockResolvedValue({ error: null });
-  global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200, json: async () => profile });
+  global.fetch = jest.fn(async (url) => ({ ok: true, status: 200, json: async () => String(url).endsWith('/api/profile') ? profile : [] }) as Response);
 });
 
 async function signIn() {
@@ -38,13 +38,13 @@ async function signIn() {
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Sign in' })); });
 }
 
-test('signs in with existing credentials and reads only the authenticated profile', async () => {
+test('signs in with existing credentials and loads the profile before Today', async () => {
   render(<MobileApp />);
   await signIn();
-  expect(await screen.findByText('Your rhythm is ready.')).toBeVisible();
-  expect(screen.getByText(profile.goals[0])).toBeVisible();
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(screen.getByText('Nothing running yet.')).toBeVisible();
   expect(mockAuth.signInWithPassword).toHaveBeenCalledWith({ email: 'learner@example.invalid', password: 'fake-password' });
-  expect(global.fetch).toHaveBeenCalledTimes(1);
+  expect(global.fetch).toHaveBeenCalledTimes(2);
   expect(global.fetch).toHaveBeenCalledWith('http://api.test.invalid:8001/api/profile', expect.objectContaining({
     method: 'GET', headers: { Authorization: 'Bearer fake-mobile-token' },
   }));
@@ -69,7 +69,7 @@ test('ignores a second tap while sign-in is pending', async () => {
   expect(busy).toBeDisabled(); fireEvent.press(busy);
   expect(mockAuth.signInWithPassword).toHaveBeenCalledTimes(1);
   release({ data: { session: mockSession }, error: null });
-  expect(await screen.findByText('Your rhythm is ready.')).toBeVisible();
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
 });
 
 test('shows a plain wrong-password error and allows another attempt', async () => {
@@ -78,7 +78,7 @@ test('shows a plain wrong-password error and allows another attempt', async () =
   expect(await screen.findByRole('alert')).toHaveTextContent(/Email or password wasn't recognised\./);
   expect(global.fetch).not.toHaveBeenCalled();
   fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
-  expect(await screen.findByText('Your rhythm is ready.')).toBeVisible();
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
 });
 
 test('shows No connection offline and never sends credentials or a profile request', async () => {
@@ -97,22 +97,23 @@ test('restores an existing session before rendering private profile content', as
   mockAuth.getSession.mockReturnValue(new Promise(resolve => { release = resolve; }));
   render(<MobileApp />);
   expect(screen.getByText('Opening your rhythm…')).toBeVisible();
-  expect(screen.queryByText(profile.goals[0])).toBeNull();
+  expect(screen.queryByText('Nothing running yet.')).toBeNull();
   expect(global.fetch).not.toHaveBeenCalled();
   release({ data: { session: mockSession }, error: null });
-  expect(await screen.findByText(profile.goals[0])).toBeVisible();
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
   expect(mockAuth.signInWithPassword).not.toHaveBeenCalled();
 });
 
 test('shows a profile-shaped loading state until the profile request resolves', async () => {
   let release!: (result: unknown) => void;
-  (global.fetch as jest.Mock).mockReturnValue(new Promise(resolve => { release = resolve; }));
+  const originalFetch = async () => ({ ok: true, status: 200, json: async () => [] }) as Response;
+  (global.fetch as jest.Mock).mockImplementation((...args) => String(args[0]).endsWith('/api/profile') ? new Promise(resolve => { release = resolve; }) : originalFetch());
   mockAuth.getSession.mockResolvedValue({ data: { session: mockSession }, error: null });
   render(<MobileApp />);
   expect(await screen.findByText('Loading your profile…')).toBeVisible();
-  expect(screen.queryByText(profile.goals[0])).toBeNull();
+  expect(screen.queryByText('Nothing running yet.')).toBeNull();
   release({ ok: true, status: 200, json: async () => profile });
-  expect(await screen.findByText(profile.goals[0])).toBeVisible();
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
 });
 
 test('a missing profile links to web onboarding without creating an account', async () => {
@@ -120,7 +121,7 @@ test('a missing profile links to web onboarding without creating an account', as
   render(<MobileApp />); await signIn();
   expect(await screen.findByText('Finish setting up on the web')).toBeVisible();
   expect(screen.getByRole('link', { name: 'Set up your rhythm on the web' })).toBeVisible();
-  expect(screen.queryByText('Your rhythm is ready.')).toBeNull();
+  expect(screen.queryByText('Nothing running yet.')).toBeNull();
 });
 
 test('retries an unavailable profile without signing in again', async () => {
@@ -128,7 +129,7 @@ test('retries an unavailable profile without signing in again', async () => {
   render(<MobileApp />); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't load your profile\./);
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByText(profile.goals[0])).toBeVisible();
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
   expect(mockAuth.signInWithPassword).toHaveBeenCalledTimes(1);
 });
 
@@ -137,15 +138,15 @@ test('an expired profile session returns to sign-in with a clear message', async
   render(<MobileApp />); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent('Your session has expired. Sign in again.');
   expect(screen.getByLabelText('Email')).toBeVisible();
-  expect(screen.queryByText(profile.goals[0])).toBeNull();
+  expect(screen.queryByText('Nothing running yet.')).toBeNull();
 });
 
 test('signs out only this device and removes private content', async () => {
   render(<MobileApp />); await signIn();
-  await screen.findByText(profile.goals[0]);
+  await screen.findByText('Nothing running yet.');
   fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
   expect(await screen.findByLabelText('Email')).toBeVisible();
-  expect(screen.queryByText(profile.goals[0])).toBeNull();
+  expect(screen.queryByText('Nothing running yet.')).toBeNull();
   expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
 
