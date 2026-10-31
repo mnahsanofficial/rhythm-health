@@ -287,6 +287,32 @@ export interface components {
             prediction?: components["schemas"]["PredictionComparison"] | null;
             signal: components["schemas"]["Signal"];
         };
+        /** BaselineMetric */
+        BaselineMetric: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** N */
+            n: number;
+            /** Minimum */
+            minimum?: number | null;
+            /** Maximum */
+            maximum?: number | null;
+            /** Yes Count */
+            yes_count?: number | null;
+            /** Description */
+            description: string;
+        };
+        /** BaselineSummary */
+        BaselineSummary: {
+            /** Days Recorded */
+            days_recorded: number;
+            /** Days Planned */
+            days_planned: number;
+            /** Metrics */
+            metrics: components["schemas"]["BaselineMetric"][];
+        };
         /** ChartData */
         ChartData: {
             primary_metric: components["schemas"]["ChartMetric"];
@@ -538,6 +564,7 @@ export interface components {
             remaining_days: number;
             /** Days */
             days: components["schemas"]["ExperimentDay"][];
+            baseline_summary?: components["schemas"]["BaselineSummary"] | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {

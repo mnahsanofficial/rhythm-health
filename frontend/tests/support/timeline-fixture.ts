@@ -18,6 +18,7 @@ export function timelineFixture(
   }));
   return {
     progress: experiment.progress,
+    baseline_summary: null,
     next_day_at: nextDayAt,
     recorded_days: recorded.length,
     missed_days: missed.length,

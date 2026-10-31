@@ -29,6 +29,23 @@ class ExperimentDay(BaseModel):
     state: Literal["recorded", "missed", "current", "future", "not_observed"]
 
 
+class BaselineMetric(BaseModel):
+    key: str
+    label: str
+    n: int
+    minimum: float | None = None
+    maximum: float | None = None
+    yes_count: int | None = None
+    # Deterministic presentation of recorded observations, never model prose.
+    description: str
+
+
+class BaselineSummary(BaseModel):
+    days_recorded: int
+    days_planned: int
+    metrics: list[BaselineMetric]
+
+
 class ExperimentTimeline(BaseModel):
     """Read-only day states shared by web and mobile.
 
@@ -42,3 +59,5 @@ class ExperimentTimeline(BaseModel):
     missed_days: int
     remaining_days: int
     days: list[ExperimentDay]
+    # Present only during the active test phase, after baseline intervals finish.
+    baseline_summary: BaselineSummary | None = None
