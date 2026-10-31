@@ -54,3 +54,12 @@ def test_column_disappearing_does_not_silently_drop_guess(db, monkeypatch):
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "personal_guess_unavailable"
     assert not db.rows
+
+
+def test_readiness_probe_is_owner_scoped_and_returns_no_row_data(monkeypatch):
+    calls = []
+    monkeypatch.setattr(experiments, "rest_request", lambda method, table, **kwargs: calls.append((method, table, kwargs)) or [])
+    assert real_supports("owner-profile") is True
+    assert calls == [("GET", "experiments", {"params": {
+        "profile_id": "eq.owner-profile", "select": "personal_guess_percent", "limit": "0",
+    }})]

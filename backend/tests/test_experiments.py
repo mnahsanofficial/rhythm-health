@@ -299,3 +299,17 @@ def test_old_database_save_omits_guess_column(db):
     assert res.status_code == 201
     assert res.json()["personal_guess_percent"] is None
     assert "personal_guess_percent" not in db.rows[0]
+
+
+def test_explicit_null_guess_also_omits_new_column(db):
+    res = client.post("/api/experiments", json={**BODY, "personal_guess_percent": None})
+    assert res.status_code == 201
+    assert "personal_guess_percent" not in db.rows[0]
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_personal_guess_rejects_nonfinite_numbers(value):
+    from pydantic import ValidationError
+    from app.schemas.proposal import SaveExperimentRequest
+    with pytest.raises(ValidationError):
+        SaveExperimentRequest.model_validate({**BODY, "personal_guess_percent": value})
