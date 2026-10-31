@@ -1,3 +1,4 @@
+import normal from '../../../frontend/tests/support/baseline-summary.json';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AppState, type AppStateStatus } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
@@ -129,10 +130,6 @@ test.each(['not_started', 'ended', 'completed'] as const)('handles %s without of
 });
 
 
-const normal = { days_recorded: 2, days_planned: 3, metrics: [
-  { key: 'morning_energy', label: 'Morning energy', n: 2, minimum: 5, maximum: 6, yes_count: null, description: 'Morning energy: 5–6 out of 10 (2 answers).' },
-  { key: 'screen_free', label: 'Screen-free evening', n: 2, minimum: null, maximum: null, yes_count: 1, description: 'Screen-free evening: Yes on 1 of 2 recorded normal days.' },
-] };
 test('Today renders each server baseline description before asking for a test-day check-in', async () => {
   timeline = { ...timeline, baseline_summary: normal }; render(<MobileApp />);
   expect(await screen.findByText('Your normal, before the change.')).toBeVisible();

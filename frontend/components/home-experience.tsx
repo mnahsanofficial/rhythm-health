@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BaselineContext } from "@/components/experiments/baseline-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { ExperimentFlow } from "@/components/experiments/experiment-flow";
@@ -176,6 +177,7 @@ function ActiveLab({ profile, experiment, timeline, checkins }: {
             <h1 className="mt-3 font-display text-headline tracking-tight text-balance sm:text-display-sm">
               {experiment.question}
             </h1>
+            <BaselineContext timeline={timeline} />
             <div className="mt-6 border-l-2 border-moss pl-4">
               <p className="text-caption text-muted">
                 {progress.phase === "baseline" ? "Keep your usual routine" : "Your small change"}

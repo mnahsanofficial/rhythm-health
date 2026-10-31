@@ -1,0 +1,42 @@
+{
+  "days_recorded": 2,
+  "days_planned": 3,
+  "metrics": [
+    {
+      "key": "morning_energy",
+      "label": "Morning energy",
+      "n": 2,
+      "minimum": 5.0,
+      "maximum": 6.0,
+      "yes_count": null,
+      "description": "Morning energy: 5–6 out of 10 (2 answers)."
+    },
+    {
+      "key": "breaks",
+      "label": "Breaks",
+      "n": 2,
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "yes_count": null,
+      "description": "Breaks: 0–2 (2 answers)."
+    },
+    {
+      "key": "sleep_time",
+      "label": "Time to fall asleep",
+      "n": 2,
+      "minimum": 15.0,
+      "maximum": 25.5,
+      "yes_count": null,
+      "description": "Time to fall asleep: 15–25.5 minutes (2 answers)."
+    },
+    {
+      "key": "screen_free",
+      "label": "Screen-free evening",
+      "n": 2,
+      "minimum": null,
+      "maximum": null,
+      "yes_count": 1,
+      "description": "Screen-free evening: Yes on 1 of 2 recorded normal days."
+    }
+  ]
+}

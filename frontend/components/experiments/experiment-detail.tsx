@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BaselineContext } from "./baseline-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
@@ -133,6 +134,8 @@ export function ExperimentDetail({ id }: { id: string }) {
               : "Not started"}
       </p>
       <h1 className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{experiment.question}</h1>
+
+      <BaselineContext timeline={timeline} />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
         <TodayCard experiment={experiment} timeline={timeline} path={path} />

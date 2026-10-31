@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExperimentDetail } from "@/components/experiments/experiment-detail";
 import { HomeExperience } from "@/components/home-experience";
+import normal from "../support/baseline-summary.json";
 import type { Experiment } from "@rhythm-health/contract";
 import { experiment, profile } from "../support/fixtures";
 import { server } from "../support/server";
@@ -100,13 +101,6 @@ for (const view of ["detail", "home"] as const) {
 }
 
 
-const normal = {
-  days_recorded: 2, days_planned: 3,
-  metrics: [
-    { key: "morning_energy", label: "Morning energy", n: 2, minimum: 5, maximum: 6, yes_count: null, description: "Morning energy: 5–6 out of 10 (2 answers)." },
-    { key: "screen_free", label: "Screen-free evening", n: 2, minimum: null, maximum: null, yes_count: 1, description: "Screen-free evening: Yes on 1 of 2 recorded normal days." },
-  ],
-};
 for (const view of ["home", "detail"] as const) {
   describe(`${view} normal-day context`, () => {
     const show = () => render(view === "detail" ? <ExperimentDetail id={experiment.id} /> : <HomeExperience>Public</HomeExperience>);
