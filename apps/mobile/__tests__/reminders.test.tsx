@@ -115,3 +115,32 @@ test('development test uses a one-off ten-second trigger and production hides it
   view.unmount(); const old = Reflect.get(globalThis, '__DEV__'); Reflect.set(globalThis, '__DEV__', false);
   try { render(<MobileApp />); await settings(); expect(screen.queryByRole('button', { name: 'Send a test reminder in 10 seconds' })).toBeNull(); } finally { Reflect.set(globalThis, '__DEV__', old); }
 });
+
+test('turning reminders off cancels immediately even if saving the preference fails', async () => {
+  const store = jest.requireMock('expo-secure-store') as typeof import('expo-secure-store');
+  render(<MobileApp />); await enable(); notifications.cancelScheduledNotificationAsync.mockClear();
+  jest.mocked(store.setItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
+  fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', false);
+  await screen.findByText(/Couldn't update your reminder/);
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(screen.getByRole('switch', { name: 'Daily reminders' })).not.toBeChecked();
+});
+
+test('a preference read error can be retried instead of leaving Settings disabled', async () => {
+  const store = jest.requireMock('expo-secure-store') as typeof import('expo-secure-store');
+  jest.mocked(store.getItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
+  render(<MobileApp />); await settings(); await screen.findByText(/Couldn't update your reminder/);
+  fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' }));
+  await waitFor(() => expect(screen.getByRole('switch', { name: 'Daily reminders' })).toBeEnabled());
+});
+
+test.each(['Asia/Dhaka', 'America/Toronto'])('the DST opening stays the same UTC instant in %s', async zone => {
+  const original = process.env.TZ; process.env.TZ = zone;
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-31T12:00:00Z'));
+  timeline = { ...timeline, next_day_at: '2026-11-01T06:30:00Z' };
+  try {
+    render(<MobileApp />); await enable();
+    const trigger = notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger;
+    expect(trigger).toMatchObject({ type: 'date', date: new Date('2026-11-01T06:30:00Z') });
+  } finally { process.env.TZ = original; }
+});

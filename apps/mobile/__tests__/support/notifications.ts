@@ -4,6 +4,7 @@ export const preferences = new Map<string, string>();
 export const notificationState = { granted: false, denied: false, last: null as NotificationResponse | null };
 export const notifications = {
   SchedulableTriggerInputTypes: { DATE: 'date', TIME_INTERVAL: 'timeInterval' }, AndroidImportance: { DEFAULT: 3 },
+  IosAuthorizationStatus: { PROVISIONAL: 3 },
   setNotificationHandler: jest.fn(), setNotificationChannelAsync: jest.fn(async () => null),
   getPermissionsAsync: jest.fn(async () => ({ granted: notificationState.granted, canAskAgain: !notificationState.denied })),
   requestPermissionsAsync: jest.fn(async () => ({ granted: notificationState.granted, canAskAgain: !notificationState.denied })),
