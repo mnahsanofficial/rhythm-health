@@ -47,3 +47,11 @@ test('a partially missing session reports storage corruption rather than restori
   native.values.delete(chunk![0]);
   await expect(createSecureSessionStorage(native).getItem('session')).rejects.toThrow();
 });
+
+test('concurrent session refresh writes never restore mixed chunks', async () => {
+  const native = driver(); const storage = createSecureSessionStorage(native);
+  const first = 'fake-first-session-'.repeat(300);
+  const last = 'fake-last-session-'.repeat(80);
+  await Promise.all([storage.setItem('session', first), storage.setItem('session', last)]);
+  expect(await storage.getItem('session')).toBe(last);
+});
