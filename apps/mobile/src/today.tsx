@@ -59,7 +59,7 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
   const data = loaded?.value;
   const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
   if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} /></View>;
-  if (editing) return <CheckinForm data={editing} token={token} offline={offline} onExpired={onExpired}
+  if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
     onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
   if (screen === 'progress' && data) return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
