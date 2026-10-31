@@ -139,7 +139,7 @@ test('Today renders each server baseline description before asking for a test-da
 });
 test('a missing baseline stays honest and does not block Check-in', async () => {
   timeline = { ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } }; render(<MobileApp />);
-  expect(await screen.findByText('No normal-day answers were recorded. There is no personal baseline to compare with yet.')).toBeVisible();
+  expect(await screen.findByText('No normal-day answers recorded.')).toBeVisible();
   expect(screen.queryByText(normal.metrics[0].description)).toBeNull();
   expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeEnabled();
 });

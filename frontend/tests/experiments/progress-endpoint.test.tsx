@@ -114,7 +114,7 @@ for (const view of ["home", "detail"] as const) {
     });
     it("handles no baseline check-ins without inventing normal values", async () => {
       server.use(http.get(url, () => HttpResponse.json({ ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } })));
-      show(); expect(await screen.findByText("No normal-day answers were recorded. There is no personal baseline to compare with yet.")).toBeVisible();
+      show(); expect(await screen.findByText("No normal-day answers recorded.")).toBeVisible();
       expect(screen.queryByText(normal.metrics[0].description)).not.toBeInTheDocument();
       expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
     });

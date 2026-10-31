@@ -12,7 +12,7 @@ export function BaselineContext({ timeline }: { timeline: ExperimentTimeline }) 
       <h2 id={heading} className="font-display text-title">Your normal, before the change.</h2>
       {summary.days_recorded === 0 ? (
         <p className="mt-3 text-body text-muted">
-          No normal-day answers were recorded. There is no personal baseline to compare with yet.
+          No normal-day answers recorded.
         </p>
       ) : (
         <>

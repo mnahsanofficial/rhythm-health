@@ -48,7 +48,7 @@ for (const width of [390, 768, 1440]) for (const reducedMotion of ["reduce", "no
       await capture(path === "/" ? "home" : "detail");
     }
     logged = []; timeline = { ...timelineFixture(active, { missed: [1, 2, 3] }), baseline_summary: { ...baseline, days_recorded: 0, metrics: [] } };
-    await page.goto("/"); await expect(page.getByText("No normal-day answers were recorded. There is no personal baseline to compare with yet.")).toBeVisible(); await capture("empty");
+    await page.goto("/"); await expect(page.getByText("No normal-day answers recorded.")).toBeVisible(); await capture("empty");
     logged = normalCheckins; timeline = normalTimeline; fail = true;
     await page.reload(); await expect(page.getByRole("main").getByRole("alert")).toContainText("Progress unavailable");
     await expect(page.getByText(baseline.metrics[0].description)).toHaveCount(0); await capture("error");
