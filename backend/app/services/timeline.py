@@ -2,7 +2,7 @@
 from datetime import UTC, datetime
 
 from app.schemas.progress import ExperimentDay, ExperimentTimeline
-from app.services.analysis import adherence_for
+from app.services.analysis import adherence_for, baseline_summary
 from app.services.progress import DAY, with_progress
 
 
@@ -40,4 +40,7 @@ def experiment_timeline(row: dict, checkins: list[dict], now: datetime) -> Exper
         missed_days=sum(d.state == "missed" for d in days),
         remaining_days=sum(d.state in {"current", "future"} for d in days),
         days=days,
+        baseline_summary=baseline_summary(row, checkins) if (
+            progress.state == "in_progress" and progress.phase == "intervention"
+        ) else None,
     )

@@ -826,6 +826,93 @@
         ],
         "title": "Analysis"
       },
+      "BaselineMetric": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "n": {
+            "type": "integer",
+            "title": "N"
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum"
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum"
+          },
+          "yes_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yes Count"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "n",
+          "description"
+        ],
+        "title": "BaselineMetric"
+      },
+      "BaselineSummary": {
+        "properties": {
+          "days_recorded": {
+            "type": "integer",
+            "title": "Days Recorded"
+          },
+          "days_planned": {
+            "type": "integer",
+            "title": "Days Planned"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/BaselineMetric"
+            },
+            "type": "array",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days_recorded",
+          "days_planned",
+          "metrics"
+        ],
+        "title": "BaselineSummary"
+      },
       "ChartData": {
         "properties": {
           "primary_metric": {
@@ -1565,6 +1652,16 @@
             },
             "type": "array",
             "title": "Days"
+          },
+          "baseline_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BaselineSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

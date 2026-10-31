@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, View } from 'react-native';
 import { MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
+import { BaselineContext } from './baseline-context';
 import { Progress } from './progress';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
@@ -100,6 +101,7 @@ export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb
     <Copy style={styles.muted}>Your lab</Copy>
     {progress.state === 'in_progress' && <Copy style={styles.number}>Day {progress.day_number} of {progress.total_days}</Copy>}
     <Title>{experiment.question}</Title>
+    <BaselineContext timeline={timeline} />
     <View style={styles.divider}>
       {progress.state === 'in_progress' && <Copy>{current?.phase === 'baseline' ? 'Baseline' : 'Test'} day {progress.phase_day} of {progress.phase_days}</Copy>}
       <Copy style={styles.muted}>{current?.phase === 'baseline' ? 'Keep your usual routine' : 'Your small change'}</Copy>

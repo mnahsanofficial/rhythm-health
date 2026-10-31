@@ -1,3 +1,4 @@
+import baseline from "../support/baseline-summary.json";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
@@ -92,3 +93,5 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
   });
 
 });
+
+it("validates the backend-generated normal-day fixture", () => { assertContract("BaselineSummary", baseline); });

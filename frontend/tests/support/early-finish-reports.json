@@ -134,7 +134,8 @@
           "phase": "test",
           "state": "future"
         }
-      ]
+      ],
+      "baseline_summary": null
     }
   },
   "cases": [
@@ -529,7 +530,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -923,7 +925,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -1320,7 +1323,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -1714,7 +1718,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -2108,7 +2113,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -2503,7 +2509,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -2905,7 +2912,8 @@
             "phase": "test",
             "state": "not_observed"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     },
     {
@@ -3309,7 +3317,8 @@
             "phase": "test",
             "state": "recorded"
           }
-        ]
+        ],
+        "baseline_summary": null
       }
     }
   ]

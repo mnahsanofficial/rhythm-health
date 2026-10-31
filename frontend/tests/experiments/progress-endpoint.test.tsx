@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExperimentDetail } from "@/components/experiments/experiment-detail";
 import { HomeExperience } from "@/components/home-experience";
+import normal from "../support/baseline-summary.json";
 import type { Experiment } from "@rhythm-health/contract";
 import { experiment, profile } from "../support/fixtures";
 import { server } from "../support/server";
@@ -95,6 +96,45 @@ for (const view of ["detail", "home"] as const) {
       show();
       await waitFor(() => expect(router.replace).toHaveBeenCalledWith(view === "home" ? "/sign-in?next=/" : `/sign-in?next=${encodeURIComponent(`/experiments/${experiment.id}`)}`));
       expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    });
+  });
+}
+
+
+for (const view of ["home", "detail"] as const) {
+  describe(`${view} normal-day context`, () => {
+    const show = () => render(view === "detail" ? <ExperimentDetail id={experiment.id} /> : <HomeExperience>Public</HomeExperience>);
+    it("shows each backend summary before the small change, even with a stale experiment phase", async () => {
+      server.use(http.get(url, () => HttpResponse.json({ ...timeline, baseline_summary: normal })));
+      show(); expect(await screen.findByRole("heading", { name: "Your normal, before the change." })).toBeVisible();
+      expect(screen.getByText("2 of 3 normal days recorded.")).toBeVisible();
+      for (const metric of normal.metrics) expect(screen.getByText(metric.description)).toBeVisible();
+      expect(screen.getByText("Some normal days are missing, so this starting point is limited.")).toBeVisible();
+      expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
+    });
+    it("handles no baseline check-ins without inventing normal values", async () => {
+      server.use(http.get(url, () => HttpResponse.json({ ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } })));
+      show(); expect(await screen.findByText("No normal-day answers recorded.")).toBeVisible();
+      expect(screen.queryByText(normal.metrics[0].description)).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
+    });
+    it("does not present a baseline context while normal days are still open", async () => {
+      const early = timelineFixture({ ...active, progress: { ...active.progress, day_number: 3, phase: "baseline", phase_day: 3, phase_days: 3 } });
+      server.use(http.get(url, () => HttpResponse.json({ ...early, baseline_summary: null })));
+      show(); await screen.findByRole("link", { name: "Check in for day 3" });
+      expect(screen.queryByRole("heading", { name: "Your normal, before the change." })).not.toBeInTheDocument();
+    });
+    it("keeps old responses without the additive field working", async () => {
+      const older = { ...timeline }; Reflect.deleteProperty(older, "baseline_summary");
+      server.use(http.get(url, () => HttpResponse.json(older))); show();
+      await screen.findByRole("link", { name: "Check in for day 4" });
+      expect(screen.queryByRole("heading", { name: "Your normal, before the change." })).not.toBeInTheDocument();
+    });
+    it("doesn't display a guessed baseline when progress fails and can retry", async () => {
+      const user = userEvent.setup(); let failed = false;
+      server.use(http.get(url, () => { if (!failed) { failed = true; return HttpResponse.json({ detail: "Progress unavailable" }, { status: 503 }); } return HttpResponse.json({ ...timeline, baseline_summary: normal }); }));
+      show(); await screen.findByRole("alert"); expect(screen.queryByText(normal.metrics[0].description)).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Try again" })); expect(await screen.findByText(normal.metrics[0].description)).toBeVisible();
     });
   });
 }

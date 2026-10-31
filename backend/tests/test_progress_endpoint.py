@@ -180,3 +180,76 @@ def test_user_without_a_profile_cannot_distinguish_unowned_or_missing_ids(db, mo
         response = client.get(f"/api/experiments/{experiment_id}/progress")
         assert response.status_code == 404
         assert response.json() == {"detail": "Experiment not found"}
+
+
+# S8: normal-day context is deterministic, read-only and owner-scoped.
+def baseline_data(db):
+    db.row["metrics"] = [
+        {"key": "energy", "label": "Morning energy", "type": "scale", "min": 1, "max": 10, "primary": True},
+        {"key": "breaks", "label": "Breaks", "type": "number", "min": None, "max": None, "primary": False},
+        {"key": "sleep_time", "label": "Time to fall asleep", "type": "duration", "min": None, "max": None, "primary": False},
+        {"key": "screen_free", "label": "Screen-free evening", "type": "boolean", "min": None, "max": None, "primary": False},
+    ]
+    db.logged = [
+        {"day_number": 1, "phase": "baseline", "intervention_completed": False,
+         "metric_values": {"energy": 5, "breaks": 0, "sleep_time": 15, "screen_free": False}},
+        {"day_number": 3, "phase": "baseline", "intervention_completed": False,
+         "metric_values": {"energy": 6, "breaks": 2, "sleep_time": 25.5, "screen_free": True}},
+        {"day_number": 4, "phase": "intervention", "intervention_completed": True,
+         "metric_values": {"energy": 10, "breaks": 9, "sleep_time": 1, "screen_free": True}},
+    ]
+
+
+def test_baseline_summary_all_metric_types_excludes_test_days_and_preserves_zero(db):
+    baseline_data(db)
+    db.now += timedelta(days=3)
+    summary = body()["baseline_summary"]
+    assert (summary["days_recorded"], summary["days_planned"]) == (2, 3)
+    metrics = {metric["key"]: metric for metric in summary["metrics"]}
+    assert (metrics["energy"]["n"], metrics["energy"]["minimum"], metrics["energy"]["maximum"]) == (2, 5, 6)
+    assert metrics["energy"]["description"] == "Morning energy: 5–6 out of 10 (2 answers)."
+    assert metrics["breaks"]["description"] == "Breaks: 0–2 (2 answers)."
+    assert metrics["sleep_time"]["description"] == "Time to fall asleep: 15–25.5 minutes (2 answers)."
+    assert metrics["screen_free"]["yes_count"] == 1
+    assert metrics["screen_free"]["description"] == "Screen-free evening: Yes on 1 of 2 recorded normal days."
+
+
+@pytest.mark.parametrize("hours,available", [(71.99, False), (72, True), (73, True)])
+@pytest.mark.parametrize("timezone", ["Asia/Dhaka", "America/Toronto"])
+def test_baseline_summary_appears_at_the_existing_rolling_phase_boundary(db, hours, available, timezone):
+    baseline_data(db)
+    db.row["started_at"] = START.astimezone(ZoneInfo(timezone)).isoformat()
+    db.now = (START + timedelta(hours=hours)).astimezone(ZoneInfo(timezone))
+    assert (body()["baseline_summary"] is not None) is available
+
+
+def test_baseline_summary_honest_empty_single_and_missing_metric_answers(db):
+    baseline_data(db)
+    db.now += timedelta(days=3)
+    db.logged = []
+    summary = body()["baseline_summary"]
+    assert summary["days_recorded"] == 0
+    assert all(metric["n"] == 0 and metric["minimum"] is None for metric in summary["metrics"])
+    db.logged = [{"day_number": 1, "phase": "baseline", "intervention_completed": False,
+                  "metric_values": {"energy": 6, "screen_free": False}}]
+    metrics = {metric["key"]: metric for metric in body()["baseline_summary"]["metrics"]}
+    assert metrics["energy"]["description"] == "Morning energy: 6 out of 10 (1 answer)."
+    assert metrics["screen_free"]["description"] == "Screen-free evening: Yes on 0 of 1 recorded normal day."
+    assert metrics["breaks"]["description"] == "Breaks: no normal-day answers recorded."
+
+
+def test_baseline_summary_uses_configured_lengths_and_is_not_a_completion_analysis(db):
+    baseline_data(db)
+    db.row.update(baseline_days=1, intervention_days=2)
+    db.logged = db.logged[:1]
+    db.now += timedelta(hours=24)
+    assert body()["baseline_summary"]["days_planned"] == 1
+    assert body()["baseline_summary"]["days_recorded"] == 1
+
+
+@pytest.mark.parametrize("status", ["proposed", "completed"])
+def test_baseline_summary_is_not_shown_outside_active_test_days(db, status):
+    baseline_data(db)
+    db.row.update(status=status)
+    db.now += timedelta(days=5)
+    assert body()["baseline_summary"] is None

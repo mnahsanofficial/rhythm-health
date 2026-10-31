@@ -1,6 +1,6 @@
 # Remaining work
 
-Status updated **31 Oct 2026** against `main` at `874ce4f` (after #36), with reminders/Progress implemented on `feat/mobile-reminders-progress`. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
+Status updated **31 Oct 2026** against `main` at `8174599` (after #37), with S8 implemented on `feat/baseline-context`. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
 
 V2 work is split **by feature**: both of us work across frontend, backend and database ([pair rule](rules/pair-rule.md)). Each item names an owner. Owners marked "(proposed)" are to be confirmed together.
 
@@ -8,7 +8,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 
 ---
 
-## Merged since the last update (#28–#36)
+## Merged since the last update (#28–#37)
 
 | PR | What it finished |
 |---|---|
@@ -20,6 +20,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 | #33 | `GET /api/experiments/{id}/progress`, the one source of day states, counts and the next day's opening, for web and mobile ([PROGRESS_API.md](PROGRESS_API.md)). Your lab, the experiment page and the calendar reminder use it; the web no longer works out missed days or the next opening itself |
 | #35 | Expo Go sign-in/profile, secure session persistence and local-device sign-out; verified on iPhone |
 | #36 | Mobile Today and Check-in; automatic saved-state refresh and real-iPhone close/reopen verification |
+| #37 | Mobile local reminders, Settings and read-only Progress; iPhone notification/cold-start/cancellation checks passed |
 
 ---
 
@@ -40,7 +41,9 @@ Sources: the Oct 30 reviewer call (points supplied by Nazmul; the call transcrip
 
 ## Plan to Thursday 5 Nov
 
-Mobile core loop first. **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
+Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 is built on `feat/baseline-context`, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6, B12/B11/F13 and the active sample are queued for separate PRs after each merge.
+
+Original schedule: **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
 
 | Date | Must work | Owner |
 |---|---|---|
@@ -68,8 +71,8 @@ Owner: **Nazmul** (built with Codex). Full plan, screens, states and risks: [MOB
 | MB1 | Scaffold `apps/mobile` and sign in | Done (#35) | Same account as the web on a phone with Expo Go; the session survives a restart; root `npm ci` and the web suites still pass | Must |
 | MB2 | Today | Done (#36; iPhone verified) | Day, phase, Done for today and the next opening come only from the progress endpoint; loading, empty, error and offline states | Must |
 | MB3 | Check-in | Done (#36; iPhone verified) | All metric types, the test-day question and the note; record or replace today; field errors; answers kept when offline | Must |
-| MB4 | Daily reminder (local notification) | Done (this PR; iPhone verified) | Fires at `next_day_at`, names the day only, and opens the check-in when tapped; permission asked after the first check-in | Must |
-| MB5 | Progress | Done (this PR; iPhone verified) | Day states and counts only from the progress endpoint; recorded days show their answers | Must |
+| MB4 | Daily reminder (local notification) | Done (#37; iPhone verified) | Fires at `next_day_at`, names the day only, and opens the check-in when tapped; permission asked after the first check-in | Must |
+| MB5 | Progress | Done (#37; iPhone verified) | Day states and counts only from the progress endpoint; recorded days show their answers | Must |
 
 Already done for mobile: shared types (#30), native type styles (#32) and the progress endpoint (#33).
 
@@ -92,8 +95,8 @@ Owner: **Nazmul**.
 
 | # | Item | Status | Done means | Priority | Owner |
 |---|---|---|---|---|---|
-| B11 | `missed: boolean` on each `chart.points` item | Agreed 30 Oct, not built | Each chart point says whether that day counts as missed, by the same rule as `missing_days` | Nice | Shakeb |
-| F13 | Web report chart reads `chart.points[].missed` | Waiting on B11; the chart uses `missing_days` today, which gives the same answer | No lookup in `missing_days`; contract refreshed | Nice | Nazmul |
+| B11 | `missed: boolean` on each `chart.points` item | Queued for PR 3 under the 31 Oct deadline decision | Each chart point says whether that day counts as missed, by the same rule as `missing_days` | Nice | Nazmul until Shakeb returns |
+| F13 | Web report chart reads `chart.points[].missed` | Queued with B11 in PR 3; the chart uses `missing_days` today, which gives the same answer | No lookup in `missing_days`; contract refreshed | Nice | Nazmul |
 | F11 | Share or export the Lab Report | Not started | A report can be shared or saved | Nice | Nazmul (proposed) |
 | R12 | Narrative numbers checked against the analysis | Deferred by Shakeb (30 Oct), time permitting. The web never takes a figure from the narrative | | Nice | Shakeb |
 
@@ -103,7 +106,7 @@ Owner: **Shakeb**.
 
 | # | Item | Status | Done means | Priority |
 |---|---|---|---|---|
-| B12 | Scale words for check-in metrics (for example "drained" / "full of energy") | Requested; not built. Web and mobile use frontend copy with a "Low / High" fallback until then | The metric schema carries the words for each end; the contract is regenerated | Nice |
+| B12 | Scale words for check-in metrics (for example "drained" / "full of energy") | Queued for PR 3 (Nazmul); optional/additive, no migration. Web and mobile use frontend copy with a "Low / High" fallback until then | The metric schema carries the words for each end; the contract is regenerated | Nice |
 | B6 | Regenerate the prediction before start | Not started (TRD §18) | Possible before start; not after | Nice |
 | B9 | Optional AI safety assessment | Not started (TRD §15, optional) | An AI check runs after the rules for borderline requests | Nice |
 
@@ -128,8 +131,8 @@ Owner: **Shakeb**.
 | I4 | Day boundaries | Decided: a day is a rolling 24 hours from `started_at`; times shown in the viewer's local time. Clients use `next_day_at`, never local midnight |
 | I5 | History data source | Resolved: completed experiments, then each report |
 | I6 | API contract | Done, and now automatic: `packages/contract` is generated from FastAPI and `npm run contract:check` fails on drift (#30) |
-| I7 | Chart missed flag (B11 + F13) | Waiting on Shakeb |
-| I8 | Scale words (B12) on web and mobile | Waiting on Shakeb; fallback copy until then |
+| I7 | Chart missed flag (B11 + F13) | Queued for Nazmul's PR 3 |
+| I8 | Scale words (B12) on web and mobile | Queued for Nazmul's PR 3; fallback copy until then |
 
 ---
 
@@ -264,9 +267,9 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 
 | # | Feature | Why it helps learning stick | Rough effort | Before Thursday? |
 |---|---|---|---|---|
-| S6 | **Your own guess.** Before the report is revealed, the person predicts their own result on the same scale as the AI's forecast. The report then shows three things side by side: the AI's prediction, theirs, and what happened | Committing to a guess makes the result a surprise or a confirmation about your own judgement. That's how calibration is learned, and it's the "learning that sticks" theme made literal | Medium: one stored number per experiment (a migration, announced first), a step before the report on web, a third marker on the comparison | Yes, if chosen by Monday |
+| S6 | **Your own guess.** Before the AI forecast is revealed, the person enters a primary-metric guess (31 Oct approval). The report then shows three things side by side: the AI's prediction, theirs, and what happened | Committing to a guess makes the result a surprise or a confirmation about your own judgement. That's how calibration is learned, and it's the "learning that sticks" theme made literal | Medium: one stored number per experiment (a migration, announced first), a step before the AI forecast on web, a third marker on the comparison | Yes, if chosen by Monday |
 | S7 | **What you now know about yourself.** One page that gathers the conclusion of every finished experiment ("A walk after dinner: likely signal, energy +21%") with its signal strength | Turns one-off reports into a personal evidence base that grows, and it's the same data the AI already uses as context, made visible to the person | Small: history and reports already exist; a new web page reading them | Yes |
-| S8 | **Your normal, on day 4.** When the baseline ends, show the person's own baseline range for the primary metric: "On normal days your energy was 5–6. Now let's see if the walk moves it" | A concrete reason to come back on day 4, and it makes the test days' question personal before any result exists | Small: the baseline values are in the check-ins; one card on Today (web and mobile) | Yes |
+| S8 | **Your normal, on day 4.** When the baseline ends, show the person's own baseline for each metric (31 Oct approval): "On normal days your energy was 5–6. Now let's see if the walk moves it" | A concrete reason to come back on day 4, and it makes the test days' question personal before any result exists | Small: the baseline values are in the check-ins; one card on Today (web and mobile) | Yes |
 | S9 | **Run it again to be sure.** When the result is a *possible* signal or unclear, the report offers the same experiment again, explaining why one more run separates signal from noise | Teaches the idea that one short test isn't proof, which our honest wording already says, and turns it into an action | Small: a report button that prefills the same question with a note; the prediction already uses past results | Yes |
 | S10 | **Keep it or drop it, then a two-week check.** After the report, the person decides to keep or drop the habit. Two weeks later, one question asks whether they still do it and whether it still helps | Measures whether the learning changed behaviour, the real test of "does it help". The answer feeds future predictions | Medium to large: a stored decision and a scheduled follow-up (best as a mobile reminder) | Decision step only; the follow-up after Thursday |
 
@@ -275,3 +278,7 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 ## Mobile implementation
 
 #35: Expo Go SDK 58 workspace, existing-account sign-in, encrypted session restoration, profile read with loading/error/offline/missing states, local-device sign-out, and web setup/lab handoff. No backend files, migrations or paid AI endpoints are changed. [Setup and test boundaries](../apps/mobile/README.md). Real-device verification is recorded separately from mocked tests. Today and Check-in are implemented together on `feat/mobile-today-checkin` with separate red/green commits: authoritative day states, foreground refresh, all metric types, prefill, retained answers on failure/offline, and automatic Today refresh after saving. Unsaved drafts are in memory only. The local reminder, Settings and read-only Progress are built on `feat/mobile-reminders-progress`; the real-iPhone reminder, cold-start tap, real Progress and cancellation checks passed before its PR. Native tests mock notifications and the API. There are no new backend files, env settings, migrations or paid calls.
+
+## Selected learning feature: S8
+
+Built in this PR: personal normal-day context for **each metric** on web Your lab/detail and mobile Today, after the backend opens the test phase. Uses the progress response's nullable `baseline_summary`, with deterministic ranges/counts/descriptions, empty/partial states and no extra API call. Old responses still work. No migration or paid request. [API/source/tests](PROGRESS_API.md#normal-day-context-s8). S6 is next only after this PR merges; no guess column or migration has been created or applied here.

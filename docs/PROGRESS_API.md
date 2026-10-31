@@ -6,7 +6,7 @@ Sources: [route](../backend/app/api/experiments.py), [response models](../backen
 
 ## Response
 
-The generated `ExperimentTimeline` type is exported by [`@rhythm-health/contract`](../packages/contract/src/index.ts). `progress` has the same `ExperimentProgress` shape as the existing experiment endpoints. Example: a three-day experiment, with day 1 recorded and day 2 open:
+The generated `ExperimentTimeline` type is exported by [`@rhythm-health/contract`](../packages/contract/src/index.ts). `progress` has the same `ExperimentProgress` shape as the existing experiment endpoints. Example: a three-day experiment (one normal day, two test days), with day 1 recorded as energy 6 out of 10 and day 2 open:
 
 ```json
 {
@@ -25,10 +25,37 @@ The generated `ExperimentTimeline` type is exported by [`@rhythm-health/contract
   "recorded_days": 1,
   "missed_days": 0,
   "remaining_days": 2,
+  "baseline_summary": {
+    "days_recorded": 1,
+    "days_planned": 1,
+    "metrics": [
+      {
+        "key": "morning_energy",
+        "label": "Morning energy",
+        "n": 1,
+        "minimum": 6,
+        "maximum": 6,
+        "yes_count": null,
+        "description": "Morning energy: 6 out of 10 (1 answer)."
+      }
+    ]
+  },
   "days": [
-    { "day_number": 1, "phase": "baseline", "state": "recorded" },
-    { "day_number": 2, "phase": "test", "state": "current" },
-    { "day_number": 3, "phase": "test", "state": "future" }
+    {
+      "day_number": 1,
+      "phase": "baseline",
+      "state": "recorded"
+    },
+    {
+      "day_number": 2,
+      "phase": "test",
+      "state": "current"
+    },
+    {
+      "day_number": 3,
+      "phase": "test",
+      "state": "future"
+    }
   ]
 }
 ```
@@ -72,3 +99,26 @@ Ownership is resolved before check-ins are read, using [`owned_experiment`](../b
 Live shared-database behavior was not exercised in this change; no health data or accounts were written, and there were zero paid AI requests. Existing report chart semantics and APIs are unchanged. The mobile app itself belongs in the next PR after this contract is merged.
 
 Final verification on 31 Oct 2026 after fetching and merging `origin/main` at `65bc328` (already up to date): lint, typecheck, production build and contract/brand freshness passed; 243 backend, 157 frontend, 11 brand and 6 contract tests passed. Both full Playwright runs finished with 76 passed and the same one existing keyboard-onboarding skip. All relative documentation links and the example response model were checked. Every feature commit includes the automatic session log, and no env file is included.
+
+## Normal-day context (S8)
+
+`baseline_summary` is an additive, nullable response field. The [timeline service](../backend/app/services/timeline.py) returns it only during the active test phase (`progress.state = in_progress`, `progress.phase = intervention`), after the existing rolling baseline intervals have finished. It is null on baseline days, before start, after the experiment ends and after completion. Clients tolerate older responses that omit it. There is no migration, new endpoint, write or AI request.
+
+The [deterministic summary](../backend/app/services/analysis.py) uses only stored `phase = baseline` check-ins, without filling missing days or dropping outliers. [Models](../backend/app/schemas/progress.py):
+
+- `BaselineSummary`: `days_recorded`, `days_planned`, `metrics`.
+- Each `BaselineMetric`: `key`, `label`, `n`, nullable `minimum`/`maximum`, nullable `yes_count`, and `description`.
+- Numeric/scale/duration values use observed min/max (a single value when equal), scale bounds or minutes, and the recorded answer count. Boolean descriptions say Yes on X of N **recorded** days, never X of planned days. Zero and false remain answers. Per-metric missing values have `n = 0`, null bounds and an honest empty description.
+- Descriptions are deterministic English presentation of these observations, not model prose or a verdict. They are not parsed for numeric data by either client. A range from one to three days is not a fixed personal norm or evidence that the intervention works.
+
+The web [context section](../frontend/components/experiments/baseline-context.tsx) appears in Your lab and experiment detail before the small-change instructions/action. [Mobile Today](../apps/mobile/src/baseline-context.tsx) uses the same response before the intervention. Both show recorded/planned counts, each metric, a missing-days caution when needed, and a clean empty state without blocking Check-in. Existing progress loading/error/retry/401/offline behavior applies; no extra HTTP call or local day/statistic calculation is introduced.
+
+[Backend tests](../backend/tests/test_progress_endpoint.py) cover all four metric types, first test day, configured phase lengths, sparse/missing data, zero/false and the same rolling boundary in Dhaka/Toronto. Web/mobile tests and [browser cases](../frontend/tests/e2e/baseline-context.spec.ts) use a [backend-generated fixture](../frontend/tests/support/baseline-summary.json), validated against OpenAPI. Regenerate without real env files or services, from an empty temporary directory:
+
+```bash
+/path/to/repo/backend/.venv/bin/python /path/to/repo/frontend/tests/support/generate_baseline_summary.py > /path/to/repo/frontend/tests/support/baseline-summary.json
+```
+
+[Screenshots](screenshots/baseline-context/) use isolated fixtures at 390px, 768px and 1440px. No real account was advanced to a new day and no invented health data was written to the shared database. A physical day-4 S8 check is not claimed.
+
+Verification on `feat/baseline-context` after the main refresh at `8174599` (31 Oct 2026): 254 backend tests; 168 web, 97 mobile, 11 brand and 6 contract unit tests; lint/typecheck and contract/brand freshness; iOS/Android production exports. Both full Playwright runs finished with 82 passed and the same existing keyboard-onboarding skip; the six S8 cases were rerun after the final one-line empty-state copy change. Browser checks use fake services and assert zero proposal/save/start requests. No migration, paid call or shared-database write. Web production build passed with fake public settings.
