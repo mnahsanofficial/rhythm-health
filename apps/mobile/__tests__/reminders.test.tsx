@@ -3,11 +3,12 @@ import { AppState, Linking, type AppStateStatus } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
-import { notifications, notificationState, preferences, responses, tapReminder } from './support/notifications';
+import { notifications, notificationState, preferences, pending, responses, tapReminder } from './support/notifications';
 import type { ExperimentTimeline } from '@rhythm-health/contract';
 const mockAuth = { getSession: jest.fn(), signInWithPassword: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
 jest.mock('../src/lib/supabase', () => ({ createAuthClient: () => ({ auth: mockAuth }) }));
-jest.mock('expo-network', () => ({ useNetworkState: () => ({ isConnected: true, isInternetReachable: true }) }));
+const mockNetwork = { isConnected: true, isInternetReachable: true };
+jest.mock('expo-network', () => ({ useNetworkState: () => mockNetwork }));
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 const session = { access_token: 'fake-token', user: { id: 'fake-user', email: 'learner@example.invalid' } };
@@ -16,6 +17,7 @@ let timeline: ExperimentTimeline;
 let listeners: Set<(state: AppStateStatus) => void>;
 let hasExperiment: boolean;
 beforeEach(() => {
+  mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
   jest.clearAllMocks(); jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-31T12:00:00Z'));
   timeline = timelineFixture(active, { recorded: [1], nextDayAt: '2027-11-01T06:30:00Z' }); hasExperiment = true;
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
@@ -184,4 +186,25 @@ test('returning from phone Settings refreshes permission even on the last day', 
   await act(async () => { listeners.forEach(listener => listener('active')); });
   await waitFor(() => expect(screen.getByRole('switch', { name: 'Daily reminders' })).toBeChecked());
   expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+});
+
+
+test('cold offline restoration preserves an existing reminder for the same opted-in account', async () => {
+  preferences.set('rhythm.reminders.fake-user', 'on'); notificationState.granted = true;
+  pending.set('rhythm.next-day', { identifier: 'rhythm.next-day', content: { data: { kind: 'rhythm-checkin', owner: 'fake-user', experiment: active.id } }, trigger: null });
+  mockNetwork.isConnected = false; render(<MobileApp />);
+  await screen.findByText('Your saved session is here. Reconnect to load your profile.');
+  const store = jest.requireMock('expo-secure-store') as typeof import('expo-secure-store');
+  await waitFor(() => expect(store.getItemAsync).toHaveBeenCalledWith('rhythm.reminders.fake-user'));
+  expect(pending.has('rhythm.next-day')).toBe(true); expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+});
+
+test('retrying preference restoration retains the already loaded server progress', async () => {
+  preferences.set('rhythm.reminders.fake-user', 'on'); notificationState.granted = true;
+  const store = jest.requireMock('expo-secure-store') as typeof import('expo-secure-store');
+  jest.mocked(store.getItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
+  render(<MobileApp />); await settings(); await screen.findByText(/Couldn't update your reminder/);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Retry reminder' })).toBeEnabled());
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
+  await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
 });
