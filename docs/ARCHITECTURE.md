@@ -61,6 +61,7 @@ sequenceDiagram
     Note over UI,API: An active experiment blocks the UI before any proposal request
     UI->>API: POST /api/experiments/propose
     API->>DB: Read profile
+    API->>DB: Owner-scoped zero-row probe for optional guess column
     API->>AI: Jev category, intent and risk classification
     AI-->>API: Typed classification
     API->>API: Apply deterministic safety rules
@@ -69,13 +70,17 @@ sequenceDiagram
     API->>AI: Combined experiment design and prediction
     AI-->>API: Proposal and prediction JSON
     API->>API: Validate JSON and recheck generated proposal safety
-    API-->>UI: Proposal, prediction, safety and classification
+    API-->>UI: Proposal, prediction, safety, classification and guess availability
+    opt Personal guess available
+        UI-->>Person: Primary metric and change (forecast hidden)
+        Person->>UI: Commit own guess before the AI forecast reveal
+    end
     UI-->>Person: Preview the plan and original forecast
 
     Person->>UI: Start this experiment
     UI->>API: Recheck active list, then POST /api/experiments
     API->>API: Revalidate schema and proposal safety
-    API->>DB: Insert proposed experiment with prediction
+    API->>DB: Insert proposed experiment with prediction and optional personal guess
     API-->>UI: Saved experiment ID
     UI->>API: POST /api/experiments/{id}/start
     API->>DB: Conditional proposed-to-active update
@@ -164,6 +169,7 @@ erDiagram
         jsonb metrics
         jsonb success_criteria
         jsonb prediction
+        float personal_guess_percent "Nullable, S6 migration pending user apply"
         timestamptz started_at
         timestamptz completed_at
         boolean is_seeded
@@ -274,7 +280,7 @@ The [PRD §8](../PRD.md#8-ai-experiment-designer) says a seven-day V1 default. T
 | [backend/app/services/](../backend/app/services/) | Safety, proposal/history, progress, check-in validation, deterministic analysis, chart/report assembly, narrative generation and demo reset |
 | [backend/app/schemas/](../backend/app/schemas/) | Pydantic request, response and generation-validation models |
 | [backend/app/repositories/](../backend/app/repositories/) and [integrations/](../backend/app/integrations/) | Ownership-scoped persistence queries and PostgREST/Jev/OpenRouter transport. JWT verification and public signing-key retrieval are in [auth/](../backend/app/auth/) |
-| [supabase/migrations/](../supabase/migrations/) | Six SQL migrations: four tables, profile grants and the one-active index |
+| [supabase/migrations/](../supabase/migrations/) | Seven SQL migrations: four tables, profile grants, the one-active index and S6’s optional guess column (shared apply pending Nazmul) |
 | [frontend/tests/](../frontend/tests/) and [backend/tests/](../backend/tests/) | Browser/component/data/contract coverage and isolated Python/API tests |
 | [docs/](./), [scripts/](../scripts/) and [.claude-logs/](../.claude-logs/) | Decisions/rules/evidence, automatic logging scripts and committed agent session history; see [logging.md](logging.md) |
 
@@ -282,16 +288,16 @@ V1 was split by layer: Nazmul on frontend/UI and Shakeb on backend/features. V2 
 
 ## 7. Tests and current evidence
 
-Counts below are from S8 baseline-context verification on **31 Oct 2026**, on `feat/baseline-context` after fetching and merging main at `8174599`. Commands are the existing suites; no real OpenRouter request or shared Supabase write is needed. Sources: [pytest configuration](../backend/pyproject.toml), [frontend scripts](../frontend/package.json), [Vitest config](../frontend/vitest.config.mts), [MSW lifecycle](../frontend/tests/setup.ts) and [Playwright config](../frontend/playwright.config.mts).
+Counts below are from S6 personal-guess verification on **31 Oct 2026**, on `feat/personal-guess` after fetching and merging main at `b2100cc`. Root unit suites passed three consecutive runs. Commands are the existing suites; no real OpenRouter request or shared Supabase write is needed. Sources: [pytest configuration](../backend/pyproject.toml), [frontend scripts](../frontend/package.json), [Vitest config](../frontend/vitest.config.mts), [MSW lifecycle](../frontend/tests/setup.ts) and [Playwright config](../frontend/playwright.config.mts).
 
 | Suite / run directory | Command | Result | What it actually checks |
 |---|---|---|---|
-| Backend, `backend/` | `uv run pytest` | **254 passed**, one existing Starlette/httpx deprecation warning | Statistics, progress, safety, auth/ownership, profile/experiment/check-in/completion/report/demo endpoints and history. FastAPI TestClient uses dependency overrides, monkeypatched repositories/in-memory fakes, and fake AI transport: [auth](../backend/tests/test_auth.py), [proposal](../backend/tests/test_propose.py), [completion](../backend/tests/test_completion.py), [report](../backend/tests/test_report.py), [history](../backend/tests/test_history.py), [demo](../backend/tests/test_demo.py) |
-| Frontend, `frontend/` | `npm test` | **168 passed** in **26 files** | Vitest + Testing Library in jsdom, MSW HTTP mocks and mocked Supabase auth. Data/auth/onboarding/experiment/report/home behavior plus API fixture validation: [tests](../frontend/tests/), [MSW server](../frontend/tests/support/server.ts), [contract assertions](../frontend/tests/contracts/api-contract.test.ts) |
+| Backend, `backend/` | `uv run pytest` | **279 passed**, one existing Starlette/httpx deprecation warning | Statistics, progress, safety, auth/ownership, profile/experiment/check-in/completion/report/demo endpoints and history. FastAPI TestClient uses dependency overrides, monkeypatched repositories/in-memory fakes, and fake AI transport: [auth](../backend/tests/test_auth.py), [proposal](../backend/tests/test_propose.py), [completion](../backend/tests/test_completion.py), [report](../backend/tests/test_report.py), [history](../backend/tests/test_history.py), [demo](../backend/tests/test_demo.py) |
+| Frontend, `frontend/` | `npm test` | **175 passed** in **26 files** | Vitest + Testing Library in jsdom, MSW HTTP mocks and mocked Supabase auth. Data/auth/onboarding/experiment/report/home behavior plus API fixture validation: [tests](../frontend/tests/), [MSW server](../frontend/tests/support/server.ts), [contract assertions](../frontend/tests/contracts/api-contract.test.ts) |
 | Mobile, `apps/mobile/` | `npm test` | **97 passed** in **7 files** | Expo/Jest and React Native Testing Library: sign-in, restoration, profile states, offline, sign-out, native fonts/storage, authoritative Today, Check-in/retry, reminder lifecycle and read-only Progress; [tests](../apps/mobile/__tests__/) |
 | Brand, `packages/brand/` | `npm test` | **11 passed** | CSS unit conversion/fluid type, token propagation and read-only freshness checks: [tests](../packages/brand/tests/). [Frontend checks](../frontend/tests/brand/tokens.test.ts) cover timing units, text contrast and numeric sizing |
 | Contract, `packages/contract/` | `npm test` | **6 passed** | Generation writes schema/types; the read-only freshness check rejects missing artifacts, schema drift and type drift without rewriting them: [tests](../packages/contract/tests/artifacts.test.mjs) |
-| Browser, `frontend/` | `npm run test:e2e` | **82 passed, 1 skipped** (83 scenarios) | Real Next.js in Chromium with intercepted auth/API calls. Onboarding → proposal → start, check-ins, reports, history/demo, errors, layout and reduced motion: [helpers](../frontend/tests/e2e/helpers.ts), [core flow](../frontend/tests/e2e/onboarding-experiment.spec.ts), [report writing](../frontend/tests/e2e/report-writing.spec.ts), [early finish/timezones](../frontend/tests/e2e/early-finish-days.spec.ts) |
+| Browser, `frontend/` | `npm run test:e2e` | **86 passed, 1 skipped** (87 scenarios) | Real Next.js in Chromium with intercepted auth/API calls. Onboarding → proposal → start, check-ins, reports, history/demo, errors, layout and reduced motion: [helpers](../frontend/tests/e2e/helpers.ts), [core flow](../frontend/tests/e2e/onboarding-experiment.spec.ts), [report writing](../frontend/tests/e2e/report-writing.spec.ts), [early finish/timezones](../frontend/tests/e2e/early-finish-days.spec.ts) |
 
 For the backend verification, pytest was invoked through the installed backend interpreter from an empty temporary working directory, with the backend on `PYTHONPATH`; this avoids loading the real `.env.local`. It runs the same tests as the usual `uv run pytest` command.
 
@@ -317,3 +323,7 @@ The mobile app makes Supabase sign-in/refresh/sign-out requests and `GET /api/pr
 ## Live baseline context (S8)
 
 The existing progress endpoint also returns nullable `baseline_summary` during active test days. [Timeline assembly](../backend/app/services/timeline.py) delegates phase timing to the existing progress calculation and summary statistics to [analysis](../backend/app/services/analysis.py). It reuses the check-ins already read for the timeline, with no new query, model call or migration. Per-metric observed ranges/counts and deterministic English descriptions are rendered by [web](../frontend/components/experiments/baseline-context.tsx) and [mobile](../apps/mobile/src/baseline-context.tsx); neither client computes a baseline. Missing/partial observations are explicit. [Contract and isolated test evidence](PROGRESS_API.md#normal-day-context-s8).
+
+## Personal guess (S6)
+
+Web collects a primary-metric percentage guess before mounting the AI forecast. The optional `experiments.personal_guess_percent` column is nullable; API readiness probing and omission of absent guesses keep the pre-migration database working. Completion adds a deterministic guess/actual comparison to analysis; the report shows guess, AI range and observed result. Existing analysis/experiments default to no guess. No additional model call. [Contract, migration status, local validation and user-only apply instructions](PERSONAL_GUESS.md); [API](../backend/app/api/experiments.py), [analysis](../backend/app/services/analysis.py), [migration](../supabase/migrations/20261031000000_personal_guess.sql).

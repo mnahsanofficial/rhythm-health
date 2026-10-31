@@ -92,3 +92,7 @@ Source: Nazmul's instructions on 31 Oct 2026 after PR #37 merged. These decision
 Implementation order, one PR at a time: S8 normal-day context (web/mobile, no migration) → S6 guess → B12/B11/F13 → active demo. S8 uses **each metric**, extending the original suggestion's primary-metric-only wording. S6's approved entry point is before the AI forecast, superseding the suggestion's earlier "before the report" timing. All displayed observations come from deterministic backend data, never model prose.
 
 Proposed PRD/TRD updates: record this feature ownership/temporary backend cover; optional scale words and chart-point missed flags; the active removable sample; the nullable pre-forecast personal guess; V1 local reminders. Do not edit those source documents as part of S8.
+
+### S6 rollout — 31 Oct 2026
+
+Implementation of D5: the guess is signed percent change for the primary metric (−100…+200, matching the existing forecast scale); zero and fractional guesses are valid. It locks at the web AI reveal and is stored on experiment creation. Comparison/error values come from deterministic analysis. One nullable additive column, with an explicit unavailable/opt-out flow before migration. Nazmul applies it **after Sunday 1 Nov 2026, 10:00 Dhaka**, following his notice to Shakeb; agents never apply it to shared Supabase. These deadline choices remain reversible if Shakeb disagrees (no reply from Shakeb since Oct 30; deadline Nov 5). [Rollout/commands](PERSONAL_GUESS.md).
