@@ -6,7 +6,7 @@ Sources: [route](../backend/app/api/experiments.py), [response models](../backen
 
 ## Response
 
-The generated `ExperimentTimeline` type is exported by [`@rhythm-health/contract`](../packages/contract/src/index.ts). `progress` has the same `ExperimentProgress` shape as the existing experiment endpoints. Example: a three-day experiment, with day 1 recorded and day 2 open:
+The generated `ExperimentTimeline` type is exported by [`@rhythm-health/contract`](../packages/contract/src/index.ts). `progress` has the same `ExperimentProgress` shape as the existing experiment endpoints. Example: a three-day experiment (one normal day, two test days), with day 1 recorded as energy 6 out of 10 and day 2 open:
 
 ```json
 {
@@ -25,11 +25,37 @@ The generated `ExperimentTimeline` type is exported by [`@rhythm-health/contract
   "recorded_days": 1,
   "missed_days": 0,
   "remaining_days": 2,
-  "baseline_summary": null,
+  "baseline_summary": {
+    "days_recorded": 1,
+    "days_planned": 1,
+    "metrics": [
+      {
+        "key": "morning_energy",
+        "label": "Morning energy",
+        "n": 1,
+        "minimum": 6,
+        "maximum": 6,
+        "yes_count": null,
+        "description": "Morning energy: 6 out of 10 (1 answer)."
+      }
+    ]
+  },
   "days": [
-    { "day_number": 1, "phase": "baseline", "state": "recorded" },
-    { "day_number": 2, "phase": "test", "state": "current" },
-    { "day_number": 3, "phase": "test", "state": "future" }
+    {
+      "day_number": 1,
+      "phase": "baseline",
+      "state": "recorded"
+    },
+    {
+      "day_number": 2,
+      "phase": "test",
+      "state": "current"
+    },
+    {
+      "day_number": 3,
+      "phase": "test",
+      "state": "future"
+    }
   ]
 }
 ```
