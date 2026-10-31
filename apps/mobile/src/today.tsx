@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, View } from 'react-native';
+import { MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
+import { CheckinForm } from './checkin';
 import type { Experiment, ExperimentTimeline } from '@rhythm-health/contract';
 import { Action, Alert, Copy, Loading, styles, Title } from './ui';
 import { ApiError } from './lib/api';
@@ -13,6 +15,8 @@ export function Today({ token, offline, openWeb, onExpired }: {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const generation = useRef(0);
+  const [editing, setEditing] = useState<DayData | null>(null);
+  const [saved, setSaved] = useState(false);
   const load = useCallback(async () => {
     if (offline) return;
     const request = ++generation.current;
@@ -37,8 +41,12 @@ export function Today({ token, offline, openWeb, onExpired }: {
 
   const disabled = offline || busy || error !== null;
   const data = loaded?.value;
+  if (editing) return <CheckinForm data={editing} token={token} offline={offline} onExpired={onExpired}
+    onBack={() => { setEditing(null); void load(); }}
+    onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
   return (
     <View style={styles.stack}>
+      {saved && <SavedReceipt failed={error !== null} />}
       {offline && <Copy accessibilityLiveRegion="polite" style={styles.muted}>{loaded
         ? `Offline, last updated ${loaded.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`
         : 'No connection'}</Copy>}
@@ -50,7 +58,7 @@ export function Today({ token, offline, openWeb, onExpired }: {
           <Action label="Start an experiment on the web" link onPress={() => openWeb('/experiments/new')} />
         </> : <>
           <TodaySummary data={data} disabled={disabled} openWeb={openWeb}
-            onCheckin={() => openWeb(`/experiments/${encodeURIComponent(data.experiment.id)}/check-in`)} />
+            onCheckin={() => { setSaved(false); setEditing(data); }} />
           {!offline && busy && <Copy accessibilityLiveRegion="polite" style={styles.muted}>Refreshing your day…</Copy>}
         </>}
     </View>
@@ -89,4 +97,27 @@ export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb
         <Action label="Finish on the web" link onPress={() => openWeb(path)} />
       </> : <><Copy>This experiment hasn&apos;t started.</Copy><Action label="Open your experiment on the web" link onPress={() => openWeb(path)} /></>}
   </>;
+}
+
+function SavedReceipt({ failed }: { failed: boolean }) {
+  const [opacity] = useState(() => new Animated.Value(1));
+  useEffect(() => {
+    let active = true;
+    let animation: Animated.CompositeAnimation | undefined;
+    const animate = (reduced: boolean) => {
+      animation?.stop(); opacity.setValue(1);
+      if (active && !reduced) {
+        opacity.setValue(0);
+        animation = Animated.timing(opacity, { toValue: 1, duration: MOTION_DURATION_MS.response, useNativeDriver: true });
+        animation.start();
+      }
+    };
+    AccessibilityInfo.isReduceMotionEnabled().then(animate).catch(() => { opacity.setValue(1); });
+    const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', animate);
+    return () => { active = false; animation?.stop(); listener.remove(); };
+  }, [opacity]);
+  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+    <Animated.View accessible={false} style={{ opacity }}><Copy>✓</Copy></Animated.View>
+    <Copy accessibilityLiveRegion="polite">{failed ? 'Your check-in was saved. Refresh Today to see your progress.' : 'Check-in saved.'}</Copy>
+  </View>;
 }
