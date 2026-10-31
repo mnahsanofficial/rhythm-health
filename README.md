@@ -26,14 +26,14 @@ Checked against `main` on **31 Oct 2026**. Details, owners and the plan to Thurs
 |---|---|---|---|
 | **Web** | The full core loop: onboarding → question → prediction → start → daily check-ins → timeline → finish → Lab Report with the written narrative → next experiment. Also history, the seeded demo and the calendar reminder | | Clean-up (dead code, one percent formatter); the report chart's `missed` flag |
 | **Backend** | Auth, profile, propose (with past experiments as context), check-ins, deterministic analysis, report narrative, demo reset, progress endpoint | | `missed` flag on chart points; scale words for check-in metrics; full-flow test |
-| **Mobile** | Shared types, native type styles and the progress endpoint it needs | Expo app: sign in, Today, Check-in, reminder, Progress | Reading the Lab Report and history on the phone (V2) |
+| **Mobile** | Expo Go sign-in/profile, encrypted session persistence and shared packages | Today, Check-in, reminder, Progress | Reading the Lab Report and history on the phone (V2) |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     UI["Next.js web app<br/>public anon key + user session"]
-    APP["Expo app (planned)<br/>same account and API"]
+    APP["Expo mobile: sign-in/profile<br/>same account and API"]
     AUTH["Supabase Auth"]
     API["FastAPI<br/>service-role and OpenRouter keys stay here"]
     DB[("Supabase Postgres")]
@@ -88,7 +88,9 @@ npm run dev
 
 Open http://localhost:3000 and choose **Run your first experiment**.
 
-**Mobile app (coming next).** It will live in `apps/mobile/` and run on a phone with Expo Go against the backend above. Its commands will be added here when the app exists; until then, see [docs/MOBILE_PLAN.md](docs/MOBILE_PLAN.md).
+## Mobile (step 1)
+
+Root `npm ci` also installs `apps/mobile/`. Start Expo Go with `npm run start --workspace=@rhythm-health/mobile`; the [mobile setup](apps/mobile/README.md) covers public settings, the Mac/phone network address and the backend's `--host 0.0.0.0` command. SDK 58 works with the current store Expo Go. This step is existing-account sign-in and profile loading; the daily-loop screens follow in separate PRs.
 
 ## Running tests
 
@@ -101,7 +103,7 @@ npm test
 npm run build
 ```
 
-`npm test` first checks that the generated contract and brand files are current, then runs the frontend, contract and brand suites. Browser tests (install Chromium once):
+`npm test` first checks that the generated contract and brand files are current, then runs the frontend, mobile, contract and brand suites. Browser tests (install Chromium once):
 
 ```bash
 cd frontend
@@ -128,7 +130,7 @@ Last full run on **31 Oct 2026**: 243 backend, 157 frontend, 11 brand and 6 cont
 | [supabase/](supabase/) | Database migrations and row-level security |
 | [packages/contract/](packages/contract/) | API types generated from the FastAPI schema, shared by web and mobile |
 | [packages/brand/](packages/brand/) | Design tokens: generated web CSS and native-ready values |
-| `apps/mobile/` | The Expo app (planned; see [MOBILE_PLAN.md](docs/MOBILE_PLAN.md)) |
+| [apps/mobile/](apps/mobile/README.md) | Expo Go sign-in/profile; remaining daily-loop screens follow [MOBILE_PLAN.md](docs/MOBILE_PLAN.md) |
 | [docs/](docs/) | Plans, decisions, rules, architecture and evidence |
 
 ## Documentation
