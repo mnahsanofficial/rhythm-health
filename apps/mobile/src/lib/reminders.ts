@@ -59,14 +59,14 @@ export class Reminders {
     await Notifications.cancelScheduledNotificationAsync(DAILY);
     const next = data?.timeline.days.find(day => day.state === 'future' && data.timeline.progress.day_number !== null && day.day_number > data.timeline.progress.day_number);
     const at = data?.timeline.next_day_at;
-    if (!owner || choice !== 'on' || data?.timeline.progress.state !== 'in_progress' || !next || !at) {
+    if (!owner || choice !== 'on') {
       await Notifications.cancelScheduledNotificationAsync(TEST); return;
     }
     const permission = await Notifications.getPermissionsAsync();
     if (revision !== this.revision) return;
     const allowed = permission.granted || permission.ios?.status === IosAuthorizationStatus.PROVISIONAL;
     this.patch({ permission: allowed });
-    if (!allowed) { await Notifications.cancelScheduledNotificationAsync(TEST); return; }
+    if (!allowed || data?.timeline.progress.state !== 'in_progress' || !next || !at) { await Notifications.cancelScheduledNotificationAsync(TEST); return; }
     const date = new Date(at);
     if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) return;
     if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('rhythm', { name: 'Daily check-in', importance: AndroidImportance.DEFAULT });
