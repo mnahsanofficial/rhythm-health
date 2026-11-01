@@ -208,3 +208,17 @@ test('retrying preference restoration retains the already loaded server progress
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
   await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
 });
+
+test('sample experiments cancel pending reminders and never schedule daily or test notifications', async () => {
+  const { Reminders } = await import('../src/lib/reminders');
+  const service = new Reminders();
+  notificationState.granted = true;
+  await service.setOwner('sample-owner');
+  await service.choose(true);
+  notifications.scheduleNotificationAsync.mockClear();
+  await service.refresh({ experiment: { ...active, is_seeded: true }, timeline });
+  await service.test();
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.test');
+  expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+});

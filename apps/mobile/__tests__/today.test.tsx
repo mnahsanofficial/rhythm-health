@@ -153,3 +153,20 @@ test('offline retains the labelled last-loaded baseline and disables Check-in', 
   expect(screen.getByText(/Offline, last updated/)).toBeVisible(); expect(screen.getByText(normal.metrics[0].description)).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeDisabled();
 });
+
+test('an empty account offers an explicitly labelled active sample', async () => {
+  list = []; render(<MobileApp />);
+  expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
+  expect(screen.getByText(/Sample answers never become your real experiment data/)).toBeVisible();
+});
+
+test('sample Today is labelled and removal asks before making any request', async () => {
+  list = [{ ...active, is_seeded: true }]; render(<MobileApp />);
+  expect(await screen.findByText('Sample experiment')).toBeVisible();
+  expect(screen.getByText(/Reminders are off for this sample/)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
+  expect(screen.getByText('Remove this sample experiment?')).toBeVisible();
+  expect(requests.every(path => !path.includes('/remove'))).toBe(true);
+  fireEvent.press(screen.getByRole('button', { name: 'Keep sample' }));
+  expect(screen.queryByText('Remove this sample experiment?')).toBeNull();
+});
