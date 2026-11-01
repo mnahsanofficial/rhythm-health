@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, View } from 'react-native';
 import { MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
+import { SampleControls } from './sample-controls';
 import { BaselineContext } from './baseline-context';
 import { Progress } from './progress';
 import { ReminderNotice, Settings } from './settings';
@@ -36,7 +37,7 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
         const intent = reminders.getSnapshot().intent;
         if (intent) {
           reminders.consume();
-          if (intent.owner === reminders.getSnapshot().owner && value?.experiment.id === intent.experiment && value.timeline.progress.state === 'in_progress') { setScreen('today'); setEditing(value); }
+          if (!value?.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && value?.experiment.id === intent.experiment && value.timeline.progress.state === 'in_progress') { setScreen('today'); setEditing(value); }
         }
       }
     } catch (cause) {
@@ -58,6 +59,8 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
 
   const disabled = offline || busy || error !== null;
   const data = loaded?.value;
+  const sampleControls = <SampleControls key={data?.experiment.id ?? 'empty'} experiment={data?.experiment} token={token} disabled={disabled}
+    onExpired={onExpired} onChanged={async () => { setLoaded(null); setSaved(false); await load(); }} />;
   const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
   if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} /></View>;
   if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
@@ -81,7 +84,9 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
           <Title>Nothing running yet.</Title>
           <Copy style={styles.muted}>Start your next experiment on the web, then come back here for your daily check-in.</Copy>
           <Action label="Start an experiment on the web" link onPress={() => openWeb('/experiments/new')} />
+          {sampleControls}
         </> : <>
+          {sampleControls}
           <TodaySummary data={data} disabled={disabled} openWeb={openWeb}
             onCheckin={() => { setSaved(false); setEditing(data); }} />
           {!offline && busy && <Copy accessibilityLiveRegion="polite" style={styles.muted}>Refreshing your day…</Copy>}
@@ -98,7 +103,7 @@ export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb
   const next = timeline.days.find(day => progress.day_number !== null && day.day_number > progress.day_number);
   const path = `/experiments/${encodeURIComponent(experiment.id)}`;
   return <>
-    <Copy style={styles.muted}>Your lab</Copy>
+    <Copy style={styles.muted}>{experiment.is_seeded ? 'Sample daily loop' : 'Your lab'}</Copy>
     {progress.state === 'in_progress' && <Copy style={styles.number}>Day {progress.day_number} of {progress.total_days}</Copy>}
     <Title>{experiment.question}</Title>
     <BaselineContext timeline={timeline} />
@@ -115,7 +120,7 @@ export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb
       })}.</Copy> : <Copy>That was the last day. Finish on the web when you&apos;re ready.</Copy>}
       <Action label="Change today's answers" secondary onPress={onCheckin} disabled={disabled} />
     </View> : <Action label={`Check in for day ${progress.day_number}`} onPress={onCheckin} disabled={disabled} />
-      : progress.state === 'completed' ? <>
+      : experiment.is_seeded ? <Copy>This sample has ended. Remove it to free the slot for a real experiment.</Copy> : progress.state === 'completed' ? <>
         <Copy accessibilityRole="header" style={styles.sectionTitle}>Your results are ready.</Copy>
         <Action label="See your Lab Report on the web" link onPress={() => openWeb(`${path}/report`)} />
       </> : progress.state === 'ended' ? <>

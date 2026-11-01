@@ -1,5 +1,6 @@
 "use client";
 
+import { SampleControls } from "./sample-controls";
 import Link from "next/link";
 import { BaselineContext } from "./baseline-context";
 import { useRouter } from "next/navigation";
@@ -135,16 +136,17 @@ export function ExperimentDetail({ id }: { id: string }) {
       </p>
       <h1 className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{experiment.question}</h1>
 
+      <SampleControls experiment={experiment} onChanged={() => router.push("/")} />
       <BaselineContext timeline={timeline} />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
         <TodayCard experiment={experiment} timeline={timeline} path={path} />
-        <FinishCard
+        {!experiment.is_seeded && <FinishCard
           experiment={experiment}
           counts={c}
           onCompleted={() => router.push(`${path}/report`)}
           onDataChanged={() => setAttempt((n) => n + 1)}
-        />
+        />}
       </div>
 
       <section aria-labelledby="timeline-heading" className="mt-8 rounded-card border border-line bg-paper p-5 sm:p-7">

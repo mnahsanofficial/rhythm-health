@@ -36,6 +36,12 @@ class FakeDb:
         self.checkins = [c for c in self.checkins if c["experiment_id"] not in gone]
         self.reports = {k: v for k, v in self.reports.items() if k not in gone}
 
+    def delete_sample(self, profile_id, experiment_id):
+        gone = {e["id"] for e in self.experiments if e["profile_id"] == profile_id and e["id"] == experiment_id and e["is_seeded"]}
+        self.experiments = [e for e in self.experiments if e["id"] not in gone]
+        self.checkins = [c for c in self.checkins if c["experiment_id"] not in gone]
+        self.reports = {k: v for k, v in self.reports.items() if k not in gone}
+
     def create(self, profile_id, values):
         if self.fail_on_create:
             raise self.fail_on_create
@@ -86,6 +92,7 @@ def db(monkeypatch):
     fake = FakeDb()
     monkeypatch.setattr(profiles, "get_by_user_id", fake.get_profile)
     monkeypatch.setattr(experiments, "delete_seeded", fake.delete_seeded)
+    monkeypatch.setattr(experiments, "delete_sample", fake.delete_sample)
     monkeypatch.setattr(experiments, "create", fake.create)
     monkeypatch.setattr(checkins, "create_many", fake.create_many)
     monkeypatch.setattr(reports, "upsert", fake.upsert_report)

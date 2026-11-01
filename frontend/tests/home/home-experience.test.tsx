@@ -352,3 +352,11 @@ describe("ask from Your lab", () => {
     expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveFocus();
   });
 });
+
+it('labels a running sample separately from real observations', async () => {
+  signedIn();
+  server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([{ ...activeExperiment, is_seeded: true }])));
+  render(home());
+  expect(await screen.findByText('Sample experiment')).toBeVisible();
+  expect(screen.getByText(/Sample answers never become your real experiment data/)).toBeVisible();
+});

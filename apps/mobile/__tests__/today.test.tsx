@@ -153,3 +153,86 @@ test('offline retains the labelled last-loaded baseline and disables Check-in', 
   expect(screen.getByText(/Offline, last updated/)).toBeVisible(); expect(screen.getByText(normal.metrics[0].description)).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeDisabled();
 });
+
+test('an empty account offers an explicitly labelled active sample', async () => {
+  list = []; render(<MobileApp />);
+  expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
+  expect(screen.getByText(/Sample answers never become your real experiment data/)).toBeVisible();
+});
+
+test('sample Today is labelled and removal asks before making any request', async () => {
+  list = [{ ...active, is_seeded: true }]; render(<MobileApp />);
+  expect(await screen.findByText('Sample experiment')).toBeVisible();
+  expect(screen.getByText(/Reminders are off for this sample/)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
+  expect(screen.getByText('Remove this sample experiment?')).toBeVisible();
+  expect(requests.every(path => !path.includes('/remove'))).toBe(true);
+  fireEvent.press(screen.getByRole('button', { name: 'Keep sample' }));
+  expect(screen.queryByText('Remove this sample experiment?')).toBeNull();
+});
+
+test('starting a sample refreshes Today; confirmed removal returns to the empty state', async () => {
+  list = [];
+  const fetch = global.fetch;
+  const mutations: string[] = [];
+  global.fetch = jest.fn(async (url, options) => {
+    const path = String(url);
+    if (options?.method === 'POST') {
+      mutations.push(path);
+      expect(options.headers).toEqual({ Authorization: 'Bearer fake-token', 'Content-Type': 'application/json' });
+      if (path.endsWith('/api/demo/active')) {
+        expect(JSON.parse(String(options.body))).toEqual({});
+        list = [{ ...active, is_seeded: true }];
+        return { ok: true, status: 201, json: async () => list[0] } as Response;
+      }
+      expect(JSON.parse(String(options.body))).toEqual({ confirmed: true });
+      list = [];
+      return { ok: true, status: 200, json: async () => ({ removed: true }) } as Response;
+    }
+    return fetch(url, options);
+  });
+  render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'Try a sample experiment' }));
+  expect(await screen.findByText('Sample experiment')).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
+  expect(mutations).toHaveLength(1);
+  fireEvent.press(screen.getByRole('button', { name: 'Confirm remove sample' }));
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(mutations).toHaveLength(2);
+});
+
+test('an active real experiment explains why a sample cannot be started', async () => {
+  render(<MobileApp />);
+  expect(await screen.findByText(/A sample needs the active experiment slot/)).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
+});
+
+test('a failed sample start preserves the empty state and offers retry', async () => {
+  list = []; const fetch = global.fetch;
+  global.fetch = jest.fn(async (url, options) => options?.method === 'POST'
+    ? { ok: false, status: 503, json: async () => ({ detail: 'Sample service unavailable. Try again.' }) } as Response : fetch(url, options));
+  render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'Try a sample experiment' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Sample service unavailable. Try again.');
+  expect(screen.getByRole('button', { name: 'Try a sample experiment' })).toBeEnabled();
+});
+
+test('removal failure keeps the sample and its confirmation available for retry', async () => {
+  list = [{ ...active, is_seeded: true }]; const fetch = global.fetch;
+  global.fetch = jest.fn(async (url, options) => options?.method === 'POST'
+    ? { ok: false, status: 503, json: async () => ({ detail: 'Could not remove sample. Try again.' }) } as Response : fetch(url, options));
+  render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'Remove sample' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Confirm remove sample' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove sample. Try again.');
+  expect(screen.getByRole('button', { name: 'Confirm remove sample' })).toBeEnabled();
+  expect(screen.getByText(active.question)).toBeVisible();
+});
+
+test('offline sample controls are disabled while cached sample labels remain visible', async () => {
+  list = [{ ...active, is_seeded: true }]; const view = render(<MobileApp />);
+  await screen.findByText('Sample experiment');
+  mockNetwork.isConnected = false; view.rerender(<MobileApp />);
+  expect(screen.getByText('Sample experiment')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Remove sample' })).toBeDisabled();
+});

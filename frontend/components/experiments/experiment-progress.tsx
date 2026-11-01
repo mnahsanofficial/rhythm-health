@@ -90,13 +90,13 @@ export function TodayCard({ experiment, timeline, path }: {
           <>
             <p className="mt-2 text-body text-muted">Day {day + 1} opens {opensText}.</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <button
+              {!experiment.is_seeded && <button
                 type="button"
                 onClick={() => downloadReminder(experiment, day + 1, opens, `${path}/check-in`)}
                 className={primaryButton}
               >
                 Add day {day + 1} to your calendar
-              </button>
+              </button>}
               <Link href={`${path}/check-in`} className={secondaryButton}>
                 Change today&apos;s answers
               </Link>

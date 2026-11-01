@@ -20,7 +20,7 @@ def load(profile_id: str, category: str) -> PastContext | None:
     depend on it.
     """
     try:
-        rows = experiments.list_completed(profile_id, CANDIDATES)
+        rows = [r for r in experiments.list_completed(profile_id, CANDIDATES) if not r.get("is_seeded")]
         report_rows = reports.list_for_experiments([r["id"] for r in rows])
     except SupabaseUnavailable:
         logger.warning("past experiments unavailable, proposing without them")

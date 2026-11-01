@@ -43,7 +43,7 @@ Sources: the Oct 30 reviewer call (points supplied by Nazmul; the call transcrip
 
 ## Plan to Thursday 5 Nov
 
-Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 merged in #38, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6 merged in #39, awaiting Nazmul’s migration after Sunday 1 Nov 10:00 Dhaka; [rollout and exact command](PERSONAL_GUESS.md). B12/B11/F13 are built on `feat/scale-words-chart-days`, with no migration ([contract/evidence](SCALE_WORDS_CHART_DAYS.md)); the active sample waits for its merge.
+Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 merged in #38, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6 merged in #39, awaiting Nazmul’s migration after Sunday 1 Nov 10:00 Dhaka; [rollout and exact command](PERSONAL_GUESS.md). B12/B11/F13 merged in #40, with no migration ([contract/evidence](SCALE_WORDS_CHART_DAYS.md)). The user-triggered active sample is built on `feat/active-demo-seed`, using the existing sample marker and active-slot rule ([contract/evidence](ACTIVE_SAMPLE.md)).
 
 Original schedule: **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
 
@@ -291,4 +291,4 @@ Built on `feat/personal-guess`: commit a primary-metric percentage guess before 
 
 ## B12/B11/F13 — scale words and authoritative chart flags
 
-Built as PR 3 with no new migration and no shared writes. Optional scale words persist in existing metric JSON; web/mobile fall back to Low / High for old metrics. Report points carry `missed`; the chart no longer receives the adherence list. [Contract, tests, screenshots and verification limits](SCALE_WORDS_CHART_DAYS.md). PR 4, the active sample seed, starts only after this merges.
+Built as PR 3 with no new migration and no shared writes. Optional scale words persist in existing metric JSON; web/mobile fall back to Low / High for old metrics. Report points carry `missed`; the chart no longer receives the adherence list. [Contract, tests, screenshots and verification limits](SCALE_WORDS_CHART_DAYS.md). PR 3 merged in #40. PR 4, the active sample seed, is built on `feat/active-demo-seed` ([contract/evidence](ACTIVE_SAMPLE.md)).

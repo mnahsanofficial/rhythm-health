@@ -77,7 +77,7 @@ export class Reminders {
     await Notifications.cancelScheduledNotificationAsync(DAILY);
     const next = data?.timeline.days.find(day => day.state === 'future' && data.timeline.progress.day_number !== null && day.day_number > data.timeline.progress.day_number);
     const at = data?.timeline.next_day_at;
-    if (!owner || choice !== 'on') {
+    if (!owner || choice !== 'on' || data?.experiment.is_seeded) {
       await Notifications.cancelScheduledNotificationAsync(TEST); return;
     }
     const permission = await Notifications.getPermissionsAsync();
@@ -97,6 +97,7 @@ export class Reminders {
   }
   choose = (enabled: boolean) => {
     const owner = this.state.owner;
+    if (enabled && this.state.data?.experiment.is_seeded) return Promise.resolve();
     if (!owner) return Promise.resolve();
     this.revision++;
     return this.run(async () => {
@@ -148,13 +149,13 @@ export class Reminders {
     if (!__DEV__ || Platform.OS === 'web') return Promise.resolve();
     return this.run(async () => {
       const { owner, choice, permission, data } = this.state;
-      if (!owner || choice !== 'on' || !permission || data?.timeline.progress.state !== 'in_progress') return;
+      if (!owner || choice !== 'on' || !permission || data?.experiment.is_seeded || data?.timeline.progress.state !== 'in_progress') return;
       await Notifications.cancelScheduledNotificationAsync(TEST);
       await Notifications.scheduleNotificationAsync({ identifier: TEST,
         content: { title: `Day ${data.timeline.progress.day_number} of ${data.timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.', data: { kind: 'rhythm-checkin', owner, experiment: data.experiment.id } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 10, repeats: false, channelId: 'rhythm' },
       });
-      if (owner !== this.state.owner || this.state.choice !== 'on') await Notifications.cancelScheduledNotificationAsync(TEST);
+      if (owner !== this.state.owner || this.state.choice !== 'on' || this.state.data?.experiment.is_seeded) await Notifications.cancelScheduledNotificationAsync(TEST);
       else this.patch({ notice: 'Test reminder scheduled. Lock the phone, then tap the notification.' });
     });
   };

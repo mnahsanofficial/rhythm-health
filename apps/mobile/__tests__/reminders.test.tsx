@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AppState, Linking, type AppStateStatus } from 'react-native';
+import { Reminders } from '../src/lib/reminders';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
@@ -207,4 +208,17 @@ test('retrying preference restoration retains the already loaded server progress
   await waitFor(() => expect(screen.getByRole('button', { name: 'Retry reminder' })).toBeEnabled());
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
   await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
+});
+
+test('sample experiments cancel pending reminders and never schedule daily or test notifications', async () => {
+  const service = new Reminders();
+  notificationState.granted = true;
+  await service.setOwner('sample-owner');
+  await service.choose(true);
+  notifications.scheduleNotificationAsync.mockClear();
+  await service.refresh({ experiment: { ...active, is_seeded: true }, timeline });
+  await service.test();
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.test');
+  expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
 });

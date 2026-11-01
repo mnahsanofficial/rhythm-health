@@ -100,3 +100,12 @@ def supports_personal_guess(profile_id: str) -> bool:
     except PersonalGuessUnavailable:
         return False
     return True
+
+
+def delete_sample(profile_id: str, experiment_id: str) -> None:
+    """Cascade only this owner's explicitly marked sample, never a real experiment."""
+    rest_request(
+        "DELETE", "experiments",
+        params={"profile_id": f"eq.{profile_id}", "id": f"eq.{experiment_id}", "is_seeded": "eq.true"},
+        prefer="return=representation",
+    )
