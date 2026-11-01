@@ -20,15 +20,15 @@ At the 30 Oct feedback call, reviewers told us that tracking something every day
 
 ## Status
 
-Checked against `main` on **31 Oct 2026**. Details, owners and the plan to Thursday: [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md).
+Checked against `main` after #39 on **1 Nov 2026**, with B12/B11/F13 built on `feat/scale-words-chart-days`. Details, owners and the plan to Thursday: [docs/REMAINING_WORK.md](docs/REMAINING_WORK.md).
 
 | | Done | In progress | Next |
 |---|---|---|---|
-| **Web** | The full core loop: onboarding → question → prediction → start → daily check-ins → timeline → finish → Lab Report with the written narrative → next experiment. Also history, the seeded demo and the calendar reminder | | Clean-up (dead code, one percent formatter); the report chart's `missed` flag |
-| **Backend** | Auth, profile, propose (with past experiments as context), check-ins, deterministic analysis, report narrative, demo reset, progress endpoint | | `missed` flag on chart points; scale words for check-in metrics; full-flow test |
+| **Web** | The full core loop: onboarding → question → prediction → start → daily check-ins → timeline → finish → Lab Report with the written narrative → next experiment. Also history, the seeded demo, calendar reminder and backend-owned chart missed flags | | Clean-up (dead code, one percent formatter) |
+| **Backend** | Auth, profile, propose (with past experiments as context), check-ins, deterministic analysis, report narrative, demo reset, progress endpoint, chart `missed` flags and optional scale words | | Full-flow live test |
 | **Mobile** | Expo Go sign-in/profile, encrypted session persistence, Today, Check-in, local reminders and Progress | | Reading the Lab Report and history on the phone (V2) |
 
-After normal days finish, web and mobile Today show the user's own recorded baseline for each metric before the small change. Counts, ranges and plain-word summaries come from the backend; sparse baselines stay labelled ([S8 contract](docs/PROGRESS_API.md#normal-day-context-s8)).
+After normal days finish, web and mobile Today show the user's own recorded baseline for each metric before the small change. Counts, ranges and plain-word summaries come from the backend; sparse baselines stay labelled ([S8 contract](docs/PROGRESS_API.md#normal-day-context-s8)). Check-in scale words now come from experiment design, with Low / High for old metrics; report chart days use backend missed flags ([B12/B11/F13](docs/SCALE_WORDS_CHART_DAYS.md)).
 
 ## Architecture
 
@@ -166,7 +166,7 @@ V1 was split by layer. V2 is split by feature:
 | | V2 features |
 |---|---|
 | **Nazmul** ([@mnahsanofficial](https://github.com/mnahsanofficial)) | The mobile app's daily loop (Today, Check-in, Progress, reminders); the web's daily loop and design system; the shared packages and the progress endpoint |
-| **Shakeb** | Experiment intelligence: proposals and predictions (with past experiments), analysis and the Lab Report narrative, the demo seed, and new data the apps need (chart `missed` flag, scale words) |
+| **Shakeb** | Experiment intelligence: proposals and predictions (with past experiments), analysis and the Lab Report narrative, the demo seed, and new data the apps need (Nazmul covers critical-path backend work until he returns; [feature decisions](docs/DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)) |
 
 Product decisions are made together ([PRD §27](PRD.md#27-team-ownership)).
 

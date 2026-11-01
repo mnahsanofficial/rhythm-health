@@ -1,6 +1,6 @@
 # Remaining work
 
-Status updated **31 Oct 2026** against `main` at `b2100cc` (after #38), with S6 implemented on `feat/personal-guess` and its shared migration pending Nazmul’s apply. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
+Status updated **1 Nov 2026** against `main` at `4e8f170` (after #39), with B12/B11/F13 implemented on `feat/scale-words-chart-days`. S6’s shared migration remains pending Nazmul’s apply. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
 
 V2 work is split **by feature**: both of us work across frontend, backend and database ([pair rule](rules/pair-rule.md)). Each item names an owner. Owners marked "(proposed)" are to be confirmed together.
 
@@ -8,7 +8,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 
 ---
 
-## Merged since the last update (#28–#38)
+## Merged since the last update (#28–#39)
 
 | PR | What it finished |
 |---|---|
@@ -22,6 +22,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 | #36 | Mobile Today and Check-in; automatic saved-state refresh and real-iPhone close/reopen verification |
 | #37 | Mobile local reminders, Settings and read-only Progress; iPhone notification/cold-start/cancellation checks passed |
 | #38 | Your normal, on day 4 (S8): authoritative baseline context on web and mobile Today, with no migration |
+| #39 | Your own guess (S6): pre-forecast commitment and deterministic three-way report comparison; nullable migration written/tested locally, not applied to shared Supabase |
 
 ---
 
@@ -42,7 +43,7 @@ Sources: the Oct 30 reviewer call (points supplied by Nazmul; the call transcrip
 
 ## Plan to Thursday 5 Nov
 
-Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 merged in #38, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6 is built on `feat/personal-guess`, awaiting Nazmul’s migration after Sunday 1 Nov 10:00 Dhaka; [rollout and exact command](PERSONAL_GUESS.md). B12/B11/F13 and the active sample remain queued for separate PRs after each merge.
+Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 merged in #38, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6 merged in #39, awaiting Nazmul’s migration after Sunday 1 Nov 10:00 Dhaka; [rollout and exact command](PERSONAL_GUESS.md). B12/B11/F13 are built on `feat/scale-words-chart-days`, with no migration ([contract/evidence](SCALE_WORDS_CHART_DAYS.md)); the active sample waits for its merge.
 
 Original schedule: **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
 
@@ -50,11 +51,11 @@ Original schedule: **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see q
 |---|---|---|
 | **Sat 31 Oct** | Merge this docs PR. Mobile step 1: scaffold `apps/mobile`, sign in on a phone. Start step 2, Today | N (Codex) |
 | **Sun 1 Nov** | Mobile steps 2–4: Today, Check-in, local daily reminder, on a real phone against the local backend. A one-minute demo after each | N (Codex) |
-| | Scale words for check-in metrics (B12), or confirm the frontend fallback is fine for now | S ? |
+| ✓ | Scale words for check-in metrics (B12), with Low / High on old metrics | N (31 Oct decision) |
 | **Mon 2 Nov (call)** | Show the mobile loop on a phone: sign in → Today → 30-second check-in → Done for today → reminder. Answer "how do we make sure it helps?" with one or two chosen [suggestions](#suggested-features-how-we-make-sure-it-helps) | N + S |
 | | Mobile step 5, Progress, if it's not done by the call | N (Codex) |
 | **Tue 3 Nov** | Build the first chosen suggestion. Web clean-up (F12: dead code, one percent formatter) | ? (depends on the choice), N |
-| | B11 `missed` flag on chart points, then F13 on the web report | S, then N |
+| ✓ | B11 `missed` flags and F13 chart consumption built together | N (31 Oct decision) |
 | **Wed 4 Nov** | Second chosen suggestion, if time. Mobile polish: offline states, large text, reduced motion. Rehearse the full demo at phone size, on the demo machine and phone | ?, N |
 | | Full-flow backend test (B8) | S |
 | **Thu 5 Nov** | Freeze in the morning: only fixes. Final demos | N + S |
@@ -85,7 +86,7 @@ Owner: **Nazmul**.
 
 | # | Item | Status | Done means | Priority |
 |---|---|---|---|---|
-| F4 | Missed and future days | **Done** (#24, #26, #33). The timeline uses the progress endpoint; the report's "Missed" uses stored `analysis.adherence.missing_days`. Days after an early finish show as "not recorded before completion", never missed | No frontend date rule anywhere | Must |
+| F4 | Missed and future days | **Done** (#24, #26, #33). The timeline uses the progress endpoint; the report chart uses backend `chart.points[].missed` from stored analysis. Days after an early finish show as "not recorded before completion", never missed | No frontend date rule anywhere | Must |
 | F6 | Primary-metric trend on the experiment page | Partial: recorded values show per day, with no across-days trend (PRD §11) | The experiment page shows the primary metric day by day without calling a result early | Nice |
 | F8 | Tests for check-in, dashboard and report | Partial: report and progress are covered; the contract test doesn't check `CheckinIn` / `CheckinOut` yet (R7) | Contract fixtures for check-ins, plus component tests for the check-in screen | Nice |
 | F12 | Clean-up | Not started: `auth-panel.tsx` and `backend-status.tsx` are unused, `lib/mock/profile.ts` only feeds the unused `exampleProfile` export, and there are two `signedPercent` functions (R9, R10) | Dead code deleted, one formatter, ARCHITECTURE §6 updated | Nice |
@@ -96,8 +97,8 @@ Owner: **Nazmul**.
 
 | # | Item | Status | Done means | Priority | Owner |
 |---|---|---|---|---|---|
-| B11 | `missed: boolean` on each `chart.points` item | Queued for PR 3 under the 31 Oct deadline decision | Each chart point says whether that day counts as missed, by the same rule as `missing_days` | Nice | Nazmul until Shakeb returns |
-| F13 | Web report chart reads `chart.points[].missed` | Queued with B11 in PR 3; the chart uses `missing_days` today, which gives the same answer | No lookup in `missing_days`; contract refreshed | Nice | Nazmul |
+| B11 | `missed: boolean` on each `chart.points` item | Built on `feat/scale-words-chart-days`: flags use stored analysis; recorded/future days are false | Each chart point says whether that day counts as missed, by the same rule as `missing_days` | Nice | Nazmul until Shakeb returns |
+| F13 | Web report chart reads `chart.points[].missed` | Built with B11: chart reads point flags only; no `missing_days` prop or lookup | No lookup in `missing_days`; contract refreshed | Nice | Nazmul |
 | F11 | Share or export the Lab Report | Not started | A report can be shared or saved | Nice | Nazmul (proposed) |
 | R12 | Narrative numbers checked against the analysis | Deferred by Shakeb (30 Oct), time permitting. The web never takes a figure from the narrative | | Nice | Shakeb |
 
@@ -107,7 +108,7 @@ Owner: **Shakeb**.
 
 | # | Item | Status | Done means | Priority |
 |---|---|---|---|---|
-| B12 | Scale words for check-in metrics (for example "drained" / "full of energy") | Queued for PR 3 (Nazmul); optional/additive, no migration. Web and mobile use frontend copy with a "Low / High" fallback until then | The metric schema carries the words for each end; the contract is regenerated | Nice |
+| B12 | Scale words for check-in metrics (for example "drained" / "full of energy") | Built: optional `min_label` / `max_label` from design, null on old metrics; both apps use Low / High per missing end. No migration | The metric schema carries the words for each end; the contract is regenerated | Nice |
 | B6 | Regenerate the prediction before start | Not started (TRD §18) | Possible before start; not after | Nice |
 | B9 | Optional AI safety assessment | Not started (TRD §15, optional) | An AI check runs after the rules for borderline requests | Nice |
 
@@ -132,8 +133,8 @@ Owner: **Shakeb**.
 | I4 | Day boundaries | Decided: a day is a rolling 24 hours from `started_at`; times shown in the viewer's local time. Clients use `next_day_at`, never local midnight |
 | I5 | History data source | Resolved: completed experiments, then each report |
 | I6 | API contract | Done, and now automatic: `packages/contract` is generated from FastAPI and `npm run contract:check` fails on drift (#30) |
-| I7 | Chart missed flag (B11 + F13) | Queued for Nazmul's PR 3 |
-| I8 | Scale words (B12) on web and mobile | Queued for Nazmul's PR 3; fallback copy until then |
+| I7 | Chart missed flag (B11 + F13) | Built on `feat/scale-words-chart-days`; no migration |
+| I8 | Scale words (B12) on web and mobile | Built on `feat/scale-words-chart-days`; old metrics use Low / High |
 
 ---
 
@@ -282,8 +283,12 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 
 ## Selected learning feature: S8
 
-Merged in #38: personal normal-day context for **each metric** on web Your lab/detail and mobile Today, after the backend opens the test phase. Uses the progress response's nullable `baseline_summary`, with deterministic ranges/counts/descriptions, empty/partial states and no extra API call. Old responses still work. No migration or paid request. [API/source/tests](PROGRESS_API.md#normal-day-context-s8). S8 merged in #38. S6 follows on its own branch; see the rollout note below.
+Merged in #38: personal normal-day context for **each metric** on web Your lab/detail and mobile Today, after the backend opens the test phase. Uses the progress response's nullable `baseline_summary`, with deterministic ranges/counts/descriptions, empty/partial states and no extra API call. Old responses still work. No migration or paid request. [API/source/tests](PROGRESS_API.md#normal-day-context-s8). S8 merged in #38. S6 merged in #39; see the pending migration note below.
 
 ## S6 — your own guess (31 Oct 2026)
 
 Built on `feat/personal-guess`: commit a primary-metric percentage guess before the AI reveal on web, save it with the experiment, and compare guess/AI/actual in the Lab Report using deterministic analysis. Old experiments and the pre-migration database remain supported. **Shared migration not applied**; Nazmul applies the one nullable column after Sunday 1 Nov 10:00 Dhaka. [Contract, fallback, local migration test, apply and rollback commands](PERSONAL_GUESS.md). Mobile read-only guess display was optional and is deferred; its daily loop is unchanged.
+
+## B12/B11/F13 — scale words and authoritative chart flags
+
+Built as PR 3 with no new migration and no shared writes. Optional scale words persist in existing metric JSON; web/mobile fall back to Low / High for old metrics. Report points carry `missed`; the chart no longer receives the adherence list. [Contract, tests, screenshots and verification limits](SCALE_WORDS_CHART_DAYS.md). PR 4, the active sample seed, starts only after this merges.

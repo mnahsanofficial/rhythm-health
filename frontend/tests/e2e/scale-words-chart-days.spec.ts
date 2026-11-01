@@ -33,8 +33,21 @@ for (const width of [390, 1440]) for (const reducedMotion of ["reduce", "no-pref
     });
     const capture = async (state: string) => {
       if (!process.env.CAPTURE_SCALE_WORDS || reducedMotion === "reduce") return;
-      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+      if (state === "checkin-after") {
+        await expect.poll(() => page.getByRole("progressbar").evaluate(element =>
+          Math.round(element.firstElementChild!.getBoundingClientRect().width / element.getBoundingClientRect().width * 100),
+        )).toBe(100);
+      }
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; } header { position: static !important; }" });
+      const viewport = page.viewportSize()!;
+      // Paint at natural document height to avoid sticky/compositor artefacts in full-page captures.
+      await page.setViewportSize({ ...viewport, height: await page.evaluate(() => document.documentElement.scrollHeight) });
+      await page.evaluate(async () => {
+        scrollTo(0, 0);
+        await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      });
       await page.screenshot({ path: `../docs/screenshots/scale-words-chart-days/${width}-${state}.png`, fullPage: true });
+      await page.setViewportSize(viewport);
     };
     await page.goto(`/experiments/${experiment.id}/check-in`);
     const energy = page.getByRole("group", { name: "Morning energy" });

@@ -58,7 +58,7 @@ All calls send the Supabase access token as `Authorization: Bearer …`, exactly
   - one input per `experiment.metrics` item: scale, number, yes/no or duration;
   - on test days, "Did you make the change today?";
   - an optional note.
-  - Scales name both ends in words ([DESIGN.md](../DESIGN.md) rule 4). The backend doesn't send scale words yet, so use frontend copy keyed by metric, with a neutral "Low / High" fallback.
+  - Scales name both ends in words ([DESIGN.md](../DESIGN.md) rule 4). Use optional backend `min_label` / `max_label` from experiment design, with neutral "Low / High" per absent end; never infer meanings from a metric key. [B12 contract](SCALE_WORDS_CHART_DAYS.md).
 - **Calls:**
   - `GET /api/experiments/{id}/checkins`, to prefill today's answers if they're already recorded;
   - `POST /api/experiments/{id}/checkins` with a `CheckinInput`, which records or replaces **today only**.
@@ -100,7 +100,7 @@ Reading the Lab Report (a compact view of the comparison, verdict and chart), ex
 | M3 | **Expo Go limits.** Only libraries bundled in Expo Go work; no custom native code | Local notifications and font loading work in Expo Go; remote push isn't needed for V1. Check every library against the current Expo docs before adding it | Nazmul (Codex) |
 | M4 | **npm workspace versions.** The web uses React 19.3; the Expo SDK may pin a different React or React Native | Keep the app's versions in `apps/mobile/package.json` exactly as the Expo SDK requires. Prove root `npm ci`, the web build and the web tests still pass in the same PR | Nazmul (Codex) |
 | M5 | **Session storage.** Supabase on React Native needs persistent storage for the session | Use Supabase's documented React Native setup. Never put a service-role key in the app: only the public anon key and API URL, as `EXPO_PUBLIC_…` values in `apps/mobile/.env.local` | Nazmul |
-| M6 | **Scale words for check-in metrics.** The API sends only min and max | Use frontend copy keyed by metric, with a "Low / High" fallback. A backend field is requested | Shakeb (field), Nazmul (fallback) |
+| M6 | **Scale words for check-in metrics.** Built with B12 on `feat/scale-words-chart-days` | Optional `min_label` / `max_label` from design; Low / High on each missing end. No migration. [Contract/evidence](SCALE_WORDS_CHART_DAYS.md) | Nazmul, under the 31 Oct deadline decision |
 | M7 | **Only today's check-in can be saved** (R5). A missed day can't be filled in later | Say so on Progress ("Missed days can't be filled in") rather than offering it | Decided; no work |
 | M8 | **Demo data for Monday.** The mobile loop needs an *active* experiment with recorded days; the demo reset creates only a *completed* one | Demo with a real active experiment. Never write invented check-ins to the shared database. An active sample was selected by Nazmul on 31 Oct as PR 4, user-triggered/labelled/removable; it is not built yet ([deadline decisions](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)) | Nazmul; critical-path backend cover until Shakeb returns |
 | M9 | **8x's Expo template.** Reviewers said a template is already provided | Start from it if it fits our workspace (M4); record where it came from in the app's README | Nazmul |
