@@ -177,6 +177,7 @@ def test_unreadable_history_is_none(monkeypatch):
 
 @pytest.fixture
 def propose_api(monkeypatch, db):
+    monkeypatch.setattr(experiments, "supports_personal_guess", lambda _profile: True)
     app.dependency_overrides[get_current_user] = lambda: USER_ID
     monkeypatch.setattr(profiles, "get_by_user_id", lambda _uid: PROFILE_ROW)
     fake = FakeAI()

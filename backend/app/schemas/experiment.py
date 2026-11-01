@@ -104,6 +104,7 @@ class ExperimentOut(BaseModel):
     metrics: list[Metric]
     success_criteria: SuccessCriteria
     prediction: Prediction
+    personal_guess_percent: float | None = None
     started_at: datetime | None
     completed_at: datetime | None
     is_seeded: bool

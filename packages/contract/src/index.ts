@@ -27,6 +27,7 @@ export type PhaseStats = Serialized<components["schemas"]["PhaseStats"]>;
 export type Outlier = components["schemas"]["Outlier"];
 export type MetricAnalysis = Serialized<components["schemas"]["MetricAnalysis"]>;
 export type Adherence = Serialized<components["schemas"]["Adherence"]>;
+export type PersonalGuessComparison = Serialized<components["schemas"]["PersonalGuessComparison"]>;
 export type PredictionComparison = components["schemas"]["PredictionComparison"];
 export type Signal = components["schemas"]["Signal"];
 export type Analysis = Serialized<components["schemas"]["Analysis"]>;

@@ -14,6 +14,7 @@ from app.schemas.analysis import (
     Outlier,
     PhaseStats,
     PredictionComparison,
+    PersonalGuessComparison,
     Signal,
 )
 from app.schemas.experiment import Metric, SuccessCriteria
@@ -75,6 +76,12 @@ def analyze(experiment: dict, checkins: list[dict], completed_at: datetime | Non
         metrics=results,
         prediction=comparison,
         signal=signal,
+        personal_guess=(PersonalGuessComparison(
+            guessed_change_percent=experiment["personal_guess_percent"],
+            observed_change_percent=primary.percent_change,
+            error_points=(_r(primary.percent_change - experiment["personal_guess_percent"], 2)
+                          if primary.percent_change is not None else None),
+        ) if experiment.get("personal_guess_percent") is not None else None),
     )
 
 

@@ -285,3 +285,23 @@ def test_early_finish_changes_adherence_only_not_the_statistics():
     assert early.prediction == unaware.prediction
     assert early.adherence.adherence_rate == unaware.adherence.adherence_rate
     assert unaware.adherence.missing_days == [7, 8, 9, 10]  # the old behaviour, for contrast
+
+
+@pytest.mark.parametrize("guess", [-15, 0, 20])
+def test_personal_guess_comparison_uses_only_observed_analysis(guess):
+    result = analyze({**experiment(), "personal_guess_percent": guess}, SEEDED)
+    comparison = result.personal_guess
+    assert comparison.guessed_change_percent == guess
+    assert comparison.observed_change_percent == primary(result).percent_change
+    assert comparison.error_points == pytest.approx(round(primary(result).percent_change - guess, 2))
+
+
+def test_personal_guess_handles_zero_baseline_without_inventing_a_percent():
+    result = analyze({**experiment(), "personal_guess_percent": 0}, make_checkins([0, 0, 0], [2, 2, 2]))
+    assert result.personal_guess.guessed_change_percent == 0
+    assert result.personal_guess.observed_change_percent is None
+    assert result.personal_guess.error_points is None
+
+
+def test_old_experiment_has_no_personal_comparison():
+    assert analyze(experiment(), SEEDED).personal_guess is None

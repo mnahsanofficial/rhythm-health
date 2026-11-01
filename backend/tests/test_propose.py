@@ -89,6 +89,8 @@ def api(monkeypatch):
     monkeypatch.setattr(experiments, "list_completed", lambda *_a: [])
     monkeypatch.setattr(reports, "list_for_experiments", lambda _ids: [])
 
+    monkeypatch.setattr(experiments, "supports_personal_guess", lambda _profile: True, raising=False)
+
     def install(**overrides):
         fake = FakeAI(**overrides)
         monkeypatch.setattr(openrouter, "complete", fake)

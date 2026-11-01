@@ -1,6 +1,6 @@
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.classification import Category
 from app.schemas.experiment import ExperimentProposal
@@ -26,3 +26,5 @@ class SaveExperimentRequest(ProposalWithPrediction):
     """Body for saving what /propose returned. No user_id or profile_id: both come from the token."""
 
     category: Category
+    # Signed percent change from baseline, on the same scale as the AI forecast.
+    personal_guess_percent: float | None = Field(default=None, ge=-100, le=200, allow_inf_nan=False, strict=True)

@@ -1,4 +1,4 @@
-from app.integrations.supabase import rest_request
+from app.integrations.supabase import PersonalGuessUnavailable, rest_request
 
 
 def create(profile_id: str, values: dict) -> dict:
@@ -89,3 +89,14 @@ def delete_seeded(profile_id: str) -> None:
         params={"profile_id": f"eq.{profile_id}", "is_seeded": "eq.true"},
         prefer="return=representation",
     )
+
+
+def supports_personal_guess(profile_id: str) -> bool:
+    """Probe the optional column, scoped to the owner and without returning row data."""
+    try:
+        rest_request("GET", "experiments", params={
+            "profile_id": f"eq.{profile_id}", "select": "personal_guess_percent", "limit": "0",
+        })
+    except PersonalGuessUnavailable:
+        return False
+    return True

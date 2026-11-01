@@ -69,6 +69,15 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
     assertContract("ExperimentOut", experiment);
   });
 
+  it("validates the nullable personal guess rollout and deterministic comparison", () => {
+    assertContract("ProposeResponse", { ...proposeResponse, personal_guess_available: true });
+    assertContract("SaveExperimentRequest", { ...saveExperimentRequest, personal_guess_percent: 0 });
+    assertContract("ExperimentOut", { ...experiment, personal_guess_percent: -12.5 });
+    assertContract("LabReport", { ...labReport, analysis: { ...labReport.analysis, personal_guess: {
+      guessed_change_percent: -12.5, observed_change_percent: 20.5, error_points: 33,
+    } } });
+  });
+
   it("validates the Lab Report with and without the written narrative", () => {
     assertContract("LabReport", labReport);
     assertContract("LabReport", writtenLabReport);

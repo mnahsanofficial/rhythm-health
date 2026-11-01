@@ -9,6 +9,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { ApiError } from "@/lib/api/client";
 import { listExperiments, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
 import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
+import { PersonalGuess } from "@/components/experiments/personal-guess";
 import { QuestionForm } from "@/components/experiments/question-form";
 import { GOAL_QUESTIONS } from "@/components/onboarding/steps";
 
@@ -270,6 +271,8 @@ export function ExperimentFlow({
   const [question, setQuestion] = useState(
     initialQuestion.length >= 5 && initialQuestion.length <= 500 ? initialQuestion : "",
   );
+  const [personalGuess, setPersonalGuess] = useState<number | null>(null);
+  const [guessUnavailable, setGuessUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const [result, setResult] = useState<ProposeResponse | null>(null);
@@ -292,7 +295,7 @@ export function ExperimentFlow({
     if (result) output.current?.focus();
     else if (hasShownResult.current) input.current?.focus();
     hasShownResult.current = Boolean(result);
-  }, [result]);
+  }, [result, personalGuess]);
 
   async function submit() {
     const text = question.trim();
@@ -304,6 +307,8 @@ export function ExperimentFlow({
     setStartError(null);
     setActiveExperiment(null);
     setResult(null);
+    setPersonalGuess(null);
+    setGuessUnavailable(false);
     let activeCheckComplete = false;
     try {
       const blocking = await findCreationBlocker();
@@ -337,6 +342,8 @@ export function ExperimentFlow({
 
   function chooseQuestion(value: string) {
     setQuestion(value);
+    setPersonalGuess(null);
+    setGuessUnavailable(false);
     setResult(null);
     setError(null);
     setStartError(null);
@@ -345,10 +352,11 @@ export function ExperimentFlow({
     input.current?.focus();
   }
 
-  async function beginExperiment() {
+  async function beginExperiment(withoutGuess = false) {
     if (!result?.proposal || !result.prediction || inFlight.current) return;
     inFlight.current = true;
     setStarting(true);
+    setGuessUnavailable(false);
     setStartError(null);
     setActiveExperiment(null);
     let experimentId = savedExperimentId;
@@ -364,6 +372,7 @@ export function ExperimentFlow({
           proposal: result.proposal,
           prediction: result.prediction,
           category: result.classification.category,
+          ...(personalGuess !== null && !withoutGuess ? { personal_guess_percent: personalGuess } : {}),
         });
         experimentId = saved.id;
         setSavedExperimentId(saved.id);
@@ -371,6 +380,12 @@ export function ExperimentFlow({
       const active = await startExperiment(experimentId);
       router.push(`/experiments/${encodeURIComponent(active.id)}`);
     } catch (cause) {
+      if (cause instanceof ApiError && typeof cause.detail === "object" && cause.detail !== null
+        && "code" in cause.detail && cause.detail.code === "personal_guess_unavailable") {
+        setGuessUnavailable(true);
+        setStartError(cause.message);
+        return;
+      }
       if (experimentId) {
         setSavedExperimentId(experimentId);
         if (cause instanceof ApiError && cause.status === 409 && cause.message.toLowerCase().includes("active")) {
@@ -447,17 +462,41 @@ export function ExperimentFlow({
       </section>}
       {result?.safety.allowed && result.proposal && result.prediction && (
         <div ref={output as React.RefObject<HTMLDivElement>} tabIndex={-1}>
-          <ProposalPreview
-            result={result}
-            headingLevel={headingLevel}
-            onStart={() => void beginExperiment()}
-            onAskSomethingElse={() => chooseQuestion("")}
-            starting={starting}
-            startDisabled={Boolean(activeExperiment)}
-          />
+          {result.personal_guess_available && personalGuess === null ? (
+            <PersonalGuess
+              headingLevel={headingLevel}
+              proposal={result.proposal}
+              onReveal={setPersonalGuess}
+              onBack={() => chooseQuestion("")}
+            />
+          ) : (<>
+            {!result.personal_guess_available && (
+              <p role="note" className="mt-4 border-l-2 border-line pl-4 text-caption text-muted">
+                Your own guess is unavailable right now. You can still start without one.
+              </p>
+            )}
+            {personalGuess !== null && (
+              <p className="mt-4 border-l-2 border-moss pl-4 text-body">
+                Your guess: <span className="font-mono">{signedPercent(personalGuess)}</span> change from normal days. Locked before the AI reveal.
+              </p>
+            )}
+            <ProposalPreview
+              result={result}
+              headingLevel={headingLevel}
+              onStart={() => void beginExperiment()}
+              onAskSomethingElse={() => chooseQuestion("")}
+              starting={starting}
+              startDisabled={Boolean(activeExperiment)}
+            />
+          </>)}
           {startError && (
             <div role="alert" className="mt-4 rounded-card bg-clay-tint p-5 text-clay">
               <p>{startError}</p>
+              {guessUnavailable && (
+                <button type="button" className={`${secondary} mt-3 text-ink`} disabled={starting} onClick={() => void beginExperiment(true)}>
+                  Continue without saving my guess
+                </button>
+              )}
               {activeExperiment ? (
                 <Link href={`/experiments/${encodeURIComponent(activeExperiment.id)}`} className="mt-3 inline-flex min-h-11 items-center underline">
                   Go to your active experiment

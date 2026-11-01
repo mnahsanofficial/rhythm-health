@@ -1,6 +1,6 @@
 # Remaining work
 
-Status updated **31 Oct 2026** against `main` at `8174599` (after #37), with S8 implemented on `feat/baseline-context`. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
+Status updated **31 Oct 2026** against `main` at `b2100cc` (after #38), with S6 implemented on `feat/personal-guess` and its shared migration pending Nazmul’s apply. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
 
 V2 work is split **by feature**: both of us work across frontend, backend and database ([pair rule](rules/pair-rule.md)). Each item names an owner. Owners marked "(proposed)" are to be confirmed together.
 
@@ -8,7 +8,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 
 ---
 
-## Merged since the last update (#28–#37)
+## Merged since the last update (#28–#38)
 
 | PR | What it finished |
 |---|---|
@@ -21,6 +21,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 | #35 | Expo Go sign-in/profile, secure session persistence and local-device sign-out; verified on iPhone |
 | #36 | Mobile Today and Check-in; automatic saved-state refresh and real-iPhone close/reopen verification |
 | #37 | Mobile local reminders, Settings and read-only Progress; iPhone notification/cold-start/cancellation checks passed |
+| #38 | Your normal, on day 4 (S8): authoritative baseline context on web and mobile Today, with no migration |
 
 ---
 
@@ -41,7 +42,7 @@ Sources: the Oct 30 reviewer call (points supplied by Nazmul; the call transcrip
 
 ## Plan to Thursday 5 Nov
 
-Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 is built on `feat/baseline-context`, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6, B12/B11/F13 and the active sample are queued for separate PRs after each merge.
+Mobile core loop shipped through #37. On 31 Oct, Nazmul selected S8 → S6 → B12/B11/F13 → active demo as separate PRs; he covers critical-path backend work until Shakeb returns. These deadline decisions are reversible ([DECISIONS](DECISIONS.md#deadline-decisions-by-nazmul--31-oct-2026)). S8 merged in #38, with no migration; [contract/evidence](PROGRESS_API.md#normal-day-context-s8). S6 is built on `feat/personal-guess`, awaiting Nazmul’s migration after Sunday 1 Nov 10:00 Dhaka; [rollout and exact command](PERSONAL_GUESS.md). B12/B11/F13 and the active sample remain queued for separate PRs after each merge.
 
 Original schedule: **N** = Nazmul, **S** = Shakeb, **?** = not yet agreed (see questions).
 
@@ -281,4 +282,8 @@ A fresh `POST /report` takes about 10–11 seconds; a repeat returns the stored 
 
 ## Selected learning feature: S8
 
-Built in this PR: personal normal-day context for **each metric** on web Your lab/detail and mobile Today, after the backend opens the test phase. Uses the progress response's nullable `baseline_summary`, with deterministic ranges/counts/descriptions, empty/partial states and no extra API call. Old responses still work. No migration or paid request. [API/source/tests](PROGRESS_API.md#normal-day-context-s8). S6 is next only after this PR merges; no guess column or migration has been created or applied here.
+Merged in #38: personal normal-day context for **each metric** on web Your lab/detail and mobile Today, after the backend opens the test phase. Uses the progress response's nullable `baseline_summary`, with deterministic ranges/counts/descriptions, empty/partial states and no extra API call. Old responses still work. No migration or paid request. [API/source/tests](PROGRESS_API.md#normal-day-context-s8). S8 merged in #38. S6 follows on its own branch; see the rollout note below.
+
+## S6 — your own guess (31 Oct 2026)
+
+Built on `feat/personal-guess`: commit a primary-metric percentage guess before the AI reveal on web, save it with the experiment, and compare guess/AI/actual in the Lab Report using deterministic analysis. Old experiments and the pre-migration database remain supported. **Shared migration not applied**; Nazmul applies the one nullable column after Sunday 1 Nov 10:00 Dhaka. [Contract, fallback, local migration test, apply and rollback commands](PERSONAL_GUESS.md). Mobile read-only guess display was optional and is deferred; its daily loop is unchanged.

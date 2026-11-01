@@ -72,6 +72,13 @@ class Signal(BaseModel):
     matches_predicted_direction: bool
 
 
+class PersonalGuessComparison(BaseModel):
+    guessed_change_percent: float
+    observed_change_percent: float | None = None
+    # observed - guess, in percentage points; unavailable for a zero baseline.
+    error_points: float | None = None
+
+
 class Analysis(BaseModel):
     primary_metric: str
     success_criteria_percent: float
@@ -79,3 +86,4 @@ class Analysis(BaseModel):
     metrics: list[MetricAnalysis]
     prediction: PredictionComparison | None = None
     signal: Signal
+    personal_guess: PersonalGuessComparison | None = None

@@ -28,6 +28,7 @@ const demoExperiment: Experiment = {
 const demoReport: LabReport = {
   experiment: demoExperiment,
   analysis: {
+    personal_guess: null,
     primary_metric: "morning_energy",
     success_criteria_percent: 10,
     adherence: {
