@@ -100,7 +100,7 @@ What was already right: the format matches the guide in every log (same frontmat
 
 Still in the logs, by decision: the guide script records Claude Code's automatic conversation summaries and background-task notices as prompts (10 of 91 in `94c5e335`). The script isn't changed; shorter sessions make them rare.
 
-**Sessions with no log at all**, listed for 8x to decide on a backfill from the original transcripts (no log has been regenerated or rewritten):
+**Missing-session audit and approved backfill:**
 
-- Codex `01a18219` (28 Oct 10:41, one prompt, `CAPTURE TEST 2 — Playmakers C2, Nazmul`): the Codex hooks weren't approved yet (canary #3).
+- Codex `01a18219-c8cd-7b30-8246-43f2497fc36a` (28 Oct 10:41 UTC / 16:41 Dhaka, one prompt): Maham (8x) approved backfilling this missing session on 1 Nov 2026 because the Codex hooks were not yet approved on 28 Oct (canary #3). The current Codex extractor generated the log from its original transcript, with the filename and displayed date set to the original session start. Added only `2026-10-28_16-41-30_01a18219-c8cd-7b30-8246-43f2497fc36a.md`, marked with `backfilled: true`, a UTC `backfilled_at`, and the approval reason. No existing log was edited, renamed or deleted as part of this backfill.
 - Shakeb's sessions after 29 Oct 20:09: his newest log ends there, although he worked on #21 and #24 afterwards. His transcripts are on his machine.
