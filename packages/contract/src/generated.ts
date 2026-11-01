@@ -352,6 +352,11 @@ export interface components {
             phase: string;
             /** Logged */
             logged: boolean;
+            /**
+             * Missed
+             * @default false
+             */
+            missed: boolean;
             /** Intervention Completed */
             intervention_completed?: boolean | null;
             /** Value */
@@ -615,6 +620,10 @@ export interface components {
             max: number | null;
             /** Primary */
             primary: boolean;
+            /** Min Label */
+            min_label?: string | null;
+            /** Max Label */
+            max_label?: string | null;
         };
         /** MetricAnalysis */
         MetricAnalysis: {

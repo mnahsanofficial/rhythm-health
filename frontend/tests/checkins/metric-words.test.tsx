@@ -19,3 +19,10 @@ it("uses neutral Low / High for an old known metric rather than inventing its me
   expect(screen.getByText("1 Low")).toBeVisible();
   expect(screen.getByText("10 High")).toBeVisible();
 });
+
+it("falls back independently when only one end has words", () => {
+  render(<MetricInput metric={{ ...proposal.metrics[0], max_label: "Fully awake" }} value={undefined} text="" onChange={vi.fn()} />);
+  expect(screen.getByText("1 Low")).toBeVisible();
+  expect(screen.getByText("10 Fully awake")).toBeVisible();
+  expect(screen.getByRole("group", { name: "Morning energy" })).toHaveAccessibleDescription(/1 Low.*10 Fully awake/);
+});

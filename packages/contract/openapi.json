@@ -1052,6 +1052,11 @@
             "type": "boolean",
             "title": "Logged"
           },
+          "missed": {
+            "type": "boolean",
+            "title": "Missed",
+            "default": false
+          },
           "intervention_completed": {
             "anyOf": [
               {
@@ -1825,6 +1830,32 @@
           "primary": {
             "type": "boolean",
             "title": "Primary"
+          },
+          "min_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Label"
+          },
+          "max_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Label"
           }
         },
         "additionalProperties": false,

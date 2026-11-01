@@ -13,10 +13,10 @@ for (const width of [390, 768, 1440]) for (const reducedMotion of ["reduce", "no
     const counts = await installApiMocks(page);
     await answerOnboardingWithMouse(page); await createAccountAndSaveProfile(page, counts);
     const active = { ...experiment, metrics: [
-      { key: "morning_energy", label: "Morning energy", type: "scale", min: 1, max: 10, primary: true },
-      { key: "breaks", label: "Breaks", type: "number", min: null, max: null, primary: false },
-      { key: "sleep_time", label: "Time to fall asleep", type: "duration", min: null, max: null, primary: false },
-      { key: "screen_free", label: "Screen-free evening", type: "boolean", min: null, max: null, primary: false },
+      { key: "morning_energy", label: "Morning energy", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: true },
+      { key: "breaks", label: "Breaks", type: "number", min: null, max: null, min_label: null, max_label: null, primary: false },
+      { key: "sleep_time", label: "Time to fall asleep", type: "duration", min: null, max: null, min_label: null, max_label: null, primary: false },
+      { key: "screen_free", label: "Screen-free evening", type: "boolean", min: null, max: null, min_label: null, max_label: null, primary: false },
     ], status: "active", started_at: "2026-10-28T09:00:00Z", progress: { ...experiment.progress, state: "in_progress", day_number: 4, phase: "intervention", phase_day: 1, phase_days: 7, days_remaining: 6, started_at: "2026-10-28T09:00:00Z", ends_at: "2026-11-07T09:00:00Z" } } satisfies import("@rhythm-health/contract").Experiment;
     const normalTimeline: ExperimentTimeline = { ...timelineFixture(active, { recorded: [1, 3], missed: [2] }), baseline_summary: baseline };
     let timeline = normalTimeline;

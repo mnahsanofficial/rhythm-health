@@ -14,3 +14,8 @@ test('old known scales fall back to Low / High, without guessing endpoint meanin
   render(<MetricInput metric={proposal.metrics[0]} value={undefined} onChange={jest.fn()} disabled={false} />);
   expect(screen.getByText('1 Low · 10 High')).toBeVisible();
 });
+
+test('falls back independently when only one end has words', () => {
+  render(<MetricInput metric={{ ...proposal.metrics[0], max_label: 'Fully awake' }} value={undefined} onChange={jest.fn()} disabled={false} />);
+  expect(screen.getByText('1 Low · 10 Fully awake')).toBeVisible();
+});

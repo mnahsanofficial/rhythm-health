@@ -69,6 +69,17 @@ describe("frontend API fixtures follow FastAPI's OpenAPI schema", () => {
     assertContract("ExperimentOut", experiment);
   });
 
+  it("validates designed scale words and authoritative chart flags", () => {
+    assertContract("Metric", { ...proposal.metrics[0], min_label: "Very tired", max_label: "Ready for the day" });
+    assertContract("ChartPoint", { ...labReport.chart.points[0], missed: false });
+    assertContract("ChartPoint", { ...labReport.chart.points[1], logged: false, missed: true, value: null, values: null });
+    for (const scenario of earlyFinish.cases) {
+      for (const point of scenario.report.chart.points) {
+        expect(point.missed).toBe(!point.logged && scenario.report.analysis.adherence.missing_days.includes(point.day));
+      }
+    }
+  });
+
   it("validates the nullable personal guess rollout and deterministic comparison", () => {
     assertContract("ProposeResponse", { ...proposeResponse, personal_guess_available: true });
     assertContract("SaveExperimentRequest", { ...saveExperimentRequest, personal_guess_percent: 0 });

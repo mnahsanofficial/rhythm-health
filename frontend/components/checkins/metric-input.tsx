@@ -16,13 +16,23 @@ type Props = {
 export function MetricInput({ metric, value, text, onChange, error }: Props) {
   const id = useId();
   const errorId = `${id}-error`;
-  const describedBy = error ? errorId : undefined;
+  const scaleId = `${id}-scale-words`;
+  const describedBy = [metric.type === "scale" ? scaleId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined;
 
   return (
     <fieldset className="border-b border-line pb-8" aria-describedby={describedBy} aria-invalid={Boolean(error)}>
       <legend className="font-display text-title text-ink">{metric.label}</legend>
       {metric.type === "scale" && metric.min !== null && metric.max !== null && (
-        <ScaleInput min={metric.min} max={metric.max} value={value} name={id} onChange={(v) => onChange(v, "")} />
+        <ScaleInput
+          min={metric.min}
+          max={metric.max}
+          value={value}
+          name={id}
+          descriptionId={scaleId}
+          low={metric.min_label ?? "Low"}
+          high={metric.max_label ?? "High"}
+          onChange={(v) => onChange(v, "")}
+        />
       )}
       {metric.type === "boolean" && (
         <YesNo name={id} value={typeof value === "boolean" ? value : undefined} onChange={(v) => onChange(v, "")} />
@@ -59,17 +69,27 @@ function ScaleInput({
   max,
   value,
   name,
+  low,
+  high,
+  descriptionId,
   onChange,
 }: {
   min: number;
   max: number;
   value: MetricValue | undefined;
   name: string;
+  descriptionId: string;
+  low: string;
+  high: string;
   onChange: (v: number) => void;
 }) {
   const options = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <>
+      <p id={descriptionId} className="mt-2 flex flex-wrap justify-between gap-x-5 gap-y-1 text-body text-muted">
+        <span className="min-w-0 max-w-full [overflow-wrap:anywhere]">{min} {low}</span>
+        <span className="min-w-0 max-w-full [overflow-wrap:anywhere]">{max} {high}</span>
+      </p>
       {/* Native radios: arrow keys move along the scale, and screen readers announce "7 of 10". */}
       <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-10">
         {options.map((n) => {

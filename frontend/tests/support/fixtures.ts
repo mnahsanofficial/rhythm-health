@@ -38,8 +38,8 @@ export const proposal: ExperimentProposal = {
   baseline_days: 3,
   intervention_days: 7,
   metrics: [
-    { key: "morning_energy", label: "Morning energy", type: "scale", min: 1, max: 10, primary: true },
-    { key: "sleep_quality", label: "Sleep quality", type: "scale", min: 1, max: 10, primary: false },
+    { key: "morning_energy", label: "Morning energy", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: true },
+    { key: "sleep_quality", label: "Sleep quality", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: false },
   ],
   success_criteria: { primary_metric: "morning_energy", minimum_change_percent: 10 },
 };
@@ -56,7 +56,7 @@ export const prediction: Prediction = {
 
 export const proposeResponse: ProposeResponse = {
   personal_guess_available: false,
-  proposal,
+  proposal: { ...proposal, metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null })) },
   prediction,
   safety: { allowed: true, reason: null, suggested_alternative: null },
   classification: { category: "energy", intent: "behavior_change", risk: "low" },
@@ -71,6 +71,7 @@ export const saveExperimentRequest: SaveExperimentRequest = {
 export const experiment: Experiment = {
   personal_guess_percent: null,
   ...proposal,
+  metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null })),
   id: "33333333-3333-3333-3333-333333333333",
   status: "proposed",
   category: "energy",
@@ -123,6 +124,7 @@ const chartPoints: ChartPoint[] = energy.map((value, i) => {
     day,
     phase,
     logged: true,
+    missed: false,
     intervention_completed: phase === "intervention" && day !== 6,
     value,
     values: { morning_energy: value, sleep_quality: sleep[i] },

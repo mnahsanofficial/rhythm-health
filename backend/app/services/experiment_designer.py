@@ -15,6 +15,7 @@ proposal: turn the person's question into a measurable experiment.
 - Respect the person's constraints and regular habits.
 - baseline_days default 3, intervention_days default 7.
 - metrics: 1 primary metric plus up to 3 secondary ones. Prefer 1-10 "scale" metrics (min 1, max 10) the person can rate in seconds. Use null min/max for non-scale metrics. Exactly one metric has primary=true.
+- For each scale metric, supply min_label and max_label: short plain words describing its actual numeric ends (for example min 1 "Drained", max 10 "Full of energy"). Name the measured feeling, not a generic bad/good judgement. For non-scale metrics use null labels.
 - success_criteria.primary_metric is the primary metric's key; minimum_change_percent is a realistic threshold (usually 5-15).
 - Make the question and hypothesis specific. Make no medical claims and do not promise outcomes.
 

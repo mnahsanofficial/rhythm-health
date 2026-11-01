@@ -22,7 +22,9 @@
           "type": "scale",
           "min": 1.0,
           "max": 10.0,
-          "primary": true
+          "primary": true,
+          "min_label": null,
+          "max_label": null
         },
         {
           "key": "sleep_quality",
@@ -30,7 +32,9 @@
           "type": "scale",
           "min": 1.0,
           "max": 10.0,
-          "primary": false
+          "primary": false,
+          "min_label": null,
+          "max_label": null
         }
       ],
       "success_criteria": {
@@ -183,7 +187,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -191,7 +197,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -352,6 +360,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -364,6 +373,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -373,6 +383,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -385,6 +396,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -397,6 +409,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -409,6 +422,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -421,6 +435,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -430,6 +445,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -439,6 +455,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -448,6 +465,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -580,7 +598,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -588,7 +608,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -749,6 +771,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -761,6 +784,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -770,6 +794,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -782,6 +807,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -794,6 +820,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -806,6 +833,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -818,6 +846,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -827,6 +856,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -836,6 +866,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -845,6 +876,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -977,7 +1009,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -985,7 +1019,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -1146,6 +1182,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -1158,6 +1195,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1167,6 +1205,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -1179,6 +1218,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -1191,6 +1231,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -1203,6 +1244,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -1215,6 +1257,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -1227,6 +1270,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1236,6 +1280,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1245,6 +1290,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1377,7 +1423,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -1385,7 +1433,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -1546,6 +1596,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -1558,6 +1609,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1567,6 +1619,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -1579,6 +1632,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -1591,6 +1645,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -1603,6 +1658,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -1615,6 +1671,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1624,6 +1681,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1633,6 +1691,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1642,6 +1701,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1774,7 +1834,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -1782,7 +1844,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -1943,6 +2007,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -1955,6 +2020,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -1964,6 +2030,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -1976,6 +2043,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -1988,6 +2056,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -2000,6 +2069,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -2012,6 +2082,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2021,6 +2092,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2030,6 +2102,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2039,6 +2112,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2171,7 +2245,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -2179,7 +2255,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -2341,6 +2419,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -2353,6 +2432,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2362,6 +2442,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -2374,6 +2455,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -2386,6 +2468,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -2398,6 +2481,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -2410,6 +2494,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2419,6 +2504,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2428,6 +2514,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2437,6 +2524,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2569,7 +2657,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -2577,7 +2667,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -2737,6 +2829,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -2749,6 +2842,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2758,6 +2852,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -2770,6 +2865,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -2782,6 +2878,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -2794,6 +2891,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -2806,6 +2904,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -2818,6 +2917,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -2830,6 +2930,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -2842,6 +2943,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": false,
+              "missed": false,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -2973,7 +3075,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": true
+              "primary": true,
+              "min_label": null,
+              "max_label": null
             },
             {
               "key": "sleep_quality",
@@ -2981,7 +3085,9 @@
               "type": "scale",
               "min": 1.0,
               "max": 10.0,
-              "primary": false
+              "primary": false,
+              "min_label": null,
+              "max_label": null
             }
           ],
           "success_criteria": {
@@ -3141,6 +3247,7 @@
               "day": 1,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 5.0,
               "values": {
@@ -3153,6 +3260,7 @@
               "day": 2,
               "phase": "baseline",
               "logged": false,
+              "missed": true,
               "intervention_completed": null,
               "value": null,
               "values": null,
@@ -3162,6 +3270,7 @@
               "day": 3,
               "phase": "baseline",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -3174,6 +3283,7 @@
               "day": 4,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -3186,6 +3296,7 @@
               "day": 5,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -3198,6 +3309,7 @@
               "day": 6,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -3210,6 +3322,7 @@
               "day": 7,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": false,
               "value": 6.0,
               "values": {
@@ -3222,6 +3335,7 @@
               "day": 8,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {
@@ -3234,6 +3348,7 @@
               "day": 9,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 7.0,
               "values": {
@@ -3246,6 +3361,7 @@
               "day": 10,
               "phase": "intervention",
               "logged": true,
+              "missed": false,
               "intervention_completed": true,
               "value": 6.0,
               "values": {

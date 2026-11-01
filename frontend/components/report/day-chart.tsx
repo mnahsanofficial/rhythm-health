@@ -6,8 +6,6 @@ import type { ChartData, ChartPoint } from "@/lib/types/api";
 
 type Props = {
   chart: ChartData;
-  /** analysis.adherence.missing_days: the backend decides which unlogged days count as missed. */
-  missingDays: number[];
 };
 
 type Plotted = { p: ChartPoint; v: number };
@@ -20,7 +18,7 @@ const listDays = (days: number[]) => `${days.length === 1 ? "day" : "days"} ${da
  * its values and note. Nothing is recalculated here. The SVG stretches to fit; points and labels
  * are HTML so they stay readable and focusable.
  */
-export function DayChart({ chart, missingDays }: Props) {
+export function DayChart({ chart }: Props) {
   const reduce = useReducedMotion();
   const panelId = useId();
   const [open, setOpen] = useState<number | null>(null);
@@ -30,7 +28,7 @@ export function DayChart({ chart, missingDays }: Props) {
   const points: Plotted[] = chart.points
     .filter((p): p is ChartPoint & { value: number } => p.logged && p.value !== null)
     .map((p) => ({ p, v: p.value }));
-  const missed = new Set(missingDays);
+  const missed = new Set(chart.points.filter((p) => !p.logged && p.missed).map((p) => p.day));
   const unlogged = chart.points.filter((p) => !p.logged).map((p) => p.day);
   const missedDays = unlogged.filter((day) => missed.has(day));
   const notReached = unlogged.filter((day) => !missed.has(day));
