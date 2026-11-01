@@ -305,3 +305,19 @@ def test_personal_guess_handles_zero_baseline_without_inventing_a_percent():
 
 def test_old_experiment_has_no_personal_comparison():
     assert analyze(experiment(), SEEDED).personal_guess is None
+
+
+@pytest.mark.parametrize('zone', ['Asia/Dhaka', 'America/Toronto'])
+def test_chart_missed_flags_follow_stored_analysis_across_dst_and_early_finish(zone):
+    from zoneinfo import ZoneInfo
+    from app.services.lab_report import build_chart
+    start = datetime(2026, 10, 26, 5, 30, tzinfo=UTC)
+    exp = {**experiment(), 'started_at': start.isoformat()}
+    logged = [c for c in SEEDED if c['day_number'] in [1, 3, 4, 5, 6]]
+    # Six rolling days have elapsed, across Toronto's Nov 1 DST change.
+    clock = (start + timedelta(days=6, hours=12)).astimezone(ZoneInfo(zone))
+    result = analyze(exp, logged, clock)
+    assert result.adherence.missing_days == [2]
+    points = build_chart(exp, logged, result).model_dump()['points']
+    assert [p['day'] for p in points if p['missed']] == [2]
+    assert all(not p['missed'] for p in points if p['logged'] or p['day'] >= 7)

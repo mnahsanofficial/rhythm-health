@@ -61,12 +61,13 @@ def build_chart(experiment_row: dict, checkins: list[dict], analysis: Analysis) 
     total = baseline_days + experiment_row["intervention_days"]
     by_day = {c["day_number"]: c for c in checkins}
 
+    missed = set(analysis.adherence.missing_days)
     points = []
     for day in range(1, total + 1):
         checkin = by_day.get(day)
         phase = "baseline" if day <= baseline_days else "intervention"
         if checkin is None:
-            points.append(ChartPoint(day=day, phase=phase, logged=False))
+            points.append(ChartPoint(day=day, phase=phase, logged=False, missed=day in missed))
             continue
         values = checkin["metric_values"]
         primary_value = values.get(primary.key)

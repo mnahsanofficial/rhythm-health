@@ -1,0 +1,97 @@
+import { expect, test } from "@playwright/test";
+import type { Checkin, Experiment, LabReport } from "@rhythm-health/contract";
+import backend from "../support/early-finish-reports.json";
+import { experiment } from "../support/fixtures";
+import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
+
+for (const width of [390, 1440]) for (const reducedMotion of ["reduce", "no-preference"] as const) {
+  test(`server scale words and chart flags at ${width}px, motion ${reducedMotion}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion });
+    await page.route("**/*", route => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.abort());
+    const counts = await installApiMocks(page);
+    await answerOnboardingWithMouse(page);
+    await createAccountAndSaveProfile(page, counts);
+    let active: Experiment = {
+      ...experiment, status: "active", started_at: "2026-10-26T05:30:00Z",
+      metrics: experiment.metrics.map((metric, index) => ({ ...metric,
+        min_label: index === 0 ? "Very tired" : null,
+        max_label: index === 0 ? "Ready for the day" : null,
+      })),
+      progress: { ...experiment.progress, state: "in_progress", day_number: 4,
+        phase: "intervention", phase_day: 1, phase_days: 7, days_remaining: 6,
+        started_at: "2026-10-26T05:30:00Z", ends_at: "2026-11-05T05:30:00Z" },
+    };
+    await page.route(`${API}/api/experiments/${experiment.id}`, route => route.fulfill({ json: active }));
+    await page.route(`${API}/api/experiments/${experiment.id}/checkins`, route => {
+      if (route.request().method() === "GET") return route.fulfill({ json: [] });
+      const saved: Checkin = { ...route.request().postDataJSON(), id: "44444444-4444-4444-8444-444444444444",
+        experiment_id: experiment.id, phase: "intervention", day_number: 4,
+        created_at: "2026-10-29T05:30:00Z", updated_at: "2026-10-29T05:30:00Z" };
+      expect(saved.metric_values).toEqual({ morning_energy: 7, sleep_quality: 6 });
+      return route.fulfill({ json: saved });
+    });
+    const capture = async (state: string) => {
+      if (!process.env.CAPTURE_SCALE_WORDS || reducedMotion === "reduce") return;
+      if (state === "checkin-after") {
+        await expect.poll(() => page.getByRole("progressbar").evaluate(element =>
+          Math.round(element.firstElementChild!.getBoundingClientRect().width / element.getBoundingClientRect().width * 100),
+        )).toBe(100);
+      }
+      await page.addStyleTag({ content: "nextjs-portal { display: none !important; } header { position: static !important; }" });
+      const viewport = page.viewportSize()!;
+      // Paint at natural document height to avoid sticky/compositor artefacts in full-page captures.
+      await page.setViewportSize({ ...viewport, height: await page.evaluate(() => document.documentElement.scrollHeight) });
+      await page.evaluate(async () => {
+        scrollTo(0, 0);
+        await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      });
+      await page.screenshot({ path: `../docs/screenshots/scale-words-chart-days/${width}-${state}.png`, fullPage: true });
+      await page.setViewportSize(viewport);
+    };
+    await page.goto(`/experiments/${experiment.id}/check-in`);
+    const energy = page.getByRole("group", { name: "Morning energy" });
+    const sleep = page.getByRole("group", { name: "Sleep quality" });
+    await expect(energy.getByText("1 Very tired", { exact: true })).toBeVisible();
+    await expect(energy.getByText("10 Ready for the day", { exact: true })).toBeVisible();
+    await expect(sleep.getByText("1 Low", { exact: true })).toBeVisible();
+    await expect(sleep.getByText("10 High", { exact: true })).toBeVisible();
+    await capture("checkin-before");
+    await page.getByText("Not today", { exact: true }).click();
+    await energy.getByText("7", { exact: true }).click();
+    await expect(energy.getByRole("radio", { name: "7", exact: true })).toBeChecked();
+    await sleep.getByText("6", { exact: true }).click();
+    await capture("checkin-during");
+    await page.evaluate(() => {
+      for (const animation of document.getAnimations()) {
+        if (Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))) animation.finish();
+      }
+    });
+    await capture("checkin-after");
+    await page.getByRole("button", { name: "Save today's check-in" }).click();
+    await expect(page.getByRole("heading", { name: "Day 4 recorded." })).toBeVisible();
+    // Simulate pre-B12 JSON: both consumers must have a no-words path.
+    active = { ...active, metrics: active.metrics.map(metric => ({ ...metric, min_label: null, max_label: null })) };
+    await page.goto(`/experiments/${experiment.id}/check-in`);
+    await expect(energy.getByText("1 Low", { exact: true })).toBeVisible();
+    // Generated by the real backend and validated against OpenAPI by the contract suite.
+    const genuine = backend.cases.find(item => item.name === "today-unlogged")!.report as LabReport;
+    let report: LabReport = { ...genuine,
+      // Deliberately disagree: the chart must obey point flags, not this legacy list.
+      analysis: { ...genuine.analysis, adherence: { ...genuine.analysis.adherence, missing_days: [10] } },
+    };
+    await page.route(`${API}/api/experiments/${experiment.id}/report`, route => route.fulfill({ json: report }));
+    await page.goto(`/experiments/${experiment.id}/report`);
+    await expect(page.getByText("Missed: day 2.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Not reached before you finished: days 7, 8, 9, 10.", { exact: true })).toBeVisible();
+    // Human review screenshots use coherent backend data after proving the disagreement path.
+    report = genuine;
+    await page.reload();
+    await expect(page.getByText("Missed: day 2.", { exact: true })).toBeVisible();
+    await capture("report");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(counts.proposals).toBe(0);
+    expect(counts.saves).toBe(0);
+    expect(counts.starts).toBe(0);
+  });
+}

@@ -14,15 +14,11 @@ export function Radio({ label, selected, onPress, disabled, text = label }: {
       borderColor: selected ? COLORS.moss : COLORS.line, backgroundColor: selected || pressed ? COLORS['moss-tint'] : COLORS.paper,
     })}><Copy>{text}</Copy></Pressable>;
 }
-const scaleWords: Record<string, readonly [string, string]> = {
-  morning_energy: ['Drained', 'Full of energy'], sleep_quality: ['Restless', 'Restful'],
-  focus: ['Distracted', 'Focused'], stress: ['Calm', 'Very stressed'],
-};
 export function MetricInput({ metric, value, onChange, disabled, error }: {
   metric: Metric; value: string | boolean | undefined; onChange: (value: string | boolean) => void; disabled: boolean; error?: string;
 }) {
   const [focused, setFocused] = useState(false);
-  const [low, high] = scaleWords[metric.key] ?? ['Low', 'High'];
+  const low = metric.min_label ?? 'Low', high = metric.max_label ?? 'High';
   const min = metric.min ?? 1, max = metric.max ?? 10;
   return <View style={styles.stack}>
     <Copy>{metric.label}</Copy>

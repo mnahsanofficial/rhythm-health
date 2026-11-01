@@ -41,6 +41,9 @@ class Metric(BaseModel):
     min: float | None
     max: float | None
     primary: bool
+    # Words for the actual low/high bounds; absent on older metric JSON.
+    min_label: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)] | None = None
+    max_label: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)] | None = None
 
     @model_validator(mode="after")
     def _scale_bounds(self) -> Self:

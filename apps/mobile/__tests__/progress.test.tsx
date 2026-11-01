@@ -10,8 +10,8 @@ jest.mock('expo-network', () => ({ useNetworkState: () => mockNetwork }));
 jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 const active: Experiment = { ...experiment, status: 'active', metrics: [...experiment.metrics,
-  { key: 'walked', label: 'Walked', type: 'boolean', min: null, max: null, primary: false },
-  { key: 'minutes', label: 'Minutes outside', type: 'duration', min: null, max: null, primary: false }],
+  { key: 'walked', label: 'Walked', type: 'boolean', min: null, max: null, min_label: null, max_label: null, primary: false },
+  { key: 'minutes', label: 'Minutes outside', type: 'duration', min: null, max: null, min_label: null, max_label: null, primary: false }],
   progress: { ...experiment.progress, state: 'in_progress', day_number: 1 } };
 let timeline: ExperimentTimeline;
 let answers: Checkin[];

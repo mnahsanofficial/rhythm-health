@@ -232,11 +232,13 @@ def test_chart_data_is_ready_to_plot(completed):
 
 
 def test_chart_includes_missing_days_and_notes(completed):
+    # The stored analysis already includes day 2: removing a row after completion
+    # must not invent a new missed day in that immutable analysis.
     completed.checkins = [c for c in completed.checkins if c["day_number"] != 2]
     completed.checkins[2]["note"] = "hard day"
     points = client.get(REPORT).json()["chart"]["points"]
     assert points[1] == {
-        "day": 2, "phase": "baseline", "logged": False, "intervention_completed": None,
+        "day": 2, "phase": "baseline", "logged": False, "missed": False, "intervention_completed": None,
         "value": None, "values": None, "note": None,
     }
     assert any(p["note"] == "hard day" for p in points)

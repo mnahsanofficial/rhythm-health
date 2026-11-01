@@ -35,10 +35,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
   active = { ...experiment, status: 'active', metrics: [
-    { key: 'morning_energy', label: 'Morning energy', type: 'scale', min: 1, max: 10, primary: true },
-    { key: 'breaks', label: 'Breaks', type: 'number', min: null, max: null, primary: false },
-    { key: 'minutes_to_sleep', label: 'Minutes to fall asleep', type: 'duration', min: null, max: null, primary: false },
-    { key: 'screen_free', label: 'Screen-free evening', type: 'boolean', min: null, max: null, primary: false },
+    { key: 'morning_energy', label: 'Morning energy', type: 'scale', min: 1, max: 10, min_label: null, max_label: null, primary: true },
+    { key: 'breaks', label: 'Breaks', type: 'number', min: null, max: null, min_label: null, max_label: null, primary: false },
+    { key: 'minutes_to_sleep', label: 'Minutes to fall asleep', type: 'duration', min: null, max: null, min_label: null, max_label: null, primary: false },
+    { key: 'screen_free', label: 'Screen-free evening', type: 'boolean', min: null, max: null, min_label: null, max_label: null, primary: false },
   ], progress: { ...experiment.progress, state: 'in_progress', day_number: 4, phase: 'intervention', phase_day: 1, phase_days: 7, days_remaining: 6 } };
   serverDay = 4; logged = []; posts = []; failSave = 0; failRead = false; failRefresh = false;
   mockAuth.getSession.mockResolvedValue({ data: { session: { access_token: 'fake-token', user: { id: 'fake-user', email: 'learner@example.invalid' } } }, error: null });
@@ -98,7 +98,8 @@ test('scale endpoints use words, including the neutral fallback for an unknown k
   expect(screen.getByText('1 Low · 10 High')).toBeVisible();
 });
 
-test('known energy scales name both ends', async () => {
+test('server-labelled energy scales name both ends', async () => {
+  active.metrics[0] = { ...active.metrics[0], min_label: 'Drained', max_label: 'Full of energy' };
   await open(); expect(screen.getByText('1 Drained · 10 Full of energy')).toBeVisible();
 });
 

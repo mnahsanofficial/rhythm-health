@@ -313,3 +313,14 @@ def test_personal_guess_rejects_nonfinite_numbers(value):
     from app.schemas.proposal import SaveExperimentRequest
     with pytest.raises(ValidationError):
         SaveExperimentRequest.model_validate({**BODY, "personal_guess_percent": value})
+
+
+def test_scale_words_round_trip_in_metric_json_without_a_new_column(db):
+    metrics = [{**BODY['proposal']['metrics'][0], 'min_label': 'Drained', 'max_label': 'Full of energy'}, BODY['proposal']['metrics'][1]]
+    response = client.post('/api/experiments', json={**BODY, 'proposal': {**BODY['proposal'], 'metrics': metrics}})
+    assert response.status_code == 201
+    saved = response.json()
+    metric = client.get(f"/api/experiments/{saved['id']}").json()['metrics'][0]
+    assert metric['min_label'] == 'Drained' and metric['max_label'] == 'Full of energy'
+    assert db.rows[0]['metrics'][0]['min_label'] == 'Drained'
+    assert 'personal_guess_percent' not in db.rows[0]  # S6 migration still not required.

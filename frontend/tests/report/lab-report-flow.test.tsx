@@ -215,7 +215,7 @@ describe("day chart", () => {
     chart: {
       ...labReport.chart,
       points: labReport.chart.points.map(p =>
-        p.day === 4 || p.day >= 8 ? { day: p.day, phase: p.phase, logged: false, intervention_completed: null, value: null, values: null, note: null } : p,
+        p.day === 4 || p.day >= 8 ? { day: p.day, phase: p.phase, logged: false, missed: p.day === 4, intervention_completed: null, value: null, values: null, note: null } : p,
       ),
     },
   };

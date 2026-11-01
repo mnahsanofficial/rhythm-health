@@ -209,7 +209,7 @@ export function LabReport({ id }: { id: string }) {
 
       {primary && (
         <div className="mt-6">
-          <DayChart chart={report.chart} missingDays={analysis.adherence.missing_days} />
+          <DayChart chart={report.chart} />
         </div>
       )}
 

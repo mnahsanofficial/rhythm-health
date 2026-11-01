@@ -109,6 +109,8 @@ class ChartPoint(BaseModel):
     day: int
     phase: str
     logged: bool
+    # Authoritative stored-analysis flag; future/unobserved and logged days are false.
+    missed: bool = False
     intervention_completed: bool | None = None
     # Primary metric value, and every metric's value, for the tap/hover detail.
     value: float | None = None
