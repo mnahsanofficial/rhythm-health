@@ -14,12 +14,14 @@
     "dev": "npm run dev --workspace=rhythm-health-frontend",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run contract:check && npm run brand:check && npm test --workspaces --if-present",
+    "test": "npm run logs:check && npm run logs:test && npm run contract:check && npm run brand:check && npm test --workspaces --if-present",
     "test:e2e": "npm run test:e2e --workspace=rhythm-health-frontend",
     "build": "npm run build --workspace=rhythm-health-frontend",
     "contract:generate": "npm run generate --workspace=@rhythm-health/contract",
     "contract:check": "npm run check --workspace=@rhythm-health/contract",
     "brand:generate": "npm run generate --workspace=@rhythm-health/brand",
-    "brand:check": "npm run check --workspace=@rhythm-health/brand"
+    "brand:check": "npm run check --workspace=@rhythm-health/brand",
+    "logs:check": "node scripts/check-logs.mjs",
+    "logs:test": "node --test scripts/tests/*.test.mjs && python3 -m unittest discover -s scripts/tests"
   }
 }

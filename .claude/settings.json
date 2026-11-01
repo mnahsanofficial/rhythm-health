@@ -3,14 +3,14 @@
     "UserPromptSubmit": [
       {
         "hooks": [
-          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 \"$CLAUDE_PROJECT_DIR/scripts/extract-log.py\"" }
+          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 \"$CLAUDE_PROJECT_DIR/scripts/claude-log-hook.py\"" }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 \"$CLAUDE_PROJECT_DIR/scripts/extract-log.py\"" }
+          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 \"$CLAUDE_PROJECT_DIR/scripts/claude-log-hook.py\"" }
         ]
       }
     ]
