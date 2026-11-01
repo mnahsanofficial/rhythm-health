@@ -218,6 +218,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Active Sample */
+        post: operations["start_active_sample_api_demo_active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/active/{experiment_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Active Sample */
+        post: operations["remove_active_sample_api_demo_active__experiment_id__remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -863,6 +897,19 @@ export interface components {
             /** Suggested Alternative */
             suggested_alternative?: string | null;
         };
+        /** SampleRemovalRequest */
+        SampleRemovalRequest: {
+            /**
+             * Confirmed
+             * @constant
+             */
+            confirmed: true;
+        };
+        /** SampleRemovalResult */
+        SampleRemovalResult: {
+            /** Removed */
+            removed: boolean;
+        };
         /**
          * SaveExperimentRequest
          * @description Body for saving what /propose returned. No user_id or profile_id: both come from the token.
@@ -1374,6 +1421,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_active_sample_api_demo_active_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_active_sample_api_demo_active__experiment_id__remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SampleRemovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleRemovalResult"];
                 };
             };
             /** @description Validation Error */

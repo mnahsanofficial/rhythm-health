@@ -145,6 +145,7 @@ export function CheckinForm({ id }: { id: string }) {
     }[progress.state];
     return (
       <Shell back={experimentPath}>
+        {experiment.is_seeded && <p className="mb-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
         <h1 className="font-display text-headline tracking-tight">No check-in today.</h1>
         <p className="mt-3 text-lead text-muted">{message}</p>
         <Link href={experimentPath} className={`${primaryButton} mt-8`}>
@@ -169,6 +170,7 @@ export function CheckinForm({ id }: { id: string }) {
       <Shell back={experimentPath}>
         <div role="status" className="flex flex-col items-start">
           <Tick reduceMotion={Boolean(reduceMotion)} />
+          {experiment.is_seeded && <p className="mt-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
           <h1
             ref={savedHeadingRef}
             tabIndex={-1}
@@ -270,6 +272,7 @@ export function CheckinForm({ id }: { id: string }) {
       <p className="font-mono text-caption text-moss tabular-nums">
         {testDay ? "Test" : "Baseline"} · day {progress.phase_day} of {progress.phase_days}
       </p>
+      {experiment.is_seeded && <p className="mb-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
       <h1 className="mt-2 font-display text-display-sm tracking-tight">Today&apos;s check-in.</h1>
       <p className="mt-3 text-lead text-muted">
         {testDay

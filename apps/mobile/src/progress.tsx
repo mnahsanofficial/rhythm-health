@@ -56,12 +56,13 @@ export function Progress({ data: { experiment, timeline }, token, offline, onExp
         </View> : <><Copy>No answers returned for this day.</Copy><Action label="Retry answers" disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>)}
     </View>;
   return <View style={styles.stack}>
+    {experiment.is_seeded && <Copy style={styles.muted}>Sample experiment · Sample check-ins</Copy>}
     <Title>Your progress.</Title>
     <Copy style={styles.sectionTitle}>{timeline.recorded_days} of {timeline.progress.total_days} recorded</Copy>
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.lg }}>
       <Copy>{timeline.missed_days} missed</Copy><Copy>{timeline.remaining_days} remaining</Copy>
     </View>
-    <Copy style={styles.muted}>Each recorded day adds to your own evidence. A short experiment shows a pattern, not proof.</Copy>
+    <Copy style={styles.muted}>{experiment.is_seeded ? 'Sample check-ins for demonstration. These answers are excluded from your real experiment history and predictions.' : 'Each recorded day adds to your own evidence. A short experiment shows a pattern, not proof.'}</Copy>
     {offline && <Copy accessibilityLiveRegion="polite">Offline. Showing the last loaded progress.</Copy>}
     <View style={styles.divider}>
       <Copy accessibilityRole="header" style={styles.sectionTitle}>The days so far</Copy>

@@ -1,5 +1,6 @@
 "use client";
 
+import { SampleControls } from "@/components/experiments/sample-controls";
 import Link from "next/link";
 import { BaselineContext } from "@/components/experiments/baseline-context";
 import { useRouter } from "next/navigation";
@@ -82,6 +83,7 @@ function SignedInHome() {
     <div className="page-frame pt-8 pb-16 sm:pt-14">
       {state.kind === "active" ? (
         <ActiveLab
+          onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }}
           profile={state.profile}
           experiment={state.experiment}
           checkins={state.checkins}
@@ -103,7 +105,7 @@ function SignedInHome() {
           </button>
         </section>
       ) : state.kind === "ready" ? (
-        <ExperimentFlow profile={state.profile} returnTo="/" />
+        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" /></>
       ) : (
         <section className="max-w-2xl py-10 sm:py-16">
           <h1 className="font-display text-display-sm tracking-tight sm:text-display">
@@ -122,7 +124,8 @@ function SignedInHome() {
 }
 
 /** The question form replaces the summary in place; daily evidence stays visible. */
-function ActiveLab({ profile, experiment, timeline, checkins }: {
+function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
+  onChanged: () => void;
   profile: Profile;
   experiment: Experiment;
   timeline: ExperimentTimeline;
@@ -154,6 +157,7 @@ function ActiveLab({ profile, experiment, timeline, checkins }: {
 
   return (
     <>
+      <SampleControls experiment={experiment} onChanged={onChanged} />
       <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">

@@ -83,6 +83,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   return <View style={styles.stack}>
     <Action label="Back to Today" secondary disabled={busy} onPress={onBack} />
     <Copy style={styles.number}>Day {day} · {test ? 'Test' : 'Baseline'}</Copy>
+    {experiment.is_seeded && <Copy style={styles.sectionTitle}>Sample experiment · Sample check-in</Copy>}
     <Title>Today&apos;s check-in.</Title>
     <Copy style={styles.muted}>A small record of how today felt. Only today can be recorded.</Copy>
     {offline && <Copy accessibilityLiveRegion="polite">You&apos;re offline; your answers are kept</Copy>}

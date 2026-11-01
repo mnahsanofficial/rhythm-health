@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AppState, Linking, type AppStateStatus } from 'react-native';
+import { Reminders } from '../src/lib/reminders';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
@@ -210,7 +211,6 @@ test('retrying preference restoration retains the already loaded server progress
 });
 
 test('sample experiments cancel pending reminders and never schedule daily or test notifications', async () => {
-  const { Reminders } = await import('../src/lib/reminders');
   const service = new Reminders();
   notificationState.granted = true;
   await service.setOwner('sample-owner');

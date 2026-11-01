@@ -88,6 +88,8 @@ def write_report(
     unless ?regenerate=true. The analysis itself is never touched.
     """
     row = owned_experiment(user_id, experiment_id)
+    if row.get("is_seeded"):
+        raise HTTPException(status_code=409, detail="Samples use a fixed report and never call AI. Remove the sample to start a real experiment.")
     if row["status"] != "completed":
         raise HTTPException(status_code=409, detail="Complete the experiment before writing its report")
 

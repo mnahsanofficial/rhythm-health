@@ -1,5 +1,4 @@
 """Active samples use only in-memory repositories; never credentials or AI."""
-from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
@@ -11,9 +10,16 @@ from app.integrations import openrouter
 from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
 from app.main import app
 from app.repositories import checkins, experiments, profiles
-from app.services import demo, history
+from app.services import history
 from tests.test_demo import FakeDb, ALICE, BOB
 from tests.test_history import row, analysis
+
+@pytest.fixture(autouse=True)
+def no_external_network(monkeypatch):
+    # A missing repository/AI fake must fail before any external request can run.
+    import httpx
+    monkeypatch.setattr(httpx, 'request', Mock(side_effect=AssertionError('External requests are forbidden')))
+
 
 client = TestClient(app)
 START = '/api/demo/active'
@@ -109,7 +115,7 @@ def test_checkin_failure_cleans_up_only_the_new_sample(db, monkeypatch):
 
 
 def test_completed_samples_never_enter_public_history(db):
-    real = db.add_real(ALICE, 'completed')
+    real = db.add_real(ALICE, 'completed', id='00000000-0000-0000-0000-000000000012')
     db.add_real(ALICE, 'completed', is_seeded=True)
     for path in ['/api/experiments', '/api/experiments?status=completed']:
         response = client.get(path)
@@ -146,3 +152,37 @@ def test_sample_never_calls_paid_report_writer(db, monkeypatch):
     db.experiments[0]['status'] = 'completed'
     assert client.post(f"/api/experiments/{sample['id']}/report?regenerate=true").status_code == 409
     writer.assert_not_called()
+
+
+def test_reset_completed_demo_does_not_delete_active_sample(db, monkeypatch):
+    from app.repositories import reports
+    # Use FakeDb's cascade so existing completed-demo behaviour is exercised as well.
+    monkeypatch.setattr(experiments, 'delete_sample', db.delete_sample)
+    monkeypatch.setattr(reports, 'upsert', db.upsert_report)
+    monkeypatch.setattr(reports, 'save_narrative', db.save_narrative)
+    sample = client.post(START, json={}).json()
+    assert client.post('/api/demo/reset', json={}).status_code == 200
+    assert any(e['id'] == sample['id'] and e['status'] == 'active' for e in db.experiments)
+    assert len([c for c in db.checkins if c['experiment_id'] == sample['id']]) == 3
+
+
+def test_removing_sample_allows_starting_a_real_proposed_experiment(db, monkeypatch):
+    sample = client.post(START, json={}).json()
+    real = db.add_real(ALICE, 'proposed', id='00000000-0000-0000-0000-000000000013')
+    path = f"/api/experiments/{real['id']}/start"
+    assert client.post(path).status_code == 409
+    assert client.post(f"{START}/{sample['id']}/remove", json={'confirmed': True}).status_code == 200
+    def start(_pid, _eid, started_at):
+        real.update(status='active', started_at=started_at)
+        return real
+    monkeypatch.setattr(experiments, 'start', start)
+    response = client.post(path)
+    assert response.status_code == 200 and response.json()['is_seeded'] is False
+
+
+def test_removal_outage_does_not_claim_success(db, monkeypatch):
+    sample = client.post(START, json={}).json()
+    monkeypatch.setattr(experiments, 'delete_sample', Mock(side_effect=SupabaseUnavailable('down')))
+    response = client.post(f"{START}/{sample['id']}/remove", json={'confirmed': True})
+    assert response.status_code == 503
+    assert db.experiments[0]['id'] == sample['id']

@@ -82,7 +82,10 @@ def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_curr
 def list_experiments(status: ExperimentStatus | None = None, user_id: str = Depends(get_current_user)):
     profile_id = profile_id_for(user_id)
     try:
-        return [with_progress(r) for r in experiments.list_for_profile(profile_id, status)]
+        return [
+            with_progress(r) for r in experiments.list_for_profile(profile_id, status)
+            if not r.get("is_seeded") or status == "active"
+        ]
     except SupabaseUnavailable:
         raise db_error()
 
