@@ -1,0 +1,26 @@
+{
+  "2026-10-29_16-44-55_01a18743-40a4-72d2-8a5d-514e8a836ef0.md": {
+    "checks": [
+      "generated_prompt"
+    ],
+    "reason": "Codex Desktop's background suggestions job, not a session a person drove. Its only prompt is generated text. Written before the Codex extractor skipped these (audit, 1 Nov). Kept unedited, per the logging rules; listed for 8x."
+  },
+  "2026-10-30_23-13-41_01a18dcd-8635-7e13-aee8-69daabb47d2c.md": {
+    "checks": [
+      "generated_prompt"
+    ],
+    "reason": "Codex Desktop's background suggestions job, not a session a person drove. Its only prompt is generated text. Written before the Codex extractor skipped these (audit, 1 Nov). Kept unedited, per the logging rules; listed for 8x."
+  },
+  "2026-10-30_23-54-30_01a18df2-e96b-7081-bca4-37ae501a2817.md": {
+    "checks": [
+      "generated_prompt"
+    ],
+    "reason": "Codex Desktop's background suggestions job, not a session a person drove. Its only prompt is generated text. Written before the Codex extractor skipped these (audit, 1 Nov). Kept unedited, per the logging rules; listed for 8x."
+  },
+  "2026-10-31_23-14-50_01a192f4-f126-7752-b252-d0b296d4e959.md": {
+    "checks": [
+      "generated_prompt"
+    ],
+    "reason": "Codex Desktop's background suggestions job, not a session a person drove. Its only prompt is generated text. Written before the Codex extractor skipped these (audit, 1 Nov). Kept unedited, per the logging rules; listed for 8x."
+  }
+}

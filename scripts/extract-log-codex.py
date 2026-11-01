@@ -32,6 +32,45 @@ def find_rollout(session_id: str) -> Optional[Path]:
     return matches[-1] if matches else None
 
 
+# Text Codex writes itself and sends as a "user" turn. A session made of these isn't the person's.
+GENERATED_PREFIXES = (
+    '# Overview\n\nGenerate 0 to 3 hyperpersonalized suggestions',  # Codex Desktop background suggestions
+    'The following is the Codex agent history',  # approval-reviewer (guardian) sub-agent
+)
+
+
+def is_generated(text: str) -> bool:
+    return text.lstrip().startswith(GENERATED_PREFIXES)
+
+
+def session_source(jsonl_path: Path):
+    """The rollout's session_meta source: 'vscode', 'cli', or {'subagent': ...} for sub-agents."""
+    for line in jsonl_path.read_text().split('\n'):
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if entry.get('type') == 'session_meta':
+            return (entry.get('payload') or {}).get('source')
+    return None
+
+
+def is_person_session(path: Optional[Path], prompt: str) -> bool:
+    """Only log sessions a person drives: they have a rollout and aren't sub-agents.
+
+    Codex Desktop's background suggestions job fires the repo's hooks without a rollout
+    under ~/.codex/sessions, and approval reviewers run as sub-agents; neither is ours.
+    """
+    if prompt and is_generated(prompt):
+        return False
+    if not path or not path.exists():
+        return False
+    source = session_source(path)
+    return not (isinstance(source, dict) and 'subagent' in source)
+
+
 ITEM_ROLES = {'UserMessage': 'user', 'AgentMessage': 'assistant'}
 LEGACY_ROLES = {'user_message': 'user', 'agent_message': 'assistant'}
 
@@ -75,11 +114,13 @@ def main():
     session_id = payload.get('session_id', '')
     transcript = payload.get('transcript_path')
     path = Path(transcript) if transcript else find_rollout(session_id)
+    prompt = (payload.get('prompt') or '').strip()
+    if not is_person_session(path, prompt):
+        return
 
-    entries = extract_clean_log(path) if path and path.exists() else []
+    entries = [e for e in extract_clean_log(path) if not (e[1] == 'user' and is_generated(e[2]))]
 
     # The rollout is written asynchronously; fill in from the payload if it lags.
-    prompt = (payload.get('prompt') or '').strip()
     users = [c for _, r, c in entries if r == 'user']
     if prompt and (not users or users[-1] != prompt):
         entries.append((now_iso(), 'user', prompt))

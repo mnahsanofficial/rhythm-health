@@ -9,13 +9,55 @@ import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Mapping, Optional, Tuple
 
 _spec = importlib.util.spec_from_file_location(
     'extract_log', Path(__file__).with_name('extract-log.py')
 )
 base = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(base)
+
+
+# Where gh usually lives on a Mac. Hooks can start with a bare PATH that misses it.
+EXTRA_PATHS = ('/opt/homebrew/bin', '/usr/local/bin')
+
+
+def with_tool_paths(path: str) -> str:
+    parts = [p for p in path.split(':') if p]
+    return ':'.join(parts + [p for p in EXTRA_PATHS if p not in parts])
+
+
+def resolve_github_user() -> Optional[str]:
+    """The active gh login: the API when it's reachable, else gh's local active account.
+
+    Hooks can run offline or sandboxed, where `gh api user` fails and the guide script
+    would record "unknown". The local fallback reads gh's own config, with no network.
+    """
+    env = {**os.environ, 'PATH': with_tool_paths(os.environ.get('PATH', ''))}
+    commands = (['gh', 'api', 'user', '--jq', '.login'], ['gh', 'config', 'get', '-h', 'github.com', 'user'])
+    for command in commands:
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=5, env=env)
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+            return None
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    return None
+
+
+def attribution_env(environ: Mapping[str, str], resolver: Optional[Callable[[], Optional[str]]] = None) -> dict:
+    """An environment for running the guide script: gh on PATH, and GITHUB_USER set.
+
+    The guide script reads GITHUB_USER before calling gh, so setting it here fixes
+    attribution without changing that script. An explicit GITHUB_USER always wins.
+    """
+    env = dict(environ)
+    env['PATH'] = with_tool_paths(env.get('PATH', ''))
+    if not env.get('GITHUB_USER'):
+        login = (resolver or resolve_github_user)()
+        if login:
+            env['GITHUB_USER'] = login
+    return env
 
 
 def repo_root(start: Path) -> Path:
@@ -75,6 +117,10 @@ def write_log(root: Path, session_id: str, entries: List[Tuple[str, str, str]], 
     last_entry_type = entries[-1][1]
     session_status = 'complete' if last_entry_type == 'assistant' else 'awaiting_response'
 
+    if not os.environ.get('GITHUB_USER'):
+        login = resolve_github_user()
+        if login:
+            os.environ['GITHUB_USER'] = login
     author = base.get_git_author()
     github_user = base.get_github_user()
     git_email = base.get_git_email()
