@@ -3,7 +3,7 @@ import { Linking, Platform, Switch, View } from 'react-native';
 import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
 import { useReminders } from './reminder-context';
 import { Action, Alert, Copy, styles, Title } from './ui';
-export function Settings({ email, signOut }: { email?: string; signOut: () => void }) {
+export function Settings({ email, signOut, editProfile }: { email?: string; signOut: () => void; editProfile?: () => void }) {
   const { service, state } = useReminders();
   const [error, setError] = useState(false);
   return <View style={styles.stack}>
@@ -21,7 +21,7 @@ export function Settings({ email, signOut }: { email?: string; signOut: () => vo
     {error && <Alert>Couldn&apos;t open Settings. Open your phone Settings and choose Notifications → Expo Go.</Alert>}
     {__DEV__ && <Action label="Send a test reminder in 10 seconds" secondary disabled={state.data?.experiment.is_seeded || state.busy || !state.permission || state.choice !== 'on' || state.data?.timeline.progress.state !== 'in_progress'} onPress={() => void service.test()} />}
     {state.notice && <Copy accessibilityLiveRegion="polite">{state.notice}</Copy>}
-    <View style={styles.divider}><Copy>{email}</Copy><Action label="Sign out" secondary onPress={signOut} /></View>
+    <View style={styles.divider}><Copy>{email}</Copy>{editProfile && <Action label="Update your rhythm" secondary onPress={editProfile} />}<Action label="Sign out" secondary onPress={signOut} /></View>
   </View>;
 }
 export function ReminderNotice({ feedbackOnly = false }: { feedbackOnly?: boolean }) {

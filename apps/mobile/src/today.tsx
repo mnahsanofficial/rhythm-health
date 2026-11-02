@@ -13,8 +13,8 @@ import { ApiError } from './lib/api';
 import { getProgress, listActiveExperiments } from './lib/experiments';
 
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
-export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
-  token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void;
+export function Today({ token, offline, openWeb, onExpired, email, signOut, editProfile }: {
+  token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void; editProfile?: () => void;
 }) {
   const { service: reminders, state: reminderState } = useReminders();
   const [screen, setScreen] = useState<'today' | 'settings' | 'progress'>('today');
@@ -62,7 +62,7 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut }: {
   const sampleControls = <SampleControls key={data?.experiment.id ?? 'empty'} experiment={data?.experiment} token={token} disabled={disabled}
     onExpired={onExpired} onChanged={async () => { setLoaded(null); setSaved(false); await load(); }} />;
   const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
-  if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} /></View>;
+  if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} editProfile={editProfile} /></View>;
   if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
     onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
