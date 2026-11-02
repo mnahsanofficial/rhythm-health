@@ -5,13 +5,13 @@ export class ApiError extends Error {
 }
 const member = (value: unknown, key: string): unknown => value !== null && typeof value === 'object' ? Reflect.get(value, key) : undefined;
 
-async function request<T>(token: string, path: string, failure: string, body?: unknown): Promise<T> {
+async function request<T>(token: string, path: string, failure: string, body?: unknown, method: 'POST' | 'PUT' = 'POST'): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${readConfig().apiUrl}${path}`, body === undefined ? {
       method: 'GET', headers: { Authorization: `Bearer ${token}` },
     } : {
-      method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
   } catch { throw new ApiError(0, "Couldn't reach the server. Check your connection and try again."); }
   if (response.status === 401) throw new ApiError(401, 'Your session has expired. Sign in again.');
@@ -21,7 +21,7 @@ async function request<T>(token: string, path: string, failure: string, body?: u
     const fields: Record<string, string> = {};
     if (Array.isArray(detail)) for (const item of detail) {
       const location = member(item, 'loc');
-      const field = member(item, 'field') ?? (Array.isArray(location) ? location.at(-1) : undefined);
+      const field = member(item, 'field') ?? (Array.isArray(location) ? location.find((part, index) => index > 0 && typeof part === 'string') : undefined);
       const message = member(item, 'message') ?? member(item, 'msg');
       if (typeof field === 'string' && typeof message === 'string') fields[field] = message;
     }
@@ -32,3 +32,5 @@ async function request<T>(token: string, path: string, failure: string, body?: u
 }
 export const apiGet = <T>(token: string, path: string, failure: string) => request<T>(token, path, failure);
 export const apiPost = <T>(token: string, path: string, body: unknown, failure: string) => request<T>(token, path, failure, body);
+
+export const apiPut = <T>(token: string, path: string, body: unknown, failure: string) => request<T>(token, path, failure, body, 'PUT');

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo, Animated } from 'react-native';
+import { AccessibilityInfo, Animated, Platform } from 'react-native';
 import { MOTION_DURATION_MS } from '@rhythm-health/brand';
+import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
@@ -465,4 +466,34 @@ test('sleep times use the native time picker and Cancel preserves the existing t
   fireEvent.press(screen.getByRole('button', { name: 'Bedtime' }));
   expect(screen.getByLabelText('Time picker').props.value.getHours()).toBe(23);
   expect(screen.getByLabelText('Time picker').props.value.getMinutes()).toBe(30);
+});
+
+
+test('Android clock selection commits local time and dismissing leaves it unchanged', async () => {
+  const os = jest.replaceProperty(Platform, 'OS', 'android');
+  try {
+    await openSetup();
+    fireEvent.press(screen.getByRole('radio', { name: '25–34' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Bedtime' }));
+    expect(screen.getByLabelText('Time picker')).toHaveProp('display', 'clock');
+    fireEvent(screen.getByLabelText('Time picker'), 'onChange', { type: 'dismissed' });
+    expect(screen.queryByLabelText('Time picker')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Bedtime' }));
+    fireEvent(screen.getByLabelText('Time picker'), 'onChange', { type: 'set' }, new Date(2000, 0, 1, 23, 45));
+    expect(screen.getByText('23:45')).toBeVisible();
+    expect(screen.queryByLabelText('Time picker')).toBeNull();
+  } finally { os.restore(); }
+});
+
+
+test('the clock picker can recover an incomplete time saved by the earlier manual form', async () => {
+  await writeDraft('fake-user', { draft: { age_range: '25-34', usual_sleep_schedule: { bedtime: '2', wake_time: '' } }, step: 2, editing: false });
+  mockAuth.getSession.mockResolvedValue({ data: { session: mockSession }, error: null });
+  (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 });
+  render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'Bedtime' }));
+  const selected = screen.getByLabelText('Time picker').props.value;
+  expect(Number.isFinite(selected.getTime())).toBe(true);
+  expect(selected.getHours()).toBe(23);
 });
