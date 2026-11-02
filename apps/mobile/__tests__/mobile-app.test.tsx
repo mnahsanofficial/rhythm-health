@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Animated } from 'react-native';
+import { MOTION_DURATION_MS } from '@rhythm-health/brand';
 import { MobileApp } from '../src/mobile-app';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
@@ -18,6 +19,18 @@ jest.mock('../src/lib/supabase', () => ({ createAuthClient: (...args: unknown[])
 jest.mock('expo-network', () => ({ useNetworkState: () => mockNetwork }));
 jest.mock('expo-font', () => ({ useFonts: () => [mockFonts.ready, mockFonts.error] }));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
+
+jest.mock('@react-native-community/datetimepicker', () => {
+  const { View } = jest.requireActual('react-native');
+  return { __esModule: true, default: (props: object) => <View {...props} /> };
+}, { virtual: true });
+
+function chooseTime(label: string, value: string) {
+  fireEvent.press(screen.getByRole('button', { name: label }));
+  const [hour, minute] = value.split(':').map(Number);
+  fireEvent(screen.getByLabelText('Time picker'), 'onChange', { type: 'set' }, new Date(2000, 0, 1, hour, minute));
+  fireEvent.press(screen.getByRole('button', { name: 'Use this time' }));
+}
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -202,8 +215,8 @@ async function openSetup() {
 async function completeQuestions() {
   fireEvent.press(screen.getByRole('radio', { name: '25–34' }));
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  fireEvent.changeText(screen.getByLabelText('Bedtime'), '23:30');
-  fireEvent.changeText(screen.getByLabelText('Wake time'), '07:00');
+  chooseTime('Bedtime', '23:30');
+  chooseTime('Wake time', '07:00');
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(screen.getByText('7')).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
@@ -283,12 +296,12 @@ test('invalid time and excessive sleep cannot advance; optional lists and custom
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   fireEvent.press(screen.getByRole('radio', { name: '25–34' }));
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  fireEvent.changeText(screen.getByLabelText('Bedtime'), '25:00');
-  fireEvent.changeText(screen.getByLabelText('Wake time'), '07:00');
+  chooseTime('Bedtime', '06:00');
+  chooseTime('Wake time', '07:00');
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  fireEvent.changeText(screen.getByLabelText('Bedtime'), '06:00');
+  chooseTime('Bedtime', '06:00');
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  fireEvent.changeText(screen.getByLabelText('Bedtime'), '23:30');
+  chooseTime('Bedtime', '23:30');
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   fireEvent.press(screen.getByRole('button', { name: 'Half an hour more' }));
   expect(screen.getByText('7.5')).toBeVisible();
@@ -391,4 +404,65 @@ test('Settings can reopen the saved rhythm for editing without creating another 
   expect(screen.getByRole('checkbox', { name: 'better morning energy' })).toBeChecked();
   fireEvent.press(screen.getByRole('button', { name: 'Cancel setup changes' }));
   expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+});
+
+test('cleanup retry after a successful save never repeats the profile write', async () => {
+  await openSetup(); await completeQuestions(); await act(async () => {});
+  const storage = jest.requireMock('expo-secure-store');
+  storage.deleteItemAsync.mockRejectedValueOnce(new Error('Fake cleanup failure'));
+  fireEvent.press(screen.getByRole('button', { name: 'Save my rhythm' }));
+  expect(await screen.findByText(/Your rhythm is saved. Couldn't remove/)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Finish saving' }));
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect((global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === 'PUT')).toHaveLength(1);
+});
+
+test('explicit sign-out discards this account setup draft', async () => {
+  await openSetup(); await completeQuestions();
+  fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+  await screen.findByLabelText('Email'); await signIn();
+  expect(await screen.findByText('First, your rhythm.')).toBeVisible();
+});
+
+test('onboarding remains editable offline and reconnects before saving', async () => {
+  await openSetup(); await completeQuestions();
+  mockNetwork.isConnected = false; screen.rerender(<MobileApp />);
+  expect(await screen.findByText(/No connection. Your answers stay/)).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeDisabled();
+  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  fireEvent.press(screen.getByRole('checkbox', { name: 'Calmer evenings' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  expect(screen.getByText('Better focus, Calmer evenings')).toBeVisible();
+  mockNetwork.isConnected = true; screen.rerender(<MobileApp />);
+  expect(await screen.findByRole('button', { name: 'Save my rhythm' })).toBeEnabled();
+});
+
+
+test.each([true, false])('rhythm reveal respects reduced motion=%s without delaying summary actions', async reduce => {
+  const timing = jest.spyOn(Animated, 'timing').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduce);
+  try {
+    await openSetup(); await completeQuestions(); await act(async () => {});
+    expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeEnabled();
+    expect(screen.getByText('23:30 to 07:00, about 7 h asleep')).toBeVisible();
+    if (reduce) expect(timing).not.toHaveBeenCalled();
+    else expect(timing).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ duration: MOTION_DURATION_MS.reveal, useNativeDriver: true }));
+  } finally { timing.mockRestore(); }
+});
+
+
+test('sleep times use the native time picker and Cancel preserves the existing time', async () => {
+  await openSetup();
+  fireEvent.press(screen.getByRole('radio', { name: '25–34' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(screen.queryByDisplayValue('23:30')).toBeNull();
+  chooseTime('Bedtime', '23:30');
+  fireEvent.press(screen.getByRole('button', { name: 'Bedtime' }));
+  expect(screen.getByLabelText('Time picker')).toHaveProp('mode', 'time');
+  expect(screen.getByLabelText('Time picker').props.value.getHours()).toBe(23);
+  fireEvent(screen.getByLabelText('Time picker'), 'onChange', { type: 'set' }, new Date(2000, 0, 1, 22, 0));
+  fireEvent.press(screen.getByRole('button', { name: 'Cancel time selection' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Bedtime' }));
+  expect(screen.getByLabelText('Time picker').props.value.getHours()).toBe(23);
+  expect(screen.getByLabelText('Time picker').props.value.getMinutes()).toBe(30);
 });
