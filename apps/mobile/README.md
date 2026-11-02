@@ -32,6 +32,8 @@ In another terminal, from the repository root:
 npm run start --workspace=@rhythm-health/mobile
 ```
 
+The start command clears Metro's cache. **Stop every Metro/Expo process for this repository before running `npm ci` or changing dependencies**, then start Expo again. A running bundler can retain an invalid file map when npm replaces `node_modules`, reporting installed packages as missing (including `react-native-safe-area-context` or SVG's `./fabric`). Do not fix that by adding resolver overrides or removing native imports. Restart the bundler first; [Expo's cache guidance](https://docs.expo.dev/troubleshooting/clear-cache-macos-linux/) documents `expo start --clear`.
+
 Update Expo Go from the App Store/Google Play. Keep the phone and Mac on the same Wi-Fi, scan Metro's QR code, and allow local-network access. On iPhone use Camera to scan. Enter your own real credentials; agents must not enter them. Test sign-in → Today → enter your own real check-in → Done for today → fully close/reopen. Never save invented health data to the shared account. Sign out affects this device only.
 
 The local-only web handoff uses the API setting's hostname with port 3000. Run the Next.js app there for those links. A future hosted setup will need a separate agreed web location; this does not guess one. Native requests do not need CORS changes. Expo web preview uses in-memory session storage only, is not the persistence test, and may need its origin added to local backend CORS for real requests.
@@ -149,3 +151,8 @@ Restart Expo after the dependency updates, with the backend reachable on Wi-Fi. 
 5. Check large system text, Reduce Motion and VoiceOver labels/order, then close/reopen and confirm the account/profile still loads. Sign out and confirm private content is gone.
 
 Report the result before PR creation. After that gate, fetch/merge latest main, rerun every required check, commit the implementation and hook-generated log, push, open M1 and stop.
+
+
+### M1 live bundler recovery
+
+After the picker dependency installation, the two still-running Metro processes reproduced iOS HTTP 500 failures: port 8081 could not resolve SVG's `./fabric`, and port 8084 could not resolve `react-native-safe-area-context`. Both packages and SVG's fabric entry were present on disk. The processes had been left running during a clean install; fresh-cache exports passing had not verified those already-running development servers. Stop the stale processes, restart against the complete installed tree, and verify the actual development bundle, not only a production export. No reinstall or resolver override is needed for this recovery. The normal native start command now includes `--clear`. After recovery, live iOS and Android development bundle requests returned HTTP 200 on both ports 8081 and 8084; 131 native tests, mobile lint/typecheck and log checks also passed. No dependencies or product code changed for this recovery.
