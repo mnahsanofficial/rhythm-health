@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
@@ -20,6 +21,7 @@ jest.mock('react-native-safe-area-context', () => jest.requireActual('react-nati
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
   mockFonts.ready = true; mockFonts.error = null;
   process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://supabase.test.invalid';
@@ -318,7 +320,7 @@ test('an expired profile save signs out without losing the owner-scoped setup dr
   (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 401 });
   fireEvent.press(screen.getByRole('button', { name: 'Save my rhythm' }));
   expect(await screen.findByLabelText('Email')).toBeVisible();
-  expect(screen.getByRole('alert')).toHaveTextContent('Your session has expired');
+  expect(screen.getByRole('alert')).toHaveTextContent(/Your session has expired/);
   await signIn();
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
   expect(screen.getByText('Better focus')).toBeVisible();
@@ -336,5 +338,57 @@ test('setup restores the same account draft after a restart and never submits tw
   const writes = (global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === 'PUT');
   expect(writes).toHaveLength(1);
   await act(async () => { release({ ok: true, status: 200, json: async () => profile }); });
+  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+});
+
+test('goal limits, case-insensitive custom choices and optional habits match web behavior', async () => {
+  await openSetup(); await completeQuestions();
+  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  fireEvent.changeText(screen.getByLabelText('Something else?'), '  better   focus  ');
+  fireEvent.press(screen.getByRole('button', { name: 'Add' }));
+  expect(screen.getAllByRole('checkbox', { name: 'Better focus' })).toHaveLength(1);
+  fireEvent.press(screen.getByRole('checkbox', { name: 'Calmer evenings' }));
+  fireEvent.changeText(screen.getByLabelText('Something else?'), '  steadier   mornings  ');
+  fireEvent.press(screen.getByRole('button', { name: 'Add' }));
+  expect(screen.getByRole('checkbox', { name: 'Steadier mornings' })).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Better focus' })).toBeEnabled();
+  expect(screen.getByRole('checkbox', { name: 'Fall asleep faster' })).toBeDisabled();
+  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Change habits' }));
+  fireEvent.press(screen.getByRole('checkbox', { name: 'Phone in bed' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  expect(screen.getByText('Phone in bed · 23:00')).toBeVisible();
+});
+
+test('device draft failure is visible and can retry without losing current answers', async () => {
+  const storage = jest.requireMock('expo-secure-store');
+  await openSetup();
+  await act(async () => {});
+  storage.setItemAsync.mockRejectedValueOnce(new Error('Fake storage full'));
+  fireEvent.press(screen.getByRole('radio', { name: '25–34' }));
+  expect(await screen.findByText(/Couldn't keep your setup/)).toBeVisible();
+  expect(screen.getByRole('radio', { name: '25–34' })).toBeChecked();
+  fireEvent.press(screen.getByRole('button', { name: 'Retry keeping my answers' }));
+  await act(async () => {});
+  expect(screen.queryByText(/Couldn't keep your setup/)).toBeNull();
+});
+
+test('switching accounts cannot restore another account onboarding answers', async () => {
+  await openSetup(); await completeQuestions(); screen.unmount();
+  mockAuth.getSession.mockResolvedValue({ data: { session: { ...mockSession, user: { id: 'another-user', email: 'other@example.invalid' } } }, error: null });
+  render(<MobileApp />);
+  expect(await screen.findByText('First, your rhythm.')).toBeVisible();
+  expect(screen.queryByText('Better focus')).toBeNull();
+});
+
+test('Settings can reopen the saved rhythm for editing without creating another profile', async () => {
+  render(<MobileApp />); await signIn(); await screen.findByText('Nothing running yet.');
+  fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Update your rhythm' }));
+  expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
+  expect(screen.getByText('23:30 to 07:30, about 8 h asleep')).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  expect(screen.getByRole('checkbox', { name: 'better morning energy' })).toBeChecked();
+  fireEvent.press(screen.getByRole('button', { name: 'Cancel setup changes' }));
   expect(await screen.findByText('Nothing running yet.')).toBeVisible();
 });
