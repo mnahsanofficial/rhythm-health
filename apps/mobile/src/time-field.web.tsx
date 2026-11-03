@@ -1,10 +1,11 @@
 import { useId, useState } from 'react';
 import { View } from 'react-native';
-import { COLORS, FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
-import { Copy, styles } from './ui';
+import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { Copy, useStyles } from './ui';
+import { useColors } from './theme-core';
 
 /** Expo web uses the browser's native time control; phones use the system picker. */
-export function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+export function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { const COLORS = useColors(); const styles = useStyles();
   const id = useId(); const [focused, setFocused] = useState(false);
   return <View style={styles.stack}>
     <Copy nativeID={`${id}-label`} style={styles.label}>{label}</Copy>

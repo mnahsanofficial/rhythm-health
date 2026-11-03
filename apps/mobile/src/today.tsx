@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, StyleSheet, View } from 'react-native';
-import { COLORS, LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
 import { SampleControls } from './sample-controls';
 import { BaselineContext } from './baseline-context';
 import { ExperimentDetail } from './experiment-detail';
@@ -16,15 +16,16 @@ import { DemoScreen, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
 import type { ActiveCapacity, Experiment, ExperimentTimeline, LabReport, Profile, TodayCheckin } from '@rhythm-health/contract';
-import { Action, Alert, BackLink, Copy, ForwardLink, Loading, styles, Title, Status } from './ui';
+import { Action, Alert, BackLink, Copy, ForwardLink, Loading, useStyles, Title, Status } from './ui';
 import { ApiError } from './lib/api';
 import { getCapacity, getProgress, listActiveExperiments } from './lib/experiments';
+import { themedStyles } from './theme-core';
 
 const hidden = { display: 'none' } as const;
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
 export function Today({ token, offline, profile, onExpired, section, navigation, onSection, editProfile }: {
   token: string; offline: boolean; profile: Profile; onExpired: () => void; section: Section; navigation: number; onSection: (next: Section) => void; editProfile?: () => void;
-}) {
+}) { const labStyles = useLabStyles(); const styles = useStyles();
   const { service: reminders, state: reminderState } = useReminders();
   const [detail, setDetail] = useState(false);
   const [askKey, setAskKey] = useState(0);
@@ -176,7 +177,7 @@ function dayLabel({ progress }: ExperimentTimeline) {
     : progress.state === 'ended' ? 'Experiment days ended' : progress.state === 'completed' ? 'Completed' : 'Not started';
 }
 
-function ActiveLab({ data, onAsk, onDetail }: { data: DayData; onAsk: () => void; onDetail: () => void }) {
+function ActiveLab({ data, onAsk, onDetail }: { data: DayData; onAsk: () => void; onDetail: () => void }) { const labStyles = useLabStyles();
   return <>
     <View style={labStyles.top}>
       <Copy style={labStyles.day}>{dayLabel(data.timeline)}</Copy>
@@ -186,7 +187,7 @@ function ActiveLab({ data, onAsk, onDetail }: { data: DayData; onAsk: () => void
   </>;
 }
 
-function ExperimentSummary({ data: { experiment, timeline }, baseline: showBaseline = false, onDetail }: { data: DayData; baseline?: boolean; onDetail: () => void }) {
+function ExperimentSummary({ data: { experiment, timeline }, baseline: showBaseline = false, onDetail }: { data: DayData; baseline?: boolean; onDetail: () => void }) { const labStyles = useLabStyles(); const styles = useStyles();
   const { progress } = timeline;
   const baseline = progress.phase === 'baseline';
   return <>
@@ -200,12 +201,12 @@ function ExperimentSummary({ data: { experiment, timeline }, baseline: showBasel
     <ForwardLink label={progress.state === 'ended' && !experiment.is_seeded ? 'Finish and see results' : 'See your experiment'} onPress={onDetail} />
   </>;
 }
-const labStyles = StyleSheet.create({
+const useLabStyles = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   top: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
   day: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   change: { gap: SPACING.xs, borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.moss, paddingLeft: SPACING.md },
   action: { ...NATIVE_TYPOGRAPHY.lead },
-});
+}); });
 
 function SavedReceipt({ failed }: { failed: boolean }) {
   const [opacity] = useState(() => new Animated.Value(1));

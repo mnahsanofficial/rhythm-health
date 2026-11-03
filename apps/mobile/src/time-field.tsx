@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { COLORS, SPACING } from '@rhythm-health/brand';
-import { Action, Copy, styles, Title } from './ui';
+import { SPACING } from '@rhythm-health/brand';
+import { Action, Copy, useStyles, Title } from './ui';
+import { useColors } from './theme-core';
 
 /** Calendar date is arbitrary: profile times are local wall-clock HH:MM, never UTC instants. */
 function clockDate(value: string, fallback: string) {
@@ -14,7 +15,7 @@ function clockDate(value: string, fallback: string) {
 function clockValue(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
-export function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+export function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { const COLORS = useColors(); const styles = useStyles();
   const [open, setOpen] = useState(false);
   const [selection, setSelection] = useState(() => clockDate(value, label === 'Bedtime' ? '23:00' : '07:00'));
   function select(event: DateTimePickerEvent, date?: Date) {

@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_NOTE_LENGTH, type TodayCheckin, type TodayCheckinInput } from '@rhythm-health/contract';
 import { metricAnswer } from './checkin';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError, detailCode } from './lib/api';
 import { getTodayCheckin, saveTodayCheckin } from './lib/checkins';
-import { Action, Alert, BackLink, Copy, styles, Title, Status, useStepFocus } from './ui';
+import { Action, Alert, BackLink, Copy, useStyles, Title, Status, useStepFocus } from './ui';
+import { useColors, themedStyles } from './theme-core';
 
 const prefilled = (today: TodayCheckin) => Object.fromEntries(today.questions.filter(question => question.value !== null && question.value !== undefined)
   .map(question => [question.id, typeof question.value === 'boolean' ? question.value : String(question.value)]));
@@ -16,7 +17,7 @@ const madeChanges = (today: TodayCheckin) => Object.fromEntries(today.experiment
 /** One check-in for every experiment due today. The backend decides what combines and saves it all or not at all. */
 export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: {
   initial: TodayCheckin; token: string; offline: boolean; onExpired: () => void; onBack: () => void;
-}) {
+}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const [today, setToday] = useState(initial);
   const [values, setValues] = useState<Record<string, string | boolean>>(() => prefilled(initial));
   const [changes, setChanges] = useState<Record<string, boolean>>(() => madeChanges(initial));
@@ -116,7 +117,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   notice: { padding: SPACING.sm + SPACING.xs, gap: SPACING.xs, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
   item: { gap: SPACING.xs },
   day: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
@@ -124,4 +125,4 @@ const local = StyleSheet.create({
   audience: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.moss },
   pair: { flexDirection: 'row', gap: SPACING.sm },
   half: { flex: 1 },
-});
+}); });

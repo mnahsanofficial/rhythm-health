@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
-import { COLORS, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Metric, Prediction } from '@rhythm-health/contract';
 import { signedPercent } from './lib/proposals';
-import { Copy, styles as ui } from './ui';
+import { Copy, useStyles } from './ui';
+import { themedStyles } from './theme-core';
 
 const [x1, y1, x2, y2] = MOTION_EASE.settle;
 const DIRECTION = { increase: 'likely to go up', decrease: 'likely to go down', no_change: 'likely to stay about the same' };
@@ -25,7 +26,7 @@ function useRangeReveal() {
   return scale;
 }
 
-function PredictionRange({ min, max }: { min: number; max: number }) {
+function PredictionRange({ min, max }: { min: number; max: number }) { const local = useLocal(); const ui = useStyles();
   const scale = useRangeReveal();
   const extent = Math.max(Math.abs(min), Math.abs(max), 1);
   const position = (value: number) => ((value + extent) / (extent * 2)) * 100;
@@ -46,7 +47,7 @@ function PredictionRange({ min, max }: { min: number; max: number }) {
 }
 
 /** The original forecast, shown as a range with its confidence level and never as a single number. */
-export function Forecast({ prediction, metrics }: { prediction: Prediction; metrics: Metric[] }) {
+export function Forecast({ prediction, metrics }: { prediction: Prediction; metrics: Metric[] }) { const local = useLocal(); const ui = useStyles();
   const label = metrics.find(metric => metric.key === prediction.target_metric)?.label ?? prediction.target_metric;
   return <View style={local.card}>
     <Copy style={local.eyebrow}>The original forecast</Copy>
@@ -62,7 +63,7 @@ export function Forecast({ prediction, metrics }: { prediction: Prediction; metr
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
   card: { padding: SPACING.lg, gap: SPACING.md, borderRadius: RADII.card, backgroundColor: COLORS['night-tint'], borderTopWidth: SPACING.xs, borderColor: COLORS.night },
   eyebrow: { color: COLORS.night },
   value: { ...ui.number, ...NATIVE_TYPOGRAPHY.headline, color: COLORS.ink },
@@ -71,4 +72,4 @@ const local = StyleSheet.create({
   range: { position: 'absolute', top: 0, bottom: 0, borderRadius: RADII.pill, backgroundColor: COLORS.night },
   ends: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.sm },
   end: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
-});
+}); });

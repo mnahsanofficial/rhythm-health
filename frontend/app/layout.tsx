@@ -1,9 +1,10 @@
-import { COLORS } from "@rhythm-health/brand";
+import { THEMES } from "@rhythm-health/brand";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Instrument_Sans } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
 import { SiteHeader } from "@/components/site-header";
 import { SessionProvider } from "@/lib/auth/session";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -28,7 +29,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: COLORS.oat,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEMES.light.background },
+    { media: "(prefers-color-scheme: dark)", color: THEMES.dark.background },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -36,7 +40,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${fraunces.variable} ${instrument.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Sets data-theme on <html> before first paint; suppressHydrationWarning above is for this attribute. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       {/* Extensions such as ColorZilla add attributes to <body> before React hydrates. This only
           ignores attribute differences on <body> itself; mismatches inside the page still report. */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>

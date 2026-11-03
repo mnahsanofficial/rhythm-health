@@ -59,7 +59,7 @@ export function ChipPicker({ legend, options, value, onChange, max, addLabel, ad
                     return (
                       <label
                         key={chip}
-                        className={`flex min-h-12 items-center gap-2 rounded-pill border px-4 text-body transition-transform active:scale-[0.98] motion-reduce:transition-none has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss ${picked ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"} ${disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}
+                        className={`flex min-h-12 items-center gap-2 rounded-pill border px-4 text-body transition-transform active:scale-[0.98] motion-reduce:transition-none has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss ${picked ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"} ${disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}
                       >
                         <input type="checkbox" checked={picked} disabled={disabled} onChange={() => toggle(chip)} className="sr-only" />
                         <svg
@@ -110,7 +110,7 @@ export function ChipPicker({ legend, options, value, onChange, max, addLabel, ad
             type="button"
             onClick={add}
             disabled={full || !custom.trim()}
-            className="min-h-12 shrink-0 rounded-pill bg-moss-tint px-5 text-body font-medium text-moss transition-colors hover:bg-moss hover:text-paper disabled:opacity-40 disabled:hover:bg-moss-tint disabled:hover:text-moss"
+            className="min-h-12 shrink-0 rounded-pill bg-moss-tint px-5 text-body font-medium text-moss transition-colors hover:bg-moss hover:text-on-accent disabled:opacity-40 disabled:hover:bg-moss-tint disabled:hover:text-moss"
           >
             Add
           </button>

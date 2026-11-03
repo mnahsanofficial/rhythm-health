@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { COLORS, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { LabReport } from '@rhythm-health/contract';
 import { BaselineContext } from './baseline-context';
 import { FinishCard } from './finish';
@@ -7,12 +7,13 @@ import { Forecast } from './forecast';
 import { Observations } from './progress';
 import { TodayCard } from './today-card';
 import type { DayData } from './today';
-import { BackLink, Copy, styles, Title, useStepFocus } from './ui';
+import { BackLink, Copy, useStyles, Title, useStepFocus } from './ui';
+import { themedStyles } from './theme-core';
 
 /** The experiment page: where it stands, finishing, every day, the plan and the forecast kept from the start. */
 export function ExperimentDetail({ data, token, offline, disabled, onExpired, onBack, onCheckin, onOpenReport, onCompleted }: {
   data: DayData; token: string; offline: boolean; disabled: boolean; onExpired: () => void; onBack: () => void; onCheckin: () => void; onOpenReport: () => void; onCompleted: (report: LabReport) => void;
-}) {
+}) { const local = useLocal(); const styles = useStyles();
   const { experiment, timeline } = data;
   const { progress } = timeline;
   const heading = useStepFocus('experiment');
@@ -40,9 +41,9 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   page: { gap: SPACING.xl },
   status: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   change: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
-});
+}); });

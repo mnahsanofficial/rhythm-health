@@ -1,13 +1,18 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Appearance, StyleSheet } from 'react-native';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { StyleSheet } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { THEMES } from '@rhythm-health/brand';
 import { ThemeControl, ThemeCycleButton, ThemeProvider, THEME_KEY } from '../src/theme';
 import { Copy } from '../src/ui';
 
+let mockSystemScheme: 'light' | 'dark' = 'light';
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({ __esModule: true, default: () => mockSystemScheme }));
+
 const app = () => <ThemeProvider><Copy testID="words">Hello</Copy><ThemeControl /></ThemeProvider>;
 const textColor = () => StyleSheet.flatten(screen.getByTestId('words').props.style).color;
-const system = (scheme: 'light' | 'dark') => jest.spyOn(Appearance, 'getColorScheme').mockReturnValue(scheme);
+const system = (scheme: 'light' | 'dark') => { mockSystemScheme = scheme; };
 
 describe('mobile theme', () => {
   test('without a provider, screens render in light, as tests and old surfaces expect', () => {
@@ -59,5 +64,10 @@ describe('mobile theme', () => {
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: /System/ })); });
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: /Light/ })); });
     expect(screen.getByRole('button', { name: /Dark/ })).toBeTruthy();
+  });
+
+  test('the app tells iOS and Android it supports both modes', () => {
+    const config = JSON.parse(readFileSync(join(__dirname, '..', 'app.json'), 'utf8')).expo;
+    expect(config.userInterfaceStyle).toBe('automatic');
   });
 });

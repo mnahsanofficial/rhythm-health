@@ -182,7 +182,7 @@ function Flow() {
             type="submit"
             form={formId}
             disabled={!canContinue}
-            className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
+            className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
           >
             {step === 0 ? "Start" : returnToSummary ? "Done" : answered ? "Continue" : "Skip"}
           </button>

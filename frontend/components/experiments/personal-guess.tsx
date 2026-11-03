@@ -53,7 +53,7 @@ export function PersonalGuess({ proposal, onReveal, onBack, headingLevel }: {
           <button
             type="submit"
             disabled={!valid}
-            className="min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-paper hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-on-accent hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reveal the AI prediction
           </button>

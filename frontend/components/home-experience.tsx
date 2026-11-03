@@ -24,7 +24,7 @@ type State =
 
 type RunningExperiment = { experiment: Experiment; timeline: ExperimentTimeline };
 
-const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
+const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
 const textLink = "inline-flex min-h-11 items-center text-body font-medium text-moss underline-offset-4 hover:underline";
 
 /** Resolve auth before showing either the public illustration or private experiment. */
@@ -199,7 +199,7 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
               aria-expanded={open}
               aria-controls={panelId}
               onClick={toggleQuestion}
-              className="ml-auto min-h-12 rounded-pill bg-moss px-6 font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+              className="ml-auto min-h-12 rounded-pill bg-moss px-6 font-medium text-on-accent transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
             >
               {open ? "Close question" : "Test another habit"}
             </button>
@@ -303,7 +303,7 @@ function SeveralLab({ profile, items, capacity, today, onChanged }: {
               if (open) toggle.current?.focus();
               setOpen(!open);
             }}
-            className="min-h-12 rounded-pill bg-moss px-6 font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+            className="min-h-12 rounded-pill bg-moss px-6 font-medium text-on-accent transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
           >
             {open ? "Close question" : "Test another habit"}
           </button>

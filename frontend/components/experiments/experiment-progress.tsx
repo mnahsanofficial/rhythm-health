@@ -8,7 +8,7 @@ import { useId, useState } from "react";
 import { checkInReminder } from "@/lib/calendar/check-in-reminder";
 import type { Checkin, Experiment, ExperimentTimeline, MetricValue } from "@/lib/types/api";
 
-const primaryButton = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
+const primaryButton = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
 const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
 
 function formatValue(value: MetricValue): string {
@@ -162,8 +162,8 @@ export function Timeline({ experiment, checkins, timeline }: {
             : entry.state === "not_observed" ? "not recorded before completion" : "upcoming";
           const tone = recorded
             ? baseline
-              ? "bg-night text-paper"
-              : "bg-moss text-paper"
+              ? "bg-night text-on-accent"
+              : "bg-moss text-on-accent"
             : missed
               ? "border border-dashed border-muted bg-transparent text-muted"
               : baseline

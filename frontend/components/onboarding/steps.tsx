@@ -171,7 +171,7 @@ function StepperButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-14 shrink-0 place-items-center rounded-full bg-moss-tint text-headline text-moss transition-[background-color,scale] hover:bg-moss hover:text-paper active:scale-95 disabled:opacity-40 disabled:hover:bg-moss-tint disabled:hover:text-moss"
+      className="grid size-14 shrink-0 place-items-center rounded-full bg-moss-tint text-headline text-moss transition-[background-color,scale] hover:bg-moss hover:text-on-accent active:scale-95 disabled:opacity-40 disabled:hover:bg-moss-tint disabled:hover:text-moss"
     >
       {children}
     </button>

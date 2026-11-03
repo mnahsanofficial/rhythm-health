@@ -42,7 +42,7 @@ export function PredictionVsReality({ comparison, metricLabel, personalGuess }: 
           type="button"
           aria-controls={resultId}
           onClick={() => setReplay(n => n + 1)}
-          className="min-h-12 rounded-pill bg-moss px-6 font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+          className="min-h-12 rounded-pill bg-moss px-6 font-medium text-on-accent transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
         >
           {revealed ? "Replay comparison" : "Reveal my result"}
         </button>

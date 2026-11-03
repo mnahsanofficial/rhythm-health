@@ -13,7 +13,7 @@ import { PersonalGuess } from "@/components/experiments/personal-guess";
 import { QuestionForm } from "@/components/experiments/question-form";
 import { GOAL_QUESTIONS } from "@/components/onboarding/steps";
 
-const primary = "min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-paper hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50";
+const primary = "min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-on-accent hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50";
 const secondary = "min-h-11 rounded-pill border border-line bg-paper px-5 py-2 font-medium hover:border-moss";
 
 function signedPercent(value: number) {

@@ -157,7 +157,7 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
         type="submit"
         disabled={busy}
         aria-busy={busy}
-        className="min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60"
+        className="min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60"
       >
         {busy ? copy.busy : copy.submit}
       </button>

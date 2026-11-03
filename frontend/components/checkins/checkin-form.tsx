@@ -27,7 +27,7 @@ type Answers = {
 };
 
 export const primaryButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-transform duration-[var(--motion-press)] motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
+  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-transform duration-[var(--motion-press)] motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
 export const secondaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
 
@@ -194,7 +194,7 @@ export function CheckinForm({ id }: { id: string }) {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
                   className={`grid size-11 place-items-center rounded-pill border font-mono text-caption ${
-                    isLogged ? "border-moss bg-moss text-paper" : n <= day ? "border-line bg-paper" : "border-dashed border-line"
+                    isLogged ? "border-moss bg-moss text-on-accent" : n <= day ? "border-line bg-paper" : "border-dashed border-line"
                   }`}
                 >
                   <span aria-hidden="true">{isLogged ? "✓" : n}</span>
@@ -340,7 +340,7 @@ export function CheckinForm({ id }: { id: string }) {
                   <label
                     key={label}
                     className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-                      selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
+                      selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
                     }`}
                   >
                     <input

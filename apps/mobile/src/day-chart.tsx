@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
-import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { ChartData, ChartPoint } from '@rhythm-health/contract';
-import { Copy, styles as ui } from './ui';
+import { Copy, useStyles } from './ui';
+import { useColors, themedStyles } from './theme-core';
 
 const HEIGHT = LAYOUT.primaryAction * 5;
 const DOT = SPACING.xs + 2;
@@ -16,7 +17,7 @@ type Plotted = ChartPoint & { value: number };
  * line and every planned day keeps its place. The rows below are the text alternative and the
  * screen-reader route, so the narrow columns over the plot stay touch-only.
  */
-export function DayChart({ chart }: { chart: ChartData }) {
+export function DayChart({ chart }: { chart: ChartData }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [width, setWidth] = useState(300);
   const [open, setOpen] = useState<number | null>(null);
   const metric = chart.primary_metric;
@@ -109,7 +110,7 @@ export function DayChart({ chart }: { chart: ChartData }) {
   </View>;
 }
 
-function DayRow({ chart, day, point, missed, open, onPress }: { chart: ChartData; day: number; point?: ChartPoint; missed: boolean; open: boolean; onPress: () => void }) {
+function DayRow({ chart, day, point, missed, open, onPress }: { chart: ChartData; day: number; point?: ChartPoint; missed: boolean; open: boolean; onPress: () => void }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const test = point ? point.phase === 'intervention' : day > chart.baseline_days;
   const phase = test ? 'test' : 'baseline';
   const value = point?.logged ? point.value : null;
@@ -128,7 +129,7 @@ function DayRow({ chart, day, point, missed, open, onPress }: { chart: ChartData
   </Pressable>;
 }
 
-function DayDetails({ chart, point }: { chart: ChartData; point: ChartPoint }) {
+function DayDetails({ chart, point }: { chart: ChartData; point: ChartPoint }) { const local = useLocal(); const ui = useStyles();
   const test = point.phase === 'intervention';
   return <View accessibilityLabel={`Details for day ${point.day}`} accessibilityLiveRegion="polite" style={local.details}>
     <Copy style={local.detailsTitle}>{`Day ${point.day} · ${test ? 'Test' : 'Baseline'}${test ? point.intervention_completed ? ' · made the change' : ' · skipped the change' : ''}`}</Copy>
@@ -143,11 +144,11 @@ function DayDetails({ chart, point }: { chart: ChartData; point: ChartPoint }) {
   </View>;
 }
 
-function Legend({ dot, text }: { dot: React.ReactNode; text: string }) {
+function Legend({ dot, text }: { dot: React.ReactNode; text: string }) { const local = useLocal();
   return <View style={local.legendItem}>{dot}<Copy style={local.small}>{text}</Copy></View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
   plotRow: { flexDirection: 'row', gap: SPACING.xs },
   axis: { height: HEIGHT, justifyContent: 'space-between', alignItems: 'flex-end', minWidth: SPACING.lg },
   tick: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
@@ -173,4 +174,4 @@ const local = StyleSheet.create({
   details: { padding: SPACING.md, gap: SPACING.xs, borderRadius: RADII.card, backgroundColor: COLORS.paper },
   detailsTitle: { color: COLORS.moss },
   detail: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
-});
+}); });

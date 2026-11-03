@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
-import { COLORS, LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, LabReport, PersonalGuessComparison, PredictionComparison, ReportNarrative, SignalClass } from '@rhythm-health/contract';
 import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
 import { getCapacity } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
-import { Action, Alert, BackLink, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status } from './ui';
+import { useColors, themedStyles } from './theme-core';
 
 type Load = { kind: 'loading' } | { kind: 'ready'; report: LabReport } | { kind: 'not-finished'; experiment: Experiment } | { kind: 'missing' } | { kind: 'error'; message: string };
 type Props = {
@@ -14,7 +15,7 @@ type Props = {
 };
 
 /** Reads only. Opening this screen never finishes an experiment or writes the paid narrative. */
-export function LabReportScreen({ id, token, offline, initial, backTo = 'Your lab', onExpired, onBack, onToday, onAsk }: Props) {
+export function LabReportScreen({ id, token, offline, initial, backTo = 'Your lab', onExpired, onBack, onToday, onAsk }: Props) { const pill = usePill(); const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [load, setLoad] = useState<Load>(initial ? { kind: 'ready', report: initial } : { kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const heading = useStepFocus(load.kind);
@@ -91,8 +92,8 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
 
     <View style={ui.divider}>
       <Copy style={ui.muted}>Signal or noise</Copy>
-      <View style={[local.pill, PILL[analysis.signal.classification].box]}>
-        <Copy accessibilityRole="header" style={[ui.sectionTitle, PILL[analysis.signal.classification].text]}>{signal.label}</Copy>
+      <View style={[local.pill, pill[analysis.signal.classification].box]}>
+        <Copy accessibilityRole="header" style={[ui.sectionTitle, pill[analysis.signal.classification].text]}>{signal.label}</Copy>
       </View>
       <Copy style={NATIVE_TYPOGRAPHY.lead}>{signal.summary}</Copy>
       {primary && primary.percent_change !== null && <Copy style={ui.muted}>{`${primary.label}: ${reportPercent(primary.percent_change)} on test days compared with your baseline${primary.baseline.mean !== null && primary.intervention.mean !== null ? ` (${primary.baseline.mean.toFixed(1)} → ${primary.intervention.mean.toFixed(1)} on average)` : ''}.`}</Copy>}
@@ -128,7 +129,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
 const [x1, y1, x2, y2] = MOTION_EASE.settle;
 
 /** The forecast stays fixed; a tap reveals the measured change. Reduced motion shows it at once. */
-function PredictionVsReality({ comparison, metricLabel, guess }: { comparison: PredictionComparison; metricLabel: string; guess: PersonalGuessComparison | null }) {
+function PredictionVsReality({ comparison, metricLabel, guess }: { comparison: PredictionComparison; metricLabel: string; guess: PersonalGuessComparison | null }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [replay, setReplay] = useState(0);
   const [landing] = useState(() => new Animated.Value(1));
   const revealed = replay > 0;
@@ -203,7 +204,7 @@ type Writing = { kind: 'idle' } | { kind: 'writing' } | { kind: 'error'; status:
 /** One paid call on an explicit tap, guarded against double taps. A failure keeps the results. */
 function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten }: {
   id: string; token: string; offline: boolean; seeded: boolean; narrative: ReportNarrative | null; onExpired: () => void; onWritten: (report: LabReport) => void;
-}) {
+}) { const local = useLocal(); const ui = useStyles();
   const [writing, setWriting] = useState<Writing>({ kind: 'idle' });
   const inFlight = useRef(false);
   async function write() {
@@ -245,7 +246,7 @@ type ActiveCheck = 'checking' | 'free' | { limit: number };
 /** The check only chooses the wording: the backend refuses before its paid call, so a failed read doesn't block. */
 function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }: {
   token: string; offline: boolean; narrative: ReportNarrative | null; onExpired: () => void; onAsk: (question: string) => void; onToday: () => void;
-}) {
+}) { const local = useLocal(); const ui = useStyles();
   const [check, setCheck] = useState<ActiveCheck>('checking');
   const hasNext = narrative !== null;
   useEffect(() => {
@@ -278,18 +279,18 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }
   </View>;
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: string; value: string }) { const local = useLocal(); const ui = useStyles();
   return <View style={local.stat}><Copy style={ui.muted}>{label}</Copy><Copy style={local.statValue}>{value}</Copy></View>;
 }
 
-const PILL: Record<SignalClass, { box: object; text: object }> = {
-  likely_signal: { box: { backgroundColor: COLORS.moss }, text: { color: COLORS.paper } },
+const usePill = themedStyles((COLORS): Record<SignalClass, { box: object; text: object }> => ({
+  likely_signal: { box: { backgroundColor: COLORS.moss }, text: { color: COLORS['on-accent'] } },
   possible_signal: { box: { backgroundColor: COLORS['moss-tint'] }, text: { color: COLORS.moss } },
   unclear: { box: { backgroundColor: COLORS.line }, text: { color: COLORS.ink } },
   probably_noise: { box: { backgroundColor: COLORS.oat, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line }, text: { color: COLORS.muted } },
-};
+}));
 const MARK = SPACING.md;
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
   page: { gap: SPACING.xl },
   sample: { gap: SPACING.xs, borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.night, paddingLeft: SPACING.md },
   eyebrow: { color: COLORS.moss },
@@ -313,4 +314,4 @@ const local = StyleSheet.create({
   pill: { alignSelf: 'flex-start', paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: RADII.pill },
   stat: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
   statValue: { ...ui.number, color: COLORS.ink },
-});
+}); });

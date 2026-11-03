@@ -14,6 +14,28 @@
   --color-skin: #b9825e;
   --color-clay: #7a2e1f;
   --color-clay-tint: #f7e4df;
+  --color-background: #f6f3ec;
+  --color-surface: #fffdf8;
+  --color-raised: #ffffff;
+  --color-text: #1b2421;
+  --color-border: #dcd6ca;
+  --color-control: #857f72;
+  --color-accent: #2f6b4f;
+  --color-accent-press: #24563f;
+  --color-on-accent: #fffdf8;
+  --color-accent-tint: #e3ece5;
+  --color-success: #2f6b4f;
+  --color-success-tint: #e3ece5;
+  --color-warning: #7a5200;
+  --color-warning-tint: #f8eccd;
+  --color-danger: #7a2e1f;
+  --color-danger-tint: #f7e4df;
+  --color-night-text: #263a6b;
+  --color-chart-1: #263a6b;
+  --color-chart-2: #2f6b4f;
+  --color-chart-3: #a8741a;
+  --color-chart-band: #e4e7f0;
+  --color-marker: #f2c14e;
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -34,6 +56,7 @@
   --spacing: 0.25rem;
   --radius-card: 1.25rem;
   --radius-pill: 999px;
+  --radius-control: 0.875rem;
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -50,4 +73,124 @@
   --focus-width: 2px;
   --focus-offset: 3px;
   --focus-radius: 6px;
+  --button-max: 20rem;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --color-background: #f6f3ec;
+  --color-surface: #fffdf8;
+  --color-raised: #ffffff;
+  --color-text: #1b2421;
+  --color-muted: #5c6661;
+  --color-border: #dcd6ca;
+  --color-control: #857f72;
+  --color-accent: #2f6b4f;
+  --color-accent-press: #24563f;
+  --color-on-accent: #fffdf8;
+  --color-accent-tint: #e3ece5;
+  --color-success: #2f6b4f;
+  --color-success-tint: #e3ece5;
+  --color-warning: #7a5200;
+  --color-warning-tint: #f8eccd;
+  --color-danger: #7a2e1f;
+  --color-danger-tint: #f7e4df;
+  --color-night-text: #263a6b;
+  --color-night-tint: #e4e7f0;
+  --color-chart-1: #263a6b;
+  --color-chart-2: #2f6b4f;
+  --color-chart-3: #a8741a;
+  --color-chart-band: #e4e7f0;
+  --color-marker: #f2c14e;
+  --color-oat: #f6f3ec;
+  --color-paper: #fffdf8;
+  --color-ink: #1b2421;
+  --color-line: #dcd6ca;
+  --color-moss: #2f6b4f;
+  --color-moss-deep: #24563f;
+  --color-moss-tint: #e3ece5;
+  --color-night: #263a6b;
+  --color-sun: #f2c14e;
+  --color-clay: #7a2e1f;
+  --color-clay-tint: #f7e4df;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-background: #10161f;
+  --color-surface: #18202b;
+  --color-raised: #212b38;
+  --color-text: #eef0ea;
+  --color-muted: #a8b1ad;
+  --color-border: #2e3945;
+  --color-control: #76838f;
+  --color-accent: #7cc4a0;
+  --color-accent-press: #94d2b2;
+  --color-on-accent: #0e1a15;
+  --color-accent-tint: #1c3329;
+  --color-success: #8fd0b0;
+  --color-success-tint: #1c3329;
+  --color-warning: #e8c068;
+  --color-warning-tint: #3a2f14;
+  --color-danger: #f0a595;
+  --color-danger-tint: #3c1f19;
+  --color-night-text: #b4c4ee;
+  --color-night-tint: #222d47;
+  --color-chart-1: #9db2ea;
+  --color-chart-2: #7cc4a0;
+  --color-chart-3: #e8c068;
+  --color-chart-band: #26324d;
+  --color-marker: #f2c14e;
+  --color-oat: #10161f;
+  --color-paper: #18202b;
+  --color-ink: #eef0ea;
+  --color-line: #2e3945;
+  --color-moss: #7cc4a0;
+  --color-moss-deep: #94d2b2;
+  --color-moss-tint: #1c3329;
+  --color-night: #9db2ea;
+  --color-sun: #f2c14e;
+  --color-clay: #f0a595;
+  --color-clay-tint: #3c1f19;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-background: #10161f;
+    --color-surface: #18202b;
+    --color-raised: #212b38;
+    --color-text: #eef0ea;
+    --color-muted: #a8b1ad;
+    --color-border: #2e3945;
+    --color-control: #76838f;
+    --color-accent: #7cc4a0;
+    --color-accent-press: #94d2b2;
+    --color-on-accent: #0e1a15;
+    --color-accent-tint: #1c3329;
+    --color-success: #8fd0b0;
+    --color-success-tint: #1c3329;
+    --color-warning: #e8c068;
+    --color-warning-tint: #3a2f14;
+    --color-danger: #f0a595;
+    --color-danger-tint: #3c1f19;
+    --color-night-text: #b4c4ee;
+    --color-night-tint: #222d47;
+    --color-chart-1: #9db2ea;
+    --color-chart-2: #7cc4a0;
+    --color-chart-3: #e8c068;
+    --color-chart-band: #26324d;
+    --color-marker: #f2c14e;
+    --color-oat: #10161f;
+    --color-paper: #18202b;
+    --color-ink: #eef0ea;
+    --color-line: #2e3945;
+    --color-moss: #7cc4a0;
+    --color-moss-deep: #94d2b2;
+    --color-moss-tint: #1c3329;
+    --color-night: #9db2ea;
+    --color-sun: #f2c14e;
+    --color-clay: #f0a595;
+    --color-clay-tint: #3c1f19;
+  }
 }
