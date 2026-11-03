@@ -132,7 +132,7 @@ function SignedInHome() {
           </button>
         </section>
       ) : state.kind === "ready" ? (
-        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" /></>
+        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" onReloadLab={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /></>
       ) : (
         <section className="max-w-2xl py-10 sm:py-16">
           <h1 className="font-display text-display-sm tracking-tight sm:text-display">
@@ -214,6 +214,7 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
               profile={profile}
               returnTo="/"
               showStarters={false}
+              onReloadLab={onChanged}
             />
           </div>
         </div>
@@ -312,7 +313,7 @@ function SeveralLab({ profile, items, capacity, onChanged }: {
       )}
       {capacity.can_start && (
         <div ref={panel} id={panelId} hidden={!open}>
-          <ExperimentFlow profile={profile} returnTo="/" headingLevel={2} showStarters={false} />
+          <ExperimentFlow profile={profile} returnTo="/" headingLevel={2} showStarters={false} onReloadLab={onChanged} />
         </div>
       )}
       <div className="mt-8 divide-y divide-line">

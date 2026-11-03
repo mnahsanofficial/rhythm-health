@@ -79,8 +79,8 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
 
   const disabled = offline || busy || error !== null;
   const entries = loaded?.value ?? [];
-  // One running needs no choosing. With several, the screens below act on the one tapped.
-  const data = entries.length === 1 ? entries[0] : entries.find(item => item.experiment.id === chosen);
+  // The screens below act on the one tapped. If it has finished elsewhere they close, rather than switch to another.
+  const data = chosen ? entries.find(item => item.experiment.id === chosen) : undefined;
   const sample = entries.find(item => item.experiment.is_seeded) ?? entries[0];
   const sampleControls = <SampleControls key={sample?.experiment.id ?? 'empty'} experiment={sample?.experiment} token={token} disabled={disabled}
     onExpired={onExpired} onChanged={async () => { setLoaded(null); await load(); }} />;

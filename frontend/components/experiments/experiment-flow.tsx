@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ApiError } from "@/lib/api/client";
-import { isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
+import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
 import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
 import { PersonalGuess } from "@/components/experiments/personal-guess";
 import { QuestionForm } from "@/components/experiments/question-form";
@@ -244,6 +244,15 @@ function ProposalSkeleton() {
   );
 }
 
+/** A 409 can mean an earlier start landed and only its response was lost, so read before reporting. */
+async function alreadyStarted(id: string) {
+  try {
+    return (await getExperiment(id)).status === "active";
+  } catch {
+    return false;
+  }
+}
+
 /** Shared entry, proposal, save and start flow; the host page owns auth/profile loading. */
 export function ExperimentFlow({
   profile,
@@ -251,12 +260,15 @@ export function ExperimentFlow({
   returnTo = "/experiments/new",
   headingLevel = 1,
   showStarters = true,
+  onReloadLab,
 }: {
   profile: Profile;
   initialQuestion?: string;
   returnTo?: "/" | "/experiments/new";
   headingLevel?: 1 | 2;
   showStarters?: boolean;
+  /** Set when already on Your lab, where a link to it would do nothing. */
+  onReloadLab?: () => void;
 }) {
   const router = useRouter();
   const [question, setQuestion] = useState(
@@ -279,6 +291,10 @@ export function ExperimentFlow({
   const input = useRef<HTMLTextAreaElement>(null);
   const output = useRef<HTMLElement>(null);
   const hasShownResult = useRef(false);
+
+  const labLink = onReloadLab
+    ? <button type="button" onClick={onReloadLab} className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</button>
+    : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</Link>;
 
   useEffect(() => {
     if (result) output.current?.focus();
@@ -366,6 +382,8 @@ export function ExperimentFlow({
         if (isActiveLimitReached(cause)) {
           setStartAtLimit(true);
           setStartError(`Your experiment was saved, but it couldn’t start yet. ${cause.message}`);
+        } else if (cause instanceof ApiError && cause.status === 409 && await alreadyStarted(experimentId)) {
+          router.push(`/experiments/${encodeURIComponent(experimentId)}`);
         } else {
           setStartError(`Your experiment was saved, but it couldn’t be started: ${cause instanceof Error ? cause.message : "Please try again."}`);
         }
@@ -410,7 +428,7 @@ export function ExperimentFlow({
           {limitMessage && !result && (
             <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
               <p>{limitMessage}</p>
-              <Link href="/" className="mt-3 inline-flex min-h-11 items-center underline">Go to Your lab</Link>
+              {labLink}
             </div>
           )}
 
@@ -458,9 +476,7 @@ export function ExperimentFlow({
                   Continue without saving my guess
                 </button>
               )}
-              {startAtLimit && (
-                <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</Link>
-              )}
+              {startAtLimit && labLink}
               <button type="button" className={`${secondary} mt-3 text-ink`} onClick={() => void beginExperiment()}>
                 Try again
               </button>
