@@ -106,19 +106,18 @@ describe('your lab with an experiment', () => {
     expect(screen.queryByRole('button', { name: 'Progress' })).toBeNull();
   });
 
-  test('Test another habit shows the slot is taken and can never reach a paid call', async () => {
+  test('Test another habit designs a second experiment, and the limit leads back to the lab', async () => {
     setActive(testDay);
+    routes['POST /api/experiments/propose'] = { status: 409, body: { detail: { code: 'active_limit_reached', message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } } };
     render(<MobileApp />);
     await screen.findByText('Day 4 of 10');
     await press('Test another habit');
-    expect(await screen.findByText('You already have an active experiment.')).toBeVisible();
-    fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
-    expect(screen.getByRole('button', { name: 'Design my experiment' })).toBeDisabled();
-    expect(screen.getByText('You already have an active experiment.')).toBeVisible();
     expect(screen.queryByText('Start with a hunch')).toBeNull();
-    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design my experiment' })); });
-    expect(calls.filter(call => call.endsWith('/propose'))).toEqual([]);
-    await press('Go to your active experiment');
+    fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
+    await press('Design my experiment');
+    expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
+    expect(calls.filter(call => call.endsWith('/propose'))).toHaveLength(1);
+    await press('Go to Your lab');
     expect(await screen.findByText('Day 4 of 10')).toBeVisible();
   });
 });

@@ -106,32 +106,22 @@ test.each(['', '   ', 'abc', 'a'.repeat(501)])('an out-of-range question cannot 
   expect(count(PROPOSE)).toBe(0);
 });
 
-test('sends the trimmed question after checking the active slot', async () => {
+test('sends the trimmed question directly, because the backend checks the limit first', async () => {
   await openAsk();
+  const reads = count(`GET ${ACTIVE}`);
   await submit(`  ${QUESTION}  `);
   await screen.findByRole('header', { name: 'What do you think will happen?' });
-  const order = calls.map(call => call.key);
-  expect(order.lastIndexOf(`GET ${ACTIVE}`)).toBeLessThan(order.indexOf(PROPOSE));
+  expect(count(`GET ${ACTIVE}`)).toBe(reads);
   expect(calls.find(call => call.key === PROPOSE)?.body).toEqual({ question: QUESTION });
 });
 
-test('an active experiment stops the paid call and links back to Today', async () => {
+test('the limit from the backend is explained, and Design stays off until the question changes', async () => {
   await openAsk();
-  queue(`GET ${ACTIVE}`, { body: [started] });
+  queue(PROPOSE, { status: 409, body: { detail: { code: 'active_limit_reached', message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } } });
   await submit();
-  expect(await screen.findByText('You already have an active experiment.')).toBeVisible();
-  expect(count(PROPOSE)).toBe(0);
-  expect(screen.getByRole('button', { name: 'Go to your active experiment' })).toBeVisible();
-});
-
-test('a failed active check stops the paid call; Retry checks again', async () => {
-  await openAsk();
-  queue(`GET ${ACTIVE}`, { status: 503, body: { detail: 'Service unavailable' } });
-  await submit();
-  expect(await screen.findByText(/Couldn't check for an active experiment\./)).toBeVisible();
-  expect(count(PROPOSE)).toBe(0);
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry' })); });
-  await screen.findByRole('header', { name: 'What do you think will happen?' });
+  expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
+  expect(screen.queryByText('Your profile needs to be saved first.')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Design my experiment' })).toBeDisabled();
   expect(count(PROPOSE)).toBe(1);
 });
 
@@ -294,10 +284,9 @@ test('Ask something else clears the proposal and guess', async () => {
   expect(count(PROPOSE)).toBe(2);
 });
 
-test('starting rechecks the slot, saves the locked guess once, starts, and lands on Today', async () => {
+test('starting saves the locked guess once, starts, and lands on Today', async () => {
   await toPlan();
-  const activeChecks = count(`GET ${ACTIVE}`);
-  queue(`GET ${ACTIVE}`, { body: [] }, { body: [started] });
+  queue(`GET ${ACTIVE}`, { body: [started] });
   await startNow();
   expect(await screen.findByText(started.question)).toBeVisible();
   expect(screen.getByText('Your experiment has started.')).toBeVisible();
@@ -305,7 +294,6 @@ test('starting rechecks the slot, saves the locked guess once, starts, and lands
   const order = calls.map(call => call.key);
   expect(order.indexOf(SAVE)).toBeGreaterThan(order.lastIndexOf(PROPOSE));
   expect(order.indexOf(START)).toBeGreaterThan(order.indexOf(SAVE));
-  expect(count(`GET ${ACTIVE}`)).toBeGreaterThan(activeChecks);
   expect(calls.find(call => call.key === SAVE)?.body).toEqual({
     proposal: withGuess.proposal, prediction: withGuess.prediction, category: withGuess.classification.category, personal_guess_percent: 12,
   });
@@ -315,7 +303,7 @@ test('starting rechecks the slot, saves the locked guess once, starts, and lands
 
 test('double taps on Start save and start once', async () => {
   await toPlan();
-  queue(`GET ${ACTIVE}`, { body: [] }, { body: [started] });
+  queue(`GET ${ACTIVE}`, { body: [started] });
   const button = screen.getByRole('button', { name: 'Start this experiment' });
   await act(async () => { fireEvent.press(button); fireEvent.press(button); });
   await screen.findByText(started.question);
@@ -323,13 +311,16 @@ test('double taps on Start save and start once', async () => {
   expect(count(START)).toBe(1);
 });
 
-test('an active experiment found on the recheck saves nothing', async () => {
+test('the limit reached at the last moment keeps the plan, and retrying makes no second draft', async () => {
   await toPlan();
-  queue(`GET ${ACTIVE}`, { body: [started] });
+  queue(START, { status: 409, body: { detail: { code: 'active_limit_reached', message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } } });
   await startNow();
-  expect(await screen.findByText('You already have an active experiment.')).toBeVisible();
-  expect(count(SAVE)).toBe(0);
-  expect(screen.getByRole('button', { name: 'Go to your active experiment' })).toBeVisible();
+  expect(await screen.findByText("Your experiment was saved, but it couldn't start yet. You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
+  queue(`GET ${ACTIVE}`, { body: [started] });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Try again' })); });
+  await screen.findByText(started.question);
+  expect(count(SAVE)).toBe(1);
+  expect(count(START)).toBe(2);
 });
 
 test('a failed start retries only the start, never a second draft', async () => {
@@ -350,7 +341,7 @@ test('a save failure keeps the plan and retries without another paid call', asyn
   queue(SAVE, { network: true });
   await startNow();
   expect(await screen.findByText(/Couldn't reach the server/)).toBeVisible();
-  queue(`GET ${ACTIVE}`, { body: [] }, { body: [started] });
+  queue(`GET ${ACTIVE}`, { body: [started] });
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Try again' })); });
   await screen.findByText(started.question);
   expect(count(PROPOSE)).toBe(1);
@@ -363,7 +354,7 @@ test('only the guess error offers to continue without saving it, and only on tha
   await startNow();
   expect(await screen.findByText('Your guess could not be saved yet.')).toBeVisible();
   expect(count(START)).toBe(0);
-  queue(`GET ${ACTIVE}`, { body: [] }, { body: [started] });
+  queue(`GET ${ACTIVE}`, { body: [started] });
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Continue without saving my guess' })); });
   await screen.findByText(started.question);
   expect(calls.filter(call => call.key === SAVE)[1]?.body).not.toHaveProperty('personal_guess_percent');
@@ -377,21 +368,11 @@ test('other save errors do not offer to drop the guess', async () => {
   expect(screen.queryByRole('button', { name: 'Continue without saving my guess' })).toBeNull();
 });
 
-test('a start conflict from another experiment explains that the plan was saved', async () => {
-  await toPlan();
-  queue(START, { status: 409, body: { detail: 'You already have an active experiment' } });
-  const other = { ...started, id: 'other-id' };
-  queue(`GET ${ACTIVE}`, { body: [] }, { body: [other] });
-  await startNow();
-  expect(await screen.findByText("Your experiment was saved, but it couldn't be started because another experiment is active.")).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Go to your active experiment' })).toBeVisible();
-  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
-});
-
 test('a start that already went through is recognised, not reported as a failure', async () => {
   await toPlan();
   queue(START, { status: 409, body: { detail: 'Only a proposed experiment can be started (this one is active)' } });
-  queue(`GET ${ACTIVE}`, { body: [] }, { body: [started] }, { body: [started] });
+  // Not first in the list: with several running, the whole list has to be searched.
+  queue(`GET ${ACTIVE}`, { body: [{ ...started, id: 'other-id' }, started] });
   await startNow();
   expect(await screen.findByText('Your experiment has started.')).toBeVisible();
   expect(count(START)).toBe(1);
