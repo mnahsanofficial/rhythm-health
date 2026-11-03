@@ -398,12 +398,12 @@ test('offline on the plan keeps it and disables Start', async () => {
   expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeDisabled();
 });
 
-test.each([[`GET ${ACTIVE}`], [PROPOSE]])('a 401 from %s returns to sign-in', async key => {
+test('a 401 from the proposal returns to sign-in', async () => {
   await openAsk();
-  queue(key, { status: 401, body: {} });
+  queue(PROPOSE, { status: 401, body: {} });
   await submit();
   expect(await screen.findByText('Your session has expired. Sign in again.')).toBeVisible();
-  expect(count(PROPOSE)).toBe(key === PROPOSE ? 1 : 0);
+  expect(count(PROPOSE)).toBe(1);
 });
 
 test('reduced motion shows the forecast range without animating', async () => {

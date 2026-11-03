@@ -177,7 +177,7 @@ describe('finish', () => {
     const sample = { ...ended, is_seeded: true };
     setActive(sample);
     render(<MobileApp />);
-    await screen.findByText('This sample has ended. Remove it to free the slot for a real experiment.');
+    await screen.findByText('This sample has ended. Remove it to free up a slot for a real experiment.');
     expect(screen.queryByRole('button', { name: 'Finish and see results' })).toBeNull();
   });
 

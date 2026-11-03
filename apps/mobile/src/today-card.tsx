@@ -8,7 +8,7 @@ export function TodayCard({ data: { experiment, timeline }, disabled, onCheckin,
   data: DayData; disabled: boolean; onCheckin: () => void; onOpenReport: () => void;
 }) {
   const { progress } = timeline;
-  if (experiment.is_seeded && progress.state !== 'in_progress') return <View style={local.plain}><Copy>This sample has ended. Remove it to free the slot for a real experiment.</Copy></View>;
+  if (experiment.is_seeded && progress.state !== 'in_progress') return <View style={local.plain}><Copy>This sample has ended. Remove it to free up a slot for a real experiment.</Copy></View>;
   if (progress.state === 'completed') return <View style={styles.decision}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>Your results are ready.</Copy>
     <Copy style={styles.muted}>See what changed, and how close the prediction was.</Copy>

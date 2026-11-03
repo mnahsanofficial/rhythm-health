@@ -217,6 +217,7 @@ test('sample experiments cancel pending reminders and never schedule daily or te
   await service.setOwner('sample-owner');
   await service.choose(true);
   notifications.scheduleNotificationAsync.mockClear();
+  pending.set(`rhythm.next-day.${active.id}`, { identifier: `rhythm.next-day.${active.id}`, content: {}, trigger: null });
   await service.refresh([{ experiment: { ...active, is_seeded: true }, timeline }]);
   await service.test();
   expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`);

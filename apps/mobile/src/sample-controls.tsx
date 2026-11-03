@@ -27,7 +27,7 @@ export function SampleControls({ experiment, token, disabled, onChanged, onExpir
   return <View style={styles.divider}>
     <Copy style={styles.sectionTitle}>{experiment ? 'Sample experiment' : 'Try the daily loop with a sample'}</Copy>
     <Copy style={styles.muted}>Sample answers never become your real experiment data. Fixed design and prediction, with no AI calls. Reminders are off for this sample.</Copy>
-    {experiment && <Copy style={styles.muted}>Remove the sample to free the active slot for a real experiment.</Copy>}
+    {experiment && <Copy style={styles.muted}>Remove the sample to free up a slot for a real experiment.</Copy>}
     {error && <Alert>{error}</Alert>}
     {confirm ? <View style={styles.stack}>
       <Copy accessibilityRole="header">Remove this sample experiment?</Copy>

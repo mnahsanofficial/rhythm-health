@@ -4,7 +4,7 @@ import { COLORS, LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RAD
 import type { Experiment, LabReport, PersonalGuessComparison, PredictionComparison, ReportNarrative, SignalClass } from '@rhythm-health/contract';
 import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
-import { listActiveExperiments } from './lib/experiments';
+import { getCapacity } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
 import { Action, Alert, BackLink, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
 
@@ -83,6 +83,11 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Prediction vs reality</Copy>
         <Copy style={ui.muted}>There wasn&apos;t enough data in both phases to compare with the prediction.</Copy>
       </View>}
+
+    {(analysis.overlaps ?? []).length > 0 && <View style={local.card}>
+      <Copy accessibilityRole="header" style={ui.sectionTitle}>Other experiments at the same time</Copy>
+      {analysis.overlaps.map(overlap => <Copy key={overlap.experiment_id}>{overlap.description}</Copy>)}
+    </View>}
 
     <View style={ui.divider}>
       <Copy style={ui.muted}>Signal or noise</Copy>
@@ -235,9 +240,9 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten 
   </View>;
 }
 
-type ActiveCheck = 'checking' | 'free' | 'busy';
+type ActiveCheck = 'checking' | 'free' | { limit: number };
 
-/** The check only chooses the wording: Ask checks again before its paid call, so a failed read doesn't block. */
+/** The check only chooses the wording: the backend refuses before its paid call, so a failed read doesn't block. */
 function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }: {
   token: string; offline: boolean; narrative: ReportNarrative | null; onExpired: () => void; onAsk: (question: string) => void; onToday: () => void;
 }) {
@@ -246,8 +251,8 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }
   useEffect(() => {
     if (!hasNext || offline) return;
     let active = true;
-    listActiveExperiments(token)
-      .then(list => { if (active) setCheck(list[0] ? 'busy' : 'free'); })
+    getCapacity(token)
+      .then(capacity => { if (active) setCheck(capacity.can_start ? 'free' : { limit: capacity.limit }); })
       .catch((cause: unknown) => {
         if (!active) return;
         if (cause instanceof ApiError && cause.status === 401) onExpired();
@@ -261,10 +266,10 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }
     {narrative ? <>
       <Copy style={NATIVE_TYPOGRAPHY.lead}>{narrative.next_experiment.question}</Copy>
       <Copy style={ui.muted}>{narrative.next_experiment.reason}</Copy>
-      {check === 'busy' ? <>
-        <Copy>You&apos;re already running an experiment. Finish it before starting this one, so each result stays clear.</Copy>
-        <Action label="Go to your current experiment" secondary onPress={onToday} />
-      </> : check === 'checking' && !offline ? <Status style={local.small}>Checking whether another experiment is running…</Status>
+      {typeof check === 'object' ? <>
+        <Copy>You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.</Copy>
+        <Action label="Go to Your lab" secondary onPress={onToday} />
+      </> : check === 'checking' && !offline ? <Status style={local.small}>Checking whether you can start another…</Status>
         : <Action label="Run this experiment" onPress={() => onAsk(narrative.next_experiment.question)} />}
     </> : <>
       <Copy style={ui.muted}>A suggested next question appears once your report is written.</Copy>
