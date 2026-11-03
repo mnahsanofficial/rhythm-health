@@ -55,6 +55,10 @@ def read(profile_id: str, now: datetime | None = None) -> TodayCheckin:
     for row in rows:
         day = row["progress"].day_number
         recorded[row["id"]] = next((c for c in checkins.list_for_experiment(row["id"]) if c["day_number"] == day), None)
+    return _today(rows, recorded)
+
+
+def _today(rows: list[dict], recorded: dict[str, dict | None]) -> TodayCheckin:
     values = {eid: c["metric_values"] for eid, c in recorded.items() if c}
     questions = questions_for(rows, values)
     return TodayCheckin(
@@ -120,7 +124,7 @@ def save(profile_id: str, body: TodayCheckinIn, now: datetime | None = None) -> 
     if errors:
         raise HTTPException(status_code=422, detail=errors)
 
-    checkins.upsert_many([
+    written = [
         {
             "experiment_id": row["id"],
             "day_number": row["progress"].day_number,
@@ -130,5 +134,7 @@ def save(profile_id: str, body: TodayCheckinIn, now: datetime | None = None) -> 
             "note": body.note or None,
         }
         for row in rows
-    ])
-    return read(profile_id, now)
+    ]
+    checkins.upsert_many(written)
+    # Answered from what was just written: a later read failing must not look like a failed save.
+    return _today(rows, {w["experiment_id"]: w for w in written})

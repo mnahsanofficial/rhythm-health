@@ -56,7 +56,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
         if (intent) {
           reminders.consume();
           const target = value.find(item => item.experiment.id === intent.experiment);
-          if (target && !target.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && target.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setChosen(target.experiment.id); setEditing(target); }
+          if (target && !target.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && target.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setCombined(null); setChosen(target.experiment.id); setEditing(target); }
         }
       }
     } catch (cause) {
