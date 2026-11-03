@@ -189,6 +189,17 @@ def test_saving_writes_everything_in_one_request(db, monkeypatch):
     assert len(write.call_args.args[0]) == 2
 
 
+def test_a_failed_read_after_saving_does_not_report_the_save_as_failed(db, monkeypatch):
+    db.rows = [row(A), row(B)]
+    today = client.get(TODAY).json()
+    monkeypatch.setattr(checkins, "list_for_experiment", Mock(side_effect=SupabaseUnavailable("down")))
+    response = client.post(TODAY, json=body(today, 7, note="note"))
+    assert response.status_code == 200
+    assert response.json()["all_recorded"] is True
+    assert response.json()["questions"][0]["value"] == 7
+    assert response.json()["note"] == "note"
+
+
 def test_a_failed_write_is_503(db, monkeypatch):
     db.rows = [row(A), row(B)]
     monkeypatch.setattr(checkins, "upsert_many", Mock(side_effect=SupabaseUnavailable("down")))

@@ -148,6 +148,17 @@ describe('your lab with several experiments', () => {
     expect(await screen.findByText("Today's check-ins are recorded.")).toBeVisible();
   });
 
+  test('a reminder tap leaves the combined check-in for that experiment', async () => {
+    install([first, second]);
+    render(<MobileApp />);
+    await screen.findByText('One check-in for all 2 experiments.');
+    await press('Check in for today');
+    await screen.findByText('For both experiments');
+    await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', 'second-id'))); });
+    await waitFor(() => expect(screen.queryByText('For both experiments')).toBeNull());
+    expect(calls).toContain('GET /api/experiments/second-id/checkins');
+  });
+
   test('a stale form offers to reload instead of saving on the wrong day', async () => {
     install([first, second]);
     routes['POST /api/checkins/today'] = { status: 409, body: { detail: { code: 'checkin_changed', message: "Today's check-in has changed. Reload it to see the current questions." } } };
