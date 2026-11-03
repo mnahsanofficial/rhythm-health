@@ -2,16 +2,38 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.deps import db_error, owned_experiment
+from app.api.deps import db_error, owned_experiment, profile_id_for
 from app.auth.supabase import get_current_user
 from app.integrations.supabase import SupabaseUnavailable
 from app.repositories import checkins
-from app.schemas.checkin import CheckinIn, CheckinOut
+from app.schemas.checkin import CheckinIn, CheckinOut, TodayCheckin, TodayCheckinIn
 from app.schemas.experiment import Metric
+from app.services import today_checkin
 from app.services.checkins import validate_metric_values
 from app.services.progress import with_progress
 
 router = APIRouter(prefix="/api/experiments/{experiment_id}/checkins")
+today_router = APIRouter(prefix="/api/checkins/today")
+
+
+@today_router.get("", response_model=TodayCheckin)
+def read_today(user_id: str = Depends(get_current_user)):
+    """Everything due today across running experiments, with shared questions combined."""
+    profile_id = profile_id_for(user_id)
+    try:
+        return today_checkin.read(profile_id)
+    except SupabaseUnavailable:
+        raise db_error()
+
+
+@today_router.post("", response_model=TodayCheckin)
+def save_today(body: TodayCheckinIn, user_id: str = Depends(get_current_user)):
+    """Record or replace today's check-in for every running experiment, all or none."""
+    profile_id = profile_id_for(user_id)
+    try:
+        return today_checkin.save(profile_id, body)
+    except SupabaseUnavailable:
+        raise db_error()
 
 
 @router.post("", response_model=CheckinOut)

@@ -353,7 +353,7 @@ def test_running_questions_reach_the_designer_for_reuse(api, monkeypatch):
               "min_label": "Drained", "max_label": "Full of energy"}
     sample = {**shared, "key": "sample_only"}
     monkeypatch.setattr(experiments, "list_for_profile", lambda *_a: [
-        {"metrics": [shared], "is_seeded": False}, {"metrics": [shared], "is_seeded": False}, {"metrics": [sample], "is_seeded": True},
+        {"metrics": [shared, shared], "is_seeded": False}, {"metrics": [sample], "is_seeded": True},
     ])
     api()
     prompts = []

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt, StringConstraints
 
+from app.schemas.experiment import Metric
 from app.schemas.progress import Phase
 
 MetricValue = StrictBool | StrictInt | StrictFloat
@@ -34,3 +35,47 @@ class CheckinOut(BaseModel):
     note: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class TodayQuestion(BaseModel):
+    """One question in the combined check-in, and the experiments its answer feeds."""
+
+    id: str
+    metric: Metric
+    experiment_ids: list[str]
+    value: MetricValue | None = None
+
+
+class TodayExperiment(BaseModel):
+    id: str
+    question: str
+    action: str
+    timing: str
+    day_number: int
+    total_days: int
+    phase: Phase
+    change_required: bool
+    change_made: bool | None = None
+    recorded: bool
+
+
+class TodayCheckin(BaseModel):
+    """Every experiment with a day open now. The backend decides what combines."""
+
+    revision: str
+    experiments: list[TodayExperiment]
+    questions: list[TodayQuestion]
+    note: str | None = None
+    all_recorded: bool
+
+
+class TodayCheckinIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # From the form this answers: a mismatch means the day or the questions have changed.
+    revision: str
+    # Keyed by TodayQuestion.id.
+    answers: dict[str, MetricValue]
+    # Keyed by experiment id, for those in their test phase.
+    changes: dict[str, bool] = {}
+    note: Note | None = None

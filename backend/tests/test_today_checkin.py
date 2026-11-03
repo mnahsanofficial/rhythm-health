@@ -120,10 +120,10 @@ def test_requires_auth():
 def test_today_lists_each_experiments_own_day_and_phase(db):
     db.rows = [row(A, days_ago=0), row(B, days_ago=4)]
     today = client.get(TODAY).json()
-    first, second = today["experiments"]
+    second, first = today["experiments"]  # Oldest first.
     assert (first["id"], first["day_number"], first["phase"], first["change_required"]) == (A, 1, "baseline", False)
     assert (second["id"], second["day_number"], second["phase"], second["change_required"]) == (B, 5, "intervention", True)
-    assert today["questions"][0]["experiment_ids"] == [A, B]
+    assert today["questions"][0]["experiment_ids"] == [B, A]
     assert today["all_recorded"] is False
 
 
