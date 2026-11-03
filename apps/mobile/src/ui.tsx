@@ -50,13 +50,13 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
       style={({ pressed }) => [styles.action, secondary && styles.secondary,
         pressed && { backgroundColor: secondary ? COLORS['moss-tint'] : COLORS['moss-deep'] }, disabled && styles.disabled]}
     >
-      <Copy style={[styles.actionText, secondary && { color: COLORS.moss }]}>{label}</Copy>
+      <Copy style={[styles.actionText, secondary && { color: COLORS.ink }]}>{label}</Copy>
     </Pressable>
   );
 }
 /** The web's "← Your lab" link. The arrow is visual; the spoken name says where it goes. */
-export function BackLink({ to, onPress, disabled = false }: { to: string; onPress: () => void; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={`Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+export function BackLink({ to, name, onPress, disabled = false }: { to: string; name?: string; onPress: () => void; disabled?: boolean }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={name ?? `Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }, disabled && styles.disabled]}>
     <Copy style={{ color: COLORS.moss }}>← {to}</Copy>
   </Pressable>;

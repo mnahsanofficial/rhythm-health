@@ -25,9 +25,9 @@ export function SampleControls({ experiment, token, disabled, onChanged, onExpir
   }
   if (experiment && !experiment.is_seeded) return null;
   return <View style={styles.divider}>
-    <Copy style={styles.sectionTitle}>{experiment ? 'Sample experiment' : 'Try the daily loop'}</Copy>
-    <Copy style={styles.muted}>Sample answers never become your real experiment data. No AI calls. Reminders are off for this sample.</Copy>
-    {experiment && <Copy style={styles.muted}>Remove this sample to free the slot for a real experiment.</Copy>}
+    <Copy style={styles.sectionTitle}>{experiment ? 'Sample experiment' : 'Try the daily loop with a sample'}</Copy>
+    <Copy style={styles.muted}>Sample answers never become your real experiment data. Fixed design and prediction, with no AI calls. Reminders are off for this sample.</Copy>
+    {experiment && <Copy style={styles.muted}>Remove the sample to free the active slot for a real experiment.</Copy>}
     {error && <Alert>{error}</Alert>}
     {confirm ? <View style={styles.stack}>
       <Copy accessibilityRole="header">Remove this sample experiment?</Copy>

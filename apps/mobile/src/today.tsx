@@ -8,7 +8,7 @@ import { Observations } from './progress';
 import { TodayCard } from './today-card';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
-import { CheckinForm } from './checkin';
+import { CheckinForm, CheckinSaved } from './checkin';
 import type { Section } from './app-header';
 import { DemoScreen, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
@@ -31,7 +31,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const [error, setError] = useState<string | null>(null);
   const generation = useRef(0);
   const [editing, setEditing] = useState<DayData | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [savedDay, setSavedDay] = useState<number | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [report, setReport] = useState<{ id: string; initial?: LabReport } | null>(null);
@@ -49,7 +49,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
         const intent = reminders.getSnapshot().intent;
         if (intent) {
           reminders.consume();
-          if (!value?.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && value?.experiment.id === intent.experiment && value.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setEditing(value); }
+          if (!value?.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && value?.experiment.id === intent.experiment && value.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setEditing(value); }
         }
       }
     } catch (cause) {
@@ -71,22 +71,22 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
 
   // Choosing a section in the header leaves open screens. An open proposal stays mounted (below): it was paid for.
   const [seenNavigation, setSeenNavigation] = useState(navigation);
-  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); }
+  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); }
 
   const disabled = offline || busy || error !== null;
   const data = loaded?.value;
   const sampleControls = <SampleControls key={data?.experiment.id ?? 'empty'} experiment={data?.experiment} token={token} disabled={disabled}
-    onExpired={onExpired} onChanged={async () => { setLoaded(null); setSaved(false); await load(); }} />;
+    onExpired={onExpired} onChanged={async () => { setLoaded(null); await load(); }} />;
   const toLab = () => { onSection('lab'); void load(); };
   const openDemo = (result: LabReport) => setReport({ id: result.experiment.id, initial: result });
   // With nothing running the question is the lab itself, as on the web.
   const inline = Boolean(loaded) && !data && asking === null;
   const flowOpen = asking !== null || inline;
-  const flowShown = flowOpen && section === 'lab' && !editing && !report && !detail;
+  const flowShown = flowOpen && section === 'lab' && !editing && savedDay === null && !report && !detail;
   const flow = flowOpen && <View style={flowShown ? undefined : hidden}>
     <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} knownActive={Boolean(data)} onExpired={onExpired} onEditProfile={editProfile}
       onBack={inline ? undefined : () => { setAsking(null); void load(); }}
-      onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); setSaved(false); void load(); }} />
+      onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); void load(); }} />
   </View>;
   /** A suggested question replaces whatever was open; an empty ask keeps a plan already on screen. */
   const ask = (question: string) => {
@@ -96,14 +96,16 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   };
   const finished = (result: LabReport) => {
     if (!data) return;
-    void reminders.refresh(null); setSaved(false); setStarted(false); setDetail(false);
+    void reminders.refresh(null); setStarted(false); setDetail(false);
     setReport({ id: data.experiment.id, initial: result }); setLoaded(null); void load();
   };
-  const checkin = () => { if (data) { setSaved(false); setStarted(false); setEditing(data); } };
+  const checkin = () => { if (data) { setStarted(false); setEditing(data); } };
   const content = () => {
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
       onBack={() => { setEditing(null); void load(); }}
-      onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
+      onSaved={() => { setSavedDay(editing.timeline.progress.day_number); setEditing(null); void load(); }} />;
+    if (savedDay !== null) return <CheckinSaved day={savedDay} data={data} refreshing={busy} failed={error !== null} receipt={<SavedReceipt failed={error !== null} />} reminder={<ReminderNotice />} onRetry={() => void load()}
+      onBack={() => { setSavedDay(null); void load(); }} onChange={() => { setSavedDay(null); if (data) setEditing(data); }} />;
     if (report) return <LabReportScreen key={report.id} id={report.id} initial={report.initial} token={token} offline={offline} onExpired={onExpired}
       backTo={section === 'history' ? 'History' : section === 'demo' ? 'Demo' : 'Your lab'}
       onBack={() => { setReport(null); void load(); }}
@@ -123,7 +125,6 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const lab = (
     <View style={styles.stack}>
       <ReminderNotice />
-      {saved && <SavedReceipt failed={error !== null} />}
       {started && <Status>Your experiment has started.</Status>}
       {offline && <Status style={styles.muted}>{loaded
         ? `Offline, last updated ${loaded.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`
