@@ -8,6 +8,7 @@ import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
 import { CheckinForm } from './checkin';
 import { FinishCard } from './finish';
+import { DemoEntry, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
 import type { Experiment, ExperimentTimeline, LabReport, Profile } from '@rhythm-health/contract';
@@ -20,7 +21,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
   token: string; offline: boolean; profile: Profile; onExpired: () => void; email?: string; signOut: () => void; editProfile?: () => void;
 }) {
   const { service: reminders, state: reminderState } = useReminders();
-  const [screen, setScreen] = useState<'today' | 'settings' | 'progress'>('today');
+  const [screen, setScreen] = useState<'today' | 'settings' | 'progress' | 'history'>('today');
   const [loaded, setLoaded] = useState<{ value: DayData | null; at: Date } | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
   const [asking, setAsking] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [report, setReport] = useState<{ id: string; initial?: LabReport } | null>(null);
+  const [historyCache] = useState<HistoryCache>({ value: null });
   const load = useCallback(async () => {
     if (offline) return;
     const request = ++generation.current;
@@ -67,7 +69,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
   const data = loaded?.value;
   const sampleControls = <SampleControls key={data?.experiment.id ?? 'empty'} experiment={data?.experiment} token={token} disabled={disabled}
     onExpired={onExpired} onChanged={async () => { setLoaded(null); setSaved(false); await load(); }} />;
-  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
+  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="History" secondary={screen !== 'history'} onPress={() => { setEditing(null); setScreen('history'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
   if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} editProfile={editProfile} /></View>;
   if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
@@ -75,9 +77,16 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
   if (asking !== null) return <ProposalFlow token={token} offline={offline} profile={profile} initialQuestion={asking} onExpired={onExpired} onEditProfile={editProfile}
     onBack={() => { setAsking(null); void load(); }}
     onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); setSaved(false); void load(); }} />;
-  if (report) return <LabReportScreen key={report.id} id={report.id} initial={report.initial} token={token} offline={offline} onExpired={onExpired}
+  if (report) return <LabReportScreen key={report.id} id={report.id} initial={report.initial} token={token} offline={offline} onExpired={onExpired} backLabel={screen === 'history' ? 'Back to history' : 'Back to Today'}
     onBack={() => { setReport(null); void load(); }}
-    onAsk={question => { setReport(null); setStarted(false); setAsking(question); }} />;
+    onToday={() => { setReport(null); setScreen('today'); void load(); }}
+    onAsk={question => { setReport(null); setScreen('today'); setStarted(false); setAsking(question); }} />;
+  if (screen === 'history') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
+    <HistoryScreen token={token} offline={offline} cache={historyCache} onExpired={onExpired}
+      onOpen={(id, initial) => setReport({ id, initial })}
+      onAsk={() => { setScreen('today'); setStarted(false); setAsking(''); }}
+      onDemo={result => setReport({ id: result.experiment.id, initial: result })} />
+  </View>;
   if (screen === 'progress' && data) return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
     {error && <><Alert>{error}</Alert><Action label="Try again" disabled={offline || busy} onPress={() => void load()} /></>}
     <Progress key={data.experiment.id} data={data} token={token} offline={offline} onExpired={onExpired} />
@@ -98,6 +107,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
           <Copy style={styles.muted}>Turn a question about your habits into a short experiment. First a plan, then a prediction. You decide whether to begin.</Copy>
           <Action label="Ask a question" onPress={() => { setStarted(false); setAsking(''); }} />
           {sampleControls}
+          <DemoEntry token={token} offline={offline} onExpired={onExpired} onOpen={result => setReport({ id: result.experiment.id, initial: result })} />
         </> : <>
           {sampleControls}
           <TodaySummary data={data} disabled={disabled}

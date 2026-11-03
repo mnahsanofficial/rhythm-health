@@ -10,11 +10,11 @@ import { Action, Alert, Copy, Loading, styles as ui, Title, useStepFocus } from 
 
 type Load = { kind: 'loading' } | { kind: 'ready'; report: LabReport } | { kind: 'not-finished'; experiment: Experiment } | { kind: 'missing' } | { kind: 'error'; message: string };
 type Props = {
-  id: string; token: string; offline: boolean; initial?: LabReport; onExpired: () => void; onBack: () => void; onAsk: (question: string) => void;
+  id: string; token: string; offline: boolean; initial?: LabReport; backLabel?: string; onExpired: () => void; onBack: () => void; onToday: () => void; onAsk: (question: string) => void;
 };
 
 /** Reads only. Opening this screen never finishes an experiment or writes the paid narrative. */
-export function LabReportScreen({ id, token, offline, initial, onExpired, onBack, onAsk }: Props) {
+export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back to Today', onExpired, onBack, onToday, onAsk }: Props) {
   const [load, setLoad] = useState<Load>(initial ? { kind: 'ready', report: initial } : { kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const heading = useStepFocus(load.kind);
@@ -37,7 +37,7 @@ export function LabReportScreen({ id, token, offline, initial, onExpired, onBack
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, needsRead, offline, attempt]);
 
-  const back = <Action label="Back to Today" secondary onPress={onBack} />;
+  const back = <Action label={backLabel} secondary onPress={onBack} />;
   if (load.kind === 'loading') return offline
     ? <View style={ui.stack}><Copy accessibilityLiveRegion="polite">Reconnect to load this report.</Copy>{back}</View>
     : <Loading message="Loading your report…" />;
@@ -115,7 +115,7 @@ export function LabReportScreen({ id, token, offline, initial, onExpired, onBack
 
     <Learning id={experiment.id} token={token} offline={offline} seeded={experiment.is_seeded} narrative={narrative} onExpired={onExpired}
       onWritten={written => setLoad({ kind: 'ready', report: written })} />
-    <NextExperiment token={token} offline={offline} narrative={narrative} onExpired={onExpired} onAsk={onAsk} onBack={onBack} />
+    <NextExperiment token={token} offline={offline} narrative={narrative} onExpired={onExpired} onAsk={onAsk} onToday={onToday} />
     {back}
   </View>;
 }
@@ -238,8 +238,8 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten 
 type ActiveCheck = 'checking' | 'free' | 'busy';
 
 /** The check only chooses the wording: Ask checks again before its paid call, so a failed read doesn't block. */
-function NextExperiment({ token, offline, narrative, onExpired, onAsk, onBack }: {
-  token: string; offline: boolean; narrative: ReportNarrative | null; onExpired: () => void; onAsk: (question: string) => void; onBack: () => void;
+function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }: {
+  token: string; offline: boolean; narrative: ReportNarrative | null; onExpired: () => void; onAsk: (question: string) => void; onToday: () => void;
 }) {
   const [check, setCheck] = useState<ActiveCheck>('checking');
   const hasNext = narrative !== null;
@@ -263,7 +263,7 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onBack }:
       <Copy style={ui.muted}>{narrative.next_experiment.reason}</Copy>
       {check === 'busy' ? <>
         <Copy>You&apos;re already running an experiment. Finish it before starting this one, so each result stays clear.</Copy>
-        <Action label="Go to your current experiment" secondary onPress={onBack} />
+        <Action label="Go to your current experiment" secondary onPress={onToday} />
       </> : check === 'checking' && !offline ? <Copy accessibilityLiveRegion="polite" style={local.small}>Checking whether another experiment is running…</Copy>
         : <Action label="Run this experiment" onPress={() => onAsk(narrative.next_experiment.question)} />}
     </> : <>

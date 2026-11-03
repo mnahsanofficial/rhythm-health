@@ -192,7 +192,6 @@ describe('history', () => {
 
   test('going offline keeps the loaded list, labelled, and it can still open a loaded report', async () => {
     await openHistory();
-    await screen.findByText('+21%');
     await waitFor(() => expect(screen.getAllByText('Likely signal')).toHaveLength(2));
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);

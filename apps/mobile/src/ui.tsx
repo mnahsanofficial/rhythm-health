@@ -27,14 +27,14 @@ export function useStepFocus(step: string) {
 export function Alert({ children }: { children: ReactNode }) {
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
-export function Action({ label, onPress, disabled = false, secondary = false, link = false }: {
-  label: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean;
+export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected }: {
+  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole={link ? 'link' : 'button'}
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
+      accessibilityLabel={name ?? label}
+      accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [styles.action, secondary && styles.secondary,

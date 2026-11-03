@@ -1,6 +1,6 @@
 # Rhythm mobile
 
-Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment (M2), then finishing and the Lab Report (M3), are native. History and the completed demo remain the next mobile milestones in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
+Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment (M2), finishing and the Lab Report (M3), and history and the completed demo (M4) are native. Polish remains the next mobile milestone in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
 
 ## Install and run
 
@@ -178,3 +178,11 @@ Automated: 183 native tests with fake auth, network and storage. Browser: isolat
 **Paid-call guards.** Write my report is the only caller of `POST /report`, from a tap, behind a synchronous lock, and never with `regenerate`. Opening the report, returning to the foreground, a failed write and seeded reports send nothing. Run this experiment only prefills the question; proposing still takes its own tap and active check.
 
 Automated: 240 native tests with fake auth, network and storage. Browser: isolated fake-config web export at 390px and 1440px with all traffic intercepted; [screenshots](../../docs/screenshots/mobile-lab-report/) use sample fixtures. No paid calls or shared-database writes were made. Native SVG rendering on a physical phone is not yet verified.
+
+## M4: history and the completed demo (4 Nov 2026)
+
+[History](src/history.tsx) reads `GET /api/experiments?status=completed`, then each row's report: prediction, observed change and signal. Newest/oldest only re-sorts what's loaded. A failed list is an error with retry, never an empty list, and one failed row keeps the others. The API omits samples from this list; a seeded row would still be labelled. Lists and reports read in this app session stay available offline, labelled with the last update time. This is memory only, not an offline database. Opening a report online always reads it fresh, so a narrative written earlier is never offered again.
+
+**Completed demo.** Explore a completed example, on History and on an empty Today, explains itself first and calls `POST /api/demo/reset` from one guarded tap. It opens the labelled sample report with its stored narrative, with no proposal or writing call. It doesn't touch a running experiment or the active sample.
+
+Automated: 261 native tests with fake auth, network and storage. Browser: isolated fake-config web export at 390px and 1440px with all traffic intercepted; [screenshots](../../docs/screenshots/mobile-history-demo/) use sample fixtures. No paid calls or shared-database writes were made.
