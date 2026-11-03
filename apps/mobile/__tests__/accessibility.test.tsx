@@ -95,7 +95,7 @@ describe('controls have names and 48pt targets', () => {
     const start = await screen.findByRole('button', { name: 'Start' });
     auditControls();
     await act(async () => { fireEvent.press(start); });
-    await screen.findByRole('radio', { name: '25-34' });
+    await screen.findByRole('header', { name: 'How old are you?' });
     auditControls();
   });
 
@@ -167,9 +167,15 @@ describe('screen readers hear what changes', () => {
     render(<MobileApp />);
     const ask = await screen.findByRole('button', { name: 'Ask a question' });
     await act(async () => { fireEvent.press(ask); });
+    let release!: (reply: Response) => void;
+    const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
+    fake.mockImplementation((url, options) => String(url).endsWith('/propose')
+      ? new Promise<Response>(resolve => { release = resolve; }) : original(url, options));
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
     await press('Design my experiment');
+    await screen.findByText('Finding a small change you can test…');
     expect(announce).toHaveBeenCalledWith('Finding a small change you can test…');
+    await act(async () => { release({ ok: true, status: 200, json: async () => routes['POST /api/experiments/propose'].body } as Response); });
   });
 
   test('the revealed result is announced', async () => {

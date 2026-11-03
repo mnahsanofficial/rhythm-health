@@ -4,7 +4,7 @@ import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
 import type { Checkin, ExperimentDay } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { listCheckins } from './lib/checkins';
-import { Action, Alert, Copy, Loading, styles, Title } from './ui';
+import { Action, Alert, Copy, Loading, styles, Title, Status } from './ui';
 import type { DayData } from './today';
 const labels: Record<ExperimentDay['state'], string> = {
   recorded: 'Recorded', missed: 'Missed', current: 'Today', future: 'Coming up', not_observed: 'Not observed',
@@ -42,7 +42,7 @@ export function Progress({ data: { experiment, timeline }, token, offline, onExp
         {offline && answers === null ? <Copy>No connection. Reconnect to load recorded answers.</Copy>
           : answers === null && !error ? <Loading message="Loading recorded answers…" /> : null}
         {error && <><Alert>{error}</Alert><Action label="Retry answers" disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>}
-        {busy && answers !== null && <Copy accessibilityLiveRegion="polite">Refreshing recorded answers…</Copy>}
+        {busy && answers !== null && <Status>Refreshing recorded answers…</Status>}
         {answers !== null && (recorded ? <View style={styles.stack}>
           <Copy accessibilityRole="header" accessibilityLiveRegion="polite" style={styles.sectionTitle}>Day {day} answers</Copy>
           {recorded.phase === 'intervention' && <Copy>Made the change: {recorded.intervention_completed ? 'Yes' : 'Not today'}</Copy>}
@@ -63,7 +63,7 @@ export function Progress({ data: { experiment, timeline }, token, offline, onExp
       <Copy>{timeline.missed_days} missed</Copy><Copy>{timeline.remaining_days} remaining</Copy>
     </View>
     <Copy style={styles.muted}>{experiment.is_seeded ? 'Sample check-ins for demonstration. These answers are excluded from your real experiment history and predictions.' : 'Each recorded day adds to your own evidence. A short experiment shows a pattern, not proof.'}</Copy>
-    {offline && <Copy accessibilityLiveRegion="polite">Offline. Showing the last loaded progress.</Copy>}
+    {offline && <Status>Offline. Showing the last loaded progress.</Status>}
     <View style={styles.divider}>
       <Copy accessibilityRole="header" style={styles.sectionTitle}>The days so far</Copy>
       <Copy style={styles.muted}>Tap a recorded day to see its answers. These answers are read-only.</Copy>

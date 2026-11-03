@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
-import { Action, Alert, Copy, styles, Title } from './ui';
+import { Action, Alert, Copy, styles, Title, Status } from './ui';
 
 export function AuthForm({ offline, message, authenticate }: {
   offline: boolean; message: string | null;
@@ -35,7 +35,7 @@ export function AuthForm({ offline, message, authenticate }: {
       <Copy style={styles.muted}>{mode === 'signIn' ? 'Sign in to keep up with your daily experiment.' : 'Your experiments start from your rhythm. Seven quick questions come next.'}</Copy>
       {offline && <Alert>No connection</Alert>}
       {(error || message) && <Alert>{error || message}</Alert>}
-      {confirmation && <Copy accessibilityLiveRegion="polite">{confirmation}</Copy>}
+      {confirmation && <Status>{confirmation}</Status>}
       <View><Copy style={styles.label}>Email</Copy>
         <TextInput accessibilityLabel="Email" value={email} onChangeText={setEmail} keyboardType="email-address"
           autoComplete="email" textContentType="emailAddress" autoCapitalize="none" autoCorrect={false}

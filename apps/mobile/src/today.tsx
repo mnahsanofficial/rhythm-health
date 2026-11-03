@@ -12,7 +12,7 @@ import { DemoEntry, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
 import type { Experiment, ExperimentTimeline, LabReport, Profile } from '@rhythm-health/contract';
-import { Action, Alert, Copy, Loading, styles, Title } from './ui';
+import { Action, Alert, Copy, Loading, styles, Title, Status } from './ui';
 import { ApiError } from './lib/api';
 import { getProgress, listActiveExperiments } from './lib/experiments';
 
@@ -69,7 +69,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
   const data = loaded?.value;
   const sampleControls = <SampleControls key={data?.experiment.id ?? 'empty'} experiment={data?.experiment} token={token} disabled={disabled}
     onExpired={onExpired} onChanged={async () => { setLoaded(null); setSaved(false); await load(); }} />;
-  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="History" secondary={screen !== 'history'} onPress={() => { setEditing(null); setScreen('history'); }} /><Action label="Settings" secondary={screen !== 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
+  const nav = <View style={styles.stack}><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}><Action label="Today" secondary={screen !== 'today'} selected={screen === 'today'} onPress={() => { setEditing(null); setScreen('today'); }} /><Action label="Progress" secondary={screen !== 'progress'} selected={screen === 'progress'} onPress={() => { setEditing(null); setScreen('progress'); }} /><Action label="History" secondary={screen !== 'history'} selected={screen === 'history'} onPress={() => { setEditing(null); setScreen('history'); }} /><Action label="Settings" secondary={screen !== 'settings'} selected={screen === 'settings'} onPress={() => { setEditing(null); setScreen('settings'); }} /></View></View>;
   if (screen === 'settings') return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly /><Settings email={email} signOut={signOut} editProfile={editProfile} /></View>;
   if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
@@ -96,10 +96,10 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
       {nav}
       <ReminderNotice />
       {saved && <SavedReceipt failed={error !== null} />}
-      {started && <Copy accessibilityLiveRegion="polite">Your experiment has started.</Copy>}
-      {offline && <Copy accessibilityLiveRegion="polite" style={styles.muted}>{loaded
+      {started && <Status>Your experiment has started.</Status>}
+      {offline && <Status style={styles.muted}>{loaded
         ? `Offline, last updated ${loaded.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`
-        : 'No connection'}</Copy>}
+        : 'No connection'}</Status>}
       {!offline && error && <><Alert>{error}</Alert><Action label="Try again" onPress={() => void load()} /></>}
       {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
         : !data ? <>
@@ -115,7 +115,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
             onOpenReport={() => setReport({ id: data.experiment.id })} />
           <FinishCard key={data.experiment.id} experiment={data.experiment} timeline={data.timeline} token={token} offline={offline} onExpired={onExpired}
             onCompleted={result => { void reminders.refresh(null); setSaved(false); setStarted(false); setReport({ id: data.experiment.id, initial: result }); setLoaded(null); void load(); }} />
-          {!offline && busy && <Copy accessibilityLiveRegion="polite" style={styles.muted}>Refreshing your day…</Copy>}
+          {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
         </>}
     </View>
   );
@@ -172,6 +172,6 @@ function SavedReceipt({ failed }: { failed: boolean }) {
   }, [opacity]);
   return <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
     <Animated.View accessible={false} style={{ opacity }}><Copy>✓</Copy></Animated.View>
-    <Copy accessibilityLiveRegion="polite">{failed ? 'Your check-in was saved. Refresh Today to see your progress.' : 'Check-in saved.'}</Copy>
+    <Status>{failed ? 'Your check-in was saved. Refresh Today to see your progress.' : 'Check-in saved.'}</Status>
   </View>;
 }

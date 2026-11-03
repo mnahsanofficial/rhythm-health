@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput } from '@rhythm-health/contract';
-import { Action, Alert, Copy, Loading, styles, Title } from './ui';
+import { Action, Alert, Copy, Loading, styles, Title, Status } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
@@ -86,7 +86,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     {experiment.is_seeded && <Copy style={styles.sectionTitle}>Sample experiment · Sample check-in</Copy>}
     <Title>Today&apos;s check-in.</Title>
     <Copy style={styles.muted}>A small record of how today felt. Only today can be recorded.</Copy>
-    {offline && <Copy accessibilityLiveRegion="polite">You&apos;re offline; your answers are kept</Copy>}
+    {offline && <Status>You&apos;re offline; your answers are kept</Status>}
     {!ready ? readError ? <><Alert>{readError}</Alert><Action label="Try again" disabled={offline} onPress={() => { setReadError(undefined); setAttempt(value => value + 1); }} /></>
       : offline ? <Copy>Reconnect to load your previous answers.</Copy> : <Loading message="Loading your answers…" />
       : <>

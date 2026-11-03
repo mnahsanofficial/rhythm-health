@@ -80,7 +80,7 @@ export function DayChart({ chart }: { chart: ChartData }) {
           </Svg>
           <View style={local.columns}>
             {days.map(day => byDay.get(day)?.logged
-              ? <Pressable key={day} style={local.column} onPress={() => toggle(day)} />
+              ? <Pressable key={day} accessible={false} style={local.column} onPress={() => toggle(day)} />
               : <View key={day} style={local.column} />)}
           </View>
         </View>

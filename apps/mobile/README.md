@@ -1,6 +1,6 @@
 # Rhythm mobile
 
-Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment (M2), finishing and the Lab Report (M3), and history and the completed demo (M4) are native. Polish remains the next mobile milestone in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
+Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment (M2), finishing and the Lab Report (M3), and history and the completed demo (M4) are native, with the app icon, splash and accessibility pass from M5 in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
 
 ## Install and run
 
@@ -186,3 +186,13 @@ Automated: 240 native tests with fake auth, network and storage. Browser: isolat
 **Completed demo.** Explore a completed example, on History and on an empty Today, explains itself first and calls `POST /api/demo/reset` from one guarded tap. It opens the labelled sample report with its stored narrative, with no proposal or writing call. It doesn't touch a running experiment or the active sample.
 
 Automated: 261 native tests with fake auth, network and storage. Browser: isolated fake-config web export at 390px and 1440px with all traffic intercepted; [screenshots](../../docs/screenshots/mobile-history-demo/) use sample fixtures. No paid calls or shared-database writes were made.
+
+## M5: icon, splash and accessibility (4 Nov 2026)
+
+`npm run assets --workspace=@rhythm-health/mobile` draws [the icon and splash mark](assets/) from brand tokens: the day ring from onboarding, with night sleep, moss waking hours and a sun marker. `app.json` uses the opaque 1024px iOS icon, an Android adaptive foreground inside the safe zone, and `expo-splash-screen` on `oat`. **Expo Go shows its own icon and launch screen,** so these only appear in a standalone build; that build has not been made. The config, PNGs and exports are verified.
+
+The audit in [`accessibility.test.tsx`](__tests__/accessibility.test.tsx) walks sign-in, onboarding, Today, Settings, History, Check-in, Progress, the proposal steps and the Lab Report: every touchable has a name, a role and a 48pt minimum, and every input has a name. Text and background pairs meet AA, with the lowest at 4.81:1. Rows are the accessible route through the chart, whose narrow touch columns are left out of the tree.
+
+`accessibilityLiveRegion` is Android-only, so `Status` and `Alert` also announce on iOS. The current tab reports as selected. Each flow step moves focus to its heading. Every animation checks Reduce Motion and starts from its final state. Text scales everywhere except the chart's and comparison's axis labels, capped at 1.2× because the rows and spoken summaries carry the same values.
+
+Automated: 290 native tests. Browser walkthroughs of M2–M4 were rerun on an isolated fake-config export at 390px and 1440px, with all traffic intercepted. VoiceOver, real large-text layouts and a standalone launch need a physical phone and build, and aren't claimed. No paid calls or shared-database writes were made.
