@@ -272,7 +272,7 @@ describe("ask from Your lab", () => {
     await user.click(screen.getByRole("button", { name: "Start this experiment" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
     expect(saved).toEqual(saveExperimentRequest);
-    expect(order).toEqual(["active-check", "active-check", "propose", "active-check", "save", "start"]);
+    expect(order).toEqual(["active-check", "propose", "save", "start"]);
   });
 
   it("keeps today's check-in visible while designing another experiment", async () => {

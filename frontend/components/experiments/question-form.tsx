@@ -6,7 +6,6 @@ type Props = {
   onChange: (value: string) => void;
   onSubmit: () => void;
   busy: boolean;
-  checkingActive: boolean;
   blocked: boolean;
   headingLevel: 1 | 2;
 };
@@ -18,7 +17,6 @@ export function QuestionForm({
   onChange,
   onSubmit,
   busy,
-  checkingActive,
   blocked,
   headingLevel,
 }: Props) {
@@ -66,7 +64,7 @@ export function QuestionForm({
           disabled={busy || blocked || length < 5 || length > 500}
           className="mt-5 min-h-12 w-full rounded-pill bg-moss px-6 py-3 font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:w-auto"
         >
-          {checkingActive ? "Checking your experiment…" : busy ? "Shaping your experiment…" : "Design my experiment"}
+          {busy ? "Shaping your experiment…" : "Design my experiment"}
         </button>
       </form>
     </>

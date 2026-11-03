@@ -7,7 +7,7 @@ import { DayChart } from "@/components/report/day-chart";
 import { PredictionVsReality } from "@/components/report/prediction-vs-reality";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
-import { getExperiment, listExperiments } from "@/lib/data/experiments";
+import { getActiveCapacity, getExperiment } from "@/lib/data/experiments";
 import { getReport, writeReport } from "@/lib/data/reports";
 import { reasonText, SIGNAL_COPY, signedPercent } from "@/lib/report/copy";
 import type { Experiment, LabReport as LabReportData, ReportNarrative, SignalClass } from "@/lib/types/api";
@@ -153,6 +153,15 @@ export function LabReport({ id }: { id: string }) {
           </section>
         )}
       </div>
+
+      {(analysis.overlaps ?? []).length > 0 && (
+        <section aria-labelledby="overlap-heading" className="mt-6 rounded-card bg-oat p-6 sm:p-8">
+          <h2 id="overlap-heading" className="font-display text-title">Other experiments at the same time</h2>
+          <ul className="mt-3 space-y-2 text-body">
+            {analysis.overlaps.map((overlap) => <li key={overlap.experiment_id}>{overlap.description}</li>)}
+          </ul>
+        </section>
+      )}
 
       <section
         aria-labelledby="verdict-heading"
@@ -376,9 +385,9 @@ function LearningSection({
   );
 }
 
-type ActiveCheck = { kind: "checking" } | { kind: "free" } | { kind: "busy"; active: Experiment } | { kind: "unknown" };
+type ActiveCheck = { kind: "checking" } | { kind: "free" } | { kind: "full"; limit: number } | { kind: "unknown" };
 
-/** Section 9. "Run this experiment" prefills a new proposal, unless another experiment is running (F1). */
+/** Section 9. "Run this experiment" prefills a new proposal, unless the limit of running experiments is reached. */
 function NextExperimentSection({ narrative }: { narrative: ReportNarrative | null }) {
   const [check, setCheck] = useState<ActiveCheck>({ kind: "checking" });
   const hasNext = narrative !== null;
@@ -386,9 +395,9 @@ function NextExperimentSection({ narrative }: { narrative: ReportNarrative | nul
   useEffect(() => {
     if (!hasNext) return;
     let cancelled = false;
-    listExperiments("active")
-      .then((active) => !cancelled && setCheck(active[0] ? { kind: "busy", active: active[0] } : { kind: "free" }))
-      // The proposal page checks again before its paid call, so a failed check doesn't block.
+    getActiveCapacity()
+      .then((capacity) => !cancelled && setCheck(capacity.can_start ? { kind: "free" } : { kind: "full", limit: capacity.limit }))
+      // The backend refuses again before its paid call, so a failed check doesn't block.
       .catch(() => !cancelled && setCheck({ kind: "unknown" }));
     return () => { cancelled = true; };
   }, [hasNext]);
@@ -403,14 +412,14 @@ function NextExperimentSection({ narrative }: { narrative: ReportNarrative | nul
           <p className="mt-3 text-lead">{narrative.next_experiment.question}</p>
           <p className="mt-2 text-body text-muted">{narrative.next_experiment.reason}</p>
           {check.kind === "checking" ? (
-            <p role="status" className="mt-5 text-caption text-muted">Checking whether another experiment is running…</p>
-          ) : check.kind === "busy" ? (
+            <p role="status" className="mt-5 text-caption text-muted">Checking whether you can start another…</p>
+          ) : check.kind === "full" ? (
             <div className="mt-5 rounded-card bg-oat p-4">
               <p className="text-body">
-                You&apos;re already running an experiment. Finish it before starting this one, so each result stays clear.
+                You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.
               </p>
-              <Link href={`/experiments/${encodeURIComponent(check.active.id)}`} className={`${secondaryLink} mt-3`}>
-                Go to your current experiment
+              <Link href="/" className={`${secondaryLink} mt-3`}>
+                Go to Your lab
               </Link>
             </div>
           ) : (

@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import type { Experiment } from "@/lib/types/api";
 import { experiment, proposeResponse } from "../support/fixtures";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
 
@@ -92,10 +91,10 @@ for (const width of [390, 768, 1440]) {
       await expect(page.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
       await expect(page.getByRole("link", { name: "See your experiment" })).toHaveCount(0);
       await expect(page.getByText("Start with a hunch", { exact: true })).toHaveCount(0);
-      await expect(page.getByRole("main").getByRole("alert")).toContainText("You already have an active experiment.");
+      await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Check in for day 1" })).toBeVisible();
       await field.fill("Does less caffeine improve my focus?");
-      await expect(submit).toBeDisabled();
+      await expect(submit).toBeEnabled();
       await capture("active-question");
       expect(calls).toBe(2);
       await page.getByRole("button", { name: "Close question" }).click();
@@ -111,20 +110,21 @@ for (const width of [390, 768, 1440]) {
   }
 }
 
-// An active experiment created elsewhere after the initial home load must still block the paid request.
-test("home catches an active experiment started in another tab", async ({ page }) => {
+// The limit can be reached in another tab after the page loaded. The backend refuses before its paid call.
+test("home explains the limit when the backend refuses a proposal", async ({ page }) => {
   const counts = await installApiMocks(page);
   await answerOnboardingWithMouse(page);
   await createAccountAndSaveProfile(page, counts);
   await page.goto("/");
   const field = page.getByRole("textbox", { name: "Your question or goal" });
   await expect(field).toBeVisible();
-  const active: Experiment = { ...experiment, status: "active" };
-  await page.route(`${API}/api/experiments?status=active`, route => route.fulfill({ json: [active] }));
+  await page.route(`${API}/api/experiments/propose`, route => route.fulfill({
+    status: 409,
+    json: { detail: { code: "active_limit_reached", message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } },
+  }));
   await field.fill("Does less caffeine improve my focus?");
   await page.getByRole("button", { name: "Design my experiment" }).click();
-  await expect(page.getByRole("main").getByRole("alert")).toContainText("You already have an active experiment.");
-  await expect(page.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute("href", `/experiments/${experiment.id}`);
-  expect(counts.proposals).toBe(0);
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("You're running 3 experiments");
+  await expect(page.getByRole("link", { name: "Go to Your lab" })).toHaveAttribute("href", "/");
   expect(counts.saves).toBe(0);
 });

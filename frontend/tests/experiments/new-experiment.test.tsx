@@ -230,7 +230,7 @@ describe("new experiment flow", () => {
     await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Your experiment was saved, but you're running 3 experiments, the most at once.");
+    expect(alert).toHaveTextContent("Your experiment was saved, but it couldn’t start yet. You're running 3 experiments, the most at once.");
     expect(within(alert).getByRole("link", { name: "Go to Your lab" })).toHaveAttribute("href", "/");
     await user.click(within(alert).getByRole("button", { name: "Try again" }));
 

@@ -210,7 +210,8 @@ describe("Lab Report flow", () => {
   });
 
   it("shows no overlap section on a report with none, including older reports", async () => {
-    const { overlaps: _unused, ...older } = writtenLabReport.analysis as typeof writtenLabReport.analysis & { overlaps?: unknown };
+    const older: Record<string, unknown> = { ...writtenLabReport.analysis };
+    delete older.overlaps;
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({ ...writtenLabReport, analysis: older })),
       http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),

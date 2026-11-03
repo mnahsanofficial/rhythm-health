@@ -326,7 +326,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -737,7 +738,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -1148,7 +1150,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -1562,7 +1565,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -1973,7 +1977,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -2385,7 +2390,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -2795,7 +2801,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
@@ -3213,7 +3220,8 @@
             "success_criteria_met": true,
             "matches_predicted_direction": true
           },
-          "personal_guess": null
+          "personal_guess": null,
+          "overlaps": []
         },
         "narrative": null,
         "chart": {
