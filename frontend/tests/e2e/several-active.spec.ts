@@ -40,5 +40,7 @@ for (const width of [390, 1440]) {
     await expect(second.getByRole("link", { name: "Check in for day 2" })).toHaveAttribute("href", `/experiments/${all[1].id}/check-in`);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
+    await page.evaluate(() => document.querySelector("nextjs-portal")?.remove()); // Dev-only badge, not the product.
+    await page.screenshot({ path: `../docs/screenshots/several-active/your-lab-${width}.png`, fullPage: true });
   });
 }

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AppState } from 'react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 import type { Experiment } from '@rhythm-health/contract';
 import { Reminders } from '../src/lib/reminders';
 import { MobileApp } from '../src/mobile-app';
@@ -24,6 +24,7 @@ const first = running('first-id', 2), second = running('second-id', 5);
 type Reply = { status?: number; body: unknown };
 let routes: Record<string, Reply>;
 let calls: string[];
+let listeners: Set<(state: AppStateStatus) => void>;
 
 function install(list: Experiment[], capacity = { active: list.length, limit: 3, can_start: list.length < 3 }) {
   routes['GET /api/experiments?status=active'] = { body: list };
@@ -42,7 +43,8 @@ beforeEach(() => {
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
   mockAuth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } });
   mockAuth.signOut.mockResolvedValue({ error: null });
-  jest.spyOn(AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
+  listeners = new Set();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, callback) => { listeners.add(callback); return { remove: () => listeners.delete(callback) }; });
   global.fetch = jest.fn(async (url, options) => {
     const key = `${options?.method ?? 'GET'} ${String(url).replace('http://api.test.invalid:8001', '')}`;
     calls.push(key);
@@ -85,6 +87,19 @@ describe('your lab with several experiments', () => {
     expect(await screen.findByText('Your timeline')).toBeVisible();
     expect(screen.getByText(second.question)).toBeVisible();
     expect(screen.queryByText(first.question)).toBeNull();
+  });
+
+  test('an open experiment that finishes elsewhere closes, and never turns into the other one', async () => {
+    install([first, second]);
+    render(<MobileApp />);
+    await screen.findByRole('header', { name: '2 experiments running' });
+    await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'See your experiment' })[0]); });
+    expect(await screen.findByText('Your timeline')).toBeVisible();
+    routes['GET /api/experiments?status=active'] = { body: [second] };
+    await act(async () => { listeners.forEach(listener => listener('active')); });
+    await waitFor(() => expect(screen.queryByText('Your timeline')).toBeNull());
+    expect(screen.getByText(second.question)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Test another habit' })).toBeVisible();
   });
 
   test('at the limit there is no new question, and it says why', async () => {

@@ -239,6 +239,24 @@ describe("new experiment flow", () => {
     expect(startCalls).toBe(2);
   });
 
+  it("recognises a start that already went through instead of reporting a failure", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(proposeResponse)),
+      http.post(`${api}/api/experiments`, () => HttpResponse.json(experiment, { status: 201 })),
+      http.post(`${api}/api/experiments/${experiment.id}/start`, () => HttpResponse.json({ detail: "Only a proposed experiment can be started (this one is active)" }, { status: 409 })),
+      http.get(`${api}/api/experiments/${experiment.id}`, () => HttpResponse.json(activeExperiment)),
+    );
+    render(<NewExperiment />);
+
+    await submitQuestion(user);
+    const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("retries starting the saved experiment without creating a duplicate", async () => {
     const user = userEvent.setup();
     let saveCalls = 0;
