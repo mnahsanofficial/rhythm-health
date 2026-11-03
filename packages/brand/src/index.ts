@@ -5,6 +5,8 @@ export const COLORS = tokens.colors;
 export const FONT_FAMILIES = {
   display: tokens.fonts.display.family,
   sans: tokens.fonts.sans.family,
+  /** Native fonts carry one weight per family; the web's font-medium needs its own name. */
+  sansMedium: `${tokens.fonts.sans.family} Medium`,
   mono: tokens.fonts.mono.family,
 } as const;
 /** Web sizes retain fluid terms and unitless heading line-height ratios. */

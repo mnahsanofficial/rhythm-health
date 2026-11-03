@@ -196,3 +196,7 @@ The audit in [`accessibility.test.tsx`](__tests__/accessibility.test.tsx) walks 
 `accessibilityLiveRegion` is Android-only, so `Status` and `Alert` also announce on iOS. The current tab reports as selected. Each flow step moves focus to its heading. Every animation checks Reduce Motion and starts from its final state. Text scales everywhere except the chart's and comparison's axis labels, capped at 1.2× because the rows and spoken summaries carry the same values.
 
 Automated: 290 native tests. Browser walkthroughs of M2–M4 were rerun on an isolated fake-config export at 390px and 1440px, with all traffic intercepted. VoiceOver, real large-text layouts and a standalone launch need a physical phone and build, and aren't claimed. No paid calls or shared-database writes were made.
+
+## Web parity: header and navigation (4 Nov 2026)
+
+[The header](src/app-header.tsx) is pinned above the scrolling page, with the web's dial mark and an account button showing the email's initial. Its panel holds Your lab, History, Demo, the email, Update your rhythm and Sign out, plus Daily reminders, the phone's one addition. Demo is its own section. Instrument Sans Medium comes from the installed font package, so there is no new dependency. Choosing another section leaves a check-in or report; an open proposal stays mounted, so a paid plan isn't lost. [Plan for the rest](../../docs/MOBILE_PLAN.md#web-parity).

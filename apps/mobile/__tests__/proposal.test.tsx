@@ -442,9 +442,9 @@ test('the forecast range animates once without reduced motion', async () => {
   await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
 });
 
-test('Back to Today leaves the question without any write', async () => {
+test('Back to your lab leaves the question without any write', async () => {
   await openAsk();
-  fireEvent.press(screen.getByRole('button', { name: 'Back to Today' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Back to your lab' }));
   expect(await screen.findByText('Nothing running yet.')).toBeVisible();
   expect(calls.filter(call => call.key.startsWith('POST'))).toEqual([]);
 });

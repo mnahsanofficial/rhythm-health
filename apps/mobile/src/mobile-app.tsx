@@ -7,7 +7,9 @@ import { useFonts } from 'expo-font';
 import { useNetworkState } from 'expo-network';
 import { Fraunces_400Regular } from '@expo-google-fonts/fraunces/400Regular';
 import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/400Regular';
+import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500Medium';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono/400Regular';
+import { AppHeader, type Section } from './app-header';
 import { ReminderProvider, useReminders } from './reminder-context';
 import { ReminderNotice } from './settings';
 import { Today } from './today';
@@ -22,6 +24,7 @@ import { Action, Alert, Copy, Frame, Loading, Title } from './ui';
 const fontAssets = {
   [FONT_FAMILIES.display]: Fraunces_400Regular,
   [FONT_FAMILIES.sans]: InstrumentSans_400Regular,
+  [FONT_FAMILIES.sansMedium]: InstrumentSans_500Medium,
   [FONT_FAMILIES.mono]: GeistMono_400Regular,
 };
 
@@ -31,11 +34,11 @@ export function MobileApp() {
 }
 function FontGate({ retry }: { retry: () => void }) {
   const [loaded, error] = useFonts(fontAssets);
-  if (error) return <Frame fontsReady={false}><Alert>Couldn&apos;t open Rhythm.</Alert><Action label="Try again" onPress={retry} /></Frame>;
-  if (!loaded) return <Frame fontsReady={false}><Loading message="Opening Rhythm…" /></Frame>;
+  if (error) return <Frame fontsReady={false} header={<AppHeader />}><Alert>Couldn&apos;t open Rhythm.</Alert><Action label="Try again" onPress={retry} /></Frame>;
+  if (!loaded) return <Frame fontsReady={false} header={<AppHeader />}><Loading message="Opening Rhythm…" /></Frame>;
   let config: ReturnType<typeof readConfig>;
   try { config = readConfig(); }
-  catch (cause) { return <Frame><Title>A little setup first.</Title><Alert>{(cause as Error).message}</Alert></Frame>; }
+  catch (cause) { return <Frame header={<AppHeader />}><Title>A little setup first.</Title><Alert>{(cause as Error).message}</Alert></Frame>; }
   return <SessionGate config={config} />;
 }
 
@@ -54,12 +57,14 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   const [profileAttempt, setProfileAttempt] = useState(0);
   const [authAttempt, setAuthAttempt] = useState(0);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [section, setSection] = useState<Section>('lab');
+  const [navigation, setNavigation] = useState(0);
   const pendingDraftRemoval = useRef<string | null>(null);
   const lastOwner = useRef<string | null>(null);
 
   const signOut = useCallback(async (reason: string | null = null) => {
     if (!reason && session) pendingDraftRemoval.current = session.user.id;
-    setEditingProfile(false); setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
+    setSection('lab'); setEditingProfile(false); setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
     try {
       if (pendingDraftRemoval.current) { await clearDraft(pendingDraftRemoval.current); pendingDraftRemoval.current = null; }
       await reminders.signOut();
@@ -112,8 +117,15 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
 
   const retry = () => { setReady(false); setAuthFailure(null); setProfile({ kind: 'loading' }); setAuthAttempt(n => n + 1); };
 
+  const hasProfile = profile.kind === 'ready' && profile.owner === owner && profile.profile !== null;
+  const header = <AppHeader account={session ? {
+    email: session.user.email ?? 'your account', section, hasProfile,
+    onSection: next => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); },
+    onEditProfile: () => setEditingProfile(true),
+    onSignOut: () => void signOut(),
+  } : undefined} />;
   return (
-    <Frame>
+    <Frame header={header}>
       {authFailure ? <>
         <Alert>{authFailure === 'restore' ? "Couldn't restore your saved session." : "Couldn't remove your saved session."} Try again.</Alert>
         <Action label="Try again" onPress={authFailure === 'signout' ? () => void signOut(message) : retry} />
@@ -131,7 +143,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       /> : <>
         {profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && editingProfile ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline} initial={profile.profile}
             onSaved={value => { setProfile({ kind: 'ready', profile: value, owner: session.user.id }); setEditingProfile(false); }} onExpired={expire} onCancel={() => setEditingProfile(false)} />
-          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} onExpired={expire} email={session.user.email} signOut={() => void signOut()} editProfile={() => setEditingProfile(true)} />
+          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} onExpired={expire} section={section} navigation={navigation} onSection={setSection} editProfile={() => setEditingProfile(true)} />
           : profile.kind === 'ready' && profile.owner === owner && profile.profile === null ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline}
             onSaved={value => setProfile({ kind: 'ready', profile: value, owner: session.user.id })} onExpired={expire} />
           : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>

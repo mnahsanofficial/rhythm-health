@@ -6,15 +6,15 @@ import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
-import { Action, Alert, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
 
 type Load = { kind: 'loading' } | { kind: 'ready'; report: LabReport } | { kind: 'not-finished'; experiment: Experiment } | { kind: 'missing' } | { kind: 'error'; message: string };
 type Props = {
-  id: string; token: string; offline: boolean; initial?: LabReport; backLabel?: string; onExpired: () => void; onBack: () => void; onToday: () => void; onAsk: (question: string) => void;
+  id: string; token: string; offline: boolean; initial?: LabReport; backTo?: string; onExpired: () => void; onBack: () => void; onToday: () => void; onAsk: (question: string) => void;
 };
 
 /** Reads only. Opening this screen never finishes an experiment or writes the paid narrative. */
-export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back to Today', onExpired, onBack, onToday, onAsk }: Props) {
+export function LabReportScreen({ id, token, offline, initial, backTo = 'Your lab', onExpired, onBack, onToday, onAsk }: Props) {
   const [load, setLoad] = useState<Load>(initial ? { kind: 'ready', report: initial } : { kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const heading = useStepFocus(load.kind);
@@ -37,7 +37,7 @@ export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, needsRead, offline, attempt]);
 
-  const back = <Action label={backLabel} secondary onPress={onBack} />;
+  const back = <BackLink to={backTo} onPress={onBack} />;
   if (load.kind === 'loading') return offline
     ? <View style={ui.stack}><Status>Reconnect to load this report.</Status>{back}</View>
     : <Loading message="Loading your report…" />;
@@ -65,6 +65,7 @@ export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back
   const pair = (from: number | null, to: number | null) => from !== null && to !== null ? `${from.toFixed(1)} → ${to.toFixed(1)}` : 'Not enough data';
 
   return <View style={local.page}>
+    {back}
     {experiment.is_seeded && <View style={local.sample}>
       <Copy style={{ color: COLORS.night }}>Sample experiment</Copy>
       <Copy style={ui.muted}>This report is based on seeded example check-ins.</Copy>
@@ -116,7 +117,6 @@ export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back
     <Learning id={experiment.id} token={token} offline={offline} seeded={experiment.is_seeded} narrative={narrative} onExpired={onExpired}
       onWritten={written => setLoad({ kind: 'ready', report: written })} />
     <NextExperiment token={token} offline={offline} narrative={narrative} onExpired={onExpired} onAsk={onAsk} onToday={onToday} />
-    {back}
   </View>;
 }
 

@@ -172,3 +172,16 @@ Every row includes initial loading, recoverable network/server error with explic
 For M1–M5, write behavior tests first, confirm the intended failure and commit red separately before green. Use shared contract types and numeric brand tokens. Every API state must remain actionable; minimum 44pt targets, system text scaling and reduced motion apply from M1, not only M5. Check changed flows by hand in mocked browser previews at 390px and desktop width and state which native behaviors still need the phone. Native day/phase logic continues to come only from progress.
 
 Before each PR, fetch and merge latest `origin/main` (no rebase), resolve conflicts and rerun root `npm test` (logs, contract/brand freshness and all workspace suites), `npm run lint`, `npm run typecheck`, the full `npm run test:e2e` and `npm run build`. Native implementation PRs also run both-platform `npm run export --workspace=@rhythm-health/mobile`; dependency changes require root `npm ci` and Expo compatibility checks. Run isolated, mocked `uv run pytest` whenever backend changes. Include the session log, actual validation evidence and any limitations. People review and merge with merge commits; agents never merge PRs.
+
+## Web parity
+
+**Added 4 Nov 2026, at Nazmul's request after M5.** The target is the web's 390px layout: same header, navigation, screen order and copy. M2–M5 behaviour and paid-call guards don't change.
+
+| PR | Scope |
+|---|---|
+| **P1: header and navigation** | Pinned header with the web's dial mark; account panel with Your lab, History, Demo, the email, Update your rhythm and Sign out; Demo as its own section; medium font weight; "← Your lab" back links. |
+| **P2: Your lab and experiment page** | Your lab in the web's order, the Today card, the circle timeline inline, Test another habit, and a native experiment page with Finish and the original forecast. |
+| **P3: check-in, onboarding, question flow** | Answered bar and confirmation screen, onboarding progress bar, and remaining copy differences. |
+| **P4: signed-out landing** | How it works, example questions and the start section, plus 390px web and mobile screenshots for every screen. |
+
+**Deliberate differences:** Daily reminders in the account panel replace the web's calendar button, because the phone has local notifications. The landing page's scrolling day story stays web-only for the 5 Nov demos.
