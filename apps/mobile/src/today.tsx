@@ -113,7 +113,7 @@ export function Today({ token, offline, profile, onExpired, email, signOut, edit
           <TodaySummary data={data} disabled={disabled}
             onCheckin={() => { setSaved(false); setStarted(false); setEditing(data); }}
             onOpenReport={() => setReport({ id: data.experiment.id })} />
-          <FinishCard key={data.experiment.id} experiment={data.experiment} timeline={data.timeline} token={token} offline={offline} onExpired={onExpired}
+          <FinishCard key={`finish:${data.experiment.id}`} experiment={data.experiment} timeline={data.timeline} token={token} offline={offline} onExpired={onExpired}
             onCompleted={result => { void reminders.refresh(null); setSaved(false); setStarted(false); setReport({ id: data.experiment.id, initial: result }); setLoaded(null); void load(); }} />
           {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
         </>}

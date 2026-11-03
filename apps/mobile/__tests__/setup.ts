@@ -12,3 +12,12 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(async (key: string) => { require('./support/notifications').preferences.delete(key); }),
 }));
 beforeEach(() => require('./support/notifications').resetNotifications());
+
+// A duplicate React key can silently drop or duplicate a screen's content, so it fails the test.
+const reportError = console.error;
+const duplicateKeys: string[] = [];
+console.error = (...args: unknown[]) => {
+  if (String(args[0]).includes('two children with the same key')) duplicateKeys.push(String(args[1] ?? args[0]));
+  reportError(...args);
+};
+afterEach(() => { expect(duplicateKeys.splice(0)).toEqual([]); });
