@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Platform } from 'react-native';
 import { MOTION_DURATION_MS } from '@rhythm-health/brand';
 import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
-import { goTo } from './support/nav';
+import { goTo, renderToForm } from './support/nav';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
 const mockAuth = {
@@ -57,7 +57,7 @@ async function signIn() {
 }
 
 test('signs in with existing credentials and loads the profile before Today', async () => {
-  render(<MobileApp />);
+  await renderToForm();
   await signIn();
   expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible();
@@ -69,7 +69,7 @@ test('signs in with existing credentials and loads the profile before Today', as
 });
 
 test('requires email and password, and keeps the password masked by default', async () => {
-  render(<MobileApp />);
+  await renderToForm();
   const email = await screen.findByLabelText('Email');
   const password = screen.getByLabelText('Password');
   expect(password.props.secureTextEntry).toBe(true);
@@ -82,7 +82,7 @@ test('requires email and password, and keeps the password masked by default', as
 test('ignores a second tap while sign-in is pending', async () => {
   let release!: (result: unknown) => void;
   mockAuth.signInWithPassword.mockReturnValue(new Promise(resolve => { release = resolve; }));
-  render(<MobileApp />); await signIn();
+  await renderToForm(); await signIn();
   const busy = screen.getByRole('button', { name: 'Signing in…' });
   expect(busy).toBeDisabled(); fireEvent.press(busy);
   expect(mockAuth.signInWithPassword).toHaveBeenCalledTimes(1);
@@ -92,7 +92,7 @@ test('ignores a second tap while sign-in is pending', async () => {
 
 test('shows a plain wrong-password error and allows another attempt', async () => {
   mockAuth.signInWithPassword.mockResolvedValueOnce({ data: { session: null }, error: { status: 400 } });
-  render(<MobileApp />); await signIn();
+  await renderToForm(); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent(/Email or password wasn't recognised\./);
   expect(global.fetch).not.toHaveBeenCalled();
   fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
@@ -101,7 +101,7 @@ test('shows a plain wrong-password error and allows another attempt', async () =
 
 test('shows No connection offline and never sends credentials or a profile request', async () => {
   mockNetwork.isConnected = false;
-  render(<MobileApp />);
+  await renderToForm();
   expect(await screen.findByText('No connection')).toBeVisible();
   fireEvent.changeText(screen.getByLabelText('Email'), 'learner@example.invalid');
   fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
@@ -113,7 +113,7 @@ test('shows No connection offline and never sends credentials or a profile reque
 test('restores an existing session before rendering private profile content', async () => {
   let release!: (result: unknown) => void;
   mockAuth.getSession.mockReturnValue(new Promise(resolve => { release = resolve; }));
-  render(<MobileApp />);
+  await renderToForm();
   expect(screen.getByText('Opening your rhythm…')).toBeVisible();
   expect(screen.queryByText('Ask a question.')).toBeNull();
   expect(global.fetch).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ test('shows a profile-shaped loading state until the profile request resolves', 
   const originalFetch = async () => ({ ok: true, status: 200, json: async () => [] }) as Response;
   (global.fetch as jest.Mock).mockImplementation((...args) => String(args[0]).endsWith('/api/profile') ? new Promise(resolve => { release = resolve; }) : originalFetch());
   mockAuth.getSession.mockResolvedValue({ data: { session: mockSession }, error: null });
-  render(<MobileApp />);
+  await renderToForm();
   expect(await screen.findByText('Loading your profile…')).toBeVisible();
   expect(screen.queryByText('Ask a question.')).toBeNull();
   release({ ok: true, status: 200, json: async () => profile });
@@ -136,7 +136,7 @@ test('shows a profile-shaped loading state until the profile request resolves', 
 
 test('a missing profile opens native onboarding without creating an account', async () => {
   (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 });
-  render(<MobileApp />); await signIn();
+  await renderToForm(); await signIn();
   expect(await screen.findByText('First, your rhythm.')).toBeVisible();
   expect(screen.queryByRole('link', { name: 'Set up your rhythm on the web' })).toBeNull();
   expect(mockAuth.signUp).not.toHaveBeenCalled();
@@ -145,7 +145,7 @@ test('a missing profile opens native onboarding without creating an account', as
 
 test('retries an unavailable profile without signing in again', async () => {
   (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 503 });
-  render(<MobileApp />); await signIn();
+  await renderToForm(); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't load your profile\./);
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
@@ -154,14 +154,14 @@ test('retries an unavailable profile without signing in again', async () => {
 
 test('an expired profile session returns to sign-in with a clear message', async () => {
   (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 401 });
-  render(<MobileApp />); await signIn();
+  await renderToForm(); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent('Your session has expired. Sign in again.');
   expect(screen.getByLabelText('Email')).toBeVisible();
   expect(screen.queryByText('Ask a question.')).toBeNull();
 });
 
 test('signs out only this device and removes private content', async () => {
-  render(<MobileApp />); await signIn();
+  await renderToForm(); await signIn();
   await screen.findByRole('header', { name: 'Ask a question.' });
   await goTo('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
@@ -172,7 +172,7 @@ test('signs out only this device and removes private content', async () => {
 test.each(['EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'])(
   'a blank %s shows its name and never initializes auth', async name => {
     process.env[name] = '   ';
-    render(<MobileApp />);
+    await renderToForm();
     expect(await screen.findByRole('alert')).toHaveTextContent(new RegExp(name));
     expect(mockCreateClient).not.toHaveBeenCalled();
     expect(global.fetch).not.toHaveBeenCalled();
@@ -189,11 +189,11 @@ test('font loading cannot flash sign-in or private content', () => {
 
 test('font errors offer retry and keep content hidden until resources are ready', async () => {
   mockFonts.ready = false; mockFonts.error = new Error('Fake font failure');
-  render(<MobileApp />);
+  await renderToForm();
   expect(screen.getByRole('alert')).toHaveTextContent("Couldn't open Rhythm.");
   mockFonts.ready = true; mockFonts.error = null;
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByLabelText('Email')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'How it works' })).toBeVisible();
 });
 
 
@@ -210,7 +210,7 @@ async function openSetup() {
     json: async () => options?.method === 'PUT' ? profile : [],
   }));
   mockAuth.getSession.mockResolvedValue({ data: { session: mockSession }, error: null });
-  render(<MobileApp />);
+  await renderToForm();
   fireEvent.press(await screen.findByRole('button', { name: 'Start' }));
 }
 async function completeQuestions() {
@@ -232,14 +232,14 @@ async function completeQuestions() {
 
 test('creates an account natively and routes its missing profile to setup', async () => {
   (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 });
-  render(<MobileApp />); await createAccount();
+  await renderToForm(); await createAccount();
   expect(await screen.findByText('First, your rhythm.')).toBeVisible();
   expect(mockAuth.signUp).toHaveBeenCalledWith({ email: 'new@example.invalid', password: 'fake-password' });
   expect(mockAuth.signInWithPassword).not.toHaveBeenCalled();
 });
 
 test('matches account validation, password visibility and offline submission guards', async () => {
-  render(<MobileApp />);
+  await renderToForm();
   fireEvent.press(await screen.findByRole('button', { name: 'Create an account' }));
   fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.invalid');
   fireEvent.changeText(screen.getByLabelText('Password'), '12345');
@@ -253,7 +253,7 @@ test('matches account validation, password visibility and offline submission gua
 
 test('confirmation-required signup returns to sign-in without fetching or saving a profile', async () => {
   mockAuth.signUp.mockResolvedValue({ data: { session: null }, error: null });
-  render(<MobileApp />); await createAccount();
+  await renderToForm(); await createAccount();
   expect(await screen.findByText("We've sent a link to new@example.invalid. Open it to confirm your account, then sign in here.")).toBeVisible();
   expect(screen.getByRole('button', { name: 'Sign in' })).toBeVisible();
   expect(global.fetch).not.toHaveBeenCalled();
@@ -263,7 +263,7 @@ test('confirmation-required signup returns to sign-in without fetching or saving
 test('signup exposes the auth service error and blocks duplicate taps while pending', async () => {
   let release!: (result: unknown) => void;
   mockAuth.signUp.mockReturnValue(new Promise(resolve => { release = resolve; }));
-  render(<MobileApp />); await createAccount();
+  await renderToForm(); await createAccount();
   fireEvent.press(screen.getByRole('button', { name: 'Creating your account…' }));
   expect(mockAuth.signUp).toHaveBeenCalledTimes(1);
   await act(async () => { release({ data: { session: null }, error: { message: 'Email rate limit exceeded' } }); });
@@ -324,7 +324,7 @@ test('failed profile saves keep answers, show field errors and permit explicit r
 
 test('offline signup never creates an account', async () => {
   mockNetwork.isConnected = false;
-  render(<MobileApp />); await createAccount();
+  await renderToForm(); await createAccount();
   expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
   expect(mockAuth.signUp).not.toHaveBeenCalled();
 });
@@ -343,7 +343,7 @@ test('an expired profile save signs out without losing the owner-scoped setup dr
 test('setup restores the same account draft after a restart and never submits twice', async () => {
   await openSetup(); await completeQuestions();
   screen.unmount();
-  render(<MobileApp />);
+  await renderToForm();
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
   let release!: (result: unknown) => void;
   (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
@@ -390,13 +390,13 @@ test('device draft failure is visible and can retry without losing current answe
 test('switching accounts cannot restore another account onboarding answers', async () => {
   await openSetup(); await completeQuestions(); screen.unmount();
   mockAuth.getSession.mockResolvedValue({ data: { session: { ...mockSession, user: { id: 'another-user', email: 'other@example.invalid' } } }, error: null });
-  render(<MobileApp />);
+  await renderToForm();
   expect(await screen.findByText('First, your rhythm.')).toBeVisible();
   expect(screen.queryByText('Better focus')).toBeNull();
 });
 
 test('The account panel can reopen the saved rhythm for editing without creating another profile', async () => {
-  render(<MobileApp />); await signIn(); await screen.findByRole('header', { name: 'Ask a question.' });
+  await renderToForm(); await signIn(); await screen.findByRole('header', { name: 'Ask a question.' });
   await goTo('Update your rhythm');
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
   expect(screen.getByText('23:30 to 07:30, about 8 h asleep')).toBeVisible();
@@ -490,7 +490,7 @@ test('the clock picker can recover an incomplete time saved by the earlier manua
   await writeDraft('fake-user', { draft: { age_range: '25-34', usual_sleep_schedule: { bedtime: '2', wake_time: '' } }, step: 2, editing: false });
   mockAuth.getSession.mockResolvedValue({ data: { session: mockSession }, error: null });
   (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 });
-  render(<MobileApp />);
+  await renderToForm();
   fireEvent.press(await screen.findByRole('button', { name: 'Bedtime' }));
   const selected = screen.getByLabelText('Time picker').props.value;
   expect(Number.isFinite(selected.getTime())).toBe(true);

@@ -53,7 +53,7 @@ export function Forecast({ prediction, metrics }: { prediction: Prediction; metr
     <Copy accessibilityRole="header" style={ui.sectionTitle}>{label} is {DIRECTION[prediction.direction]}</Copy>
     <Copy style={local.value}>{signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}</Copy>
     <PredictionRange min={prediction.expected_change_min} max={prediction.expected_change_max} />
-    <Copy style={ui.muted}>Confidence: {prediction.confidence}</Copy>
+    <Copy style={ui.muted}>Confidence: {prediction.confidence.charAt(0).toUpperCase() + prediction.confidence.slice(1)}</Copy>
     <Copy>{prediction.reasoning}</Copy>
     {prediction.uncertainty_factors.length > 0 && <View>
       <Copy>Things that may affect the result</Copy>

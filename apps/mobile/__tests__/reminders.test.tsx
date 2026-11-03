@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, Linking, type AppStateStatus } from 'react-native';
 import { Reminders } from '../src/lib/reminders';
 import { MobileApp } from '../src/mobile-app';
-import { goTo } from './support/nav';
+import { goTo, renderToForm } from './support/nav';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 import { notifications, notificationState, preferences, pending, responses, tapReminder } from './support/notifications';
@@ -92,7 +92,7 @@ test('sign-out cancels owned notifications before removing the native session', 
 
 test('cold-start tap waits for sign-in then opens the current check-in', async () => {
   notificationState.last = tapReminder('fake-user', active.id); mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
-  render(<MobileApp />); fireEvent.changeText(await screen.findByLabelText('Email'), 'learner@example.invalid'); fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
+  await renderToForm(); fireEvent.changeText(await screen.findByLabelText('Email'), 'learner@example.invalid'); fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
   fireEvent.press(screen.getByRole('button', { name: 'Sign in' })); expect(await screen.findByText("Today's check-in.")).toBeVisible();
   expect(notifications.clearLastNotificationResponse).toHaveBeenCalled();
 });

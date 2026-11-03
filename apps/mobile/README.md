@@ -208,3 +208,7 @@ Automated: 290 native tests. Browser walkthroughs of M2–M4 were rerun on an is
 ## Web parity: check-in, onboarding and the question flow (4 Nov 2026)
 
 Check-in matches the web: the phase line and lead, the main measure first, a live "2 of 3 answered" bar, the change card with Yes and Not today, the note prompt, and a confirmation screen with server-owned counts and day marks. Onboarding questions show the segmented progress bar. The question flow gains the waiting list, the hunch card and labelled plan days. Secondary buttons now use ink text. The progress bars appear without animation, so reduced motion needs no separate path.
+
+## Web parity: signed-out landing (4 Nov 2026)
+
+A cold start with no session opens on [the public page](src/landing.tsx): the web's hero, its six scenes as text, How it works, example questions and the start section, with Sign in in the header. Signing out or an expired session goes to the form instead. The scrolling day illustration stays web-only. Run your first experiment opens account creation, because on the phone you sign up before the seven questions, not after them. [Web and mobile at 390px, side by side](../../docs/screenshots/mobile-web-parity/compare/README.md).

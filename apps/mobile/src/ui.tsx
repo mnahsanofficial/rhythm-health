@@ -9,7 +9,7 @@ export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }
   const available = useContext(FontAvailability);
   return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
 }
-export function Title({ children, textRef }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>> }) { return <Copy ref={textRef} accessibilityRole="header" style={styles.title}>{children}</Copy>; }
+export function Title({ children, textRef, small = false }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>>; small?: boolean }) { return <Copy ref={textRef} accessibilityRole="header" style={[styles.title, small && NATIVE_TYPOGRAPHY.headline]}>{children}</Copy>; }
 /** A new step in a flow starts at its heading: back to the top, keyboard away, screen reader on the title. */
 export function useStepFocus(step: string) {
   const heading = useRef<ComponentRef<typeof Text>>(null);
@@ -37,8 +37,8 @@ export function Alert({ children }: { children: ReactNode }) {
   useAnnounce(spoken(children));
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
-export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected }: {
-  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean;
+export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, inline = false }: {
+  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean; inline?: boolean;
 }) {
   return (
     <Pressable
@@ -47,7 +47,7 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.action, secondary && styles.secondary,
+      style={({ pressed }) => [styles.action, inline && styles.inline, secondary && styles.secondary,
         pressed && { backgroundColor: secondary ? COLORS['moss-tint'] : COLORS['moss-deep'] }, disabled && styles.disabled]}
     >
       <Copy style={[styles.actionText, secondary && { color: COLORS.ink }]}>{label}</Copy>
@@ -111,6 +111,7 @@ export const styles = StyleSheet.create({
   action: { minHeight: LAYOUT.primaryAction, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.moss, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.lead, color: COLORS.paper, textAlign: 'center' },
+  inline: { alignSelf: 'flex-start' },
   secondary: { backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   disabled: { opacity: 0.5 },
   alert: { color: COLORS.clay, backgroundColor: COLORS['clay-tint'], padding: SPACING.md, borderRadius: RADII.card },

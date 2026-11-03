@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { COLORS, LAYOUT, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, ExperimentTimeline, LabReport } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { completeExperiment, getReport, notEnoughCheckins } from './lib/reports';
@@ -45,7 +46,7 @@ export function FinishCard({ experiment, timeline, token, offline, onExpired, on
     } finally { inFlight.current = false; setBusy(false); }
   }
 
-  return <View style={styles.decision}>
+  return <View style={local.card}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>{early ? 'You can finish early.' : 'Ready for your results.'}</Copy>
     <Copy>{early
       ? `You have enough days recorded to try.${left > 0 ? ` Finishing now skips ${left} test ${left === 1 ? 'day' : 'days'}, so there's less evidence to go on.` : ''}`
@@ -58,3 +59,7 @@ export function FinishCard({ experiment, timeline, token, offline, onExpired, on
     </>}
   </View>;
 }
+
+const local = StyleSheet.create({
+  card: { padding: SPACING.lg, gap: SPACING.md, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
+});
