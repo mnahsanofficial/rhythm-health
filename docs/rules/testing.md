@@ -28,7 +28,7 @@ Automated tests don't replace using the app. For every flow you change:
 
 ## The shared Supabase project and paid calls
 
-There is one shared Supabase project and a paid OpenRouter key.
+There is one Supabase project, on Nazmul's account since [4 Nov](../DECISIONS.md#new-supabase-project--4-nov-2026), and a paid OpenRouter key.
 
 - **Don't put invented health data into a real account.** To test a write by hand (check-ins, finishing), mock the request in the browser rather than saving made-up check-ins to someone's real experiment.
 - **Every `/api/experiments/propose` call costs real money** (Jev plus one or more reasoning-model calls). Make as few as you need to prove the flow works, and say how many you made.
