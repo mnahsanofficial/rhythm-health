@@ -10,8 +10,8 @@ import { Action, Alert, BackLink, Copy, styles as ui, Title, useStepFocus, Statu
 
 type Failure = { status: number; message: string; stage: 'active-check' | 'proposal' };
 type Props = {
-  token: string; offline: boolean; profile: Profile; initialQuestion?: string; onExpired: () => void;
-  onBack: () => void; onStarted: () => void; onEditProfile?: () => void;
+  token: string; offline: boolean; profile: Profile; initialQuestion?: string; knownActive?: boolean; onExpired: () => void;
+  onBack?: () => void; onStarted: () => void; onEditProfile?: () => void;
 };
 const message = (cause: unknown, fallback: string) => cause instanceof Error && cause.message ? cause.message : fallback;
 
@@ -29,7 +29,7 @@ function failureTitle({ status, stage }: Failure) {
  * tap, guarded by one synchronous lock; the result stays in this component's state, so returning
  * to the foreground or a refreshed token never asks again.
  */
-export function ProposalFlow({ token, offline, profile, initialQuestion = '', onExpired, onBack, onStarted, onEditProfile }: Props) {
+export function ProposalFlow({ token, offline, profile, initialQuestion = '', knownActive = false, onExpired, onBack, onStarted, onEditProfile }: Props) {
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
@@ -38,7 +38,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [guessUnavailable, setGuessUnavailable] = useState(false);
-  const [blocked, setBlocked] = useState(false);
+  const [foundActive, setBlocked] = useState(false);
+  const blocked = knownActive || foundActive;
   const inFlight = useRef(false);
   const savedId = useRef<string | null>(null);
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
@@ -57,7 +58,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
 
   async function submit() {
     const text = question.trim();
-    if (inFlight.current || offline || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
+    if (inFlight.current || offline || knownActive || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
     inFlight.current = true;
     setBusy('checking'); setFailure(null); setBlocked(false); setResult(null); setGuess(null);
     let stage: Failure['stage'] = 'active-check';
@@ -118,7 +119,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
   const blockedNotice = blocked && <View style={ui.stack}>
     <Alert>{startError ?? 'You already have an active experiment.'}</Alert>
     {!startError && <Copy style={ui.muted}>Finish your current experiment before designing another.</Copy>}
-    <Action label="Go to your active experiment" secondary onPress={onBack} />
+    <Action label="Go to your active experiment" secondary onPress={() => onBack?.()} />
   </View>;
 
   if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} onReveal={setGuess} onBack={() => reset('')} />;
@@ -150,7 +151,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
   const length = question.trim().length;
   const working = busy !== null;
   return <View style={ui.stack}>
-    <BackLink to="Your lab" disabled={working} onPress={onBack} />
+    {onBack && <BackLink to="Your lab" disabled={working} onPress={onBack} />}
     <Copy style={local.curiosity}>A little curiosity, a little evidence</Copy>
     <Title textRef={heading}>Ask a question.</Title>
     <Copy style={ui.muted}>What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.</Copy>
@@ -188,14 +189,14 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
         <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
       </>}
     </View>}
-    <View style={ui.divider}>
+    {!knownActive && <View style={ui.divider}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Start with a hunch</Copy>
       <Copy style={ui.muted}>Inspired by your goals and everyday questions. Pick one, then make it yours.</Copy>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
         onPress={() => reset(starter)} style={({ pressed }) => [local.starter, pressed && { backgroundColor: COLORS['moss-tint'] }]}>
         <Copy>{starter}</Copy>
       </Pressable>)}
-    </View>
+    </View>}
   </View>;
 }
 

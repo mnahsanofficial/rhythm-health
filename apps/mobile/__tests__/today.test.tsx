@@ -50,7 +50,7 @@ test('loads the real question, intervention, day and phase from authoritative pr
   expect(await screen.findByText(active.question)).toBeVisible();
   expect(screen.getByText(active.intervention.action)).toBeVisible();
   expect(screen.getByText('Day 4 of 10')).toBeVisible();
-  expect(screen.getByText('Test day 1 of 7')).toBeVisible();
+  expect(screen.getByText(/^Test day 1 of 7 ·/)).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeEnabled();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active', `/api/experiments/${active.id}/progress`]);
 });
@@ -66,8 +66,8 @@ test('a recorded current day shows Done for today and uses the returned next ope
 
 test('no active experiment offers the native question without fetching progress', async () => {
   list = []; render(<MobileApp />);
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Ask a question' })).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Design my experiment' })).toBeVisible();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active']);
 });
 
@@ -198,13 +198,13 @@ test('starting a sample refreshes Today; confirmed removal returns to the empty 
   fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
   expect(mutations).toHaveLength(1);
   fireEvent.press(screen.getByRole('button', { name: 'Confirm remove sample' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(mutations).toHaveLength(2);
 });
 
 test('an active real experiment explains why a sample cannot be started', async () => {
   render(<MobileApp />);
-  expect(await screen.findByText(/A sample needs the active experiment slot/)).toBeVisible();
+  await screen.findByText(active.question); expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
 });
 

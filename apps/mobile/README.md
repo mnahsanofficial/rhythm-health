@@ -52,7 +52,7 @@ Sessions and refresh tokens stay in Expo SecureStore. The adapter splits Unicode
 
 ## Today and Check-in
 
-[Today](src/today.tsx) loads `GET /api/experiments?status=active`, then `GET /api/experiments/{id}/progress`. The response owns the day, phase, recorded state and next opening; the app formats returned timestamps in the phone's timezone. It refreshes on foreground and after a save. No active experiment opens the native question. Ended experiments offer Finish; completed ones open the native report. Cached data stays labelled offline, with Check-in disabled; this is an in-memory cache, not an offline database.
+[Today](src/today.tsx) loads `GET /api/experiments?status=active`, then `GET /api/experiments/{id}/progress`. The response owns the day, phase, recorded state and next opening; the app formats returned timestamps in the phone's timezone. It refreshes on foreground and after a save. With nothing running, Your lab is the question itself. Ended experiments lead to Finish on the experiment page; completed ones open the native report. Cached data stays labelled offline, with Check-in disabled; this is an in-memory cache, not an offline database.
 
 On active test days, [Your normal](src/baseline-context.tsx) appears before the intervention. Its ranges/counts/descriptions come from the progress response's optional `baseline_summary`, with an honest missing-baseline state and no extra request or phone calculation. [Contract and verification](../../docs/PROGRESS_API.md#normal-day-context-s8).
 
@@ -200,3 +200,7 @@ Automated: 290 native tests. Browser walkthroughs of M2–M4 were rerun on an is
 ## Web parity: header and navigation (4 Nov 2026)
 
 [The header](src/app-header.tsx) is pinned above the scrolling page, with the web's dial mark and an account button showing the email's initial. Its panel holds Your lab, History, Demo, the email, Update your rhythm and Sign out, plus Daily reminders, the phone's one addition. Demo is its own section. Instrument Sans Medium comes from the installed font package, so there is no new dependency. Choosing another section leaves a check-in or report; an open proposal stays mounted, so a paid plan isn't lost. [Plan for the rest](../../docs/MOBILE_PLAN.md#web-parity).
+
+## Web parity: Your lab and the experiment page (4 Nov 2026)
+
+[Your lab](src/today.tsx) follows the web's order: day line, Test another habit, question, the change, [Today card](src/today-card.tsx), then [your observations](src/progress.tsx) on the same screen, so the Progress tab and button are gone. The timeline uses the web's circles (✓ logged, – missed, a ring on today) and opens on the latest recorded day. With an experiment running, Test another habit shows the slot is taken, and the paid call can't be reached. [The experiment page](src/experiment-detail.tsx) holds the status, Today card, Finish, timeline, small change and the original forecast. Day states, counts and phases all still come from the progress response.

@@ -69,7 +69,6 @@ afterEach(() => jest.restoreAllMocks());
 
 async function openAsk() {
   render(<MobileApp />);
-  fireEvent.press(await screen.findByRole('button', { name: 'Ask a question' }));
   await screen.findByRole('header', { name: 'Ask a question.' });
 }
 function typeQuestion(text = QUESTION) { fireEvent.changeText(screen.getByLabelText('Your question or goal'), text); }
@@ -442,9 +441,3 @@ test('the forecast range animates once without reduced motion', async () => {
   await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
 });
 
-test('Back to your lab leaves the question without any write', async () => {
-  await openAsk();
-  fireEvent.press(screen.getByRole('button', { name: 'Back to your lab' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
-  expect(calls.filter(call => call.key.startsWith('POST'))).toEqual([]);
-});

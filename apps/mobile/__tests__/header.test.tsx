@@ -44,7 +44,7 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-const signedIn = async () => { render(<MobileApp />); await screen.findByText('Nothing running yet.'); };
+const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask a question.' }); };
 
 test('signed out, the header is only the mark and the name', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
@@ -96,7 +96,7 @@ test('tapping outside closes the panel without going anywhere', async () => {
   await openMenu();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Close menu' })); });
   expect(screen.queryByText('Signed in as')).toBeNull();
-  expect(screen.getByText('Nothing running yet.')).toBeVisible();
+  expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('the panel controls have 48pt targets', async () => {
@@ -146,7 +146,6 @@ test('a section reached while editing the rhythm leaves the editor', async () =>
 
 test('leaving for another section keeps a paid proposal, and coming back sends nothing', async () => {
   await signedIn();
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask a question' })); });
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design my experiment' })); });
   fireEvent.changeText(await screen.findByLabelText('Your guess for Morning energy'), '10');
@@ -176,5 +175,5 @@ test('back links read like the web', async () => {
   await goTo('History');
   expect(await screen.findByText('← Your lab')).toBeVisible();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Back to your lab' })); });
-  await waitFor(() => expect(screen.getByText('Nothing running yet.')).toBeVisible());
+  await waitFor(() => expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible());
 });

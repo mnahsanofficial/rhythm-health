@@ -59,8 +59,8 @@ async function signIn() {
 test('signs in with existing credentials and loads the profile before Today', async () => {
   render(<MobileApp />);
   await signIn();
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
-  expect(screen.getByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+  expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(mockAuth.signInWithPassword).toHaveBeenCalledWith({ email: 'learner@example.invalid', password: 'fake-password' });
   expect(global.fetch).toHaveBeenCalledTimes(2);
   expect(global.fetch).toHaveBeenCalledWith('http://api.test.invalid:8001/api/profile', expect.objectContaining({
@@ -87,7 +87,7 @@ test('ignores a second tap while sign-in is pending', async () => {
   expect(busy).toBeDisabled(); fireEvent.press(busy);
   expect(mockAuth.signInWithPassword).toHaveBeenCalledTimes(1);
   release({ data: { session: mockSession }, error: null });
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('shows a plain wrong-password error and allows another attempt', async () => {
@@ -96,7 +96,7 @@ test('shows a plain wrong-password error and allows another attempt', async () =
   expect(await screen.findByRole('alert')).toHaveTextContent(/Email or password wasn't recognised\./);
   expect(global.fetch).not.toHaveBeenCalled();
   fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('shows No connection offline and never sends credentials or a profile request', async () => {
@@ -115,10 +115,10 @@ test('restores an existing session before rendering private profile content', as
   mockAuth.getSession.mockReturnValue(new Promise(resolve => { release = resolve; }));
   render(<MobileApp />);
   expect(screen.getByText('Opening your rhythm…')).toBeVisible();
-  expect(screen.queryByText('Nothing running yet.')).toBeNull();
+  expect(screen.queryByText('Ask a question.')).toBeNull();
   expect(global.fetch).not.toHaveBeenCalled();
   release({ data: { session: mockSession }, error: null });
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(mockAuth.signInWithPassword).not.toHaveBeenCalled();
 });
 
@@ -129,9 +129,9 @@ test('shows a profile-shaped loading state until the profile request resolves', 
   mockAuth.getSession.mockResolvedValue({ data: { session: mockSession }, error: null });
   render(<MobileApp />);
   expect(await screen.findByText('Loading your profile…')).toBeVisible();
-  expect(screen.queryByText('Nothing running yet.')).toBeNull();
+  expect(screen.queryByText('Ask a question.')).toBeNull();
   release({ ok: true, status: 200, json: async () => profile });
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('a missing profile opens native onboarding without creating an account', async () => {
@@ -140,7 +140,7 @@ test('a missing profile opens native onboarding without creating an account', as
   expect(await screen.findByText('First, your rhythm.')).toBeVisible();
   expect(screen.queryByRole('link', { name: 'Set up your rhythm on the web' })).toBeNull();
   expect(mockAuth.signUp).not.toHaveBeenCalled();
-  expect(screen.queryByText('Nothing running yet.')).toBeNull();
+  expect(screen.queryByText('Ask a question.')).toBeNull();
 });
 
 test('retries an unavailable profile without signing in again', async () => {
@@ -148,7 +148,7 @@ test('retries an unavailable profile without signing in again', async () => {
   render(<MobileApp />); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't load your profile\./);
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(mockAuth.signInWithPassword).toHaveBeenCalledTimes(1);
 });
 
@@ -157,15 +157,15 @@ test('an expired profile session returns to sign-in with a clear message', async
   render(<MobileApp />); await signIn();
   expect(await screen.findByRole('alert')).toHaveTextContent('Your session has expired. Sign in again.');
   expect(screen.getByLabelText('Email')).toBeVisible();
-  expect(screen.queryByText('Nothing running yet.')).toBeNull();
+  expect(screen.queryByText('Ask a question.')).toBeNull();
 });
 
 test('signs out only this device and removes private content', async () => {
   render(<MobileApp />); await signIn();
-  await screen.findByText('Nothing running yet.');
+  await screen.findByRole('header', { name: 'Ask a question.' });
   await goTo('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
-  expect(screen.queryByText('Nothing running yet.')).toBeNull();
+  expect(screen.queryByText('Ask a question.')).toBeNull();
   expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
 
@@ -274,7 +274,7 @@ test('signup exposes the auth service error and blocks duplicate taps while pend
 test('onboarding saves the shared profile body with PUT then opens Today', async () => {
   await openSetup(); await completeQuestions();
   fireEvent.press(screen.getByRole('button', { name: 'Save my rhythm' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(global.fetch).toHaveBeenCalledWith('http://api.test.invalid:8001/api/profile', expect.objectContaining({
     method: 'PUT', headers: { Authorization: 'Bearer fake-mobile-token', 'Content-Type': 'application/json' },
     body: JSON.stringify({ age_range: '25-34', usual_sleep_schedule: { bedtime: '23:30', wake_time: '07:00' }, usual_sleep_hours: 7,
@@ -319,7 +319,7 @@ test('failed profile saves keep answers, show field errors and permit explicit r
   expect(screen.getByText('Better focus')).toBeVisible();
   (global.fetch as jest.Mock).mockImplementation(defaultFetch);
   fireEvent.press(screen.getByRole('button', { name: 'Save my rhythm' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('offline signup never creates an account', async () => {
@@ -352,7 +352,7 @@ test('setup restores the same account draft after a restart and never submits tw
   const writes = (global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === 'PUT');
   expect(writes).toHaveLength(1);
   await act(async () => { release({ ok: true, status: 200, json: async () => profile }); });
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('goal limits, case-insensitive custom choices and optional habits match web behavior', async () => {
@@ -396,14 +396,14 @@ test('switching accounts cannot restore another account onboarding answers', asy
 });
 
 test('The account panel can reopen the saved rhythm for editing without creating another profile', async () => {
-  render(<MobileApp />); await signIn(); await screen.findByText('Nothing running yet.');
+  render(<MobileApp />); await signIn(); await screen.findByRole('header', { name: 'Ask a question.' });
   await goTo('Update your rhythm');
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
   expect(screen.getByText('23:30 to 07:30, about 8 h asleep')).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
   expect(screen.getByRole('checkbox', { name: 'better morning energy' })).toBeChecked();
   fireEvent.press(screen.getByRole('button', { name: 'Cancel setup changes' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 
 test('cleanup retry after a successful save never repeats the profile write', async () => {
@@ -413,7 +413,7 @@ test('cleanup retry after a successful save never repeats the profile write', as
   fireEvent.press(screen.getByRole('button', { name: 'Save my rhythm' }));
   expect(await screen.findByText(/Your rhythm is saved. Couldn't remove/)).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Finish saving' }));
-  expect(await screen.findByText('Nothing running yet.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect((global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === 'PUT')).toHaveLength(1);
 });
 
