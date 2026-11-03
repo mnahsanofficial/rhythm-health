@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CombinedCheckin } from "@/components/checkins/combined-checkin";
-import type { Metric, TodayCheckin } from "@/lib/types/api";
+import type { TodayCheckin } from "@/lib/types/api";
 import { server } from "../support/server";
 
 const { getSession, router, sessionState } = vi.hoisted(() => ({
@@ -20,7 +20,7 @@ vi.mock("next/link", () => ({
 vi.mock("motion/react", async () => import("../support/motion-mock"));
 
 const api = "http://api.test.invalid";
-const scale = (key: string, label: string): Metric => ({ key, label, type: "scale", min: 1, max: 10, primary: false, min_label: "Low point", max_label: "High point" });
+const scale = (key: string, label: string): TodayCheckin["questions"][number]["metric"] => ({ key, label, type: "scale", min: 1, max: 10, primary: false, min_label: "Low point", max_label: "High point" });
 const A = "aaaaaaaa-1111-4111-8111-111111111111", B = "bbbbbbbb-1111-4111-8111-111111111111";
 const today: TodayCheckin = {
   revision: "rev-1",
