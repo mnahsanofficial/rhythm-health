@@ -47,7 +47,7 @@ Someone already trying to improve their sleep, energy, focus, fitness, food or r
 
 | | |
 |---|---|
-| **Must have** | Persona; a question in the user's own words; AI-designed experiment; prediction; one active experiment; manual daily check-ins; timeline; lightweight N-of-1 analysis; prediction vs reality; interactive Lab Report; experiment history; past experiments as context; mobile-responsive; a seeded completed experiment |
+| **Must have** | Persona; a question in the user's own words; AI-designed experiment; prediction; up to three active experiments; manual daily check-ins; timeline; lightweight N-of-1 analysis; prediction vs reality; interactive Lab Report; experiment history; past experiments as context; mobile-responsive; a seeded completed experiment |
 | **Should have** | Notes for confounders; an explanation of confidence; a suggested next experiment; safety checks; interactive charts |
 | **Out of scope** | Apple Health, Health Connect and wearables; diagnosis or treatment; clinical statistics; several experiments at once; social features; native apps; push notifications |
 

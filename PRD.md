@@ -132,11 +132,11 @@ Every experiment must have an explicit prediction before it starts.
 
 This makes the final comparison meaningful.
 
-## 5.3 One experiment at a time
+## 5.3 A few experiments at a time
 
-V1 supports one active experiment.
+Up to three experiments can run at once. V1 supported one; 8x asked for more on the feedback call.
 
-This reduces confounding variables and keeps the experience understandable.
+Running several adds confounding variables, so the Lab Report says plainly when another experiment overlapped. The limit keeps the experience understandable.
 
 ## 5.4 Daily interaction should be tiny
 
@@ -741,7 +741,7 @@ Reminder infrastructure can be added later.
 - natural-language experiment question
 - AI-generated experiment
 - predictive forecast
-- one active experiment
+- up to three active experiments
 - short multi-day experiment structure
 - manual daily check-ins
 - experiment timeline

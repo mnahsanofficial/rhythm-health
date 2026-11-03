@@ -14,6 +14,7 @@ Install npm dependencies from the root with `npm ci`. Root `npm test` first runs
 | `frontend/` | `npm run test:e2e` | Playwright: sign up, onboarding, propose and start, at 390px and 1440px | No: Supabase and API responses are mocked, using `frontend/.env.test` |
 | `frontend/` | `npm run lint`, `npm run typecheck`, `npm run build` | ESLint, route types and `tsc`, production build | No |
 
+- `python3 backend/tests/migrations/check_active_limit.py` and `check_personal_guess.py` run migrations on a disposable local PostgreSQL cluster, with real concurrent sessions for the limit. Run them when you change a migration. They never read env files or connect to an existing database.
 - Install the Playwright browser once before the first E2E run: `npx playwright install chromium`.
 - Run all of these before opening a PR. The repo has no CI yet, so nothing else runs them.
 

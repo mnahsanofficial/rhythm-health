@@ -6,8 +6,8 @@ The fixed walk-after-dinner experiment starts on day 5 of 10. Days 1–3 contain
 
 ## API and isolation
 
-- `POST /api/demo/active` with `{}` returns the active `ExperimentOut` (201). Auth supplies the owner; extra body fields are rejected. An existing active experiment or a concurrent start returns 409. Missing profile is 409; storage failures are 503.
-- The existing `experiments.is_seeded` column is true. The partial unique index allowing one active experiment per profile is unchanged. Remove the sample before starting a real experiment.
+- `POST /api/demo/active` with `{}` returns the active `ExperimentOut` (201). Auth supplies the owner; extra body fields are rejected. Being at the limit of three, a sample already running, or a concurrent start returns 409. Missing profile is 409; storage failures are 503.
+- The existing `experiments.is_seeded` column is true. The sample takes one of the three active slots and can run alongside real experiments; removing it frees the slot. It never appears in a real report's overlap, because its answers are invented.
 - `POST /api/demo/active/{id}/remove` requires `{"confirmed": true}`. The delete matches **profile ID + experiment ID + is_seeded=true**. Foreign/missing/real experiments return 404. Check-ins and reports cascade only from that row. Both apps ask for confirmation and allow cancellation.
 - General/completed experiment listings exclude samples. The active listing includes the sample for the daily loop. Prediction context filters samples at the repository before its candidate limit, and again in the history service before reading reports or calculating the track record.
 - Progress, answers and deterministic analysis are scoped to a single owned experiment; there is no path combining sample check-ins with real check-ins. Seeded experiments cannot enter the paid report writer, even through a direct regenerate request.
