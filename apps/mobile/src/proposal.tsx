@@ -6,7 +6,7 @@ import { Forecast } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
-import { Action, Alert, Copy, styles as ui, Title, useStepFocus } from './ui';
+import { Action, Alert, Copy, styles as ui, Title, useStepFocus, Status } from './ui';
 
 type Failure = { status: number; message: string; stage: 'active-check' | 'proposal' };
 type Props = {
@@ -138,7 +138,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
       <Copy>This plan and prediction become fixed once you start.</Copy>
       <Copy style={ui.muted}>Your original forecast stays in place so you can compare it with what happens.</Copy>
     </View>
-    {offline && <Copy accessibilityLiveRegion="polite" style={ui.muted}>You&apos;re offline. Your plan is kept; reconnect to start.</Copy>}
+    {offline && <Status style={ui.muted}>You&apos;re offline. Your plan is kept; reconnect to start.</Status>}
     {blockedNotice}
     {startError && !blocked && <Alert>{startError}</Alert>}
     {guessUnavailable && <Action label="Continue without saving my guess" secondary disabled={starting || offline} onPress={() => void begin(true)} />}
@@ -162,12 +162,12 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
         <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>
       </View>
     </View>
-    {offline && <Copy accessibilityLiveRegion="polite" style={ui.muted}>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Copy>}
+    {offline && <Status style={ui.muted}>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Status>}
     <Action label={busy === 'checking' ? 'Checking your experiment…' : busy === 'proposing' ? 'Shaping your experiment…' : 'Design my experiment'}
       disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} />
-    {busy === 'checking' && <Copy accessibilityLiveRegion="polite" style={ui.muted}>Checking whether you already have an active experiment…</Copy>}
+    {busy === 'checking' && <Status style={ui.muted}>Checking whether you already have an active experiment…</Status>}
     {busy === 'proposing' && <View style={ui.stack}>
-      <Copy accessibilityLiveRegion="polite">Finding a small change you can test…</Copy>
+      <Status>Finding a small change you can test…</Status>
       <Copy style={ui.muted}>Your plan and forecast will arrive together. This can take a little while.</Copy>
       <View accessible={false} style={ui.skeletonBody} />
     </View>}

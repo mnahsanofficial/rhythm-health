@@ -24,7 +24,17 @@ export function useStepFocus(step: string) {
   }, [step, scrollToTop]);
   return heading;
 }
+const spoken = (node: ReactNode): string => Array.isArray(node) ? node.map(spoken).join('') : typeof node === 'string' || typeof node === 'number' ? String(node) : '';
+/** Android reads live regions; iOS ignores them, so VoiceOver needs an explicit announcement. */
+function useAnnounce(text: string) {
+  useEffect(() => { if (text && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(text); }, [text]);
+}
+export function Status(props: TextProps) {
+  useAnnounce(spoken(props.children));
+  return <Copy accessibilityLiveRegion="polite" {...props} />;
+}
 export function Alert({ children }: { children: ReactNode }) {
+  useAnnounce(spoken(children));
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
 export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected }: {
@@ -61,7 +71,7 @@ export function Frame({ children, fontsReady = true }: { children: ReactNode; fo
 export function Loading({ message }: { message: string }) {
   return (
     <View style={styles.stack}>
-      <Copy accessibilityLiveRegion="polite">{message}</Copy>
+      <Status>{message}</Status>
       <View accessible={false} style={styles.skeletonTitle} />
       <View accessible={false} style={styles.skeletonBody} />
       <View accessible={false} style={styles.skeletonAction} />

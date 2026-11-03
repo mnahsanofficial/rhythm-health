@@ -6,7 +6,7 @@ import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
-import { Action, Alert, Copy, Loading, styles as ui, Title, useStepFocus } from './ui';
+import { Action, Alert, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
 
 type Load = { kind: 'loading' } | { kind: 'ready'; report: LabReport } | { kind: 'not-finished'; experiment: Experiment } | { kind: 'missing' } | { kind: 'error'; message: string };
 type Props = {
@@ -39,7 +39,7 @@ export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back
 
   const back = <Action label={backLabel} secondary onPress={onBack} />;
   if (load.kind === 'loading') return offline
-    ? <View style={ui.stack}><Copy accessibilityLiveRegion="polite">Reconnect to load this report.</Copy>{back}</View>
+    ? <View style={ui.stack}><Status>Reconnect to load this report.</Status>{back}</View>
     : <Loading message="Loading your report…" />;
   if (load.kind === 'missing') return <View style={ui.stack}><Alert>We couldn&apos;t find that experiment.</Alert>{back}</View>;
   if (load.kind === 'error') return <View style={ui.stack}>
@@ -73,7 +73,7 @@ export function LabReportScreen({ id, token, offline, initial, backLabel = 'Back
       <Copy style={local.eyebrow}>Lab Report{finishedOn ? ` · finished ${finishedOn}` : ''}</Copy>
       <Title textRef={heading}>{experiment.question}</Title>
     </View>
-    {offline && <Copy accessibilityLiveRegion="polite" style={ui.muted}>You&apos;re offline. These results are the last ones loaded.</Copy>}
+    {offline && <Status style={ui.muted}>You&apos;re offline. These results are the last ones loaded.</Status>}
 
     {analysis.prediction && primary
       ? <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} guess={analysis.personal_guess} />
@@ -171,12 +171,12 @@ function PredictionVsReality({ comparison, metricLabel, guess }: { comparison: P
       <Copy style={local.small}>Measured from your recorded days.</Copy>
     </View>
     <Action label={revealed ? 'Replay comparison' : 'Reveal my result'} onPress={() => { setReplay(n => n + 1); }} />
-    <Copy accessibilityLiveRegion="polite">{status}</Copy>
+    <Status>{status}</Status>
     <View accessible accessibilityRole="image" accessibilityLabel={`${guess ? `Your guess ${reportPercent(guess.guessed_change_percent, 2)}; ` : ''}Predicted range ${reportPercent(min)} to ${reportPercent(max)}${revealed ? `; observed ${reportPercent(observed)}` : '; reveal to compare your result'}.`} style={local.scale}>
       <View style={local.scaleTrack} />
       <View style={[local.scaleRange, { left: `${at(min)}%`, width: `${Math.max(at(max) - at(min), 1)}%` }]} />
       <View style={[local.scaleZero, { left: `${at(0)}%` }]} />
-      <Copy style={[local.scaleLabel, { left: `${at(0)}%` }]}>0%</Copy>
+      <Copy maxFontSizeMultiplier={1.2} style={[local.scaleLabel, { left: `${at(0)}%` }]}>0%</Copy>
       {guess && <View style={[local.diamond, { left: `${at(guess.guessed_change_percent)}%` }]} />}
       {revealed && <Animated.View style={[local.observed, { left: `${at(observed)}%` }, { opacity: landing }]} />}
     </View>
@@ -208,7 +208,7 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten 
     try {
       onWritten(await writeReport(token, id));
       setWriting({ kind: 'idle' });
-      AccessibilityInfo.announceForAccessibility?.('Your report is written.');
+      AccessibilityInfo.announceForAccessibility('Your report is written.');
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) { onExpired(); return; }
       setWriting({ kind: 'error', status: cause instanceof ApiError ? cause.status : 0, message: cause instanceof Error ? cause.message : '' });
@@ -230,7 +230,7 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten 
         <Alert>{writeErrorText(writing.status, writing.message)} Your results above are saved.</Alert>
         {writing.status !== 409 && writing.status !== 404 && <Action label="Try again" secondary disabled={offline} onPress={() => void write()} />}
       </> : <Action label={busy ? 'Writing your report…' : 'Write my report'} disabled={busy || offline} onPress={() => void write()} />}
-      {busy && <Copy accessibilityLiveRegion="polite" style={local.small}>Writing your report from your results. This can take a little while; you can stay on this page.</Copy>}
+      {busy && <Status style={local.small}>Writing your report from your results. This can take a little while; you can stay on this page.</Status>}
     </>}
   </View>;
 }
@@ -264,7 +264,7 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }
       {check === 'busy' ? <>
         <Copy>You&apos;re already running an experiment. Finish it before starting this one, so each result stays clear.</Copy>
         <Action label="Go to your current experiment" secondary onPress={onToday} />
-      </> : check === 'checking' && !offline ? <Copy accessibilityLiveRegion="polite" style={local.small}>Checking whether another experiment is running…</Copy>
+      </> : check === 'checking' && !offline ? <Status style={local.small}>Checking whether another experiment is running…</Status>
         : <Action label="Run this experiment" onPress={() => onAsk(narrative.next_experiment.question)} />}
     </> : <>
       <Copy style={ui.muted}>A suggested next question appears once your report is written.</Copy>

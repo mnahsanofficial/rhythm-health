@@ -4,7 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { COLORS, LAYOUT, MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
 import { MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type Profile, type ProfileInput } from '@rhythm-health/contract';
 import { TimeField } from './time-field';
-import { Action, Alert, Copy, Loading, styles } from './ui';
+import { Action, Alert, Copy, Loading, styles, Status } from './ui';
 import { ApiError, saveProfile } from './lib/profile';
 import { ACTIVITY_OPTIONS, AGE_OPTIONS, clearDraft, CONSTRAINTS, duration, GOALS, HABITS, habitTime, maxSleep, minutes, nightMinutes, plausible, QUESTIONS, readDraft, suggestedSleep, toProfileInput, writeDraft, type Draft, type StoredDraft } from './lib/onboarding';
 
@@ -119,7 +119,7 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
         <TimeField label="Bedtime" value={draft.usual_sleep_schedule?.bedtime ?? ''} onChange={bedtime => update({ usual_sleep_schedule: { bedtime, wake_time: draft.usual_sleep_schedule?.wake_time ?? '' }, usual_sleep_hours: undefined })} />
         <TimeField label="Wake time" value={draft.usual_sleep_schedule?.wake_time ?? ''} onChange={wake_time => update({ usual_sleep_schedule: { bedtime: draft.usual_sleep_schedule?.bedtime ?? '', wake_time }, usual_sleep_hours: undefined })} />
         <Copy style={styles.muted}>Pick your usual bedtime and wake time.</Copy>
-        <Copy accessibilityLiveRegion="polite">{nightMinutes(draft) === null ? 'Enter both times.' : `That's ${duration(nightMinutes(draft)!)} in bed.${plausible(draft) ? '' : ' Check the times?'}`}</Copy>
+        <Status>{nightMinutes(draft) === null ? 'Enter both times.' : `That's ${duration(nightMinutes(draft)!)} in bed.${plausible(draft) ? '' : ' Check the times?'}`}</Status>
       </>}
       {step === 3 && <>
         <Copy style={styles.title} accessibilityLiveRegion="polite">{hours}</Copy><Copy>hours asleep</Copy>
@@ -177,7 +177,7 @@ function MultiChoice({ options, values, onChange, max, addLabel, placeholder }: 
   }
   return <View style={styles.stack}>
     {chips.map(chip => <Choice key={chip} label={chip} multiple picked={values.includes(chip)} disabled={full && !values.includes(chip)} onPress={() => onChange(values.includes(chip) ? values.filter(v => v !== chip) : [...values, chip])} />)}
-    {(max === 3 || full) && <Copy accessibilityLiveRegion="polite" style={styles.muted}>{values.length} of {max} picked{full ? '. Unpick one to choose another.' : ''}</Copy>}
+    {(max === 3 || full) && <Status style={styles.muted}>{values.length} of {max} picked{full ? '. Unpick one to choose another.' : ''}</Status>}
     <Field label={addLabel} placeholder={placeholder} value={custom} maxLength={60} onChange={setCustom} />
     <Action label="Add" secondary disabled={full || !custom.trim()} onPress={add} />
   </View>;

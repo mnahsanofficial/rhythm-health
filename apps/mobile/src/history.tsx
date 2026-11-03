@@ -5,7 +5,7 @@ import type { Experiment, LabReport } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
 import { getReport, reportPercent, SIGNAL_COPY } from './lib/reports';
-import { Action, Alert, Copy, Loading, styles as ui, Title, useStepFocus } from './ui';
+import { Action, Alert, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
 
 /** Held by Today for this app session, so going offline can still show what was read. Not an offline database. */
 export type HistoryCache = { value: { experiments: Experiment[]; at: Date; reports: Record<string, LabReport | null> } | null };
@@ -47,8 +47,8 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk,
       <Copy style={ui.muted}>Look back at your predictions and the patterns your experiments found.</Copy>
     </View>
     {offline && (at
-      ? <Copy accessibilityLiveRegion="polite" style={ui.muted}>{`Offline, last updated ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Copy>
-      : <Copy accessibilityLiveRegion="polite">Reconnect to load your history.</Copy>)}
+      ? <Status style={ui.muted}>{`Offline, last updated ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>
+      : <Status>Reconnect to load your history.</Status>)}
     {!offline && error && <View style={ui.stack}>
       <Alert>We couldn&apos;t load your history. {error}</Alert>
       <Action label="Try again" secondary onPress={() => { setError(null); setAttempt(n => n + 1); }} />
@@ -59,7 +59,7 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk,
         <Copy style={ui.muted}>Completed experiments will appear here.</Copy>
         <Action label="Test a new question" onPress={onAsk} />
       </View> : <View style={ui.stack}>
-        <Copy accessibilityLiveRegion="polite" style={local.count}>{`${ordered.length} completed ${ordered.length === 1 ? 'experiment' : 'experiments'} · ${order} first`}</Copy>
+        <Status style={local.count}>{`${ordered.length} completed ${ordered.length === 1 ? 'experiment' : 'experiments'} · ${order} first`}</Status>
         <View style={local.sort}>
           <Action label="Newest first" secondary={order !== 'newest'} selected={order === 'newest'} onPress={() => setOrder('newest')} />
           <Action label="Oldest first" secondary={order !== 'oldest'} selected={order === 'oldest'} onPress={() => setOrder('oldest')} />
@@ -108,7 +108,7 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
       <Copy style={ui.muted}>{`Prediction · ${forecastLabel}`}</Copy>
       <Copy style={[ui.number, { color: COLORS.night }]}>{`${low}–${high}`}</Copy>
     </View>
-    {state.kind === 'loading' && <Copy accessibilityLiveRegion="polite" style={ui.muted}>Loading report…</Copy>}
+    {state.kind === 'loading' && <Status style={ui.muted}>Loading report…</Status>}
     {state.kind === 'error' && <View style={ui.stack}>
       <Alert>Couldn&apos;t load this report.</Alert>
       <Copy style={ui.muted}>{state.message}</Copy>
