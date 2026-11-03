@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking } from 'react-native';
+import { AppState } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import type { Profile } from '@rhythm-health/contract';
 import { FONT_FAMILIES } from '@rhythm-health/brand';
@@ -56,7 +56,6 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   const [editingProfile, setEditingProfile] = useState(false);
   const pendingDraftRemoval = useRef<string | null>(null);
   const lastOwner = useRef<string | null>(null);
-  const [linkError, setLinkError] = useState<string | null>(null);
 
   const signOut = useCallback(async (reason: string | null = null) => {
     if (!reason && session) pendingDraftRemoval.current = session.user.id;
@@ -111,10 +110,6 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
     return () => { cancelled = true; };
   }, [token, owner, offline, profileAttempt, signOut]);
 
-  function openWeb(path: string) {
-    setLinkError(null);
-    void Linking.openURL(new URL(path, config.webUrl).toString()).catch(() => setLinkError("Couldn't open the web app. Try again."));
-  }
   const retry = () => { setReady(false); setAuthFailure(null); setProfile({ kind: 'loading' }); setAuthAttempt(n => n + 1); };
 
   return (
@@ -136,7 +131,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       /> : <>
         {profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && editingProfile ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline} initial={profile.profile}
             onSaved={value => { setProfile({ kind: 'ready', profile: value, owner: session.user.id }); setEditingProfile(false); }} onExpired={expire} onCancel={() => setEditingProfile(false)} />
-          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} openWeb={openWeb} onExpired={expire} email={session.user.email} signOut={() => void signOut()} editProfile={() => setEditingProfile(true)} />
+          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} onExpired={expire} email={session.user.email} signOut={() => void signOut()} editProfile={() => setEditingProfile(true)} />
           : profile.kind === 'ready' && profile.owner === owner && profile.profile === null ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline}
             onSaved={value => setProfile({ kind: 'ready', profile: value, owner: session.user.id })} onExpired={expire} />
           : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>
@@ -147,7 +142,6 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
         {!(profile.kind === 'ready' && profile.profile !== null) && <Action label="Sign out" secondary onPress={() => void signOut()} />}
       </>}
       {ready && !session && <ReminderNotice feedbackOnly />}
-      {linkError && <Alert>{linkError}</Alert>}
     </Frame>
   );
 }

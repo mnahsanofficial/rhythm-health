@@ -126,7 +126,8 @@ test.each(['not_started', 'ended', 'completed'] as const)('handles %s without of
   render(<MobileApp />);
   expect(await screen.findByText(active.question)).toBeVisible();
   expect(screen.queryByRole('button', { name: /Check in for day/ })).toBeNull();
-  expect(screen.getByRole('link', { name: state === 'completed' ? 'See your Lab Report on the web' : state === 'ended' ? 'Finish on the web' : 'Open your experiment on the web' })).toBeVisible();
+  expect(screen.queryByRole('link')).toBeNull();
+  if (state !== 'not_started') expect(screen.getByRole('button', { name: state === 'completed' ? 'See your Lab Report' : 'Finish and see results' })).toBeVisible();
 });
 
 
