@@ -34,6 +34,7 @@ let replies: Record<string, Reply[]>;
 let defaults: Record<string, Reply>;
 let calls: { key: string; body?: unknown }[];
 let listeners: Set<(state: AppStateStatus) => void>;
+let activeAfterFinish: Experiment[];
 const count = (key: string) => calls.filter(call => call.key === key).length;
 const queue = (key: string, ...items: Reply[]) => { replies[key] = [...(replies[key] ?? []), ...items]; };
 
@@ -45,7 +46,7 @@ function setActive(current: Experiment, timeline = timelineFixture(current, {}))
 beforeEach(() => {
   jest.clearAllMocks();
   mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
-  replies = {}; calls = []; listeners = new Set();
+  replies = {}; calls = []; listeners = new Set(); activeAfterFinish = [];
   defaults = {
     'GET /api/profile': { body: profile },
     [COMPLETE]: { body: labReport },
@@ -67,6 +68,7 @@ beforeEach(() => {
     if (!reply) throw new Error(`Unexpected fake request: ${key}`);
     if (reply.network) throw new TypeError('Network request failed');
     const status = reply.status ?? 200;
+    if (key === COMPLETE && status < 400) defaults[`GET ${ACTIVE}`] = { body: activeAfterFinish };
     return { ok: status < 400, status, json: async () => reply.body } as Response;
   });
 });
@@ -82,7 +84,6 @@ async function openReport(report: LabReport = labReport) {
   defaults[COMPLETE] = { body: report };
   defaults[READ] = { body: report };
   await finish();
-  defaults[`GET ${ACTIVE}`] = { body: [] };
   await screen.findByRole('header', { name: 'Prediction vs reality' });
 }
 
@@ -184,6 +185,7 @@ describe('finish', () => {
 
 describe('comparison', () => {
   test('shows the guess and forecast first, then reveals the measured change on a tap', async () => {
+    (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(true);
     await openReport(guessed(labReport));
     expect(screen.getByText('+12.5%')).toBeVisible();
     expect(screen.getByText('Locked before you saw the AI forecast.')).toBeVisible();
@@ -427,12 +429,13 @@ describe('run this experiment', () => {
   async function openReportActive() {
     defaults[COMPLETE] = { body: writtenLabReport };
     defaults[READ] = { body: writtenLabReport };
+    activeAfterFinish = [{ ...inProgress, id: 'other-id' }];
     await finish();
   }
 
   test('a failed slot check still lets the person continue, since Ask checks again', async () => {
     await openReport();
-    queue(`GET ${ACTIVE}`, { status: 503, body: {} }, { status: 503, body: {} });
+    defaults[`GET ${ACTIVE}`] = { status: 503, body: {} };
     await press('Write my report');
     expect(await screen.findByRole('button', { name: 'Run this experiment' })).toBeVisible();
   });
@@ -451,7 +454,8 @@ describe('opening a report', () => {
   const openFromToday = async () => {
     setActive(completedState);
     render(<MobileApp />);
-    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'See your Lab Report' })); });
+    const button = await screen.findByRole('button', { name: 'See your Lab Report' });
+    await act(async () => { fireEvent.press(button); });
   };
 
   test('loads the saved report natively, with no writing call', async () => {
@@ -471,7 +475,7 @@ describe('opening a report', () => {
 
   test('a missing report checks the experiment and says results are not ready', async () => {
     queue(READ, { status: 404, body: { detail: 'No report for this experiment yet' } });
-    defaults[`GET /api/experiments/${ID}`] = { body: completedState };
+    defaults[`GET /api/experiments/${ID}`] = { body: { ...completedState, status: 'completed' } };
     await openFromToday();
     expect(await screen.findByText('No results yet.')).toBeVisible();
     expect(screen.getByText("This experiment is finished, but its report isn't available. Try again in a moment.")).toBeVisible();

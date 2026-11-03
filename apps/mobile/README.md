@@ -1,6 +1,6 @@
 # Rhythm mobile
 
-Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment are native (M2). Finishing, reports, history and the completed demo remain the next mobile milestones in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
+Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment (M2), then finishing and the Lab Report (M3), are native. History and the completed demo remain the next mobile milestones in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
 
 ## Install and run
 
@@ -36,7 +36,7 @@ The start command clears Metro's cache. **Stop every Metro/Expo process for this
 
 Update Expo Go from the App Store/Google Play. Keep the phone and Mac on the same Wi-Fi, scan Metro's QR code, and allow local-network access. On iPhone use Camera to scan. Enter your own real credentials; agents must not enter them. Test sign-in → Today → enter your own real check-in → Done for today → fully close/reopen. Never save invented health data to the shared account. Sign out affects this device only.
 
-The local-only web handoff uses the API setting's hostname with port 3000. Run the Next.js app there for those links. A future hosted setup will need a separate agreed web location; this does not guess one. Native requests do not need CORS changes. Expo web preview uses in-memory session storage only, is not the persistence test, and may need its origin added to local backend CORS for real requests.
+The app no longer links to the web. Native requests do not need CORS changes. Expo web preview uses in-memory session storage only, is not the persistence test, and may need its origin added to local backend CORS for real requests.
 
 ## SDK and template decisions (31 Oct 2026)
 
@@ -52,7 +52,7 @@ Sessions and refresh tokens stay in Expo SecureStore. The adapter splits Unicode
 
 ## Today and Check-in
 
-[Today](src/today.tsx) loads `GET /api/experiments?status=active`, then `GET /api/experiments/{id}/progress`. The response owns the day, phase, recorded state and next opening; the app formats returned timestamps in the phone's timezone. It refreshes on foreground and after a save. No active experiment opens the native question. Ended experiments link to finishing on the web; completed ones link to the report. Cached data stays labelled offline, with Check-in disabled; this is an in-memory cache, not an offline database.
+[Today](src/today.tsx) loads `GET /api/experiments?status=active`, then `GET /api/experiments/{id}/progress`. The response owns the day, phase, recorded state and next opening; the app formats returned timestamps in the phone's timezone. It refreshes on foreground and after a save. No active experiment opens the native question. Ended experiments offer Finish; completed ones open the native report. Cached data stays labelled offline, with Check-in disabled; this is an in-memory cache, not an offline database.
 
 On active test days, [Your normal](src/baseline-context.tsx) appears before the intervention. Its ranges/counts/descriptions come from the progress response's optional `baseline_summary`, with an honest missing-baseline state and no extra request or phone calculation. [Contract and verification](../../docs/PROGRESS_API.md#normal-day-context-s8).
 
@@ -68,7 +68,7 @@ Steps 2 and 3 shipped together in #36; steps 4 and 5 are combined on `feat/mobil
 
 The only real trigger is the API's `next_day_at` as an absolute date, not a repeating calendar time or a phone-calculated opening. The title names the returned next day and total only ("Day 5 of 10 is open"), never the question. Preferences are per account in SecureStore; Expo web preview keeps them in memory and cannot schedule notifications. Fixed daily/test IDs and a serialized queue prevent stacking and cancel a late scheduling result after sign-out. The service reconciles after successful progress refreshes on foreground and after saving. It cancels on opt-out, sign-out, no active experiment, an ended/completed experiment or no next opening, including the last day. A failed cancellation remains visible even after sign-out and offers retry. Offline restoration preserves an existing pending reminder for the same opted-in account until fresh progress is available; foreign-account reminders are removed. Retrying preference loading keeps any server progress already loaded.
 
-Taps are captured on cold start and while open, held through sign-in/profile loading or being offline, and resolved against fresh owner-scoped progress. They open the **current** Check-in, including prefilled recorded answers. A different account or an inactive experiment cannot open stale private content. No day is taken from the notification. A change in the returned experiment/day remounts the form, so yesterday's unsaved draft is never copied into a newly opened day. Missing profiles open native onboarding. Finishing and results still use web hand-offs until M3.
+Taps are captured on cold start and while open, held through sign-in/profile loading or being offline, and resolved against fresh owner-scoped progress. They open the **current** Check-in, including prefilled recorded answers. A different account or an inactive experiment cannot open stale private content. No day is taken from the notification. A change in the returned experiment/day remounts the form, so yesterday's unsaved draft is never copied into a newly opened day. Missing profiles open native onboarding.
 
 Local-only limits: an experiment finished on the web while the phone app is closed cannot be known until its next successful refresh. OS permission, Focus and delivery settings may affect when a banner appears; the scheduled instant is still exactly the API timestamp. No server push is added.
 
@@ -168,3 +168,13 @@ After the picker dependency installation, the two still-running Metro processes 
 **Known limit.** If the save's response is lost after the server stored it, Try again stores a second `proposed` draft. It never becomes active and appears nowhere in the app, but the row exists. Fixing it needs an idempotency key on the backend, so it isn't in M2.
 
 Automated: 183 native tests with fake auth, network and storage. Browser: isolated fake-config web export at 390px and 1440px, all auth and API responses intercepted and other traffic blocked; [screenshots](../../docs/screenshots/mobile-proposal-flow/) use sample fixtures. No paid calls or shared-database writes were made. Browser evidence does not prove native keyboard behaviour, VoiceOver focus or the physical phone.
+
+## M3: finish and the Lab Report (3 Nov 2026)
+
+[Finish](src/finish.tsx) appears on Today when the days have ended, or early once a test day is recorded. The phone holds no minimum-count rule: the backend's 409 supplies the counts shown. Completion is deterministic and free. A lost response or an "already completed" 409 reads the saved report before anything is retried, and finishing cancels the reminder.
+
+[The report](src/lab-report.tsx) reads `GET /report` and draws only returned values: your guess, the fixed forecast, then a tap to reveal the measured change with accuracy, the signal label and reasons, adherence, other measures and the written sections. [The chart](src/day-chart.tsx) uses `react-native-svg`, already a dependency and included in Expo Go. A missed day breaks the line and shows ×; every planned day keeps its place; the rows beneath are the text alternative, the screen-reader route and the 48pt targets.
+
+**Paid-call guards.** Write my report is the only caller of `POST /report`, from a tap, behind a synchronous lock, and never with `regenerate`. Opening the report, returning to the foreground, a failed write and seeded reports send nothing. Run this experiment only prefills the question; proposing still takes its own tap and active check.
+
+Automated: 240 native tests with fake auth, network and storage. Browser: isolated fake-config web export at 390px and 1440px with all traffic intercepted; [screenshots](../../docs/screenshots/mobile-lab-report/) use sample fixtures. No paid calls or shared-database writes were made. Native SVG rendering on a physical phone is not yet verified.

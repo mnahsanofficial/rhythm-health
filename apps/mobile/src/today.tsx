@@ -7,15 +7,17 @@ import { Progress } from './progress';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
 import { CheckinForm } from './checkin';
+import { FinishCard } from './finish';
+import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
-import type { Experiment, ExperimentTimeline, Profile } from '@rhythm-health/contract';
+import type { Experiment, ExperimentTimeline, LabReport, Profile } from '@rhythm-health/contract';
 import { Action, Alert, Copy, Loading, styles, Title } from './ui';
 import { ApiError } from './lib/api';
 import { getProgress, listActiveExperiments } from './lib/experiments';
 
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
-export function Today({ token, offline, profile, openWeb, onExpired, email, signOut, editProfile }: {
-  token: string; offline: boolean; profile: Profile; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void; editProfile?: () => void;
+export function Today({ token, offline, profile, onExpired, email, signOut, editProfile }: {
+  token: string; offline: boolean; profile: Profile; onExpired: () => void; email?: string; signOut: () => void; editProfile?: () => void;
 }) {
   const { service: reminders, state: reminderState } = useReminders();
   const [screen, setScreen] = useState<'today' | 'settings' | 'progress'>('today');
@@ -27,6 +29,7 @@ export function Today({ token, offline, profile, openWeb, onExpired, email, sign
   const [saved, setSaved] = useState(false);
   const [asking, setAsking] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const [report, setReport] = useState<{ id: string; initial?: LabReport } | null>(null);
   const load = useCallback(async () => {
     if (offline) return;
     const request = ++generation.current;
@@ -72,6 +75,9 @@ export function Today({ token, offline, profile, openWeb, onExpired, email, sign
   if (asking !== null) return <ProposalFlow token={token} offline={offline} profile={profile} initialQuestion={asking} onExpired={onExpired} onEditProfile={editProfile}
     onBack={() => { setAsking(null); void load(); }}
     onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); setSaved(false); void load(); }} />;
+  if (report) return <LabReportScreen key={report.id} id={report.id} initial={report.initial} token={token} offline={offline} onExpired={onExpired}
+    onBack={() => { setReport(null); void load(); }}
+    onAsk={question => { setReport(null); setStarted(false); setAsking(question); }} />;
   if (screen === 'progress' && data) return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
     {error && <><Alert>{error}</Alert><Action label="Try again" disabled={offline || busy} onPress={() => void load()} /></>}
     <Progress key={data.experiment.id} data={data} token={token} offline={offline} onExpired={onExpired} />
@@ -94,21 +100,23 @@ export function Today({ token, offline, profile, openWeb, onExpired, email, sign
           {sampleControls}
         </> : <>
           {sampleControls}
-          <TodaySummary data={data} disabled={disabled} openWeb={openWeb}
-            onCheckin={() => { setSaved(false); setStarted(false); setEditing(data); }} />
+          <TodaySummary data={data} disabled={disabled}
+            onCheckin={() => { setSaved(false); setStarted(false); setEditing(data); }}
+            onOpenReport={() => setReport({ id: data.experiment.id })} />
+          <FinishCard key={data.experiment.id} experiment={data.experiment} timeline={data.timeline} token={token} offline={offline} onExpired={onExpired}
+            onCompleted={result => { void reminders.refresh(null); setSaved(false); setStarted(false); setReport({ id: data.experiment.id, initial: result }); setLoaded(null); void load(); }} />
           {!offline && busy && <Copy accessibilityLiveRegion="polite" style={styles.muted}>Refreshing your day…</Copy>}
         </>}
     </View>
   );
 }
 
-export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb, onCheckin }: {
-  data: DayData; disabled: boolean; openWeb: (path: string) => void; onCheckin: () => void;
+export function TodaySummary({ data: { experiment, timeline }, disabled, onCheckin, onOpenReport }: {
+  data: DayData; disabled: boolean; onCheckin: () => void; onOpenReport: () => void;
 }) {
   const { progress } = timeline;
   const current = timeline.days.find(day => day.day_number === progress.day_number);
   const next = timeline.days.find(day => progress.day_number !== null && day.day_number > progress.day_number);
-  const path = `/experiments/${encodeURIComponent(experiment.id)}`;
   return <>
     <Copy style={styles.muted}>{experiment.is_seeded ? 'Sample daily loop' : 'Your lab'}</Copy>
     {progress.state === 'in_progress' && <Copy style={styles.number}>Day {progress.day_number} of {progress.total_days}</Copy>}
@@ -124,16 +132,14 @@ export function TodaySummary({ data: { experiment, timeline }, disabled, openWeb
       <Copy accessibilityRole="header" style={styles.sectionTitle}>Done for today</Copy>
       {timeline.next_day_at && next ? <Copy>Day {next.day_number} opens {new Date(timeline.next_day_at).toLocaleString(undefined, {
         weekday: 'long', hour: 'numeric', minute: '2-digit',
-      })}.</Copy> : <Copy>That was the last day. Finish on the web when you&apos;re ready.</Copy>}
+      })}.</Copy> : <Copy>That was the last day. Finish when you&apos;re ready.</Copy>}
       <Action label="Change today's answers" secondary onPress={onCheckin} disabled={disabled} />
     </View> : <Action label={`Check in for day ${progress.day_number}`} onPress={onCheckin} disabled={disabled} />
       : experiment.is_seeded ? <Copy>This sample has ended. Remove it to free the slot for a real experiment.</Copy> : progress.state === 'completed' ? <>
         <Copy accessibilityRole="header" style={styles.sectionTitle}>Your results are ready.</Copy>
-        <Action label="See your Lab Report on the web" link onPress={() => openWeb(`${path}/report`)} />
-      </> : progress.state === 'ended' ? <>
-        <Copy>Your experiment days are over. Finish on the web to see your results.</Copy>
-        <Action label="Finish on the web" link onPress={() => openWeb(path)} />
-      </> : <><Copy>This experiment hasn&apos;t started.</Copy><Action label="Open your experiment on the web" link onPress={() => openWeb(path)} /></>}
+        <Action label="See your Lab Report" onPress={onOpenReport} />
+      </> : progress.state === 'ended' ? <Copy>Your experiment days are over.</Copy>
+      : <Copy>This experiment hasn&apos;t started.</Copy>}
   </>;
 }
 

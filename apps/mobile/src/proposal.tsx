@@ -30,7 +30,7 @@ function failureTitle({ status, stage }: Failure) {
  * to the foreground or a refreshed token never asks again.
  */
 export function ProposalFlow({ token, offline, profile, initialQuestion = '', onExpired, onBack, onStarted, onEditProfile }: Props) {
-  const [question, setQuestion] = useState(initialQuestion);
+  const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
   const [busy, setBusy] = useState<'checking' | 'proposing' | null>(null);
