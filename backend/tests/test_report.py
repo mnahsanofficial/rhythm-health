@@ -48,6 +48,7 @@ def db(monkeypatch):
     monkeypatch.setattr(profiles, "get_by_user_id", fake.get_profile)
     monkeypatch.setattr(experiments, "get", fake.get_experiment)
     monkeypatch.setattr(experiments, "complete", fake.complete)
+    monkeypatch.setattr(experiments, "list_for_profile", lambda *_a: [])
     monkeypatch.setattr(checkins, "list_for_experiment", fake.list_checkins)
     monkeypatch.setattr(reports, "upsert", fake.upsert_report)
     monkeypatch.setattr(reports, "get", fake.get_report)
