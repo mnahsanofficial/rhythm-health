@@ -65,7 +65,7 @@ for (const width of [390, 1440]) {
 
     await page.getByRole("link", { name: "Check in for today" }).click();
     await expect(page.getByRole("heading", { name: "Today's check-in.", level: 1 })).toBeVisible();
-    await expect(page.getByText("For all 3 experiments")).toBeVisible();
+    await expect(page.getByText("For all 3 experiments", { exact: true })).toBeVisible();
     await expect(page.getByRole("radio", { name: "Yes" })).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
     await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
