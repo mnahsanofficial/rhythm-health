@@ -11,6 +11,7 @@ from app.main import app
 from app.repositories import experiments, profiles
 from app.services import experiment_limit, proposal as proposal_service
 from tests.test_experiments import ALICE, BOB, BODY, FakeDb
+from tests.test_propose import PROFILE_ROW
 
 client = TestClient(app)
 PROPOSE = "/api/experiments/propose"
@@ -98,8 +99,9 @@ def test_propose_at_the_limit_is_refused_before_any_paid_call(db, paid):
     paid.assert_not_called()
 
 
-def test_propose_below_the_limit_reaches_the_designer(db, paid):
-    fill(2)
+def test_propose_below_the_limit_reaches_the_designer(db, paid, monkeypatch):
+    monkeypatch.setattr(profiles, "get_by_user_id", lambda _uid: PROFILE_ROW)
+    monkeypatch.setattr(experiments, "list_for_profile", lambda *_a: [{}, {}])
     with pytest.raises(AssertionError, match="No AI call"):
         client.post(PROPOSE, json=QUESTION)
     paid.assert_called_once()

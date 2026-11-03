@@ -174,11 +174,13 @@ def test_reset_completed_demo_does_not_delete_active_sample(db, monkeypatch):
     assert len([c for c in db.checkins if c['experiment_id'] == sample['id']]) == 3
 
 
-def test_removing_sample_allows_starting_a_real_proposed_experiment(db, monkeypatch):
+def test_the_sample_takes_a_slot_and_removing_it_frees_that_slot(db, monkeypatch):
     sample = client.post(START, json={}).json()
+    db.add_real(ALICE, 'active', id='00000000-0000-0000-0000-000000000014')
+    db.add_real(ALICE, 'active', id='00000000-0000-0000-0000-000000000015')
     real = db.add_real(ALICE, 'proposed', id='00000000-0000-0000-0000-000000000013')
     path = f"/api/experiments/{real['id']}/start"
-    assert client.post(path).status_code == 409
+    assert client.post(path).json()['detail']['code'] == 'active_limit_reached'
     assert client.post(f"{START}/{sample['id']}/remove", json={'confirmed': True}).status_code == 200
     def start(_pid, _eid, started_at):
         real.update(status='active', started_at=started_at)

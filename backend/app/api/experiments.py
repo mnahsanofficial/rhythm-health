@@ -8,11 +8,11 @@ from app.auth.supabase import get_current_user
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
 from app.integrations.supabase import PersonalGuessUnavailable, SupabaseConflict, SupabaseUnavailable
 from app.repositories import checkins, experiments, profiles
-from app.schemas.experiment import ExperimentOut, ExperimentStatus, ProposeRequest
+from app.schemas.experiment import ActiveCapacity, ExperimentOut, ExperimentStatus, ProposeRequest
 from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
 from app.schemas.progress import ExperimentTimeline
-from app.services import safety
+from app.services import experiment_limit, safety
 from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
 from app.services.timeline import experiment_timeline
@@ -30,6 +30,9 @@ def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_
         raise HTTPException(status_code=409, detail="Create your profile first")
 
     try:
+        # Before any paid AI work: a plan that couldn't be started is money wasted.
+        if not experiment_limit.capacity(str(row["id"])).can_start:
+            raise experiment_limit.limit_reached()
         available = experiments.supports_personal_guess(str(row["id"]))
         result = propose(body.question, ProfileOut.model_validate(row))
         return result.model_copy(update={"personal_guess_available": available})
@@ -90,6 +93,15 @@ def list_experiments(status: ExperimentStatus | None = None, user_id: str = Depe
         raise db_error()
 
 
+@router.get("/capacity", response_model=ActiveCapacity)
+def get_capacity(user_id: str = Depends(get_current_user)):
+    profile_id = profile_id_for(user_id)
+    try:
+        return experiment_limit.capacity(profile_id)
+    except SupabaseUnavailable:
+        raise db_error()
+
+
 @router.get("/{experiment_id}", response_model=ExperimentOut)
 def get_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)):
     profile_id = profile_id_for(user_id)
@@ -120,9 +132,6 @@ def get_progress(experiment_id: UUID, user_id: str = Depends(get_current_user)):
 @router.post("/{experiment_id}/start", response_model=ExperimentOut)
 def start_experiment(experiment_id: UUID, user_id: str = Depends(get_current_user)):
     profile_id = profile_id_for(user_id)
-    already_active = HTTPException(
-        status_code=409, detail="You already have an active experiment"
-    )
     try:
         row = experiments.get(profile_id, str(experiment_id))
         if row is None:
@@ -131,11 +140,11 @@ def start_experiment(experiment_id: UUID, user_id: str = Depends(get_current_use
             raise HTTPException(
                 status_code=409, detail=f"Only a proposed experiment can be started (this one is {row['status']})"
             )
-        if experiments.list_for_profile(profile_id, "active"):
-            raise already_active
+        if not experiment_limit.capacity(profile_id).can_start:
+            raise experiment_limit.limit_reached()
         started = experiments.start(profile_id, str(experiment_id), datetime.now(UTC).isoformat())
     except SupabaseConflict:
-        raise already_active
+        raise experiment_limit.limit_reached()
     except SupabaseUnavailable:
         raise db_error()
     if started is None:  # lost a race: no longer proposed

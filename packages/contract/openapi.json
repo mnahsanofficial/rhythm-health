@@ -242,6 +242,29 @@
         }
       }
     },
+    "/api/experiments/capacity": {
+      "get": {
+        "summary": "Get Capacity",
+        "operationId": "get_capacity_api_experiments_capacity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveCapacity"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/experiments/{experiment_id}": {
       "get": {
         "summary": "Get Experiment",
@@ -823,6 +846,30 @@
   },
   "components": {
     "schemas": {
+      "ActiveCapacity": {
+        "properties": {
+          "active": {
+            "type": "integer",
+            "title": "Active"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "can_start": {
+            "type": "boolean",
+            "title": "Can Start"
+          }
+        },
+        "type": "object",
+        "required": [
+          "active",
+          "limit",
+          "can_start"
+        ],
+        "title": "ActiveCapacity",
+        "description": "How many experiments are running against the limit, so clients never hold the rule."
+      },
       "Adherence": {
         "properties": {
           "baseline_days_planned": {
@@ -922,6 +969,14 @@
                 "type": "null"
               }
             ]
+          },
+          "overlaps": {
+            "items": {
+              "$ref": "#/components/schemas/ExperimentOverlap"
+            },
+            "type": "array",
+            "title": "Overlaps",
+            "default": []
           }
         },
         "type": "object",
@@ -1577,6 +1632,40 @@
         ],
         "title": "ExperimentOut",
         "description": "A saved experiment. profile_id is deliberately not exposed."
+      },
+      "ExperimentOverlap": {
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "test_days_overlapping": {
+            "type": "integer",
+            "title": "Test Days Overlapping"
+          },
+          "baseline_days_overlapping": {
+            "type": "integer",
+            "title": "Baseline Days Overlapping"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "question",
+          "test_days_overlapping",
+          "baseline_days_overlapping",
+          "description"
+        ],
+        "title": "ExperimentOverlap",
+        "description": "Another experiment's test phase ran during this one. Worked out here, never by the AI."
       },
       "ExperimentProgress": {
         "properties": {

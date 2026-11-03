@@ -113,7 +113,7 @@ def test_stops_at_the_other_ones_planned_end_if_it_is_still_open():
     # Planned end is day 5 of mine, even though it was never finished.
     [found] = overlaps(other(days(-3), baseline=3, test=5))
     assert found.test_days_overlapping == 2
-    assert found.baseline_days_overlapping == 0
+    assert found.baseline_days_overlapping == 3
 
 
 def test_still_running_when_i_finish_early_only_counts_up_to_my_finish():

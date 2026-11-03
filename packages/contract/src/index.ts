@@ -28,6 +28,8 @@ export type Outlier = components["schemas"]["Outlier"];
 export type MetricAnalysis = Serialized<components["schemas"]["MetricAnalysis"]>;
 export type Adherence = Serialized<components["schemas"]["Adherence"]>;
 export type PersonalGuessComparison = Serialized<components["schemas"]["PersonalGuessComparison"]>;
+export type ExperimentOverlap = Serialized<components["schemas"]["ExperimentOverlap"]>;
+export type ActiveCapacity = Serialized<components["schemas"]["ActiveCapacity"]>;
 export type PredictionComparison = components["schemas"]["PredictionComparison"];
 export type Signal = components["schemas"]["Signal"];
 export type Analysis = Serialized<components["schemas"]["Analysis"]>;
@@ -68,6 +70,12 @@ export const MAX_NUMBER = 1_000_000;
 
 // POST /complete returns this 409 detail, but does not publish its schema in OpenAPI.
 // Source: backend/app/api/reports.py. Keep explicit until Shakeb models error responses.
+export type ActiveLimitReached = {
+  code: "active_limit_reached";
+  message: string;
+  limit: number;
+};
+
 export type NotEnoughCheckins = {
   message: string;
   baseline_checkins: number;

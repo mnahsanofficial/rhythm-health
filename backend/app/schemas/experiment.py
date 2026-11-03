@@ -91,6 +91,14 @@ class ExperimentProposal(BaseModel):
 ExperimentStatus = Literal["draft", "proposed", "active", "completed"]
 
 
+class ActiveCapacity(BaseModel):
+    """How many experiments are running against the limit, so clients never hold the rule."""
+
+    active: int
+    limit: int
+    can_start: bool
+
+
 class ExperimentOut(BaseModel):
     """A saved experiment. profile_id is deliberately not exposed."""
 

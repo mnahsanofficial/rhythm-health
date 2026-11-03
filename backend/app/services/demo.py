@@ -5,6 +5,7 @@ from app.demo import seed
 from app.repositories import checkins, experiments, reports
 from app.schemas.lab_report import LabReport
 from app.services import analysis
+from app.services.experiment_limit import MAX_ACTIVE_EXPERIMENTS
 from app.services.lab_report import build_lab_report, narrative_to_columns
 
 
@@ -43,11 +44,13 @@ def reset(profile_id: str, now: datetime | None = None) -> LabReport:
 
 
 def start_active(profile_id: str, now: datetime | None = None) -> dict:
-    """A fixed, isolated day-five sample. The database still enforces one active slot."""
+    """A fixed, isolated day-five sample. It takes one of the active slots, and only one
+    sample runs at a time. The database still enforces the limit."""
     from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
     from app.services.progress import with_progress
 
-    if experiments.list_for_profile(profile_id, "active"):
+    active = experiments.list_for_profile(profile_id, "active")
+    if len(active) >= MAX_ACTIVE_EXPERIMENTS or any(e.get("is_seeded") for e in active):
         raise SupabaseConflict()
     now = now or datetime.now(UTC)
     experiment_id = str(uuid4())
