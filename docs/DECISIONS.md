@@ -110,7 +110,7 @@ D2/D3 are implemented additively, without a migration: nullable `Metric.min_labe
 - **Overlap is worked out in Python** and stored with the analysis at completion. Only the other experiment's test phase counts, and only this experiment's recorded days. The AI may explain those numbers but never works them out.
 - **Overlap doesn't change the signal verdict.** The report says it plainly; a "likely signal" stays one. Capping the verdict would be a further analysis rule.
 - **One reminder per experiment,** so up to three a day, each opening its own check-in. The lock screen still shows only the day.
-- **Not built:** combining check-ins across experiments, warning when a new question tests the same thing as a running one, and telling the proposal AI what else is running.
+- **Not built:** warning when a new question tests the same thing as a running one, and telling the proposal AI what else is running.
 
 The migration is applied to the [new Supabase project](#new-supabase-project--4-nov-2026).
 
@@ -123,3 +123,16 @@ Decided by Nazmul after the 8x feedback call: 8x asked for the #39 migration to 
 - **Undoing it:** [`20261028000000_initial_schema.sql`](../supabase/rollbacks/20261028000000_initial_schema.sql) removes the schema and refuses once any profile exists. After that, use the per-migration rollbacks.
 - **Email confirmation is on** in the new project and was off in the old one. Both apps handle it. It's a dashboard setting for Nazmul, and worth checking before a demo.
 - **Shakeb's env files still point at the old project.** Shakeb needs the new values, sent privately, and should use the new project from now on.
+
+## One check-in across experiments — 4 Nov 2026
+
+Decided by Nazmul: with several experiments running, answering the same question twice is double work. This rests on Nazmul's own feedback, not a usability test.
+
+- **The backend decides everything** through `GET` and `POST /api/checkins/today`. Clients don't match questions or work out days.
+- **Questions combine only on an exact match** of key, type, min, max and both end words. Never on the label alone, because merging different scales would quietly corrupt both results.
+- **The change question stays per experiment,** and only for those in their test phase.
+- **One shared note** is saved on every experiment that day. Simple, but the report's AI could treat a note about one habit as relevant to another. Accepted for now.
+- **Saved in one statement:** all experiments or none. A `revision` from the form stops old answers being saved against a different day, without clients ever sending a day.
+- **Samples stay separate,** because their answers are invented.
+- **New proposals are shown the questions already running,** so the AI can reuse them. Without this, AI-written keys would rarely match and little would combine. No extra AI call.
+- **The per-experiment check-in stays:** it's used when only one is due, and from each experiment's card.

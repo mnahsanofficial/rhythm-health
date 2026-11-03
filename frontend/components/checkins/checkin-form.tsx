@@ -26,12 +26,12 @@ type Answers = {
   note: string;
 };
 
-const primaryButton =
+export const primaryButton =
   "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-transform duration-[var(--motion-press)] motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
-const secondaryButton =
+export const secondaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
 
-function without(errors: Record<string, string>, key: string): Record<string, string> {
+export function without(errors: Record<string, string>, key: string): Record<string, string> {
   const next = { ...errors };
   delete next[key];
   return next;
@@ -401,7 +401,7 @@ export function CheckinForm({ id }: { id: string }) {
   );
 }
 
-function Shell({
+export function Shell({
   children,
   back,
   backLabel = "Your experiment",

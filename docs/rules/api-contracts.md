@@ -18,7 +18,7 @@ The frontend (Next.js) talks to the backend (FastAPI) over JSON. Supabase Auth h
 - **Base URL:** `NEXT_PUBLIC_API_URL`, all paths under `/api`. The client trims a trailing slash.
 - **Auth:** protected routes send `Authorization: Bearer <supabase access token>`.
 - **Never send a `user_id` or `profile_id`.** The backend takes the user from the verified token (TRD §2.6). Request schemas use `extra="forbid"`, so unknown fields are rejected.
-- **Check-in bodies carry no day or phase.** The backend works them out from `started_at`.
+- **Check-in bodies carry no day or phase.** The backend works them out from `started_at`. `POST /api/checkins/today` sends back the opaque `revision` from its `GET`, so an old form gets a 409 (`checkin_changed`).
 
 ## Errors
 

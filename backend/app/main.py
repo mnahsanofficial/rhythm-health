@@ -11,6 +11,7 @@ app.include_router(me.router)
 app.include_router(profile.router)
 app.include_router(experiments.router)
 app.include_router(checkins.router)
+app.include_router(checkins.today_router)
 app.include_router(reports.router)
 app.include_router(demo.router)
 

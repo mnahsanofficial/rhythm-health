@@ -504,6 +504,72 @@
         }
       }
     },
+    "/api/checkins/today": {
+      "get": {
+        "summary": "Read Today",
+        "description": "Everything due today across running experiments, with shared questions combined.",
+        "operationId": "read_today_api_checkins_today_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayCheckin"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Save Today",
+        "description": "Record or replace today's check-in for every running experiment, all or none.",
+        "operationId": "save_today_api_checkins_today_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodayCheckinIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayCheckin"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/experiments/{experiment_id}/complete": {
       "post": {
         "summary": "Complete Experiment",
@@ -2908,6 +2974,215 @@
           "minimum_change_percent"
         ],
         "title": "SuccessCriteria"
+      },
+      "TodayCheckin": {
+        "properties": {
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "experiments": {
+            "items": {
+              "$ref": "#/components/schemas/TodayExperiment"
+            },
+            "type": "array",
+            "title": "Experiments"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/TodayQuestion"
+            },
+            "type": "array",
+            "title": "Questions"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "all_recorded": {
+            "type": "boolean",
+            "title": "All Recorded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "experiments",
+          "questions",
+          "all_recorded"
+        ],
+        "title": "TodayCheckin",
+        "description": "Every experiment with a day open now. The backend decides what combines."
+      },
+      "TodayCheckinIn": {
+        "properties": {
+          "revision": {
+            "type": "string",
+            "title": "Revision"
+          },
+          "answers": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Answers"
+          },
+          "changes": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object",
+            "title": "Changes",
+            "default": {}
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "answers"
+        ],
+        "title": "TodayCheckinIn"
+      },
+      "TodayExperiment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "timing": {
+            "type": "string",
+            "title": "Timing"
+          },
+          "day_number": {
+            "type": "integer",
+            "title": "Day Number"
+          },
+          "total_days": {
+            "type": "integer",
+            "title": "Total Days"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "baseline",
+              "intervention"
+            ],
+            "title": "Phase"
+          },
+          "change_required": {
+            "type": "boolean",
+            "title": "Change Required"
+          },
+          "change_made": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Made"
+          },
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "action",
+          "timing",
+          "day_number",
+          "total_days",
+          "phase",
+          "change_required",
+          "recorded"
+        ],
+        "title": "TodayExperiment"
+      },
+      "TodayQuestion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "metric": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "experiment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Experiment Ids"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "metric",
+          "experiment_ids"
+        ],
+        "title": "TodayQuestion",
+        "description": "One question in the combined check-in, and the experiments its answer feeds."
       },
       "ValidationError": {
         "properties": {

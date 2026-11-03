@@ -7,6 +7,7 @@ from pydantic import BaseModel, ValidationError
 from app.auth.supabase import get_current_user
 from app.config import settings
 from app.integrations import openrouter
+from app.integrations.supabase import SupabaseUnavailable
 from app.main import app
 from app.repositories import experiments, profiles, reports
 from app.schemas.classification import Classification
@@ -345,3 +346,41 @@ def test_blank_model_env_uses_default():
     s = Settings(openrouter_reasoning_model="", openrouter_jev_model="")
     assert s.openrouter_reasoning_model == "anthropic/claude-sonnet-5.5"
     assert s.openrouter_jev_model == "typesafe/jev-router"
+
+
+def test_running_questions_reach_the_designer_for_reuse(api, monkeypatch):
+    shared = {"key": "morning_energy", "label": "Morning energy", "type": "scale", "min": 1, "max": 10, "primary": True,
+              "min_label": "Drained", "max_label": "Full of energy"}
+    sample = {**shared, "key": "sample_only"}
+    monkeypatch.setattr(experiments, "list_for_profile", lambda *_a: [
+        {"metrics": [shared, shared], "is_seeded": False}, {"metrics": [sample], "is_seeded": True},
+    ])
+    api()
+    prompts = []
+    real = openrouter.complete
+    monkeypatch.setattr(openrouter, "complete", lambda **kw: (prompts.append(kw), real(**kw))[1])
+    assert client.post("/api/experiments/propose", json={"question": "Does a walk after dinner help my energy?"}).status_code == 200
+    design = next(kw for kw in prompts if kw["task"] == "experiment_design")
+    section = design["user"].split("<running_questions>")[1].split("</running_questions>")[0]
+    assert json.loads(section) == [{k: shared[k] for k in ("key", "label", "type", "min", "max", "min_label", "max_label")}]
+    assert "running_questions" in design["system"]
+
+
+def test_no_running_questions_means_no_section(api):
+    fake = api()
+    assert client.post("/api/experiments/propose", json={"question": "Does a walk after dinner help my energy?"}).status_code == 200
+    assert fake.tasks == ["classification", "experiment_design"]
+
+
+def test_propose_continues_without_running_questions_if_they_cannot_be_read(api, monkeypatch):
+    calls = iter([[], SupabaseUnavailable("down")])
+
+    def flaky(*_a):
+        item = next(calls)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    monkeypatch.setattr(experiments, "list_for_profile", flaky)
+    api()
+    assert client.post("/api/experiments/propose", json={"question": "Does a walk after dinner help my energy?"}).status_code == 200

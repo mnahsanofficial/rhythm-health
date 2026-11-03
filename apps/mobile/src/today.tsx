@@ -9,11 +9,13 @@ import { TodayCard } from './today-card';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
 import { CheckinForm, CheckinSaved } from './checkin';
+import { CombinedCheckin } from './combined-checkin';
+import { getTodayCheckin } from './lib/checkins';
 import type { Section } from './app-header';
 import { DemoScreen, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
-import type { ActiveCapacity, Experiment, ExperimentTimeline, LabReport, Profile } from '@rhythm-health/contract';
+import type { ActiveCapacity, Experiment, ExperimentTimeline, LabReport, Profile, TodayCheckin } from '@rhythm-health/contract';
 import { Action, Alert, BackLink, Copy, ForwardLink, Loading, styles, Title, Status } from './ui';
 import { ApiError } from './lib/api';
 import { getCapacity, getProgress, listActiveExperiments } from './lib/experiments';
@@ -26,7 +28,8 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const { service: reminders, state: reminderState } = useReminders();
   const [detail, setDetail] = useState(false);
   const [askKey, setAskKey] = useState(0);
-  const [loaded, setLoaded] = useState<{ value: DayData[]; capacity: ActiveCapacity | null; at: Date } | null>(null);
+  const [loaded, setLoaded] = useState<{ value: DayData[]; capacity: ActiveCapacity | null; today: TodayCheckin | null; at: Date } | null>(null);
+  const [combined, setCombined] = useState<TodayCheckin | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,15 +48,15 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
       const running = await listActiveExperiments(token);
       // All or nothing: a failed read shows the error, never a partial list.
       const value = await Promise.all(running.map(async experiment => ({ experiment, timeline: await getProgress(token, experiment.id) })));
-      const capacity = value.length > 1 ? await getCapacity(token) : null;
+      const [capacity, today] = value.length > 1 ? await Promise.all([getCapacity(token), getTodayCheckin(token)]) : [null, null];
       if (request === generation.current) {
-        setLoaded({ value, capacity, at: new Date() });
+        setLoaded({ value, capacity, today, at: new Date() });
         void reminders.refresh(value);
         const intent = reminders.getSnapshot().intent;
         if (intent) {
           reminders.consume();
           const target = value.find(item => item.experiment.id === intent.experiment);
-          if (target && !target.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && target.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setChosen(target.experiment.id); setEditing(target); }
+          if (target && !target.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && target.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setCombined(null); setChosen(target.experiment.id); setEditing(target); }
         }
       }
     } catch (cause) {
@@ -75,7 +78,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
 
   // Choosing a section in the header leaves open screens. An open proposal stays mounted (below): it was paid for.
   const [seenNavigation, setSeenNavigation] = useState(navigation);
-  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setChosen(null); }
+  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setChosen(null); setCombined(null); }
 
   const disabled = offline || busy || error !== null;
   const entries = loaded?.value ?? [];
@@ -89,7 +92,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   // With nothing running the question is the lab itself, as on the web.
   const inline = Boolean(loaded) && entries.length === 0 && asking === null;
   const flowOpen = asking !== null || inline;
-  const flowShown = flowOpen && section === 'lab' && !editing && savedDay === null && !report && !detail;
+  const flowShown = flowOpen && section === 'lab' && !combined && !editing && savedDay === null && !report && !detail;
   const flow = flowOpen && <View style={flowShown ? undefined : hidden}>
     <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile}
       onBack={inline ? undefined : () => { setAsking(null); void load(); }}
@@ -109,6 +112,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const checkin = (entry: DayData) => { setStarted(false); setChosen(entry.experiment.id); setEditing(entry); };
   const openDetail = (entry: DayData) => { setChosen(entry.experiment.id); setDetail(true); };
   const content = () => {
+    if (combined) return <CombinedCheckin key={combined.revision} initial={combined} token={token} offline={offline} onExpired={onExpired} onBack={() => { setCombined(null); void load(); }} />;
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
       onBack={() => { setEditing(null); void load(); }}
       onSaved={() => { setSavedDay(editing.timeline.progress.day_number); setEditing(null); void load(); }} />;
@@ -151,6 +155,10 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
           {loaded.capacity?.can_start
             ? <Action label="Test another habit" inline onPress={() => ask('')} />
             : <Copy style={styles.muted}>You&apos;re running {loaded.capacity?.limit} experiments, the most at once. Finish one to start another.</Copy>}
+          {loaded.today && loaded.today.experiments.length > 1 && <View style={styles.decision}>
+            <Copy>{loaded.today.all_recorded ? `Done for today: all ${loaded.today.experiments.length} check-ins are recorded.` : `One check-in for all ${loaded.today.experiments.length} experiments.`}</Copy>
+            <Action label={loaded.today.all_recorded ? "Change today's answers" : 'Check in for today'} secondary={loaded.today.all_recorded} disabled={disabled} onPress={() => setCombined(loaded.today)} />
+          </View>}
           {entries.map(entry => <View key={entry.experiment.id} style={styles.divider}>
             <Copy style={labStyles.day}>{dayLabel(entry.timeline)}</Copy>
             <ExperimentSummary data={entry} onDetail={() => openDetail(entry)} />

@@ -1,13 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
-import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput } from '@rhythm-health/contract';
+import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
 import { Action, BackLink, Alert, Copy, Loading, styles, Title, Status, useStepFocus } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
 import { getProgress } from './lib/experiments';
 import type { DayData } from './today';
+
+/** Helps the person fix an answer before sending. The backend's validation is the real check. */
+export function metricAnswer(metric: Metric, raw: string | boolean | undefined): { value: boolean | number } | { error: string } {
+  if (metric.type === 'boolean') return typeof raw === 'boolean' ? { value: raw } : { error: 'Choose Yes or No.' };
+  const text = typeof raw === 'string' ? raw.trim().replace(',', '.') : '';
+  const number = /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) ? Number(text) : NaN;
+  if (!Number.isFinite(number)) return { error: 'Enter an answer as a number.' };
+  if (metric.type === 'scale' && (!Number.isInteger(number) || number < (metric.min ?? 1) || number > (metric.max ?? 10))) return { error: `Choose a whole number from ${metric.min ?? 1} to ${metric.max ?? 10}.` };
+  if (metric.type === 'duration' && (number < 0 || number > MAX_DURATION_MINUTES)) return { error: `Enter minutes from 0 to ${MAX_DURATION_MINUTES}.` };
+  if (Math.abs(number) > MAX_NUMBER) return { error: `Enter a number between -${MAX_NUMBER} and ${MAX_NUMBER}.` };
+  return { value: number };
+}
 
 export function CheckinForm({ data: { experiment, timeline }, token, offline, onExpired, onSaved, onBack }: {
   data: DayData; token: string; offline: boolean; onExpired: () => void; onSaved: () => void; onBack: () => void;
@@ -52,19 +64,9 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     const errors: Record<string, string> = {};
     const metric_values: CheckinInput['metric_values'] = {};
     for (const metric of experiment.metrics) {
-      const raw = values[metric.key];
-      if (metric.type === 'boolean') {
-        if (typeof raw !== 'boolean') errors[metric.key] = 'Choose Yes or No.';
-        else metric_values[metric.key] = raw;
-        continue;
-      }
-      const text = typeof raw === 'string' ? raw.trim().replace(',', '.') : '';
-      const number = /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) ? Number(text) : NaN;
-      if (!Number.isFinite(number)) errors[metric.key] = 'Enter an answer as a number.';
-      else if (metric.type === 'scale' && (!Number.isInteger(number) || number < (metric.min ?? 1) || number > (metric.max ?? 10))) errors[metric.key] = `Choose a whole number from ${metric.min ?? 1} to ${metric.max ?? 10}.`;
-      else if (metric.type === 'duration' && (number < 0 || number > MAX_DURATION_MINUTES)) errors[metric.key] = `Enter minutes from 0 to ${MAX_DURATION_MINUTES}.`;
-      else if (Math.abs(number) > MAX_NUMBER) errors[metric.key] = `Enter a number between -${MAX_NUMBER} and ${MAX_NUMBER}.`;
-      else metric_values[metric.key] = number;
+      const result = metricAnswer(metric, values[metric.key]);
+      if ('error' in result) errors[metric.key] = result.error;
+      else metric_values[metric.key] = result.value;
     }
     if (test && intervention === undefined) errors.intervention_completed = 'Choose whether you made the change.';
     setFields(errors); setRetrySave(false);

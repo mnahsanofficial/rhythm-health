@@ -26,9 +26,22 @@ let routes: Record<string, Reply>;
 let calls: string[];
 let listeners: Set<(state: AppStateStatus) => void>;
 
+const scale = { type: 'scale', min: 1, max: 10, primary: false, min_label: 'Low point', max_label: 'High point' };
+function dueToday(list: Experiment[], all_recorded = false) {
+  return {
+    revision: 'rev-1', note: null, all_recorded,
+    experiments: list.map((item, index) => ({ id: item.id, question: item.question, action: `Change ${index + 1}`, timing: 'After dinner', day_number: index + 1, total_days: 10, phase: index === 1 ? 'intervention' : 'baseline', change_required: index === 1, change_made: null, recorded: all_recorded })),
+    questions: list.length ? [
+      { id: `${list[0].id}:energy`, experiment_ids: list.map(item => item.id), value: null, metric: { key: 'energy', label: 'Morning energy', ...scale } },
+      { id: `${list[0].id}:focus`, experiment_ids: [list[0].id], value: null, metric: { key: 'focus', label: 'Focus', ...scale } },
+    ] : [],
+  };
+}
+
 function install(list: Experiment[], capacity = { active: list.length, limit: 3, can_start: list.length < 3 }) {
   routes['GET /api/experiments?status=active'] = { body: list };
   routes['GET /api/experiments/capacity'] = { body: capacity };
+  routes['GET /api/checkins/today'] = { body: dueToday(list.filter(item => !item.is_seeded)) };
   for (const item of list) {
     routes[`GET /api/experiments/${item.id}/progress`] = { body: timelineFixture(item, {}) };
     routes[`GET /api/experiments/${item.id}/checkins`] = { body: [] };
@@ -100,6 +113,80 @@ describe('your lab with several experiments', () => {
     await waitFor(() => expect(screen.queryByText('Your timeline')).toBeNull());
     expect(screen.getByText(second.question)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Test another habit' })).toBeVisible();
+  });
+
+  test('one check-in saves everything due today in one request', async () => {
+    install([first, second]);
+    let body: unknown;
+    routes['POST /api/checkins/today'] = { body: { ...dueToday([first, second], true) } };
+    const fake = global.fetch as jest.Mock;
+    const base = fake.getMockImplementation()!;
+    fake.mockImplementation(async (url: string, options?: RequestInit) => {
+      if (options?.method === 'POST') body = JSON.parse(String(options.body));
+      return base(url, options);
+    });
+    render(<MobileApp />);
+    expect(await screen.findByText('One check-in for all 2 experiments.')).toBeVisible();
+    await press('Check in for today');
+    expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
+    expect(screen.getByText('For both experiments')).toBeVisible();
+    expect(screen.getByText(`For: ${first.question}`)).toBeVisible();
+    expect(screen.getAllByText('Did you make the change today?')).toHaveLength(1);
+    expect(screen.getByText('Change 2')).toBeVisible();
+    await press("Save today's check-in");
+    expect(await screen.findByText('An answer is missing or needs checking. Review the fields below.')).toBeVisible();
+    expect(body).toBeUndefined();
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    fireEvent.changeText(screen.getByLabelText('Optional note'), ' late night ');
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    await press("Save today's check-in");
+    await waitFor(() => expect(body).toEqual({
+      revision: 'rev-1', note: 'late night', changes: { 'second-id': true },
+      answers: { 'first-id:energy': 7, 'first-id:focus': 6 },
+    }));
+    expect(await screen.findByText("Today's check-ins are recorded.")).toBeVisible();
+  });
+
+  test('a reminder tap leaves the combined check-in for that experiment', async () => {
+    install([first, second]);
+    render(<MobileApp />);
+    await screen.findByText('One check-in for all 2 experiments.');
+    await press('Check in for today');
+    await screen.findByText('For both experiments');
+    await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', 'second-id'))); });
+    await waitFor(() => expect(screen.queryByText('For both experiments')).toBeNull());
+    expect(calls).toContain('GET /api/experiments/second-id/checkins');
+  });
+
+  test('a stale form offers to reload instead of saving on the wrong day', async () => {
+    install([first, second]);
+    routes['POST /api/checkins/today'] = { status: 409, body: { detail: { code: 'checkin_changed', message: "Today's check-in has changed. Reload it to see the current questions." } } };
+    render(<MobileApp />);
+    await screen.findByText('One check-in for all 2 experiments.');
+    await press('Check in for today');
+    await screen.findByRole('header', { name: "Today's check-in." });
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    await press("Save today's check-in");
+    expect(await screen.findByText("Today's check-in has changed. Reload it to see the current questions.")).toBeVisible();
+    expect(screen.getByRole('button', { name: "Reload today's check-in" })).toBeVisible();
+  });
+
+  test('when everything is recorded it says so, and answers can still change', async () => {
+    install([first, second]);
+    routes['GET /api/checkins/today'] = { body: dueToday([first, second], true) };
+    render(<MobileApp />);
+    expect(await screen.findByText('Done for today: all 2 check-ins are recorded.')).toBeVisible();
+    expect(screen.getByRole('button', { name: "Change today's answers" })).toBeVisible();
+  });
+
+  test('only one real experiment due means no combined check-in', async () => {
+    install([first, running('sample-id', 5, { is_seeded: true })]);
+    render(<MobileApp />);
+    await screen.findByRole('header', { name: '2 experiments running' });
+    expect(screen.queryByRole('button', { name: 'Check in for today' })).toBeNull();
   });
 
   test('at the limit there is no new question, and it says why', async () => {

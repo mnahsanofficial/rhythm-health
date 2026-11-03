@@ -165,6 +165,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/checkins/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Today
+         * @description Everything due today across running experiments, with shared questions combined.
+         */
+        get: operations["read_today_api_checkins_today_get"];
+        put?: never;
+        /**
+         * Save Today
+         * @description Record or replace today's check-in for every running experiment, all or none.
+         */
+        post: operations["save_today_api_checkins_today_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/experiments/{experiment_id}/complete": {
         parameters: {
             query?: never;
@@ -1003,6 +1027,79 @@ export interface components {
             /** Minimum Change Percent */
             minimum_change_percent: number;
         };
+        /**
+         * TodayCheckin
+         * @description Every experiment with a day open now. The backend decides what combines.
+         */
+        TodayCheckin: {
+            /** Revision */
+            revision: string;
+            /** Experiments */
+            experiments: components["schemas"]["TodayExperiment"][];
+            /** Questions */
+            questions: components["schemas"]["TodayQuestion"][];
+            /** Note */
+            note?: string | null;
+            /** All Recorded */
+            all_recorded: boolean;
+        };
+        /** TodayCheckinIn */
+        TodayCheckinIn: {
+            /** Revision */
+            revision: string;
+            /** Answers */
+            answers: {
+                [key: string]: boolean | number;
+            };
+            /**
+             * Changes
+             * @default {}
+             */
+            changes: {
+                [key: string]: boolean;
+            };
+            /** Note */
+            note?: string | null;
+        };
+        /** TodayExperiment */
+        TodayExperiment: {
+            /** Id */
+            id: string;
+            /** Question */
+            question: string;
+            /** Action */
+            action: string;
+            /** Timing */
+            timing: string;
+            /** Day Number */
+            day_number: number;
+            /** Total Days */
+            total_days: number;
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "baseline" | "intervention";
+            /** Change Required */
+            change_required: boolean;
+            /** Change Made */
+            change_made?: boolean | null;
+            /** Recorded */
+            recorded: boolean;
+        };
+        /**
+         * TodayQuestion
+         * @description One question in the combined check-in, and the experiments its answer feeds.
+         */
+        TodayQuestion: {
+            /** Id */
+            id: string;
+            metric: components["schemas"]["Metric"];
+            /** Experiment Ids */
+            experiment_ids: string[];
+            /** Value */
+            value?: boolean | number | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1363,6 +1460,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckinOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_today_api_checkins_today_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayCheckin"];
+                };
+            };
+        };
+    };
+    save_today_api_checkins_today_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TodayCheckinIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TodayCheckin"];
                 };
             };
             /** @description Validation Error */

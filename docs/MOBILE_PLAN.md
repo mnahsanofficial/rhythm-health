@@ -189,3 +189,5 @@ Before each PR, fetch and merge latest `origin/main` (no rebase), resolve confli
 ## Several active experiments
 
 **Added 4 Nov 2026.** Today keeps its one-experiment screen and lists a card each for two or three. Each experiment has its own reminder (`rhythm.next-day.<experiment id>`) that opens its own check-in. The limit comes from the backend. [Decision](DECISIONS.md#several-active-experiments--4-nov-2026).
+
+With two or more real experiments due, Your lab offers one check-in for all of them ([decision](DECISIONS.md#one-check-in-across-experiments--4-nov-2026)). Samples keep their own.

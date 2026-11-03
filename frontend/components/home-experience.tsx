@@ -9,17 +9,17 @@ import { ExperimentFlow } from "@/components/experiments/experiment-flow";
 import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
-import { listCheckins } from "@/lib/data/checkins";
+import { getTodayCheckin, listCheckins } from "@/lib/data/checkins";
 import { getActiveCapacity, getExperimentProgress, listExperiments } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
-import type { ActiveCapacity, Checkin, Experiment, ExperimentTimeline, Profile } from "@/lib/types/api";
+import type { ActiveCapacity, Checkin, Experiment, ExperimentTimeline, Profile, TodayCheckin } from "@/lib/types/api";
 
 type State =
   | { kind: "loading" }
   | { kind: "new" }
   | { kind: "ready"; profile: Profile }
   | { kind: "active"; profile: Profile; experiment: Experiment; timeline: ExperimentTimeline; checkins: Checkin[] }
-  | { kind: "several"; profile: Profile; items: RunningExperiment[]; capacity: ActiveCapacity }
+  | { kind: "several"; profile: Profile; items: RunningExperiment[]; capacity: ActiveCapacity; today: TodayCheckin }
   | { kind: "error"; message: string };
 
 type RunningExperiment = { experiment: Experiment; timeline: ExperimentTimeline };
@@ -60,13 +60,14 @@ function SignedInHome() {
         }
         if (running.length > 1) {
           // All or nothing: a failed read shows the error, never a partial list.
-          const [capacity, timelines] = await Promise.all([
-            getActiveCapacity(), Promise.all(running.map((item) => getExperimentProgress(item.id))),
+          const [capacity, today, timelines] = await Promise.all([
+            getActiveCapacity(), getTodayCheckin(), Promise.all(running.map((item) => getExperimentProgress(item.id))),
           ]);
           if (!cancelled) setState({
             kind: "several",
             profile,
             capacity,
+            today,
             items: running.map((item, index) => ({
               experiment: { ...item, progress: timelines[index].progress },
               timeline: timelines[index],
@@ -115,6 +116,7 @@ function SignedInHome() {
           profile={state.profile}
           items={state.items}
           capacity={state.capacity}
+          today={state.today}
         />
       ) : state.kind === "error" ? (
         <section role="alert" className="mt-5 max-w-2xl rounded-card bg-clay-tint p-6 text-clay">
@@ -269,11 +271,12 @@ function ChangeSummary({ experiment, path }: { experiment: Experiment; path: str
 }
 
 /** Two or three running: one card each. The day-by-day timeline stays on each experiment's page. */
-function SeveralLab({ profile, items, capacity, onChanged }: {
+function SeveralLab({ profile, items, capacity, today, onChanged }: {
   onChanged: () => void;
   profile: Profile;
   items: RunningExperiment[];
   capacity: ActiveCapacity;
+  today: TodayCheckin;
 }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -315,6 +318,21 @@ function SeveralLab({ profile, items, capacity, onChanged }: {
         <div ref={panel} id={panelId} hidden={!open}>
           <ExperimentFlow profile={profile} returnTo="/" headingLevel={2} showStarters={false} onReloadLab={onChanged} />
         </div>
+      )}
+      {today.experiments.length > 1 && (
+        <section aria-label="Today's check-in" className="mt-6 rounded-card bg-moss-tint p-6">
+          {today.all_recorded ? (
+            <>
+              <p className="text-lead">Done for today: all {today.experiments.length} check-ins are recorded.</p>
+              <Link href="/check-in" className={`${textLink} mt-2`}>Change today&apos;s answers</Link>
+            </>
+          ) : (
+            <>
+              <p className="text-lead">One check-in for all {today.experiments.length} experiments.</p>
+              <Link href="/check-in" className={`${primary} mt-4`}>Check in for today</Link>
+            </>
+          )}
+        </section>
       )}
       <div className="mt-8 divide-y divide-line">
         {items.map(({ experiment, timeline }) => <ExperimentCard key={experiment.id} experiment={experiment} timeline={timeline} />)}
