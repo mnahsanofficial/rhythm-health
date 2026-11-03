@@ -1,0 +1,197 @@
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { AppState } from 'react-native';
+import type { Experiment } from '@rhythm-health/contract';
+import { MobileApp } from '../src/mobile-app';
+import { experiment, profile, proposeResponse } from '../../../frontend/tests/support/fixtures';
+import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
+
+const mockAuth = { getSession: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
+const mockNetwork = { isConnected: true, isInternetReachable: true };
+jest.mock('../src/lib/supabase', () => ({ createAuthClient: () => ({ auth: mockAuth }) }));
+jest.mock('expo-network', () => ({ useNetworkState: () => mockNetwork }));
+jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
+jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
+
+const ID = experiment.id;
+const session = { access_token: 'fake-token', user: { id: 'fake-user', email: 'learner@example.invalid' } };
+const running = (progress: Partial<Experiment['progress']>): Experiment => ({ ...experiment, status: 'active', progress: { ...experiment.progress, state: 'in_progress', started_at: '2026-10-01T09:00:00Z', ...progress } });
+const baselineDay = running({ day_number: 2, phase: 'baseline', phase_day: 2, phase_days: 3, days_remaining: 8 });
+const testDay = running({ day_number: 4, phase: 'intervention', phase_day: 1, phase_days: 7, days_remaining: 6 });
+const saved = { id: 'saved-checkin', experiment_id: ID, day_number: 4, phase: 'intervention', metric_values: { morning_energy: 7, sleep_quality: 6 }, intervention_completed: true, note: null, created_at: '2026-11-03T09:00:00Z', updated_at: '2026-11-03T09:00:00Z' };
+
+let routes: Record<string, { status?: number; body: unknown }>;
+let calls: string[];
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
+  calls = [];
+  routes = {
+    'GET /api/profile': { body: { ...profile, goals: ['Better focus'] } },
+    'GET /api/experiments?status=active': { body: [testDay] },
+    [`GET /api/experiments/${ID}/progress`]: { body: timelineFixture(testDay, {}) },
+    [`GET /api/experiments/${ID}/checkins`]: { body: [] },
+    [`POST /api/experiments/${ID}/checkins`]: { body: saved },
+  };
+  mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
+  mockAuth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } });
+  mockAuth.signOut.mockResolvedValue({ error: null });
+  jest.spyOn(AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
+  global.fetch = jest.fn(async (url, options) => {
+    const key = `${options?.method ?? 'GET'} ${String(url).replace('http://api.test.invalid:8001', '')}`;
+    calls.push(key);
+    const reply = routes[key];
+    if (!reply) throw new Error(`Unexpected fake request: ${key}`);
+    const status = reply.status ?? 200;
+    return { ok: status < 400, status, json: async () => reply.body } as Response;
+  });
+});
+afterEach(() => jest.restoreAllMocks());
+const press = (name: string) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
+async function openCheckin(day = 4) {
+  render(<MobileApp />);
+  const start = await screen.findByRole('button', { name: `Check in for day ${day}` });
+  await act(async () => { fireEvent.press(start); });
+  await screen.findByLabelText('Optional note');
+}
+const answerAll = () => {
+  fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+  fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+  fireEvent.press(screen.getByRole('radio', { name: 'Sleep quality: 6' }));
+};
+
+describe('check-in', () => {
+  test('a test day uses the web heading, phase line and lead', async () => {
+    await openCheckin();
+    expect(screen.getByText('Test · day 1 of 7')).toBeVisible();
+    expect(screen.getByText('A test day. Tell us whether you made the change, then how it went.')).toBeVisible();
+    expect(screen.getByText(`When: ${experiment.intervention.timing}`)).toBeVisible();
+    expect(screen.getByText('← Day 4 of 10')).toBeVisible();
+    expect(screen.getByText('Anything unusual yesterday? (optional)')).toBeVisible();
+  });
+
+  test('a normal day says not to change anything', async () => {
+    routes['GET /api/experiments?status=active'] = { body: [baselineDay] };
+    routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(baselineDay, {}) };
+    await openCheckin(2);
+    expect(screen.getByText('Baseline · day 2 of 3')).toBeVisible();
+    expect(screen.getByText("A normal day. Don't change anything yet, just notice how it went.")).toBeVisible();
+  });
+
+  test('counts answers as they are given, including the test-day question', async () => {
+    await openCheckin();
+    expect(screen.getByText('0 of 3 answered')).toBeVisible();
+    expect(screen.getByText('Note optional')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: 'Check-in answers' }).props.accessibilityValue).toMatchObject({ now: 0, max: 3 });
+    fireEvent.press(screen.getByRole('radio', { name: 'Not today' }));
+    expect(screen.getByText('1 of 3 answered')).toBeVisible();
+    answerAll();
+    expect(screen.getByText('3 of 3 answered')).toBeVisible();
+    expect(screen.getByText('Ready to record')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: 'Check-in answers' }).props.accessibilityValue).toMatchObject({ now: 3, max: 3 });
+  });
+
+  test('the main measure comes first', async () => {
+    const metrics = [...experiment.metrics].reverse();
+    routes['GET /api/experiments?status=active'] = { body: [{ ...testDay, metrics }] };
+    await openCheckin();
+    const labels = screen.getAllByTestId('metric-label').map(node => node.props.children);
+    expect(labels).toEqual(['Morning energy', 'Sleep quality']);
+  });
+
+  test('saying so before replacing today, and the button says Update', async () => {
+    routes[`GET /api/experiments/${ID}/checkins`] = { body: [saved] };
+    await openCheckin();
+    expect(screen.getByText("You've already checked in today. Saving again replaces those answers.")).toBeVisible();
+    expect(screen.getByRole('button', { name: "Update today's check-in" })).toBeVisible();
+    expect(screen.getByText('3 of 3 answered')).toBeVisible();
+  });
+
+  test('saving shows the web confirmation with server counts, then returns', async () => {
+    await openCheckin();
+    answerAll();
+    routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(testDay, { recorded: [1, 2, 3, 4] }) };
+    await press("Save today's check-in");
+    expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
+    expect(await screen.findByText('4 of 10 days logged. 6 to go.')).toBeVisible();
+    expect(screen.getAllByLabelText(/^Day \d+, logged$/)).toHaveLength(4);
+    expect(screen.getByLabelText('Day 5')).toBeVisible();
+    await press('Back to your experiment');
+    expect(await screen.findByText('Done for today')).toBeVisible();
+  });
+
+  test('Change today\'s answers reopens the form from the confirmation', async () => {
+    await openCheckin();
+    answerAll();
+    routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(testDay, { recorded: [4] }) };
+    await press("Save today's check-in");
+    await screen.findByRole('header', { name: 'Day 4 recorded.' });
+    await press("Change today's answers");
+    expect(await screen.findByLabelText('Optional note')).toBeVisible();
+  });
+
+  test('if the refresh fails, the saved check-in stays saved and is not sent again', async () => {
+    await openCheckin();
+    answerAll();
+    routes[`GET /api/experiments/${ID}/progress`] = { status: 503, body: {} };
+    await press("Save today's check-in");
+    expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
+    expect(await screen.findByText('Your check-in was saved. Refresh Today to see your progress.')).toBeVisible();
+    expect(calls.filter(call => call === `POST /api/experiments/${ID}/checkins`)).toHaveLength(1);
+  });
+});
+
+describe('onboarding', () => {
+  test('each question shows the segmented progress bar', async () => {
+    routes['GET /api/profile'] = { status: 404, body: {} };
+    render(<MobileApp />);
+    const start = await screen.findByRole('button', { name: 'Start' });
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    await act(async () => { fireEvent.press(start); });
+    const bar = await screen.findByRole('progressbar', { name: 'Setup progress' });
+    expect(bar.props.accessibilityValue).toMatchObject({ now: 1, max: 7, text: 'Question 1 of 7' });
+    expect(screen.getByText('01 / 07')).toBeVisible();
+  });
+});
+
+describe('question flow', () => {
+  beforeEach(() => {
+    routes['GET /api/experiments?status=active'] = { body: [] };
+    routes['POST /api/experiments/propose'] = { body: { ...proposeResponse, personal_guess_available: true } };
+  });
+
+  test('explains the hunch list and what happens next', async () => {
+    render(<MobileApp />);
+    expect(await screen.findByText('First a plan. Then a prediction. You decide whether to begin.')).toBeVisible();
+    expect(screen.getByText('A little curiosity, a little evidence')).toBeVisible();
+  });
+
+  test('waiting lists what goes into the experiment, without claiming live stages', async () => {
+    render(<MobileApp />);
+    fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
+    let release!: (reply: Response) => void;
+    const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
+    fake.mockImplementation((url, options) => String(url).endsWith('/propose') ? new Promise<Response>(resolve => { release = resolve; }) : original(url, options));
+    await press('Design my experiment');
+    const panel = await screen.findByText('Finding a small change you can test…');
+    expect(panel).toBeVisible();
+    for (const text of ['A suitable question', 'A plan for your day', 'An honest forecast', 'Check that this fits a small habit experiment.']) expect(screen.getByText(text)).toBeVisible();
+    await act(async () => { release({ ok: true, status: 200, json: async () => routes['POST /api/experiments/propose'].body } as Response); });
+  });
+
+  test('the plan labels each day as baseline or test', async () => {
+    routes['POST /api/experiments/propose'] = { body: proposeResponse };
+    render(<MobileApp />);
+    fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
+    await press('Design my experiment');
+    const days = within(await screen.findByTestId('plan-days'));
+    expect(days.getAllByText('Baseline')).toHaveLength(3);
+    expect(days.getAllByText('Test')).toHaveLength(7);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeVisible());
+  });
+
+  test('the sample section uses the web wording', async () => {
+    render(<MobileApp />);
+    expect(await screen.findByText('Try the daily loop with a sample')).toBeVisible();
+    expect(screen.getByText(/Fixed design and prediction, with no AI calls\./)).toBeVisible();
+  });
+});
