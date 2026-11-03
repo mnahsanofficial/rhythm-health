@@ -138,8 +138,8 @@ describe('your lab with several experiments', () => {
     expect(body).toBeUndefined();
     fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
     fireEvent.changeText(screen.getByLabelText('Optional note'), ' late night ');
-    fireEvent.press(screen.getAllByRole('radio', { name: /^7/ })[0]);
-    fireEvent.press(screen.getAllByRole('radio', { name: /^6/ })[1]);
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
     await press("Save today's check-in");
     await waitFor(() => expect(body).toEqual({
       revision: 'rev-1', note: 'late night', changes: { 'second-id': true },
@@ -156,8 +156,8 @@ describe('your lab with several experiments', () => {
     await press('Check in for today');
     await screen.findByRole('header', { name: "Today's check-in." });
     fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
-    fireEvent.press(screen.getAllByRole('radio', { name: /^7/ })[0]);
-    fireEvent.press(screen.getAllByRole('radio', { name: /^6/ })[1]);
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
     await press("Save today's check-in");
     expect(await screen.findByText("Today's check-in has changed. Reload it to see the current questions.")).toBeVisible();
     expect(screen.getByRole('button', { name: "Reload today's check-in" })).toBeVisible();
