@@ -198,6 +198,20 @@ def main():
             file(MIGRATION)
             assert start(proposed(PROFILE_A)).returncode == 0
             assert active(PROFILE_A) == 2
+
+            # The first-setup rollback refuses while any profile exists, and changes nothing.
+            initial = ROOT / "supabase/rollbacks/20261028000000_initial_schema.sql"
+            result = run([*psql, "-f", str(initial)])
+            assert result.returncode != 0 and "has profiles" in result.stderr, result.stderr
+            assert sql("SELECT count(*) FROM public.profiles") == "2"
+            # On an empty project it removes everything, and the migrations apply again.
+            sql("DELETE FROM public.profiles")
+            file(initial)
+            assert sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'") == "0"
+            assert sql("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'") == "0"
+            for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
+                file(path)
+            assert sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'") == "4"
         finally:
             checked([binary("pg_ctl"), "-D", str(data), "-m", "immediate", "stop"])
     print("Active-limit migration: all checks passed on a disposable cluster.")
