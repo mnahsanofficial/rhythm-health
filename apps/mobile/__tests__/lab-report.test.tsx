@@ -75,9 +75,14 @@ beforeEach(() => {
 afterEach(() => jest.restoreAllMocks());
 
 const press = (name: string | RegExp) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
-async function finish() {
+async function openFinish() {
   render(<MobileApp />);
-  fireEvent.press(await screen.findByRole('button', { name: 'Finish and see results' }));
+  const link = await screen.findByRole('button', { name: /^(Finish and see results|See your experiment)$/ });
+  await act(async () => { fireEvent.press(link); });
+}
+async function finish() {
+  await openFinish();
+  await press('Finish and see results');
   await press('Yes, finish');
 }
 async function openReport(report: LabReport = labReport) {
@@ -89,7 +94,7 @@ async function openReport(report: LabReport = labReport) {
 
 describe('finish', () => {
   test('ended days offer Finish with a confirmation that can be cancelled', async () => {
-    render(<MobileApp />);
+    await openFinish();
     expect(await screen.findByText('Ready for your results.')).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Finish on the web' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Finish and see results' }));
@@ -108,8 +113,8 @@ describe('finish', () => {
   });
 
   test('double taps send one finish', async () => {
-    render(<MobileApp />);
-    fireEvent.press(await screen.findByRole('button', { name: 'Finish and see results' }));
+    await openFinish();
+    await press('Finish and see results');
     const button = screen.getByRole('button', { name: 'Yes, finish' });
     await act(async () => { fireEvent.press(button); fireEvent.press(button); });
     await screen.findByRole('header', { name: 'Prediction vs reality' });
@@ -153,7 +158,7 @@ describe('finish', () => {
 
   test('an in-progress experiment with test days recorded can finish early and says what it skips', async () => {
     setActive(inProgress, timelineFixture(inProgress, { recorded: [1, 2, 3, 4, 5, 6, 7] }));
-    render(<MobileApp />);
+    await openFinish();
     expect(await screen.findByText('You can finish early.')).toBeVisible();
     expect(screen.getByText("You have enough days recorded to try. Finishing now skips 2 test days, so there's less evidence to go on.")).toBeVisible();
   });
@@ -161,8 +166,8 @@ describe('finish', () => {
   test('no recorded test day yet means no finish offer', async () => {
     const baselineDay = withProgress('in_progress', { day_number: 2, phase: 'baseline', phase_day: 2, phase_days: 3, days_remaining: 8 });
     setActive(baselineDay, timelineFixture(baselineDay, { recorded: [1] }));
-    render(<MobileApp />);
-    await screen.findByText('Day 2 of 10');
+    await openFinish();
+    await screen.findByText('Day 2 of 10 · Baseline day 2 of 3');
     expect(screen.queryByRole('button', { name: 'Finish and see results' })).toBeNull();
   });
 
@@ -175,8 +180,8 @@ describe('finish', () => {
   });
 
   test('offline disables finishing', async () => {
-    render(<MobileApp />);
-    await screen.findByRole('button', { name: 'Finish and see results' });
+    await openFinish();
+    await screen.findByText('Ready for your results.');
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Finish and see results' })).toBeDisabled());
@@ -230,9 +235,9 @@ describe('comparison', () => {
 
   test('the reveal animates once without reduced motion', async () => {
     (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
-    const timing = jest.spyOn(Animated, 'timing');
     await openReport();
     await act(async () => { await Promise.resolve(); });
+    const timing = jest.spyOn(Animated, 'timing');
     await press('Reveal my result');
     await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
   });

@@ -61,6 +61,11 @@ export function BackLink({ to, onPress, disabled = false }: { to: string; onPres
     <Copy style={{ color: COLORS.moss }}>← {to}</Copy>
   </Pressable>;
 }
+export function ForwardLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }]}>
+    <Copy style={{ color: COLORS.moss, fontFamily: FONT_FAMILIES.sansMedium }}>{label}  →</Copy>
+  </Pressable>;
+}
 export function Frame({ children, header, fontsReady = true }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean }) {
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollToTop = useCallback(() => { scroller.current?.scrollTo?.({ y: 0, animated: false }); }, []);

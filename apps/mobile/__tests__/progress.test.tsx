@@ -59,7 +59,7 @@ test('answers have loading and error/retry states without hiding the authoritati
 });
 
 test('an expired answers session hides private progress and returns to sign-in', async () => {
-  readStatus = 401; await open(); expect(await screen.findByLabelText('Email')).toBeVisible(); expect(screen.queryByText('2 of 10 days recorded')).toBeNull();
+  readStatus = 401; render(<MobileApp />); expect(await screen.findByLabelText('Email')).toBeVisible(); expect(screen.queryByText('2 of 10 days recorded')).toBeNull();
 });
 
 test('offline keeps cached progress and answers labelled without another read', async () => {
@@ -89,7 +89,7 @@ test.each([true, false])('recorded answers are available immediately with reduce
   const { AccessibilityInfo } = jest.requireActual('react-native') as typeof import('react-native');
   const spy = jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduced);
   try { await open(); await screen.findByLabelText('Day 3 answers'); fireEvent.press(screen.getByRole('button', { name: 'Day 1, baseline, logged' }));
-    await waitFor(() => expect(screen.getByText('Day 1 answers')).toBeVisible());
+    await waitFor(() => expect(screen.getByLabelText('Day 1 answers')).toBeVisible());
   } finally { spy.mockRestore(); }
 });
 
@@ -99,10 +99,12 @@ test('recorded test-day answers include the intervention question without an edi
   await open(); const panel = within(await screen.findByLabelText('Day 4 answers')); expect(panel.getByText('Made the change')).toBeVisible(); expect(panel.queryByRole('button')).toBeNull();
 });
 
-test('opening offline never pretends to have loaded recorded answers', async () => {
-  mockNetwork.isConnected = false; let view!: ReturnType<typeof render>; mockNetwork.isConnected = true;
-  const fetch = global.fetch; global.fetch = jest.fn((...args) => { if (String(args[0]).endsWith('/checkins')) mockNetwork.isConnected = false; return fetch(...args); }) as typeof global.fetch;
-  mockNetwork.isConnected = true; view = render(<MobileApp />); await screen.findByText('Your observations, day by day.'); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
+test('going offline before the answers arrive never pretends to have loaded them', async () => {
+  const fetch = global.fetch;
+  global.fetch = jest.fn(async (...args) => { if (String(args[0]).endsWith('/checkins')) await new Promise(() => undefined); return fetch(...args); });
+  const view = await open();
+  await screen.findByText('Loading recorded answers…');
+  mockNetwork.isConnected = false; view.rerender(<MobileApp />);
   expect(await screen.findByText('No connection. Reconnect to load recorded answers.')).toBeVisible();
-  expect(requests.some(path => path.endsWith('/checkins'))).toBe(false);
+  expect(screen.queryByLabelText('Day 3 answers')).toBeNull();
 });

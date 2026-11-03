@@ -23,7 +23,7 @@ export function SampleControls({ experiment, token, disabled, onChanged, onExpir
       else setError(cause instanceof Error ? cause.message : 'Please try again.');
     } finally { pending.current = false; setBusy(false); }
   }
-  if (experiment && !experiment.is_seeded) return <Copy style={styles.muted}>A sample needs the active experiment slot. Finish your active experiment before trying a sample.</Copy>;
+  if (experiment && !experiment.is_seeded) return null;
   return <View style={styles.divider}>
     <Copy style={styles.sectionTitle}>{experiment ? 'Sample experiment' : 'Try the daily loop'}</Copy>
     <Copy style={styles.muted}>Sample answers never become your real experiment data. No AI calls. Reminders are off for this sample.</Copy>
