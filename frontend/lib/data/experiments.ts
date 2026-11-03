@@ -1,5 +1,5 @@
-import { apiGet, apiSend } from "@/lib/api/client";
-import type { Experiment, ExperimentTimeline, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
+import { ApiError, apiGet, apiSend } from "@/lib/api/client";
+import type { ActiveCapacity, Experiment, ExperimentTimeline, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
 
 export function proposeExperiment(question: string): Promise<ProposeResponse> {
   return apiSend("POST", "/api/experiments/propose", { question });
@@ -19,6 +19,16 @@ export function getExperiment(id: string): Promise<Experiment> {
 
 export function listExperiments(status?: ExperimentStatus): Promise<Experiment[]> {
   return apiGet(`/api/experiments${status ? `?status=${status}` : ""}`, true);
+}
+
+/** The backend owns the limit; screens only show what it says. */
+export function getActiveCapacity(): Promise<ActiveCapacity> {
+  return apiGet("/api/experiments/capacity", true);
+}
+
+export function isActiveLimitReached(error: unknown): error is ApiError {
+  return error instanceof ApiError && typeof error.detail === "object" && error.detail !== null
+    && "code" in error.detail && error.detail.code === "active_limit_reached";
 }
 
 /** Backend-owned rolling days, counts and timeline states for web and mobile. */

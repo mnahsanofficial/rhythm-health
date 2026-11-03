@@ -55,11 +55,9 @@ sequenceDiagram
     API-->>UI: Profile
 
     Person->>UI: Ask a habit question
-    UI->>API: GET /api/experiments?status=active
-    API->>DB: List this profile's active experiments
-    API-->>UI: Empty active list on this path
-    Note over UI,API: An active experiment blocks the UI before any proposal request
     UI->>API: POST /api/experiments/propose
+    API->>DB: Count this profile's active experiments
+    Note over API,DB: At the limit the API returns 409 before any paid AI work
     API->>DB: Read profile
     API->>DB: Owner-scoped zero-row probe for optional guess column
     API->>AI: Jev category, intent and risk classification
@@ -84,7 +82,7 @@ sequenceDiagram
     API-->>UI: Saved experiment ID
     UI->>API: POST /api/experiments/{id}/start
     API->>DB: Conditional proposed-to-active update
-    Note over API,DB: Partial unique index prevents a second active experiment
+    Note over API,DB: A trigger with a per-profile lock holds the limit of three
     API-->>UI: Active experiment and computed progress
 
     loop Each rolling experiment day
@@ -202,7 +200,7 @@ erDiagram
 |---|---|
 | One profile per auth user; foreign keys cascade deletes through the ownership tree | [profiles](../supabase/migrations/20261028000000_create_profiles.sql), [experiments](../supabase/migrations/20261028000200_create_experiments.sql), [check-ins](../supabase/migrations/20261028000400_create_daily_checkins.sql), [reports](../supabase/migrations/20261028000500_create_experiment_reports.sql) |
 | Experiment status is one of `draft`, `proposed`, `active`, `completed`; phase lengths must be positive | [experiment migration](../supabase/migrations/20261028000200_create_experiments.sql). The save API currently inserts `proposed`, not `draft`: [endpoint](../backend/app/api/experiments.py) |
-| At most one active experiment per profile, even under concurrent starts | Partial unique [active index](../supabase/migrations/20261028000300_one_active_experiment_per_profile.sql) |
+| At most three active experiments per profile, even under concurrent starts | [Limit trigger](../supabase/migrations/20261104000000_active_experiment_limit.sql) with a per-profile lock |
 | One check-in per `(experiment_id, day_number)`; positive day number; phase is `baseline` or `intervention` | [check-in migration](../supabase/migrations/20261028000400_create_daily_checkins.sql). JSON metric semantics and the valid current day are enforced by [Python](../backend/app/api/checkins.py), not SQL |
 | At most one report per experiment; `analysis` is required; narrative columns may be null | [report migration](../supabase/migrations/20261028000500_create_experiment_reports.sql). [Narrative mapping](../backend/app/services/lab_report.py) stores summary/interpretation/confounders inside `interpretation`, personal learnings in `learnings`, and the suggestion in `next_experiment` |
 | RLS on all four application tables; authenticated users can read only their ownership tree | Policies in the four table migrations above. Authenticated users also have insert/update permission on their own profile via [profile grants](../supabase/migrations/20261028000100_grant_profiles_privileges.sql); experiment/check-in/report writes are service-role only |
@@ -245,7 +243,7 @@ This rule does not mean every displayed number originated in deterministic analy
 |---|---|
 | Rolling 24-hour days from `started_at`, keeping one backend day/phase rule independent of browser timezone. Timestamps display in the viewer's timezone | [progress](../backend/app/services/progress.py), [local report date](../frontend/components/report/lab-report.tsx), [DECISIONS Q7](DECISIONS.md#questions-for-shakeb) |
 | Deterministic analysis before any **report** model call: completion stays available when AI is unavailable; the model explains saved outcomes | [analysis](../backend/app/services/analysis.py), [report endpoints](../backend/app/api/reports.py), [DECISIONS Q4](DECISIONS.md#questions-for-shakeb) |
-| One active experiment for now; enforced on start and by the database, with a frontend preflight to avoid a paid proposal that cannot start | [experiment API](../backend/app/api/experiments.py), [active index](../supabase/migrations/20261028000300_one_active_experiment_per_profile.sql), [frontend flow](../frontend/components/experiments/experiment-flow.tsx), [TRD §2.5](../TRD.md#25-one-active-experiment) |
+| Up to three active experiments; enforced on proposal (before any paid call), on start and by the database | [experiment API](../backend/app/api/experiments.py), [limit trigger](../supabase/migrations/20261104000000_active_experiment_limit.sql), [limit service](../backend/app/services/experiment_limit.py), [TRD §2.5](../TRD.md#25-active-experiment-limit) |
 | Early completion with minimum observations. Only finished rolling days plus logged days enter coverage; future days do not become missed | [completion](../backend/app/api/reports.py), [analysis](../backend/app/services/analysis.py), [DECISIONS Q6/Q8](DECISIONS.md#questions-for-shakeb) |
 | Small structured history retrieval instead of a separate learning service: consider 20 recent non-seeded completions, prioritize the same category, include at most 5 valid summaries; missing/unavailable history does not block proposing | [history service](../backend/app/services/history.py), [repositories](../backend/app/repositories/experiments.py), [designer prompt](../backend/app/services/experiment_designer.py), [DECISIONS Q5](DECISIONS.md#questions-for-shakeb). Q5's “not built yet” note is stale; this code is built |
 | Localhost for the C2 demo; no deployment implementation is claimed | [DECISIONS Q11](DECISIONS.md#questions-for-shakeb), [local run instructions](../README.md#getting-started), [CORS settings](../backend/app/config.py). TRD §39 remains a deployment plan, not proof of hosting |

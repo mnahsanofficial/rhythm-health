@@ -90,6 +90,7 @@ def api(monkeypatch):
     monkeypatch.setattr(reports, "list_for_experiments", lambda _ids: [])
 
     monkeypatch.setattr(experiments, "supports_personal_guess", lambda _profile: True, raising=False)
+    monkeypatch.setattr(experiments, "list_for_profile", lambda *_a: [])
 
     def install(**overrides):
         fake = FakeAI(**overrides)

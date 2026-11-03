@@ -51,7 +51,7 @@ def start_active_sample(body: DemoResetRequest, user_id: str = Depends(get_curre
     try:
         return demo.start_active(profile_id)
     except SupabaseConflict:
-        raise HTTPException(status_code=409, detail="You already have an active experiment. Remove the sample or finish your real experiment before starting another.")
+        raise HTTPException(status_code=409, detail="You already have a sample running, or you're at the limit of experiments at once. Remove the sample or finish an experiment before starting another.")
     except SupabaseUnavailable:
         raise db_error()
 

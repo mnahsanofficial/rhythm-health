@@ -5,6 +5,11 @@ import * as SecureStore from 'expo-secure-store';
 import type { DayData } from '../today';
 
 const DAILY = 'rhythm.next-day', TEST = 'rhythm.test';
+const dailyId = (experiment: string) => `${DAILY}.${experiment}`;
+/** Includes the single fixed ID older versions of the app left scheduled. */
+const isDaily = (id: string) => id === DAILY || id.startsWith(`${DAILY}.`);
+/** Samples never get reminders, so the app only treats reminders as off when samples are all that's running. */
+export const onlySamples = (data: DayData[] | null) => Boolean(data?.length) && data!.every(entry => entry.experiment.is_seeded);
 const preview = new Map<string, string>();
 const read = (key: string) => Platform.OS === 'web' ? Promise.resolve(preview.get(key) ?? null) : SecureStore.getItemAsync(key);
 const write = (key: string, value: string) => Platform.OS === 'web' ? Promise.resolve(preview.set(key, value)) : SecureStore.setItemAsync(key, value);
@@ -12,10 +17,10 @@ const key = (owner: string) => `rhythm.reminders.${owner}`;
 type Intent = { owner: string; experiment: string };
 type ReminderState = {
   owner: string | null; ready: boolean; choice: 'on' | 'off' | null; permission: boolean;
-  busy: boolean; error: string | null; data: DayData | null; intent: Intent | null; notice: string | null;
+  busy: boolean; error: string | null; data: DayData[] | null; intent: Intent | null; notice: string | null;
 };
 
-/** One serialized native queue and fixed IDs: late reads cannot resurrect a signed-out
+/** One serialized native queue and one stable ID per experiment: late reads cannot resurrect a signed-out
  * user's notification or stack duplicate reminders. No day/boundary math lives here. */
 export class Reminders {
   private state: ReminderState = { owner: null, ready: false, choice: null, permission: false, busy: false, error: null, data: null, intent: null, notice: null };
@@ -54,19 +59,23 @@ export class Reminders {
           // Remove only our foreign-account IDs; fresh progress will reconcile ours.
           const pending = await Notifications.getAllScheduledNotificationsAsync();
           if (owner !== this.state.owner) return;
-          for (const request of pending) if ([DAILY, TEST].includes(request.identifier) && request.content.data?.owner !== owner) await Notifications.cancelScheduledNotificationAsync(request.identifier);
+          for (const request of pending) if ((isDaily(request.identifier) || request.identifier === TEST) && request.content.data?.owner !== owner) await Notifications.cancelScheduledNotificationAsync(request.identifier);
           const status = await Notifications.getPermissionsAsync();
           if (owner !== this.state.owner) return;
           this.patch({ permission: status.granted || status.ios?.status === IosAuthorizationStatus.PROVISIONAL });
         } else {
-          await Notifications.cancelScheduledNotificationAsync(DAILY);
+          await this.cancelDaily();
           await Notifications.cancelScheduledNotificationAsync(TEST);
         }
       }
       if (this.observed) await this.reconcile();
     });
   };
-  refresh = (data: DayData | null) => {
+  private async cancelDaily() {
+    const pending = await Notifications.getAllScheduledNotificationsAsync();
+    for (const request of pending) if (isDaily(request.identifier)) await Notifications.cancelScheduledNotificationAsync(request.identifier);
+  }
+  refresh = (data: DayData[] | null) => {
     this.observed = true;
     this.revision++; this.patch({ data });
     return this.run(() => this.reconcile(), false);
@@ -74,30 +83,36 @@ export class Reminders {
   private async reconcile() {
     if (Platform.OS === 'web') return;
     const revision = this.revision, { owner, choice, data } = this.state;
-    await Notifications.cancelScheduledNotificationAsync(DAILY);
-    const next = data?.timeline.days.find(day => day.state === 'future' && data.timeline.progress.day_number !== null && day.day_number > data.timeline.progress.day_number);
-    const at = data?.timeline.next_day_at;
-    if (!owner || choice !== 'on' || data?.experiment.is_seeded) {
+    await this.cancelDaily();
+    if (!owner || choice !== 'on' || onlySamples(data)) {
       await Notifications.cancelScheduledNotificationAsync(TEST); return;
     }
     const permission = await Notifications.getPermissionsAsync();
     if (revision !== this.revision) return;
     const allowed = permission.granted || permission.ios?.status === IosAuthorizationStatus.PROVISIONAL;
     this.patch({ permission: allowed });
-    if (!allowed || data?.timeline.progress.state !== 'in_progress' || !next || !at) { await Notifications.cancelScheduledNotificationAsync(TEST); return; }
-    const date = new Date(at);
-    if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) return;
-    if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('rhythm', { name: 'Daily check-in', importance: AndroidImportance.DEFAULT });
-    if (revision !== this.revision) return;
-    await Notifications.scheduleNotificationAsync({ identifier: DAILY,
-      content: { title: `Day ${next.day_number} of ${data.timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.', data: { kind: 'rhythm-checkin', owner, experiment: data.experiment.id } },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date, channelId: 'rhythm' },
+    const planned = !allowed ? [] : (data ?? []).flatMap(entry => {
+      const { experiment, timeline } = entry;
+      const next = timeline.days.find(day => day.state === 'future' && timeline.progress.day_number !== null && day.day_number > timeline.progress.day_number);
+      return !experiment.is_seeded && timeline.progress.state === 'in_progress' && next && timeline.next_day_at ? [{ entry, next, date: new Date(timeline.next_day_at) }] : [];
     });
-    if (revision !== this.revision) await Notifications.cancelScheduledNotificationAsync(DAILY);
+    if (!planned.length) { await Notifications.cancelScheduledNotificationAsync(TEST); return; }
+    const due = planned.filter(({ date }) => Number.isFinite(date.getTime()) && date.getTime() > Date.now());
+    if (!due.length) return;
+    if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('rhythm', { name: 'Daily check-in', importance: AndroidImportance.DEFAULT });
+    for (const { entry: { experiment, timeline }, next, date } of due) {
+      if (revision !== this.revision) return;
+      const identifier = dailyId(experiment.id);
+      await Notifications.scheduleNotificationAsync({ identifier,
+        content: { title: `Day ${next.day_number} of ${timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.', data: { kind: 'rhythm-checkin', owner, experiment: experiment.id } },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date, channelId: 'rhythm' },
+      });
+      if (revision !== this.revision) { await Notifications.cancelScheduledNotificationAsync(identifier); return; }
+    }
   }
   choose = (enabled: boolean) => {
     const owner = this.state.owner;
-    if (enabled && this.state.data?.experiment.is_seeded) return Promise.resolve();
+    if (enabled && onlySamples(this.state.data)) return Promise.resolve();
     if (!owner) return Promise.resolve();
     this.revision++;
     return this.run(async () => {
@@ -149,13 +164,14 @@ export class Reminders {
     if (!__DEV__ || Platform.OS === 'web') return Promise.resolve();
     return this.run(async () => {
       const { owner, choice, permission, data } = this.state;
-      if (!owner || choice !== 'on' || !permission || data?.experiment.is_seeded || data?.timeline.progress.state !== 'in_progress') return;
+      const entry = data?.find(item => !item.experiment.is_seeded && item.timeline.progress.state === 'in_progress');
+      if (!owner || choice !== 'on' || !permission || !entry) return;
       await Notifications.cancelScheduledNotificationAsync(TEST);
       await Notifications.scheduleNotificationAsync({ identifier: TEST,
-        content: { title: `Day ${data.timeline.progress.day_number} of ${data.timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.', data: { kind: 'rhythm-checkin', owner, experiment: data.experiment.id } },
+        content: { title: `Day ${entry.timeline.progress.day_number} of ${entry.timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.', data: { kind: 'rhythm-checkin', owner, experiment: entry.experiment.id } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 10, repeats: false, channelId: 'rhythm' },
       });
-      if (owner !== this.state.owner || this.state.choice !== 'on' || this.state.data?.experiment.is_seeded) await Notifications.cancelScheduledNotificationAsync(TEST);
+      if (owner !== this.state.owner || this.state.choice !== 'on' || onlySamples(this.state.data)) await Notifications.cancelScheduledNotificationAsync(TEST);
       else this.patch({ notice: 'Test reminder scheduled. Lock the phone, then tap the notification.' });
     });
   };

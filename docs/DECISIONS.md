@@ -70,7 +70,7 @@ Recorded **30 Oct 2026** from Nazmul's architecture/README documentation request
 | Direction | Supplied source / status | Current implementation boundary |
 |---|---|---|
 | Dedicated fitness/gym tracking | Shakeb, call on **28 Oct**; agreed future direction | Current [classification](../backend/app/schemas/classification.py) accepts exercise questions, but the [schema](../supabase/migrations/) and [UI routes](../frontend/app/) implement personal experiments, not a dedicated gym-tracking feature |
-| Several active experiments at once | Pair call on **29 Oct**; agreed future direction | Current [unique index](../supabase/migrations/20261028000300_one_active_experiment_per_profile.sql), [start endpoint](../backend/app/api/experiments.py), [single-experiment home](../frontend/components/home-experience.tsx) and [proposal preflight](../frontend/components/experiments/experiment-flow.tsx) still enforce or assume one active experiment; this needs a coordinated backend/database/frontend change |
+| Several active experiments at once | Pair call on **29 Oct**; 8x then asked for it on the feedback call | Built: see [Several active experiments](#several-active-experiments--4-nov-2026) |
 
 ## Local mobile reminders in V1 (31 Oct 2026)
 
@@ -100,3 +100,16 @@ Implementation of D5: the guess is signed percent change for the primary metric 
 ### B12/B11/F13 implementation — 1 Nov 2026
 
 D2/D3 are implemented additively, without a migration: nullable `Metric.min_label` / `max_label` (short, nonblank words) and backend `ChartPoint.missed`. Web/native use provided words with neutral per-end fallback, and the report chart consumes point flags from stored analysis. This follows Nazmul’s deadline decision (no reply from Shakeb since Oct 30; deadline Nov 5) and remains reversible if Shakeb disagrees. [Contract and evidence](SCALE_WORDS_CHART_DAYS.md). S6’s separate migration is still unapplied as Nazmul reported; nothing in this feature applies it.
+
+## Several active experiments — 4 Nov 2026
+
+8x asked for this in the feedback call. Decided by Nazmul; reversible with the [rollback](../supabase/rollbacks/20261104000000_active_experiment_limit.sql).
+
+- **Limit:** three active per profile, held by a [trigger with a per-profile lock](../supabase/migrations/20261104000000_active_experiment_limit.sql) so two simultaneous starts can't both pass. `POST /propose` checks it before any paid AI work; clients read `GET /api/experiments/capacity` and never hold the number.
+- **Samples count toward the three,** and can run alongside real experiments. They never appear in a real report's overlap, because their answers are invented.
+- **Overlap is worked out in Python** and stored with the analysis at completion. Only the other experiment's test phase counts, and only this experiment's recorded days. The AI may explain those numbers but never works them out.
+- **Overlap doesn't change the signal verdict.** The report says it plainly; a "likely signal" stays one. Capping the verdict would be a further analysis rule.
+- **One reminder per experiment,** so up to three a day, each opening its own check-in. The lock screen still shows only the day.
+- **Not built:** combining check-ins across experiments, warning when a new question tests the same thing as a running one, and telling the proposal AI what else is running.
+
+The migration is **not yet applied to the shared database** as of this entry. Until it is, the old index still stops a second start with a 409.

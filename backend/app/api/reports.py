@@ -30,8 +30,11 @@ def complete_experiment(experiment_id: UUID, user_id: str = Depends(get_current_
     if row["status"] != "active":
         raise HTTPException(status_code=409, detail="Only an active experiment can be completed")
 
+    profile_id = profile_id_for(user_id)
     try:
         logged = checkins.list_for_experiment(str(experiment_id))
+        # Read before writing: a failure here must not save a report that omits an overlap.
+        others = [] if row.get("is_seeded") else experiments.list_for_profile(profile_id)
     except SupabaseUnavailable:
         raise db_error()
 
@@ -50,8 +53,7 @@ def complete_experiment(experiment_id: UUID, user_id: str = Depends(get_current_
         )
 
     completed_at = datetime.now(UTC)
-    result = analysis.analyze(row, logged, completed_at)
-    profile_id = profile_id_for(user_id)
+    result = analysis.analyze(row, logged, completed_at, others)
     try:
         saved = reports.upsert(str(experiment_id), result.model_dump(mode="json"))
         done = experiments.complete(profile_id, str(experiment_id), completed_at.isoformat())

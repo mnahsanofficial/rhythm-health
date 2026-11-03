@@ -15,6 +15,7 @@ jest.mock('react-native-safe-area-context', () => jest.requireActual('react-nati
 
 const ID = experiment.id;
 const ACTIVE = '/api/experiments?status=active';
+const CAPACITY = 'GET /api/experiments/capacity';
 const COMPLETE = `POST /api/experiments/${ID}/complete`;
 const READ = `GET /api/experiments/${ID}/report`;
 const WRITE = `POST /api/experiments/${ID}/report`;
@@ -52,6 +53,7 @@ beforeEach(() => {
     [COMPLETE]: { body: labReport },
     [READ]: { body: labReport },
     [WRITE]: { body: writtenLabReport },
+    [CAPACITY]: { body: { active: 1, limit: 3, can_start: true } },
   };
   setActive(ended);
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
@@ -175,7 +177,7 @@ describe('finish', () => {
     const sample = { ...ended, is_seeded: true };
     setActive(sample);
     render(<MobileApp />);
-    await screen.findByText('This sample has ended. Remove it to free the slot for a real experiment.');
+    await screen.findByText('This sample has ended. Remove it to free up a slot for a real experiment.');
     expect(screen.queryByRole('button', { name: 'Finish and see results' })).toBeNull();
   });
 
@@ -425,22 +427,47 @@ describe('run this experiment', () => {
     expect(calls.find(call => call.key === PROPOSE)?.body).toEqual({ question: next });
   });
 
-  test('an experiment already running links back to Today instead', async () => {
-    await openReportActive();
-    expect(await screen.findByText("You're already running an experiment. Finish it before starting this one, so each result stays clear.")).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Run this experiment' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Go to your current experiment' })).toBeVisible();
-  });
-  async function openReportActive() {
+  test('at the limit, it links back to Your lab instead', async () => {
     defaults[COMPLETE] = { body: writtenLabReport };
     defaults[READ] = { body: writtenLabReport };
-    activeAfterFinish = [{ ...inProgress, id: 'other-id' }];
+    defaults[CAPACITY] = { body: { active: 3, limit: 3, can_start: false } };
     await finish();
-  }
+    expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one before starting this one.")).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Run this experiment' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Go to Your lab' })).toBeVisible();
+  });
 
-  test('a failed slot check still lets the person continue, since Ask checks again', async () => {
+  test('with another experiment running below the limit, it still offers the next one', async () => {
+    defaults[COMPLETE] = { body: writtenLabReport };
+    defaults[READ] = { body: writtenLabReport };
+    defaults[CAPACITY] = { body: { active: 2, limit: 3, can_start: true } };
+    await finish();
+    expect(await screen.findByRole('button', { name: 'Run this experiment' })).toBeVisible();
+  });
+
+  test('the report says plainly when another experiment overlapped, in the backend\'s words', async () => {
+    const description = 'You were also testing "Does less coffee help?" on 4 of your 7 recorded test days, so part of this change may come from that.';
+    const withOverlap = { ...writtenLabReport, analysis: { ...writtenLabReport.analysis, overlaps: [{
+      experiment_id: 'other-id', question: 'Does less coffee help?', test_days_overlapping: 4, baseline_days_overlapping: 0, description,
+    }] } };
+    defaults[COMPLETE] = { body: withOverlap };
+    defaults[READ] = { body: withOverlap };
+    await finish();
+    expect(await screen.findByRole('header', { name: 'Other experiments at the same time' })).toBeVisible();
+    expect(screen.getByText(description)).toBeVisible();
+  });
+
+  test('a report with no overlap shows no overlap section', async () => {
+    defaults[COMPLETE] = { body: writtenLabReport };
+    defaults[READ] = { body: writtenLabReport };
+    await finish();
+    await screen.findByRole('button', { name: 'Run this experiment' });
+    expect(screen.queryByRole('header', { name: 'Other experiments at the same time' })).toBeNull();
+  });
+
+  test('a failed limit check still lets the person continue, since the backend checks again', async () => {
     await openReport();
-    defaults[`GET ${ACTIVE}`] = { status: 503, body: {} };
+    defaults[CAPACITY] = { status: 503, body: {} };
     await press('Write my report');
     expect(await screen.findByRole('button', { name: 'Run this experiment' })).toBeVisible();
   });

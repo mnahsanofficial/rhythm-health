@@ -52,8 +52,8 @@ class FakeDb:
         row = self.get(profile_id, experiment_id)
         if row is None or row["status"] != "proposed":
             return None
-        if any(r["profile_id"] == profile_id and r["status"] == "active" for r in self.rows):
-            raise SupabaseConflict()  # what the unique index does under a race
+        if sum(r["profile_id"] == profile_id and r["status"] == "active" for r in self.rows) >= 3:
+            raise SupabaseConflict()  # what the limit trigger does under a race
         row.update(status="active", started_at=started_at)
         return row
 
@@ -215,13 +215,11 @@ def test_start_twice_is_409(db):
     assert "active" in again.json()["detail"]
 
 
-def test_only_one_active_experiment(db):
+def test_a_second_experiment_can_run_alongside_the_first(db):
     first, second = save_one(), save_one()
     assert client.post(f"/api/experiments/{first['id']}/start").status_code == 200
-    res = client.post(f"/api/experiments/{second['id']}/start")
-    assert res.status_code == 409
-    assert "already have an active" in res.json()["detail"]
-    assert client.get(f"/api/experiments/{second['id']}").json()["status"] == "proposed"
+    assert client.post(f"/api/experiments/{second['id']}/start").status_code == 200
+    assert client.get(f"/api/experiments/{second['id']}").json()["status"] == "active"
 
 
 def test_concurrent_start_conflict_is_409(db, monkeypatch):

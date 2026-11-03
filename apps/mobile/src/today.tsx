@@ -13,10 +13,10 @@ import type { Section } from './app-header';
 import { DemoScreen, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
-import type { Experiment, ExperimentTimeline, LabReport, Profile } from '@rhythm-health/contract';
+import type { ActiveCapacity, Experiment, ExperimentTimeline, LabReport, Profile } from '@rhythm-health/contract';
 import { Action, Alert, BackLink, Copy, ForwardLink, Loading, styles, Title, Status } from './ui';
 import { ApiError } from './lib/api';
-import { getProgress, listActiveExperiments } from './lib/experiments';
+import { getCapacity, getProgress, listActiveExperiments } from './lib/experiments';
 
 const hidden = { display: 'none' } as const;
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
@@ -26,7 +26,8 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const { service: reminders, state: reminderState } = useReminders();
   const [detail, setDetail] = useState(false);
   const [askKey, setAskKey] = useState(0);
-  const [loaded, setLoaded] = useState<{ value: DayData | null; at: Date } | null>(null);
+  const [loaded, setLoaded] = useState<{ value: DayData[]; capacity: ActiveCapacity | null; at: Date } | null>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const generation = useRef(0);
@@ -41,15 +42,18 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
     const request = ++generation.current;
     setBusy(true); setError(null);
     try {
-      const [experiment] = await listActiveExperiments(token);
-      const value = experiment ? { experiment, timeline: await getProgress(token, experiment.id) } : null;
+      const running = await listActiveExperiments(token);
+      // All or nothing: a failed read shows the error, never a partial list.
+      const value = await Promise.all(running.map(async experiment => ({ experiment, timeline: await getProgress(token, experiment.id) })));
+      const capacity = value.length > 1 ? await getCapacity(token) : null;
       if (request === generation.current) {
-        setLoaded({ value, at: new Date() });
+        setLoaded({ value, capacity, at: new Date() });
         void reminders.refresh(value);
         const intent = reminders.getSnapshot().intent;
         if (intent) {
           reminders.consume();
-          if (!value?.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && value?.experiment.id === intent.experiment && value.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setEditing(value); }
+          const target = value.find(item => item.experiment.id === intent.experiment);
+          if (target && !target.experiment.is_seeded && intent.owner === reminders.getSnapshot().owner && target.timeline.progress.state === 'in_progress') { onSection('lab'); setReport(null); setDetail(false); setSavedDay(null); setChosen(target.experiment.id); setEditing(target); }
         }
       }
     } catch (cause) {
@@ -71,20 +75,23 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
 
   // Choosing a section in the header leaves open screens. An open proposal stays mounted (below): it was paid for.
   const [seenNavigation, setSeenNavigation] = useState(navigation);
-  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); }
+  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setChosen(null); }
 
   const disabled = offline || busy || error !== null;
-  const data = loaded?.value;
-  const sampleControls = <SampleControls key={data?.experiment.id ?? 'empty'} experiment={data?.experiment} token={token} disabled={disabled}
+  const entries = loaded?.value ?? [];
+  // The screens below act on the one tapped. If it has finished elsewhere they close, rather than switch to another.
+  const data = chosen ? entries.find(item => item.experiment.id === chosen) : undefined;
+  const sample = entries.find(item => item.experiment.is_seeded) ?? entries[0];
+  const sampleControls = <SampleControls key={sample?.experiment.id ?? 'empty'} experiment={sample?.experiment} token={token} disabled={disabled}
     onExpired={onExpired} onChanged={async () => { setLoaded(null); await load(); }} />;
   const toLab = () => { onSection('lab'); void load(); };
   const openDemo = (result: LabReport) => setReport({ id: result.experiment.id, initial: result });
   // With nothing running the question is the lab itself, as on the web.
-  const inline = Boolean(loaded) && !data && asking === null;
+  const inline = Boolean(loaded) && entries.length === 0 && asking === null;
   const flowOpen = asking !== null || inline;
   const flowShown = flowOpen && section === 'lab' && !editing && savedDay === null && !report && !detail;
   const flow = flowOpen && <View style={flowShown ? undefined : hidden}>
-    <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} knownActive={Boolean(data)} onExpired={onExpired} onEditProfile={editProfile}
+    <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile}
       onBack={inline ? undefined : () => { setAsking(null); void load(); }}
       onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); void load(); }} />
   </View>;
@@ -92,14 +99,15 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const ask = (question: string) => {
     setReport(null); setDetail(false); onSection('lab'); setStarted(false);
     if (question) { setAskKey(key => key + 1); setAsking(question); }
-    else if (data) setAsking('');
+    else if (entries.length) setAsking('');
   };
   const finished = (result: LabReport) => {
     if (!data) return;
-    void reminders.refresh(null); setStarted(false); setDetail(false);
+    void reminders.refresh(entries.filter(item => item !== data)); setStarted(false); setDetail(false);
     setReport({ id: data.experiment.id, initial: result }); setLoaded(null); void load();
   };
-  const checkin = () => { if (data) { setStarted(false); setEditing(data); } };
+  const checkin = (entry: DayData) => { setStarted(false); setChosen(entry.experiment.id); setEditing(entry); };
+  const openDetail = (entry: DayData) => { setChosen(entry.experiment.id); setDetail(true); };
   const content = () => {
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
       onBack={() => { setEditing(null); void load(); }}
@@ -119,7 +127,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
         onAsk={() => ask('')} />
     </View>;
     if (detail && data) return <ExperimentDetail data={data} token={token} offline={offline} disabled={disabled} onExpired={onExpired}
-      onBack={() => { setDetail(false); void load(); }} onCheckin={checkin} onOpenReport={() => setReport({ id: data.experiment.id })} onCompleted={finished} />;
+      onBack={() => { setDetail(false); void load(); }} onCheckin={() => checkin(data)} onOpenReport={() => setReport({ id: data.experiment.id })} onCompleted={finished} />;
     return lab;
   };
   const lab = (
@@ -131,11 +139,23 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
         : 'No connection'}</Status>}
       {!offline && error && <><Alert>{error}</Alert><Action label="Try again" onPress={() => void load()} /></>}
       {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
-        : !data ? sampleControls : <>
+        : entries.length === 0 ? sampleControls : entries.length === 1 ? <>
           {sampleControls}
-          <ActiveLab data={data} onAsk={() => ask('')} onDetail={() => setDetail(true)} />
-          <TodayCard data={data} disabled={disabled} onCheckin={checkin} onOpenReport={() => setReport({ id: data.experiment.id })} />
-          <Observations data={data} title="Your observations, day by day." token={token} offline={offline} onExpired={onExpired} />
+          <ActiveLab data={entries[0]} onAsk={() => ask('')} onDetail={() => openDetail(entries[0])} />
+          <TodayCard data={entries[0]} disabled={disabled} onCheckin={() => checkin(entries[0])} onOpenReport={() => setReport({ id: entries[0].experiment.id })} />
+          <Observations data={entries[0]} title="Your observations, day by day." token={token} offline={offline} onExpired={onExpired} />
+          {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
+        </> : <>
+          {sampleControls}
+          <Title>{entries.length} experiments running</Title>
+          {loaded.capacity?.can_start
+            ? <Action label="Test another habit" inline onPress={() => ask('')} />
+            : <Copy style={styles.muted}>You&apos;re running {loaded.capacity?.limit} experiments, the most at once. Finish one to start another.</Copy>}
+          {entries.map(entry => <View key={entry.experiment.id} style={styles.divider}>
+            <Copy style={labStyles.day}>{dayLabel(entry.timeline)}</Copy>
+            <ExperimentSummary data={entry} onDetail={() => openDetail(entry)} />
+            <TodayCard data={entry} disabled={disabled} onCheckin={() => checkin(entry)} onOpenReport={() => setReport({ id: entry.experiment.id })} />
+          </View>)}
           {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
         </>}
     </View>
@@ -143,17 +163,27 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   return <View style={styles.stack}>{!(flowShown && asking !== null) && content()}{flow}</View>;
 }
 
-function ActiveLab({ data: { experiment, timeline }, onAsk, onDetail }: { data: DayData; onAsk: () => void; onDetail: () => void }) {
+function dayLabel({ progress }: ExperimentTimeline) {
+  return progress.state === 'in_progress' ? `Day ${progress.day_number} of ${progress.total_days}`
+    : progress.state === 'ended' ? 'Experiment days ended' : progress.state === 'completed' ? 'Completed' : 'Not started';
+}
+
+function ActiveLab({ data, onAsk, onDetail }: { data: DayData; onAsk: () => void; onDetail: () => void }) {
+  return <>
+    <View style={labStyles.top}>
+      <Copy style={labStyles.day}>{dayLabel(data.timeline)}</Copy>
+      <Action label="Test another habit" inline onPress={onAsk} />
+    </View>
+    <ExperimentSummary data={data} baseline onDetail={onDetail} />
+  </>;
+}
+
+function ExperimentSummary({ data: { experiment, timeline }, baseline: showBaseline = false, onDetail }: { data: DayData; baseline?: boolean; onDetail: () => void }) {
   const { progress } = timeline;
   const baseline = progress.phase === 'baseline';
   return <>
-    <View style={labStyles.top}>
-      <Copy style={labStyles.day}>{progress.state === 'in_progress' ? `Day ${progress.day_number} of ${progress.total_days}`
-        : progress.state === 'ended' ? 'Experiment days ended' : progress.state === 'completed' ? 'Completed' : 'Not started'}</Copy>
-      <Action label="Test another habit" inline onPress={onAsk} />
-    </View>
     <Title small>{experiment.question}</Title>
-    <BaselineContext timeline={timeline} />
+    {showBaseline && <BaselineContext timeline={timeline} />}
     <View style={labStyles.change}>
       <Copy style={styles.muted}>{baseline ? 'Keep your usual routine' : 'Your small change'}</Copy>
       <Copy style={labStyles.action}>{experiment.intervention.action}</Copy>

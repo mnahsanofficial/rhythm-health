@@ -10,16 +10,19 @@ import { Timeline, TodayCard } from "@/components/experiments/experiment-progres
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins } from "@/lib/data/checkins";
-import { getExperimentProgress, listExperiments } from "@/lib/data/experiments";
+import { getActiveCapacity, getExperimentProgress, listExperiments } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
-import type { Checkin, Experiment, ExperimentTimeline, Profile } from "@/lib/types/api";
+import type { ActiveCapacity, Checkin, Experiment, ExperimentTimeline, Profile } from "@/lib/types/api";
 
 type State =
   | { kind: "loading" }
   | { kind: "new" }
   | { kind: "ready"; profile: Profile }
   | { kind: "active"; profile: Profile; experiment: Experiment; timeline: ExperimentTimeline; checkins: Checkin[] }
+  | { kind: "several"; profile: Profile; items: RunningExperiment[]; capacity: ActiveCapacity }
   | { kind: "error"; message: string };
+
+type RunningExperiment = { experiment: Experiment; timeline: ExperimentTimeline };
 
 const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
 const textLink = "inline-flex min-h-11 items-center text-body font-medium text-moss underline-offset-4 hover:underline";
@@ -48,10 +51,27 @@ function SignedInHome() {
           setState({ kind: "new" });
           return;
         }
-        const [experiment] = await listExperiments("active");
+        const running = await listExperiments("active");
         if (cancelled) return;
+        const [experiment] = running;
         if (!experiment) {
           setState({ kind: "ready", profile });
+          return;
+        }
+        if (running.length > 1) {
+          // All or nothing: a failed read shows the error, never a partial list.
+          const [capacity, timelines] = await Promise.all([
+            getActiveCapacity(), Promise.all(running.map((item) => getExperimentProgress(item.id))),
+          ]);
+          if (!cancelled) setState({
+            kind: "several",
+            profile,
+            capacity,
+            items: running.map((item, index) => ({
+              experiment: { ...item, progress: timelines[index].progress },
+              timeline: timelines[index],
+            })),
+          });
           return;
         }
         const [checkins, timeline] = await Promise.all([
@@ -89,6 +109,13 @@ function SignedInHome() {
           checkins={state.checkins}
           timeline={state.timeline}
         />
+      ) : state.kind === "several" ? (
+        <SeveralLab
+          onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }}
+          profile={state.profile}
+          items={state.items}
+          capacity={state.capacity}
+        />
       ) : state.kind === "error" ? (
         <section role="alert" className="mt-5 max-w-2xl rounded-card bg-clay-tint p-6 text-clay">
           <h1 className="font-display text-headline">We couldn&apos;t load your lab.</h1>
@@ -105,7 +132,7 @@ function SignedInHome() {
           </button>
         </section>
       ) : state.kind === "ready" ? (
-        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" /></>
+        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" onReloadLab={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /></>
       ) : (
         <section className="max-w-2xl py-10 sm:py-16">
           <h1 className="font-display text-display-sm tracking-tight sm:text-display">
@@ -162,9 +189,7 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p hidden={open} className="font-mono text-caption text-moss tabular-nums">
-              {progress.state === "in_progress"
-                ? `Day ${progress.day_number} of ${progress.total_days}`
-                : progress.state === "ended" ? "Experiment days ended" : progress.state === "completed" ? "Completed" : "Not started"}
+              {dayLabel(progress)}
             </p>
             <button
               ref={toggle}
@@ -182,28 +207,14 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
               {experiment.question}
             </h1>
             <BaselineContext timeline={timeline} />
-            <div className="mt-6 border-l-2 border-moss pl-4">
-              <p className="text-caption text-muted">
-                {progress.phase === "baseline" ? "Keep your usual routine" : "Your small change"}
-              </p>
-              <p className="mt-1 text-lead">{experiment.intervention.action}</p>
-              <p className="mt-1 text-body text-muted">
-                {progress.phase === "baseline"
-                  ? `Your change starts on day ${experiment.baseline_days + 1}.`
-                  : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}
-              </p>
-            </div>
-            <Link href={path} className={`${textLink} mt-5`}>
-              {progress.state === "ended" ? "Finish and see results" : "See your experiment"}
-              <span aria-hidden="true" className="ml-2">→</span>
-            </Link>
+            <ChangeSummary experiment={experiment} path={path} />
           </section>
           <div ref={panel} id={panelId} hidden={!open}>
             <ExperimentFlow
               profile={profile}
-              knownActiveExperiment={experiment}
               returnTo="/"
               showStarters={false}
+              onReloadLab={onChanged}
             />
           </div>
         </div>
@@ -225,6 +236,105 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
         <Timeline experiment={experiment} checkins={checkins} timeline={timeline} />
       </section>
     </>
+  );
+}
+
+function dayLabel(progress: Experiment["progress"]) {
+  return progress.state === "in_progress"
+    ? `Day ${progress.day_number} of ${progress.total_days}`
+    : progress.state === "ended" ? "Experiment days ended" : progress.state === "completed" ? "Completed" : "Not started";
+}
+
+function ChangeSummary({ experiment, path }: { experiment: Experiment; path: string }) {
+  const { progress } = experiment;
+  return (
+    <>
+      <div className="mt-6 border-l-2 border-moss pl-4">
+        <p className="text-caption text-muted">
+          {progress.phase === "baseline" ? "Keep your usual routine" : "Your small change"}
+        </p>
+        <p className="mt-1 text-lead">{experiment.intervention.action}</p>
+        <p className="mt-1 text-body text-muted">
+          {progress.phase === "baseline"
+            ? `Your change starts on day ${experiment.baseline_days + 1}.`
+            : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}
+        </p>
+      </div>
+      <Link href={path} className={`${textLink} mt-5`}>
+        {progress.state === "ended" ? "Finish and see results" : "See your experiment"}
+        <span aria-hidden="true" className="ml-2">→</span>
+      </Link>
+    </>
+  );
+}
+
+/** Two or three running: one card each. The day-by-day timeline stays on each experiment's page. */
+function SeveralLab({ profile, items, capacity, onChanged }: {
+  onChanged: () => void;
+  profile: Profile;
+  items: RunningExperiment[];
+  capacity: ActiveCapacity;
+}) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const panel = useRef<HTMLDivElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  const sample = items.find((item) => item.experiment.is_seeded)?.experiment;
+
+  useEffect(() => {
+    if (open) panel.current?.querySelector("textarea")?.focus();
+  }, [open]);
+
+  return (
+    <>
+      {sample && <SampleControls experiment={sample} onChanged={onChanged} />}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-headline tracking-tight sm:text-display-sm">{items.length} experiments running</h1>
+        {capacity.can_start && (
+          <button
+            ref={toggle}
+            type="button"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => {
+              if (open) toggle.current?.focus();
+              setOpen(!open);
+            }}
+            className="min-h-12 rounded-pill bg-moss px-6 font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+          >
+            {open ? "Close question" : "Test another habit"}
+          </button>
+        )}
+      </div>
+      {!capacity.can_start && (
+        <p className="mt-3 text-body text-muted">
+          You&apos;re running {capacity.limit} experiments, the most at once. Finish one to start another.
+        </p>
+      )}
+      {capacity.can_start && (
+        <div ref={panel} id={panelId} hidden={!open}>
+          <ExperimentFlow profile={profile} returnTo="/" headingLevel={2} showStarters={false} onReloadLab={onChanged} />
+        </div>
+      )}
+      <div className="mt-8 divide-y divide-line">
+        {items.map(({ experiment, timeline }) => <ExperimentCard key={experiment.id} experiment={experiment} timeline={timeline} />)}
+      </div>
+    </>
+  );
+}
+
+function ExperimentCard({ experiment, timeline }: RunningExperiment) {
+  const titleId = useId();
+  const path = `/experiments/${encodeURIComponent(experiment.id)}`;
+  return (
+    <article aria-labelledby={titleId} className="grid gap-6 py-8 first:pt-0 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
+      <div className="min-w-0">
+        <p className="font-mono text-caption text-moss tabular-nums">{dayLabel(experiment.progress)}</p>
+        <h2 id={titleId} className="mt-3 font-display text-title text-balance">{experiment.question}</h2>
+        <ChangeSummary experiment={experiment} path={path} />
+      </div>
+      <TodayCard experiment={experiment} timeline={timeline} path={path} />
+    </article>
   );
 }
 

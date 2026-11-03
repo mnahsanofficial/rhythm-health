@@ -8,15 +8,14 @@ import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
 import { Action, Alert, BackLink, Copy, styles as ui, Title, useStepFocus, Status } from './ui';
 
-type Failure = { status: number; message: string; stage: 'active-check' | 'proposal' };
+type Failure = { status: number; message: string };
 type Props = {
-  token: string; offline: boolean; profile: Profile; initialQuestion?: string; knownActive?: boolean; onExpired: () => void;
+  token: string; offline: boolean; profile: Profile; initialQuestion?: string; hideStarters?: boolean; onExpired: () => void;
   onBack?: () => void; onStarted: () => void; onEditProfile?: () => void;
 };
 const message = (cause: unknown, fallback: string) => cause instanceof Error && cause.message ? cause.message : fallback;
 
-function failureTitle({ status, stage }: Failure) {
-  if (stage === 'active-check') return "Couldn't check for an active experiment.";
+function failureTitle({ status }: Failure) {
   if (status === 503) return 'The service is unavailable right now.';
   if (status === 502) return "We couldn't put together a complete plan.";
   if (status === 409) return 'Your profile needs to be saved first.';
@@ -29,17 +28,18 @@ function failureTitle({ status, stage }: Failure) {
  * tap, guarded by one synchronous lock; the result stays in this component's state, so returning
  * to the foreground or a refreshed token never asks again.
  */
-export function ProposalFlow({ token, offline, profile, initialQuestion = '', knownActive = false, onExpired, onBack, onStarted, onEditProfile }: Props) {
+export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, onExpired, onBack, onStarted, onEditProfile }: Props) {
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
-  const [busy, setBusy] = useState<'checking' | 'proposing' | null>(null);
+  const [busy, setBusy] = useState<'proposing' | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [guessUnavailable, setGuessUnavailable] = useState(false);
-  const [foundActive, setBlocked] = useState(false);
-  const blocked = knownActive || foundActive;
+  const [limit, setLimit] = useState<string | null>(null);
+  const [startAtLimit, setStartAtLimit] = useState(false);
+  const blocked = limit !== null;
   const inFlight = useRef(false);
   const savedId = useRef<string | null>(null);
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
@@ -53,37 +53,31 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
   function reset(next: string) {
     savedId.current = null;
     setQuestion(next); setResult(null); setGuess(null); setFailure(null);
-    setStartError(null); setGuessUnavailable(false); setBlocked(false);
+    setStartError(null); setGuessUnavailable(false); setLimit(null); setStartAtLimit(false);
   }
 
   async function submit() {
     const text = question.trim();
-    if (inFlight.current || offline || knownActive || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
+    if (inFlight.current || offline || blocked || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
     inFlight.current = true;
-    setBusy('checking'); setFailure(null); setBlocked(false); setResult(null); setGuess(null);
-    let stage: Failure['stage'] = 'active-check';
+    setBusy('proposing'); setFailure(null); setResult(null); setGuess(null);
     try {
-      const [active] = await listActiveExperiments(token);
-      if (active) { setBlocked(true); return; }
-      stage = 'proposal';
-      setBusy('proposing');
       const response = await proposeExperiment(token, text);
       if (response.safety.allowed && (!response.proposal || !response.prediction)) throw new ApiError(502, 'The plan came back incomplete. Please retry.');
       setResult(response);
     } catch (cause) {
-      if (!expired(cause)) setFailure({ status: cause instanceof ApiError ? cause.status : 0, message: message(cause, 'Something went wrong. Please try again.'), stage });
+      if (cause instanceof ApiError && detailCode(cause) === 'active_limit_reached') setLimit(cause.message);
+      else if (!expired(cause)) setFailure({ status: cause instanceof ApiError ? cause.status : 0, message: message(cause, 'Something went wrong. Please try again.') });
     } finally { inFlight.current = false; setBusy(null); }
   }
 
   async function begin(withoutGuess = false) {
     if (inFlight.current || offline || !result?.proposal || !result.prediction) return;
     inFlight.current = true;
-    setStarting(true); setStartError(null); setGuessUnavailable(false); setBlocked(false);
+    setStarting(true); setStartError(null); setGuessUnavailable(false); setStartAtLimit(false);
     let id = savedId.current;
     try {
       if (!id) {
-        const [active] = await listActiveExperiments(token);
-        if (active) { setBlocked(true); return; }
         const saved = await saveExperiment(token, {
           proposal: result.proposal, prediction: result.prediction, category: result.classification.category,
           ...(guess !== null && !withoutGuess ? { personal_guess_percent: guess } : {}),
@@ -96,30 +90,30 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
       if (expired(cause)) return;
       if (cause instanceof ApiError && detailCode(cause) === 'personal_guess_unavailable') {
         setGuessUnavailable(true); setStartError(cause.message);
+      } else if (id && cause instanceof ApiError && detailCode(cause) === 'active_limit_reached') {
+        setStartAtLimit(true); setStartError(`Your experiment was saved, but it couldn't start yet. ${cause.message}`);
       } else if (id && cause instanceof ApiError && cause.status === 409) {
         await explainConflict(id);
       } else if (id) {
         setStartError(`Your experiment was saved, but it couldn't be started: ${message(cause, 'Please try again.')}`);
-      } else setStartError(message(cause, "Couldn't check for an active experiment. Please try again."));
+      } else setStartError(message(cause, "Couldn't save your experiment. Please try again."));
     } finally { inFlight.current = false; setStarting(false); }
   }
 
   /** A 409 can mean the earlier start did land and only its response was lost, so read before reporting. */
   async function explainConflict(id: string) {
     try {
-      const [active] = await listActiveExperiments(token);
-      if (active?.id === id) { onStarted(); return; }
-      if (active) { setBlocked(true); setStartError("Your experiment was saved, but it couldn't be started because another experiment is active."); return; }
+      const active = await listActiveExperiments(token);
+      if (active.some(item => item.id === id)) { onStarted(); return; }
       setStartError("Your experiment was saved, but it couldn't be started. Try again.");
     } catch (cause) {
-      if (!expired(cause)) setStartError("Your experiment was saved, but we couldn't check which experiment is active. You can retry starting it.");
+      if (!expired(cause)) setStartError("Your experiment was saved, but we couldn't check whether it started. You can retry starting it.");
     }
   }
 
-  const blockedNotice = blocked && <View style={ui.stack}>
-    <Alert>{startError ?? 'You already have an active experiment.'}</Alert>
-    {!startError && <Copy style={ui.muted}>Finish your current experiment before designing another.</Copy>}
-    <Action label="Go to your active experiment" secondary onPress={() => onBack?.()} />
+  const blockedNotice = limit !== null && <View style={ui.stack}>
+    <Alert>{limit}</Alert>
+    {onBack && <Action label="Go to Your lab" secondary onPress={onBack} />}
   </View>;
 
   if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} onReveal={setGuess} onBack={() => reset('')} />;
@@ -140,11 +134,11 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
       <Copy style={ui.muted}>Your original forecast stays in place so you can compare it with what happens.</Copy>
     </View>
     {offline && <Status style={ui.muted}>You&apos;re offline. Your plan is kept; reconnect to start.</Status>}
-    {blockedNotice}
-    {startError && !blocked && <Alert>{startError}</Alert>}
+    {startError && <Alert>{startError}</Alert>}
     {guessUnavailable && <Action label="Continue without saving my guess" secondary disabled={starting || offline} onPress={() => void begin(true)} />}
-    {startError && !blocked && <Action label="Try again" secondary disabled={starting || offline} onPress={() => void begin()} />}
-    {!startError && <Action label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline || blocked} onPress={() => void begin()} />}
+    {startAtLimit && onBack && <Action label="Go to Your lab" secondary onPress={onBack} />}
+    {startError && <Action label="Try again" secondary disabled={starting || offline} onPress={() => void begin()} />}
+    {!startError && <Action label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} />}
     <Action label="Ask something else" secondary disabled={starting} onPress={() => reset('')} />
   </View>;
 
@@ -158,7 +152,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
     <View>
       <Copy style={ui.label}>Your question or goal</Copy>
       <TextInput accessibilityLabel="Your question or goal" accessibilityHint="5 to 500 characters. One small change at a time." multiline value={question}
-        onChangeText={value => { setQuestion(value); setResult(null); setFailure(null); setBlocked(false); }} editable={!working} maxLength={QUESTION_MAX + 1}
+        onChangeText={value => { setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} editable={!working} maxLength={QUESTION_MAX + 1}
         placeholder="Does walking after dinner improve my sleep?" placeholderTextColor={COLORS.muted} style={[ui.input, local.question]} />
       <View style={local.help}>
         <Copy style={[ui.muted, local.helpText]}>5–500 characters. One small change at a time.</Copy>
@@ -166,9 +160,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
       </View>
     </View>
     {offline && <Status style={ui.muted}>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Status>}
-    <Action label={busy === 'checking' ? 'Checking your experiment…' : busy === 'proposing' ? 'Shaping your experiment…' : 'Design my experiment'}
+    <Action label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design my experiment'}
       disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} />
-    {busy === 'checking' && <Status style={ui.muted}>Checking whether you already have an active experiment…</Status>}
     {busy === 'proposing' && <View style={ui.stack}>
       <Status>Finding a small change you can test…</Status>
       <Copy style={ui.muted}>Your plan and forecast will arrive together. This can take a little while.</Copy>
@@ -180,7 +173,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
     </View>}
     {failure && <View style={ui.stack}>
       <Alert>{failureTitle(failure)} {failure.message}</Alert>
-      {failure.stage === 'proposal' && failure.status === 409
+      {failure.status === 409
         ? <Action label="Go to your rhythm" secondary onPress={() => onEditProfile?.()} />
         : <Action label="Retry" secondary disabled={offline} onPress={() => void submit()} />}
     </View>}
@@ -193,7 +186,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
         <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
       </>}
     </View>}
-    {!knownActive && <View style={local.hunches}>
+    {!hideStarters && <View style={local.hunches}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Start with a hunch</Copy>
       <Copy style={ui.muted}>Inspired by your goals and everyday questions. Pick one, then make it yours.</Copy>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
@@ -201,7 +194,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
         <Copy>{starter} <Copy accessible={false} style={{ color: COLORS.moss }}>↗</Copy></Copy>
       </Pressable>)}
     </View>}
-    {!knownActive && <Copy style={local.helpText}>First a plan. Then a prediction. You decide whether to begin.</Copy>}
+    {!hideStarters && <Copy style={local.helpText}>First a plan. Then a prediction. You decide whether to begin.</Copy>}
   </View>;
 }
 

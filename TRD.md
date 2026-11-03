@@ -78,9 +78,11 @@ All AI-generated application data must conform to validated JSON schemas.
 
 Free-form model responses must not be parsed using ad hoc string parsing or regex.
 
-## 2.5 One active experiment
+## 2.5 Active experiment limit
 
-V1 supports one active experiment per user.
+Up to three active experiments per user. V1 allowed one; 8x asked for more on the feedback call ([decision](docs/DECISIONS.md#several-active-experiments--4-nov-2026)). A database trigger holds the limit under concurrent starts. When experiments overlap, the analysis works out the overlapping days and the Lab Report says so.
+
+Keeping a low limit still simplifies:
 
 This simplifies:
 
@@ -1129,7 +1131,7 @@ Starts the experiment.
 Actions:
 
 - verify ownership
-- ensure no other active experiment exists
+- ensure the active experiment limit isn't reached
 - freeze experiment definition
 - set `status = active`
 - set `started_at`
@@ -1361,7 +1363,7 @@ Examples:
 - check-in belongs to active experiment
 - experiment belongs to authenticated user
 - completed experiment rejects new check-ins
-- only one active experiment per user
+- at most three active experiments per user
 - durations must be positive
 - prediction cannot change after start
 - report cannot be generated for another user's experiment
@@ -1547,7 +1549,7 @@ Test:
 Test:
 
 - valid state transitions
-- one active experiment per user
+- at most three active experiments per user
 - immutable prediction after start
 - completed experiments reject check-ins
 

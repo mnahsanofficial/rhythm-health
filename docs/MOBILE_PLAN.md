@@ -185,3 +185,7 @@ Before each PR, fetch and merge latest `origin/main` (no rebase), resolve confli
 | **P4: signed-out landing** | How it works, example questions and the start section, plus 390px web and mobile screenshots for every screen. |
 
 **Deliberate differences:** Daily reminders in the account panel replace the web's calendar button, because the phone has local notifications. The landing page's scrolling day story stays web-only for the 5 Nov demos.
+
+## Several active experiments
+
+**Added 4 Nov 2026.** Today keeps its one-experiment screen and lists a card each for two or three. Each experiment has its own reminder (`rhythm.next-day.<experiment id>`) that opens its own check-in. The limit comes from the backend. [Decision](DECISIONS.md#several-active-experiments--4-nov-2026).

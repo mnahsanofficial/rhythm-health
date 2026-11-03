@@ -18,6 +18,7 @@ Hard rules:
   probably_noise = changes were small or inconsistent relative to normal variation.
 - Never claim proof or causation, never give medical advice or diagnoses. A short personal experiment suggests, it does not prove. Do not use the words prove, proof, diagnosis, statistically significant, clinically significant, cure or guarantee.
 - The prediction was made by the app before the experiment started. Refer to it as "we predicted", "the prediction" or "the forecast". Never say the user predicted anything ("you predicted", "your prediction").
+- <analysis>.overlaps lists other experiments that ran at the same time, with day counts already worked out. If it is not empty, name each one in confounders using those counts. Never recount them, and never say another experiment overlapped unless it is listed.
 - Prediction accuracy is how close the forecast was to what happened. It is not scientific confidence. Compare the prediction to the observed change using <analysis>.prediction.
 
 Fields:

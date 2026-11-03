@@ -44,7 +44,7 @@ test('does not ask OS permission on launch, explains reminders after a recorded 
 test('schedules the exact API instant with a stable identifier and day-only content', async () => {
   render(<MobileApp />); await enable();
   const request = notifications.scheduleNotificationAsync.mock.calls[0][0];
-  expect(request).toMatchObject({ identifier: 'rhythm.next-day', content: { title: 'Day 5 of 10 is open', body: 'Your check-in takes about 30 seconds.' }, trigger: { type: 'date', date: new Date(timeline.next_day_at!) } });
+  expect(request).toMatchObject({ identifier: `rhythm.next-day.${active.id}`, content: { title: 'Day 5 of 10 is open', body: 'Your check-in takes about 30 seconds.' }, trigger: { type: 'date', date: new Date(timeline.next_day_at!) } });
   expect(JSON.stringify(request.content)).not.toContain(active.question);
 });
 
@@ -53,7 +53,7 @@ test('foreground refresh replaces the previous reminder, never a repeating calen
   timeline = { ...timeline, next_day_at: '2027-11-01T07:30:00Z' };
   await act(async () => { listeners.forEach(listener => listener('active')); });
   await waitFor(() => expect(notifications.scheduleNotificationAsync.mock.calls.length).toBeGreaterThan(before));
-  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`);
   expect(notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger).toMatchObject({ date: new Date(timeline.next_day_at!) });
 });
 
@@ -69,7 +69,7 @@ test('turning off cancels daily and test reminders and persists that choice', as
   render(<MobileApp />); await enable(); notifications.cancelScheduledNotificationAsync.mockClear();
   fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', false);
   await waitFor(() => expect(screen.getByRole('switch', { name: 'Daily reminders' })).not.toBeChecked());
-  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`);
   expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.test');
   expect([...preferences.values()]).toContain('off');
 });
@@ -79,14 +79,14 @@ test.each(['last', 'finished', 'empty'])('cancels when progress becomes %s', asy
   if (state === 'empty') hasExperiment = false;
   else timeline = { ...timeline, next_day_at: null, progress: { ...timeline.progress, ...(state === 'finished' ? { state: 'completed' as const } : {}) } };
   await act(async () => { listeners.forEach(listener => listener('active')); });
-  await waitFor(() => expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day'));
+  await waitFor(() => expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`));
   expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
 });
 
 test('sign-out cancels owned notifications before removing the native session', async () => {
   render(<MobileApp />); await enable(); notifications.cancelScheduledNotificationAsync.mockClear();
   await goTo('Sign out'); await screen.findByLabelText('Email');
-  await waitFor(() => expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day'));
+  await waitFor(() => expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`));
   expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
 
@@ -126,7 +126,7 @@ test('turning reminders off cancels immediately even if saving the preference fa
   jest.mocked(store.setItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
   fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', false);
   await screen.findByText(/Couldn't update your reminder/);
-  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`);
   expect(screen.getByRole('switch', { name: 'Daily reminders' })).not.toBeChecked();
 });
 
@@ -217,9 +217,10 @@ test('sample experiments cancel pending reminders and never schedule daily or te
   await service.setOwner('sample-owner');
   await service.choose(true);
   notifications.scheduleNotificationAsync.mockClear();
-  await service.refresh({ experiment: { ...active, is_seeded: true }, timeline });
+  pending.set(`rhythm.next-day.${active.id}`, { identifier: `rhythm.next-day.${active.id}`, content: {}, trigger: null });
+  await service.refresh([{ experiment: { ...active, is_seeded: true }, timeline }]);
   await service.test();
-  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day');
+  expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(`rhythm.next-day.${active.id}`);
   expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.test');
   expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
 });

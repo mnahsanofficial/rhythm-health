@@ -27,6 +27,7 @@ const report: LabReport = {
   experiment: completedExperiment,
   analysis: {
     personal_guess: null,
+    overlaps: [],
     primary_metric: "morning_energy",
     success_criteria_percent: 10,
     adherence: {

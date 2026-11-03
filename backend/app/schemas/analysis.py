@@ -79,6 +79,16 @@ class PersonalGuessComparison(BaseModel):
     error_points: float | None = None
 
 
+class ExperimentOverlap(BaseModel):
+    """Another experiment's test phase ran during this one. Worked out here, never by the AI."""
+
+    experiment_id: str
+    question: str
+    test_days_overlapping: int
+    baseline_days_overlapping: int
+    description: str
+
+
 class Analysis(BaseModel):
     primary_metric: str
     success_criteria_percent: float
@@ -87,3 +97,4 @@ class Analysis(BaseModel):
     prediction: PredictionComparison | None = None
     signal: Signal
     personal_guess: PersonalGuessComparison | None = None
+    overlaps: list[ExperimentOverlap] = []

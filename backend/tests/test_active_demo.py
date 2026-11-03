@@ -57,12 +57,20 @@ def test_start_sample_day_five_with_labelled_past_answers_and_no_report(db):
     assert not db.reports
 
 
-def test_active_slot_is_respected_without_deleting_or_modifying_anything(db):
+def test_sample_can_run_alongside_a_real_experiment(db):
     real = db.add_real(ALICE, 'active')
     response = client.post(START, json={})
+    assert response.status_code == 201
+    assert real in db.experiments and len(db.experiments) == 2
+
+
+def test_limit_is_respected_without_deleting_or_modifying_anything(db):
+    real = [db.add_real(ALICE, 'active', id=f'00000000-0000-0000-0000-00000000002{n}') for n in range(3)]
+    before = list(db.experiments)
+    response = client.post(START, json={})
     assert response.status_code == 409
-    assert 'active experiment' in response.json()['detail']
-    assert db.experiments == [real] and not db.checkins
+    assert 'limit' in response.json()['detail']
+    assert db.experiments == before and len(real) == 3 and not db.checkins
 
 
 def test_second_start_does_not_reset_existing_sample(db):
@@ -166,11 +174,13 @@ def test_reset_completed_demo_does_not_delete_active_sample(db, monkeypatch):
     assert len([c for c in db.checkins if c['experiment_id'] == sample['id']]) == 3
 
 
-def test_removing_sample_allows_starting_a_real_proposed_experiment(db, monkeypatch):
+def test_the_sample_takes_a_slot_and_removing_it_frees_that_slot(db, monkeypatch):
     sample = client.post(START, json={}).json()
+    db.add_real(ALICE, 'active', id='00000000-0000-0000-0000-000000000014')
+    db.add_real(ALICE, 'active', id='00000000-0000-0000-0000-000000000015')
     real = db.add_real(ALICE, 'proposed', id='00000000-0000-0000-0000-000000000013')
     path = f"/api/experiments/{real['id']}/start"
-    assert client.post(path).status_code == 409
+    assert client.post(path).json()['detail']['code'] == 'active_limit_reached'
     assert client.post(f"{START}/{sample['id']}/remove", json={'confirmed': True}).status_code == 200
     def start(_pid, _eid, started_at):
         real.update(status='active', started_at=started_at)

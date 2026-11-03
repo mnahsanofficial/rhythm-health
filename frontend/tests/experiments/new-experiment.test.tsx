@@ -64,18 +64,16 @@ beforeEach(() => {
 });
 
 describe("new experiment flow", () => {
-  it("checks for an active experiment before proposing when none is running", async () => {
+  it("asks for the plan directly, because the backend checks the limit before any paid call", async () => {
     const user = userEvent.setup();
-    const requestOrder: string[] = [];
+    let listCalls = 0;
     let proposalCalls = 0;
     server.use(
-      http.get(`${api}/api/experiments`, ({ request }) => {
-        requestOrder.push("active-check");
-        expect(new URL(request.url).search).toBe("?status=active");
+      http.get(`${api}/api/experiments`, () => {
+        listCalls += 1;
         return HttpResponse.json([]);
       }),
       http.post(`${api}/api/experiments/propose`, () => {
-        requestOrder.push("propose");
         proposalCalls += 1;
         return HttpResponse.json(proposeResponse);
       }),
@@ -85,34 +83,25 @@ describe("new experiment flow", () => {
     await submitQuestion(user);
 
     expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
-    expect(requestOrder).toEqual(["active-check", "propose"]);
     expect(proposalCalls).toBe(1);
+    expect(listCalls).toBe(0);
   });
 
-  it("shows the active experiment and skips proposing when one is already running", async () => {
+  it("explains the limit and points to Your lab when the backend refuses the proposal", async () => {
     const user = userEvent.setup();
-    let proposalCalls = 0;
     server.use(
-      http.get(`${api}/api/experiments`, ({ request }) => {
-        expect(new URL(request.url).search).toBe("?status=active");
-        return HttpResponse.json([activeExperiment]);
-      }),
-      http.post(`${api}/api/experiments/propose`, () => {
-        proposalCalls += 1;
-        return HttpResponse.json(proposeResponse);
-      }),
+      http.post(`${api}/api/experiments/propose`, () => HttpResponse.json({ detail: { code: "active_limit_reached", message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } }, { status: 409 })),
     );
     render(<NewExperiment />);
 
     await submitQuestion(user);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an active experiment");
-    expect(screen.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute(
-      "href",
-      `/experiments/${activeExperiment.id}`,
-    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("You're running 3 experiments, the most at once.");
+    expect(alert).not.toHaveTextContent("profile");
+    expect(within(alert).getByRole("link", { name: "Go to Your lab" })).toHaveAttribute("href", "/");
+    expect(within(alert).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Experiment and prediction preview" })).not.toBeInTheDocument();
-    expect(proposalCalls).toBe(0);
   });
 
   it("shows proposal loading and retry states, then the review preview and lets the user ask again", async () => {
@@ -179,7 +168,7 @@ describe("new experiment flow", () => {
     expect(screen.queryByRole("region", { name: "Experiment and prediction preview" })).not.toBeInTheDocument();
   });
 
-  it("checks for an active experiment, saves once, and starts the saved plan", async () => {
+  it("saves once and starts the saved plan, with no extra reads", async () => {
     const user = userEvent.setup();
     const listQueries: string[] = [];
     let savedRequest: unknown;
@@ -213,28 +202,25 @@ describe("new experiment flow", () => {
     releaseStart();
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
-    expect(listQueries).toEqual(["?status=active", "?status=active"]);
+    expect(listQueries).toEqual([]);
     expect(savedRequest).toEqual(saveExperimentRequest);
   });
 
-  it("does not save another proposal when an active experiment already exists", async () => {
+  it("keeps the saved plan when the limit is reached at the last moment, and retries without a duplicate", async () => {
     const user = userEvent.setup();
     let saveCalls = 0;
     let startCalls = 0;
-    let activeChecks = 0;
     server.use(
       http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(proposeResponse)),
-      http.get(`${api}/api/experiments`, () => {
-        activeChecks += 1;
-        return HttpResponse.json(activeChecks === 1 ? [] : [activeExperiment]);
-      }),
       http.post(`${api}/api/experiments`, () => {
         saveCalls += 1;
         return HttpResponse.json(experiment, { status: 201 });
       }),
       http.post(`${api}/api/experiments/${experiment.id}/start`, () => {
         startCalls += 1;
-        return HttpResponse.json(activeExperiment);
+        return startCalls === 1
+          ? HttpResponse.json({ detail: { code: "active_limit_reached", message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } }, { status: 409 })
+          : HttpResponse.json(activeExperiment);
       }),
     );
     render(<NewExperiment />);
@@ -243,15 +229,32 @@ describe("new experiment flow", () => {
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
     await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an active experiment");
-    expect(screen.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute(
-      "href",
-      `/experiments/${activeExperiment.id}`,
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Your experiment was saved, but it couldn’t start yet. You're running 3 experiments, the most at once.");
+    expect(within(alert).getByRole("link", { name: "Go to Your lab" })).toHaveAttribute("href", "/");
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
+    expect(saveCalls).toBe(1);
+    expect(startCalls).toBe(2);
+  });
+
+  it("recognises a start that already went through instead of reporting a failure", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(proposeResponse)),
+      http.post(`${api}/api/experiments`, () => HttpResponse.json(experiment, { status: 201 })),
+      http.post(`${api}/api/experiments/${experiment.id}/start`, () => HttpResponse.json({ detail: "Only a proposed experiment can be started (this one is active)" }, { status: 409 })),
+      http.get(`${api}/api/experiments/${experiment.id}`, () => HttpResponse.json(activeExperiment)),
     );
-    expect(within(preview).getByRole("button", { name: "Start this experiment" })).toBeDisabled();
-    expect(activeChecks).toBe(2);
-    expect(saveCalls).toBe(0);
-    expect(startCalls).toBe(0);
+    render(<NewExperiment />);
+
+    await submitQuestion(user);
+    const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("retries starting the saved experiment without creating a duplicate", async () => {
@@ -288,7 +291,7 @@ describe("new experiment flow", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
     expect(saveCalls).toBe(1);
     expect(startCalls).toBe(2);
-    expect(listCalls).toBe(2);
+    expect(listCalls).toBe(0);
   });
 });
 

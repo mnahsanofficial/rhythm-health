@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ApiError } from "@/lib/api/client";
-import { listExperiments, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
+import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
 import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
 import { PersonalGuess } from "@/components/experiments/personal-guess";
 import { QuestionForm } from "@/components/experiments/question-form";
@@ -87,12 +87,11 @@ export function ForecastCard({ prediction, metrics }: {
   );
 }
 
-function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startDisabled, headingLevel }: {
+function ProposalPreview({ result, onStart, onAskSomethingElse, starting, headingLevel }: {
   result: ProposeResponse;
   onStart: () => void;
   onAskSomethingElse: () => void;
   starting: boolean;
-  startDisabled: boolean;
   headingLevel: 1 | 2;
 }) {
   const proposal = result.proposal;
@@ -186,7 +185,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, startD
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" onClick={onStart} disabled={starting || startDisabled} className={`${primary} w-full sm:w-auto`}>
+        <button type="button" onClick={onStart} disabled={starting} className={`${primary} w-full sm:w-auto`}>
           {starting ? "Saving your experiment…" : "Start this experiment"}
         </button>
         <button type="button" onClick={onAskSomethingElse} disabled={starting} className={secondary}>
@@ -245,27 +244,31 @@ function ProposalSkeleton() {
   );
 }
 
-/** Temporary one-active policy. Remove the pre-proposal/save checks when the backend allows more. */
-async function findCreationBlocker() {
-  const [active] = await listExperiments("active");
-  return active ?? null;
+/** A 409 can mean an earlier start landed and only its response was lost, so read before reporting. */
+async function alreadyStarted(id: string) {
+  try {
+    return (await getExperiment(id)).status === "active";
+  } catch {
+    return false;
+  }
 }
 
 /** Shared entry, proposal, save and start flow; the host page owns auth/profile loading. */
 export function ExperimentFlow({
   profile,
   initialQuestion = "",
-  knownActiveExperiment = null,
   returnTo = "/experiments/new",
   headingLevel = 1,
   showStarters = true,
+  onReloadLab,
 }: {
   profile: Profile;
   initialQuestion?: string;
-  knownActiveExperiment?: Experiment | null;
   returnTo?: "/" | "/experiments/new";
   headingLevel?: 1 | 2;
   showStarters?: boolean;
+  /** Set when already on Your lab, where a link to it would do nothing. */
+  onReloadLab?: () => void;
 }) {
   const router = useRouter();
   const [question, setQuestion] = useState(
@@ -279,17 +282,19 @@ export function ExperimentFlow({
   const [error, setError] = useState<{
     status: number;
     message: string;
-    stage: "active-check" | "proposal";
   } | null>(null);
-  const [checkingActive, setCheckingActive] = useState(false);
+  const [limitMessage, setLimitMessage] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [activeExperiment, setActiveExperiment] = useState<Experiment | null>(null);
+  const [startAtLimit, setStartAtLimit] = useState(false);
   const [savedExperimentId, setSavedExperimentId] = useState<string | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const output = useRef<HTMLElement>(null);
   const hasShownResult = useRef(false);
-  const blockingExperiment = knownActiveExperiment ?? activeExperiment;
+
+  const labLink = onReloadLab
+    ? <button type="button" onClick={onReloadLab} className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</button>
+    : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</Link>;
 
   useEffect(() => {
     if (result) output.current?.focus();
@@ -299,43 +304,34 @@ export function ExperimentFlow({
 
   async function submit() {
     const text = question.trim();
-    if (inFlight.current || blockingExperiment || text.length < 5 || text.length > 500) return;
+    if (inFlight.current || limitMessage || text.length < 5 || text.length > 500) return;
     inFlight.current = true;
     setBusy(true);
-    setCheckingActive(true);
     setError(null);
     setStartError(null);
-    setActiveExperiment(null);
+    setStartAtLimit(false);
     setResult(null);
     setPersonalGuess(null);
     setGuessUnavailable(false);
-    let activeCheckComplete = false;
     try {
-      const blocking = await findCreationBlocker();
-      activeCheckComplete = true;
-      setCheckingActive(false);
-      if (blocking) {
-        setActiveExperiment(blocking);
-        setStartError("You already have an active experiment.");
-        return;
-      }
-
       const response = await proposeExperiment(text);
       if (response.safety.allowed && (!response.proposal || !response.prediction)) {
         throw new ApiError(502, "The plan came back incomplete. Please retry.");
       }
       setResult(response);
     } catch (e) {
+      if (isActiveLimitReached(e)) {
+        setLimitMessage(e.message);
+        return;
+      }
       const status = e instanceof ApiError ? e.status : 0;
       if (status === 401) router.replace(`/sign-in?next=${returnTo}`);
       setError({
         status,
         message: e instanceof Error ? e.message : "Something went wrong. Please try again.",
-        stage: activeCheckComplete ? "proposal" : "active-check",
       });
     } finally {
       inFlight.current = false;
-      setCheckingActive(false);
       setBusy(false);
     }
   }
@@ -348,7 +344,8 @@ export function ExperimentFlow({
     setError(null);
     setStartError(null);
     setSavedExperimentId(null);
-    setActiveExperiment(null);
+    setStartAtLimit(false);
+    setLimitMessage(null);
     input.current?.focus();
   }
 
@@ -358,16 +355,10 @@ export function ExperimentFlow({
     setStarting(true);
     setGuessUnavailable(false);
     setStartError(null);
-    setActiveExperiment(null);
+    setStartAtLimit(false);
     let experimentId = savedExperimentId;
     try {
       if (!experimentId) {
-        const blocking = await findCreationBlocker();
-        if (blocking) {
-          setActiveExperiment(blocking);
-          setStartError("You already have an active experiment.");
-          return;
-        }
         const saved = await saveExperiment({
           proposal: result.proposal,
           prediction: result.prediction,
@@ -388,19 +379,16 @@ export function ExperimentFlow({
       }
       if (experimentId) {
         setSavedExperimentId(experimentId);
-        if (cause instanceof ApiError && cause.status === 409 && cause.message.toLowerCase().includes("active")) {
-          setStartError("Your experiment was saved, but it couldn’t be started because another experiment is active.");
-          try {
-            const activeExperiments = await listExperiments("active");
-            setActiveExperiment(activeExperiments[0] ?? null);
-          } catch {
-            setStartError("Your experiment was saved, but we couldn’t check which experiment is active. You can retry starting it.");
-          }
+        if (isActiveLimitReached(cause)) {
+          setStartAtLimit(true);
+          setStartError(`Your experiment was saved, but it couldn’t start yet. ${cause.message}`);
+        } else if (cause instanceof ApiError && cause.status === 409 && await alreadyStarted(experimentId)) {
+          router.push(`/experiments/${encodeURIComponent(experimentId)}`);
         } else {
           setStartError(`Your experiment was saved, but it couldn’t be started: ${cause instanceof Error ? cause.message : "Please try again."}`);
         }
       } else {
-        setStartError(cause instanceof Error ? cause.message : "Couldn’t check for an active experiment. Please try again.");
+        setStartError(cause instanceof Error ? cause.message : "Couldn’t save your experiment. Please try again.");
       }
     } finally {
       inFlight.current = false;
@@ -421,38 +409,30 @@ export function ExperimentFlow({
               setError(null);
               setResult(null);
               setStartError(null);
-              setActiveExperiment(null);
+              setStartAtLimit(false);
+              setLimitMessage(null);
             }}
             onSubmit={() => void submit()}
             busy={busy}
-            checkingActive={checkingActive}
-            blocked={Boolean(blockingExperiment)}
+            blocked={Boolean(limitMessage)}
             headingLevel={headingLevel}
           />
           </>}
 
-          {checkingActive && <p role="status" className="mt-4 text-caption text-muted">Checking whether you already have an active experiment…</p>}
-
           {error && <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
-            <p className="font-medium">{error.stage === "active-check" ? "Couldn’t check for an active experiment." : error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : "Your question hasn’t been submitted successfully."}</p>
+            <p className="font-medium">{error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : "Your question hasn’t been submitted successfully."}</p>
             <p className="mt-2">{error.message}</p>
-            {error.stage === "proposal" && error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
+            {error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
           </div>}
 
-          {blockingExperiment && !result && (
+          {limitMessage && !result && (
             <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
-              <p>You already have an active experiment.</p>
-              <p className="mt-2 text-caption">Finish your current experiment before designing another.</p>
-              <Link
-                href={`/experiments/${encodeURIComponent(blockingExperiment.id)}`}
-                className="mt-3 inline-flex min-h-11 items-center underline"
-              >
-                Go to your active experiment
-              </Link>
+              <p>{limitMessage}</p>
+              {labLink}
             </div>
           )}
 
-          {busy && !checkingActive && <ProposalSkeleton />}
+          {busy && <ProposalSkeleton />}
       {result && !result.safety.allowed && <section ref={output} tabIndex={-1} aria-label="Question result" className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
             <>
               <p className="font-display text-title">Let&apos;s find a gentler experiment.</p>
@@ -486,7 +466,6 @@ export function ExperimentFlow({
               onStart={() => void beginExperiment()}
               onAskSomethingElse={() => chooseQuestion("")}
               starting={starting}
-              startDisabled={Boolean(activeExperiment)}
             />
           </>)}
           {startError && (
@@ -497,15 +476,10 @@ export function ExperimentFlow({
                   Continue without saving my guess
                 </button>
               )}
-              {activeExperiment ? (
-                <Link href={`/experiments/${encodeURIComponent(activeExperiment.id)}`} className="mt-3 inline-flex min-h-11 items-center underline">
-                  Go to your active experiment
-                </Link>
-              ) : (
-                <button type="button" className={`${secondary} mt-3 text-ink`} onClick={() => void beginExperiment()}>
-                  Try again
-                </button>
-              )}
+              {startAtLimit && labLink}
+              <button type="button" className={`${secondary} mt-3 text-ink`} onClick={() => void beginExperiment()}>
+                Try again
+              </button>
             </div>
           )}
         </div>

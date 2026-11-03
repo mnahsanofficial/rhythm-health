@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/experiments/capacity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Capacity */
+        get: operations["get_capacity_api_experiments_capacity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/experiments/{experiment_id}": {
         parameters: {
             query?: never;
@@ -290,6 +307,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ActiveCapacity
+         * @description How many experiments are running against the limit, so clients never hold the rule.
+         */
+        ActiveCapacity: {
+            /** Active */
+            active: number;
+            /** Limit */
+            limit: number;
+            /** Can Start */
+            can_start: boolean;
+        };
         /** Adherence */
         Adherence: {
             /** Baseline Days Planned */
@@ -321,6 +350,11 @@ export interface components {
             prediction?: components["schemas"]["PredictionComparison"] | null;
             signal: components["schemas"]["Signal"];
             personal_guess?: components["schemas"]["PersonalGuessComparison"] | null;
+            /**
+             * Overlaps
+             * @default []
+             */
+            overlaps: components["schemas"]["ExperimentOverlap"][];
         };
         /** BaselineMetric */
         BaselineMetric: {
@@ -544,6 +578,22 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * ExperimentOverlap
+         * @description Another experiment's test phase ran during this one. Worked out here, never by the AI.
+         */
+        ExperimentOverlap: {
+            /** Experiment Id */
+            experiment_id: string;
+            /** Question */
+            question: string;
+            /** Test Days Overlapping */
+            test_days_overlapping: number;
+            /** Baseline Days Overlapping */
+            baseline_days_overlapping: number;
+            /** Description */
+            description: string;
         };
         /**
          * ExperimentProgress
@@ -1143,6 +1193,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_capacity_api_experiments_capacity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveCapacity"];
                 };
             };
         };
