@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -275,7 +275,7 @@ describe("ask from Your lab", () => {
     expect(order).toEqual(["active-check", "active-check", "propose", "active-check", "save", "start"]);
   });
 
-  it("keeps today's check-in and shows the active warning before a paid request", async () => {
+  it("keeps today's check-in visible while designing another experiment", async () => {
     const user = userEvent.setup();
     signedIn();
     const propose = vi.fn(() => HttpResponse.json(proposeResponse));
@@ -289,7 +289,7 @@ describe("ask from Your lab", () => {
     await user.click(toggle);
     const field = screen.getByRole("textbox", { name: "Your question or goal" });
     expect(field).toHaveFocus();
-    expect(screen.getByRole("alert")).toHaveTextContent("You already have an active experiment.");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "See your experiment" })).not.toBeInTheDocument();
@@ -298,58 +298,29 @@ describe("ask from Your lab", () => {
     expect(screen.getByRole("heading", { name: "Your observations, day by day." })).toBeVisible();
     expect(screen.queryByText("Start with a hunch")).not.toBeInTheDocument();
     await user.type(field, "Does less caffeine improve my focus?");
-    expect(screen.getByRole("button", { name: "Design my experiment" })).toBeDisabled();
-    // Also guard the submit handler if the disabled button is bypassed.
-    fireEvent.submit(field.closest("form")!);
-    expect(propose).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Close question" }));
     expect(screen.getByRole("button", { name: "Test another habit" })).toHaveFocus();
     expect(screen.getByRole("heading", { name: experiment.question })).toBeVisible();
     expect(screen.getByRole("link", { name: "See your experiment" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Test another habit" }));
     expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue("Does less caffeine improve my focus?");
+    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
+    expect(propose).toHaveBeenCalledOnce();
   });
 
-  it("rechecks active status on submit and blocks a newly started experiment", async () => {
+  it("shows the limit if the backend refuses the proposal, without a second paid try", async () => {
     const user = userEvent.setup();
     signedIn();
-    let checks = 0;
-    const propose = vi.fn(() => HttpResponse.json(proposeResponse));
     server.use(
-      http.get(`${api}/api/experiments`, () => HttpResponse.json(++checks === 1 ? [] : [activeExperiment])),
-      http.post(`${api}/api/experiments/propose`, propose),
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+      http.post(`${api}/api/experiments/propose`, () => HttpResponse.json({ detail: { code: "active_limit_reached", message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } }, { status: 409 })),
     );
     render(home());
     await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), "Does evening walking help my sleep?");
     await user.click(screen.getByRole("button", { name: "Design my experiment" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("You already have an active experiment.");
-    expect(screen.getByRole("link", { name: "Go to your active experiment" })).toHaveAttribute("href", `/experiments/${experiment.id}`);
-    expect(propose).not.toHaveBeenCalled();
-  });
-
-  it("keeps the question and retries if the active lookup fails without proposing", async () => {
-    const user = userEvent.setup();
-    signedIn();
-    let checks = 0;
-    const propose = vi.fn(() => HttpResponse.json(proposeResponse));
-    server.use(
-      http.get(`${api}/api/experiments`, () => ++checks === 2
-        ? HttpResponse.json({ detail: "Experiments unavailable" }, { status: 503 })
-        : HttpResponse.json([])),
-      http.post(`${api}/api/experiments/propose`, propose),
-    );
-    render(home());
-    const field = await screen.findByRole("textbox", { name: "Your question or goal" });
-    await user.type(field, "Does evening walking help my sleep?");
-    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t check for an active experiment.");
-    expect(field).toHaveValue("Does evening walking help my sleep?");
-    expect(propose).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
-    expect(propose).toHaveBeenCalledOnce();
-    await user.click(screen.getByRole("button", { name: "Ask something else" }));
-    expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveFocus();
+    expect(await screen.findByRole("alert")).toHaveTextContent("You're running 3 experiments");
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 });
 

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LabReport } from "@/components/report/lab-report";
-import type { Experiment, LabReport as LabReportData } from "@/lib/types/api";
+import type { LabReport as LabReportData } from "@/lib/types/api";
 import { completedExperiment, experiment, labReport, writtenLabReport } from "../support/fixtures";
 import { server } from "../support/server";
 
@@ -67,7 +67,7 @@ describe("Lab Report flow", () => {
     server.use(http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
       ...writtenLabReport,
       experiment: { ...writtenLabReport.experiment, is_seeded: true },
-    })), http.get(`${api}/api/experiments`, () => HttpResponse.json([])));
+    })), http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })));
     render(<LabReport id={id} />);
 
     const notice = await screen.findByRole("note", { name: "Sample experiment" });
@@ -96,7 +96,7 @@ describe("Lab Report flow", () => {
     const gate = new Promise<void>(resolve => { finish = resolve; });
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(labReport)),
-      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
       http.post(`${api}/api/experiments/${id}/report`, async ({ request }) => {
         posts += 1;
         expect(new URL(request.url).searchParams.has("regenerate")).toBe(false);
@@ -130,7 +130,7 @@ describe("Lab Report flow", () => {
     let posts = 0;
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(labReport)),
-      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
       http.post(`${api}/api/experiments/${id}/report`, () => {
         posts += 1;
         return posts === 1 ? HttpResponse.json({ detail }, { status }) : HttpResponse.json(writtenLabReport);
@@ -154,7 +154,7 @@ describe("Lab Report flow", () => {
     };
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(misquoted)),
-      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
     );
     render(<LabReport id={id} />);
 
@@ -167,13 +167,10 @@ describe("Lab Report flow", () => {
     expect(verdict).not.toHaveTextContent("50");
   });
 
-  it("offers to run the suggested experiment, prefilled, when nothing else is running", async () => {
+  it("offers to run the suggested experiment, prefilled, while another is running", async () => {
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(writtenLabReport)),
-      http.get(`${api}/api/experiments`, ({ request }) => {
-        expect(new URL(request.url).searchParams.get("status")).toBe("active");
-        return HttpResponse.json([]);
-      }),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 2, limit: 3, can_start: true })),
     );
     render(<LabReport id={id} />);
     const next = await screen.findByRole("region", { name: "What to test next" });
@@ -183,17 +180,44 @@ describe("Lab Report flow", () => {
     );
   });
 
-  it("points to the running experiment instead, when one is active", async () => {
-    const active: Experiment = { ...experiment, id: "77777777-7777-4777-8777-777777777777", status: "active", question: "Does less screen time help me fall asleep?" };
+  it("points to Your lab instead, at the limit", async () => {
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(writtenLabReport)),
-      http.get(`${api}/api/experiments`, () => HttpResponse.json([active])),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 3, limit: 3, can_start: false })),
     );
     render(<LabReport id={id} />);
     const next = await screen.findByRole("region", { name: "What to test next" });
-    expect(await within(next).findByText(/already running an experiment/i)).toBeInTheDocument();
-    expect(within(next).getByRole("link", { name: "Go to your current experiment" })).toHaveAttribute("href", `/experiments/${active.id}`);
+    expect(await within(next).findByText(/running 3 experiments, the most at once/i)).toBeInTheDocument();
+    expect(within(next).getByRole("link", { name: "Go to Your lab" })).toHaveAttribute("href", "/");
     expect(within(next).queryByRole("link", { name: "Run this experiment" })).toBeNull();
+  });
+
+  it("says plainly when another experiment overlapped, using the backend's words", async () => {
+    const description = 'You were also testing "Does less coffee help?" on 4 of your 7 recorded test days, so part of this change may come from that.';
+    server.use(
+      http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
+        ...writtenLabReport,
+        analysis: { ...writtenLabReport.analysis, overlaps: [{
+          experiment_id: "77777777-7777-4777-8777-777777777777", question: "Does less coffee help?",
+          test_days_overlapping: 4, baseline_days_overlapping: 0, description,
+        }] },
+      })),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
+    );
+    render(<LabReport id={id} />);
+    const section = await screen.findByRole("region", { name: "Other experiments at the same time" });
+    expect(section).toHaveTextContent(description);
+  });
+
+  it("shows no overlap section on a report with none, including older reports", async () => {
+    const { overlaps: _unused, ...older } = writtenLabReport.analysis as typeof writtenLabReport.analysis & { overlaps?: unknown };
+    server.use(
+      http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({ ...writtenLabReport, analysis: older })),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
+    );
+    render(<LabReport id={id} />);
+    await screen.findByRole("region", { name: "What to test next" });
+    expect(screen.queryByRole("region", { name: "Other experiments at the same time" })).toBeNull();
   });
 
   it("shows the not-finished state when there is no report yet", async () => {
