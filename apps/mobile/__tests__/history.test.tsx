@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { AppState, type AppStateStatus } from 'react-native';
 import type { Experiment, LabReport } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
+import { goTo } from './support/nav';
 import { completedExperiment, experiment, labReport, profile, writtenLabReport } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 
@@ -67,8 +68,7 @@ afterEach(() => jest.restoreAllMocks());
 const press = (name: string | RegExp) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
 async function openHistory() {
   render(<MobileApp />);
-  const tab = await screen.findByRole('button', { name: 'History' });
-  await act(async () => { fireEvent.press(tab); });
+  await goTo('History');
 }
 const rows = () => screen.getAllByTestId('history-row');
 const paid = () => calls.filter(call => call.endsWith('/propose') || (call.startsWith('POST') && call.endsWith('/report')));
@@ -182,10 +182,10 @@ describe('history', () => {
 
   test('offline before any load sends nothing and says so', async () => {
     render(<MobileApp />);
-    const tab = await screen.findByRole('button', { name: 'History' });
+    await screen.findByRole('button', { name: /^Account menu/ });
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);
-    await act(async () => { fireEvent.press(tab); });
+    await goTo('History');
     expect(await screen.findByText('Reconnect to load your history.')).toBeVisible();
     expect(count(`GET ${COMPLETED}`)).toBe(0);
   });
@@ -205,22 +205,20 @@ describe('history', () => {
 });
 
 describe('completed demo', () => {
+  async function openDemoScreen() {
+    render(<MobileApp />);
+    await goTo('Demo');
+  }
   async function openDemo() {
-    await openHistory();
+    await openDemoScreen();
     await screen.findByRole('button', { name: 'Explore a completed example' });
     await press('Explore a completed example');
   }
 
   test('explains itself before anything is written', async () => {
-    await openHistory();
+    await openDemoScreen();
     expect(await screen.findByText('See a completed example')).toBeVisible();
     expect(screen.getByText("A sample experiment and its Lab Report, built from invented check-ins. It's never added to your own results and makes no AI calls. Opening it again resets the sample.")).toBeVisible();
-    expect(count(RESET)).toBe(0);
-  });
-
-  test('also starts from an empty Today', async () => {
-    render(<MobileApp />);
-    expect(await screen.findByRole('button', { name: 'Explore a completed example' })).toBeVisible();
     expect(count(RESET)).toBe(0);
   });
 
@@ -236,7 +234,7 @@ describe('completed demo', () => {
   });
 
   test('double taps reset once', async () => {
-    await openHistory();
+    await openDemoScreen();
     const button = await screen.findByRole('button', { name: 'Explore a completed example' });
     await act(async () => { fireEvent.press(button); fireEvent.press(button); });
     await screen.findByText('Sample experiment');
@@ -247,8 +245,8 @@ describe('completed demo', () => {
     defaults[`GET ${ACTIVE}`] = { body: [running] };
     await openDemo();
     await screen.findByText('Sample experiment');
-    await press('Back to history');
-    await press('Today');
+    await press('Back to demo');
+    await goTo('Your lab');
     expect(await screen.findByText('Day 2 of 10')).toBeVisible();
     expect(calls.filter(call => call.includes('/remove') || call === 'POST /api/demo/active')).toEqual([]);
   });
@@ -270,7 +268,7 @@ describe('completed demo', () => {
   });
 
   test('offline disables the reset', async () => {
-    await openHistory();
+    await openDemoScreen();
     await screen.findByRole('button', { name: 'Explore a completed example' });
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);

@@ -6,7 +6,7 @@ import { Forecast } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
-import { Action, Alert, Copy, styles as ui, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, styles as ui, Title, useStepFocus, Status } from './ui';
 
 type Failure = { status: number; message: string; stage: 'active-check' | 'proposal' };
 type Props = {
@@ -150,6 +150,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
   const length = question.trim().length;
   const working = busy !== null;
   return <View style={ui.stack}>
+    <BackLink to="Your lab" disabled={working} onPress={onBack} />
+    <Copy style={local.curiosity}>A little curiosity, a little evidence</Copy>
     <Title textRef={heading}>Ask a question.</Title>
     <Copy style={ui.muted}>What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.</Copy>
     <View>
@@ -194,7 +196,6 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', on
         <Copy>{starter}</Copy>
       </Pressable>)}
     </View>
-    <Action label="Back to Today" secondary disabled={working} onPress={onBack} />
   </View>;
 }
 
@@ -265,6 +266,7 @@ function PlanDetails({ proposal }: { proposal: ExperimentProposal }) {
 }
 
 const local = StyleSheet.create({
+  curiosity: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption },
   question: { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' },
   help: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm, marginTop: SPACING.sm },
   helpText: { ...NATIVE_TYPOGRAPHY.caption },

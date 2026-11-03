@@ -503,7 +503,7 @@ describe('opening a report', () => {
   test('Back returns to Today', async () => {
     await openFromToday();
     await screen.findByRole('header', { name: 'Prediction vs reality' });
-    await press('Back to Today');
+    await press('Back to your lab');
     expect(await screen.findByRole('button', { name: 'See your Lab Report' })).toBeVisible();
   });
 });

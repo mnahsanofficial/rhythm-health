@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, Linking, type AppStateStatus } from 'react-native';
 import { Reminders } from '../src/lib/reminders';
 import { MobileApp } from '../src/mobile-app';
+import { goTo } from './support/nav';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 import { notifications, notificationState, preferences, pending, responses, tapReminder } from './support/notifications';
@@ -29,7 +30,7 @@ beforeEach(() => {
   global.fetch = jest.fn(async url => ({ ok: true, status: 200, json: async () => String(url).endsWith('/api/profile') ? profile : String(url).endsWith('/progress') ? timeline : String(url).endsWith('/checkins') ? [] : hasExperiment ? [active] : [] }) as Response);
 });
 afterEach(() => jest.restoreAllMocks());
-async function settings() { fireEvent.press(await screen.findByRole('button', { name: 'Settings' })); await screen.findByRole('switch', { name: 'Daily reminders' }); }
+async function settings() { await goTo('Daily reminders'); await screen.findByRole('switch', { name: 'Daily reminders' }); }
 async function enable() { notificationState.granted = true; await settings(); fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled()); }
 
 test('does not ask OS permission on launch, explains reminders after a recorded check-in', async () => {
@@ -61,7 +62,7 @@ test('denied permission gives Settings guidance without blocking Today', async (
   render(<MobileApp />); await settings(); fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true);
   expect(await screen.findByText(/Reminders are off/)).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Open phone Settings' })); expect(Linking.openSettings).toHaveBeenCalled();
-  fireEvent.press(screen.getByRole('button', { name: 'Today' })); expect(await screen.findByText(active.question)).toBeVisible();
+  await goTo('Your lab'); expect(await screen.findByText(active.question)).toBeVisible();
 });
 
 test('turning off cancels daily and test reminders and persists that choice', async () => {
@@ -84,7 +85,7 @@ test.each(['last', 'finished', 'empty'])('cancels when progress becomes %s', asy
 
 test('sign-out cancels owned notifications before removing the native session', async () => {
   render(<MobileApp />); await enable(); notifications.cancelScheduledNotificationAsync.mockClear();
-  fireEvent.press(screen.getByRole('button', { name: 'Sign out' })); await screen.findByLabelText('Email');
+  await goTo('Sign out'); await screen.findByLabelText('Email');
   await waitFor(() => expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.next-day'));
   expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
@@ -162,7 +163,7 @@ test('a scheduling request that finishes after sign-out is cancelled', async () 
   notifications.scheduleNotificationAsync.mockImplementationOnce(async () => { await gate; return 'rhythm.next-day'; });
   render(<MobileApp />); await settings(); fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true);
   await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
-  fireEvent.press(screen.getByRole('button', { name: 'Sign out' })); await screen.findByLabelText('Email');
+  await goTo('Sign out'); await screen.findByLabelText('Email');
   await act(async () => { release(); });
   await waitFor(() => expect(mockAuth.signOut).toHaveBeenCalled());
   expect(Math.max(...notifications.cancelScheduledNotificationAsync.mock.invocationCallOrder)).toBeGreaterThan(Math.max(...notifications.scheduleNotificationAsync.mock.invocationCallOrder));
@@ -171,7 +172,7 @@ test('a scheduling request that finishes after sign-out is cancelled', async () 
 test('a cancellation failure stays visible after signing out and can be retried', async () => {
   render(<MobileApp />); await enable();
   notifications.cancelScheduledNotificationAsync.mockRejectedValueOnce(new Error('native cancel failed'));
-  fireEvent.press(screen.getByRole('button', { name: 'Sign out' })); await screen.findByLabelText('Email');
+  await goTo('Sign out'); await screen.findByLabelText('Email');
   expect(await screen.findByText(/Couldn't update your reminder/)).toBeVisible();
   await waitFor(() => expect(screen.getByRole('button', { name: 'Retry reminder' })).toBeEnabled());
   await waitFor(() => expect(mockAuth.signOut).toHaveBeenCalled());

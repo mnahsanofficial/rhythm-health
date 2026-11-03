@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput } from '@rhythm-health/contract';
-import { Action, Alert, Copy, Loading, styles, Title, Status } from './ui';
+import { Action, BackLink, Alert, Copy, Loading, styles, Title, Status } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
@@ -81,7 +81,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     } finally { saving.current = false; setBusy(false); }
   }
   return <View style={styles.stack}>
-    <Action label="Back to Today" secondary disabled={busy} onPress={onBack} />
+    <BackLink to="Your lab" disabled={busy} onPress={onBack} />
     <Copy style={styles.number}>Day {day} · {test ? 'Test' : 'Baseline'}</Copy>
     {experiment.is_seeded && <Copy style={styles.sectionTitle}>Sample experiment · Sample check-in</Copy>}
     <Title>Today&apos;s check-in.</Title>

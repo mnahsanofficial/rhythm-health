@@ -3,6 +3,7 @@ import { AccessibilityInfo, Animated, Platform } from 'react-native';
 import { MOTION_DURATION_MS } from '@rhythm-health/brand';
 import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
+import { goTo } from './support/nav';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
 const mockAuth = {
@@ -162,8 +163,7 @@ test('an expired profile session returns to sign-in with a clear message', async
 test('signs out only this device and removes private content', async () => {
   render(<MobileApp />); await signIn();
   await screen.findByText('Nothing running yet.');
-  fireEvent.press(await screen.findByRole('button', { name: 'Settings' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+  await goTo('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
   expect(screen.queryByText('Nothing running yet.')).toBeNull();
   expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
@@ -395,10 +395,9 @@ test('switching accounts cannot restore another account onboarding answers', asy
   expect(screen.queryByText('Better focus')).toBeNull();
 });
 
-test('Settings can reopen the saved rhythm for editing without creating another profile', async () => {
+test('The account panel can reopen the saved rhythm for editing without creating another profile', async () => {
   render(<MobileApp />); await signIn(); await screen.findByText('Nothing running yet.');
-  fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Update your rhythm' }));
+  await goTo('Update your rhythm');
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
   expect(screen.getByText('23:30 to 07:30, about 8 h asleep')).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));

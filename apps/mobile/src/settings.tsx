@@ -3,11 +3,11 @@ import { Linking, Platform, Switch, View } from 'react-native';
 import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
 import { useReminders } from './reminder-context';
 import { Action, Alert, Copy, styles, Title, Status } from './ui';
-export function Settings({ email, signOut, editProfile }: { email?: string; signOut: () => void; editProfile?: () => void }) {
+export function Settings() {
   const { service, state } = useReminders();
   const [error, setError] = useState(false);
   return <View style={styles.stack}>
-    <Title>Settings.</Title><Copy style={styles.muted}>A reminder when the next day opens, not another thing to remember.</Copy>
+    <Title>Daily reminders.</Title><Copy style={styles.muted}>A reminder when the next day opens, not another thing to remember.</Copy>
     {Platform.OS === 'web' && <Copy>Reminders are available in the phone app.</Copy>}
     <View style={styles.divider}><Copy>Daily reminders</Copy>
       <Switch style={{ minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction }} hitSlop={SPACING.sm} accessibilityLabel="Daily reminders" value={!state.data?.experiment.is_seeded && state.choice === 'on' && state.permission} disabled={state.data?.experiment.is_seeded || !state.ready || state.busy || Platform.OS === 'web'}
@@ -21,7 +21,6 @@ export function Settings({ email, signOut, editProfile }: { email?: string; sign
     {error && <Alert>Couldn&apos;t open Settings. Open your phone Settings and choose Notifications → Expo Go.</Alert>}
     {__DEV__ && <Action label="Send a test reminder in 10 seconds" secondary disabled={state.data?.experiment.is_seeded || state.busy || !state.permission || state.choice !== 'on' || state.data?.timeline.progress.state !== 'in_progress'} onPress={() => void service.test()} />}
     {state.notice && <Status>{state.notice}</Status>}
-    <View style={styles.divider}><Copy>{email}</Copy>{editProfile && <Action label="Update your rhythm" secondary onPress={editProfile} />}<Action label="Sign out" secondary onPress={signOut} /></View>
   </View>;
 }
 export function ReminderNotice({ feedbackOnly = false }: { feedbackOnly?: boolean }) {

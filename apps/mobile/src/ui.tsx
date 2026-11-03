@@ -54,14 +54,21 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
     </Pressable>
   );
 }
-export function Frame({ children, fontsReady = true }: { children: ReactNode; fontsReady?: boolean }) {
+/** The web's "← Your lab" link. The arrow is visual; the spoken name says where it goes. */
+export function BackLink({ to, onPress, disabled = false }: { to: string; onPress: () => void; disabled?: boolean }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={`Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+    style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }, disabled && styles.disabled]}>
+    <Copy style={{ color: COLORS.moss }}>← {to}</Copy>
+  </Pressable>;
+}
+export function Frame({ children, header, fontsReady = true }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean }) {
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollToTop = useCallback(() => { scroller.current?.scrollTo?.({ y: 0, animated: false }); }, []);
   return (
     <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+      {header}
       <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.column}>
-          <Copy style={styles.wordmark}>Rhythm</Copy>
           <View style={styles.content}>{children}</View>
         </View>
       </ScrollView>
@@ -82,8 +89,8 @@ export const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.oat },
   scroll: { flexGrow: 1, padding: LAYOUT.gutter.min },
   column: { width: '100%', maxWidth: LAYOUT.contentWidth / 3, alignSelf: 'center' },
-  wordmark: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title, paddingVertical: SPACING.md, color: COLORS.ink },
-  content: { paddingTop: SPACING.xl, paddingBottom: SPACING.xxl, gap: SPACING.lg },
+  backLink: { minHeight: LAYOUT.primaryAction, alignSelf: 'flex-start', justifyContent: 'center' },
+  content: { paddingTop: SPACING.lg, paddingBottom: SPACING.xxl, gap: SPACING.lg },
   body: { fontFamily: FONT_FAMILIES.sans, ...NATIVE_TYPOGRAPHY.body, color: COLORS.ink, flexShrink: 1 },
   title: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY['display-sm'], color: COLORS.ink },
   number: { fontFamily: FONT_FAMILIES.mono, ...NATIVE_TYPOGRAPHY.body, color: COLORS.moss },
@@ -98,7 +105,7 @@ export const styles = StyleSheet.create({
   stack: { gap: SPACING.md },
   action: { minHeight: LAYOUT.primaryAction, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.moss, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center' },
-  actionText: { ...NATIVE_TYPOGRAPHY.lead, color: COLORS.paper, textAlign: 'center' },
+  actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.lead, color: COLORS.paper, textAlign: 'center' },
   secondary: { backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   disabled: { opacity: 0.5 },
   alert: { color: COLORS.clay, backgroundColor: COLORS['clay-tint'], padding: SPACING.md, borderRadius: RADII.card },
