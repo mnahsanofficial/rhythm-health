@@ -80,7 +80,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
     });
     client.auth.getSession().then(({ data, error }) => {
       if (cancelled) return;
-      if (error) setAuthFailure('restore'); else setSession(data.session);
+      if (error) setAuthFailure('restore'); else { lastOwner.current = data.session?.user.id ?? null; setSession(data.session); }
       setReady(true);
     }).catch(() => { if (!cancelled) { setAuthFailure('restore'); setReady(true); } });
     const refresh = () => {
@@ -104,7 +104,9 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       if (cancelled) return;
       if (cause instanceof ApiError && cause.status === 401) {
         void signOut('Your session has expired. Sign in again.');
-      } else setProfile({ kind: 'error', message: cause instanceof Error ? cause.message : "Couldn't load your profile. Try again." });
+      } else setProfile(current => current.kind === 'ready' && current.owner === owner && current.profile
+        ? current // A background re-read after a token refresh must not unmount the open screen and its state.
+        : { kind: 'error', message: cause instanceof Error ? cause.message : "Couldn't load your profile. Try again." });
     });
     return () => { cancelled = true; };
   }, [token, owner, offline, profileAttempt, signOut]);
@@ -134,7 +136,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       /> : <>
         {profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && editingProfile ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline} initial={profile.profile}
             onSaved={value => { setProfile({ kind: 'ready', profile: value, owner: session.user.id }); setEditingProfile(false); }} onExpired={expire} onCancel={() => setEditingProfile(false)} />
-          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} openWeb={openWeb} onExpired={expire} email={session.user.email} signOut={() => void signOut()} editProfile={() => setEditingProfile(true)} />
+          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} openWeb={openWeb} onExpired={expire} email={session.user.email} signOut={() => void signOut()} editProfile={() => setEditingProfile(true)} />
           : profile.kind === 'ready' && profile.owner === owner && profile.profile === null ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline}
             onSaved={value => setProfile({ kind: 'ready', profile: value, owner: session.user.id })} onExpired={expire} />
           : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>

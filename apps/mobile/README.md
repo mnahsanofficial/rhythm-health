@@ -1,6 +1,6 @@
 # Rhythm mobile
 
-Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Proposals, finishing, reports, history and the completed demo remain the next mobile milestones in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
+Expo SDK 58, Expo Router, React 19.3 and React Native 0.88.1. The app supports native sign-up and onboarding, encrypted session restoration, profile loading, Today and daily Check-in. Local next-day reminders, Settings and read-only Progress complete the daily loop. Asking a question and starting an experiment are native (M2). Finishing, reports, history and the completed demo remain the next mobile milestones in [the full-app plan](../../docs/MOBILE_PLAN.md#full-app).
 
 ## Install and run
 
@@ -52,7 +52,7 @@ Sessions and refresh tokens stay in Expo SecureStore. The adapter splits Unicode
 
 ## Today and Check-in
 
-[Today](src/today.tsx) loads `GET /api/experiments?status=active`, then `GET /api/experiments/{id}/progress`. The response owns the day, phase, recorded state and next opening; the app formats returned timestamps in the phone's timezone. It refreshes on foreground and after a save. No active experiment offers a web link. Ended experiments link to finishing on the web; completed ones link to the report. Cached data stays labelled offline, with Check-in disabled; this is an in-memory cache, not an offline database.
+[Today](src/today.tsx) loads `GET /api/experiments?status=active`, then `GET /api/experiments/{id}/progress`. The response owns the day, phase, recorded state and next opening; the app formats returned timestamps in the phone's timezone. It refreshes on foreground and after a save. No active experiment opens the native question. Ended experiments link to finishing on the web; completed ones link to the report. Cached data stays labelled offline, with Check-in disabled; this is an in-memory cache, not an offline database.
 
 On active test days, [Your normal](src/baseline-context.tsx) appears before the intervention. Its ranges/counts/descriptions come from the progress response's optional `baseline_summary`, with an honest missing-baseline state and no extra request or phone calculation. [Contract and verification](../../docs/PROGRESS_API.md#normal-day-context-s8).
 
@@ -156,3 +156,15 @@ Report the result before PR creation. After that gate, fetch/merge latest main, 
 ### M1 live bundler recovery
 
 After the picker dependency installation, the two still-running Metro processes reproduced iOS HTTP 500 failures: port 8081 could not resolve SVG's `./fabric`, and port 8084 could not resolve `react-native-safe-area-context`. Both packages and SVG's fabric entry were present on disk. The processes had been left running during a clean install; fresh-cache exports passing had not verified those already-running development servers. Stop the stale processes, restart against the complete installed tree, and verify the actual development bundle, not only a production export. No reinstall or resolver override is needed for this recovery. The normal native start command now includes `--clear`. After recovery, live iOS and Android development bundle requests returned HTTP 200 on both ports 8081 and 8084; 131 native tests, mobile lint/typecheck and log checks also passed. No dependencies or product code changed for this recovery.
+
+## M2: ask, guess, reveal and start (3 Nov 2026)
+
+[Proposal flow](src/proposal.tsx) replaces the web hand-off on Today. It matches the web's copy and rules: a 5–500 character question, goal-based suggestions that only fill the field, a safety block with its reason and alternative, and the guess before any forecast is on screen (−100 to +200, zero, signed values and comma decimals). When `personal_guess_available` is false there is no field, only the unavailable note. No new endpoints, backend changes, migrations or dependencies.
+
+**Paid-call guards.** `POST /api/experiments/propose` is only sent from an explicit tap on Design my experiment or Retry, after `GET /api/experiments?status=active` succeeds with nothing running. One synchronous lock covers both proposing and starting, so double taps send one request. The result stays in the flow's state: returning to the foreground or a token refresh sends nothing, and a failed background profile read no longer unmounts the open screen. Closing the app or an expired session loses the unsaved proposal; asking again is a new explicit paid call.
+
+**Start.** Rechecks the slot, saves once with `SaveExperimentRequest`, starts, and lands on Today with server progress, which also reconciles reminders. The saved ID is kept, so a failed start retries only the start. Continue without saving my guess appears only for the `personal_guess_unavailable` error. A 409 on start re-reads the active experiment: if it is this one, the earlier start landed and the app goes to Today.
+
+**Known limit.** If the save's response is lost after the server stored it, Try again stores a second `proposed` draft. It never becomes active and appears nowhere in the app, but the row exists. Fixing it needs an idempotency key on the backend, so it isn't in M2.
+
+Automated: 183 native tests with fake auth, network and storage. Browser: isolated fake-config web export at 390px and 1440px, all auth and API responses intercepted and other traffic blocked; [screenshots](../../docs/screenshots/mobile-proposal-flow/) use sample fixtures. No paid calls or shared-database writes were made. Browser evidence does not prove native keyboard behaviour, VoiceOver focus or the physical phone.
