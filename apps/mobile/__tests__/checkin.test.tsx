@@ -86,7 +86,7 @@ async function answer() {
 test('all four metric types save the typed contract and return to recorded Today automatically', async () => {
   await open(); await answer();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" })); });
-  expect(await screen.findByText('Done for today')).toBeVisible();
+  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
   expect(posts).toEqual([{ intervention_completed: true, metric_values: { morning_energy: 7, breaks: -2.5, minutes_to_sleep: 20.5, screen_free: false }, note: 'A quiet evening.' }]);
 });
 
@@ -111,7 +111,7 @@ test('baseline omits the test-day question and sends no intervention answer', as
   fireEvent.changeText(screen.getByLabelText('Breaks'), '0'); fireEvent.changeText(screen.getByLabelText('Minutes to fall asleep, in minutes'), '0');
   fireEvent.press(screen.getByRole('radio', { name: 'Screen-free evening: No' }));
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" })); });
-  await screen.findByText('Done for today');
+  await screen.findByText(/^Day \d+ recorded\.$/);
   expect(posts[0]).not.toHaveProperty('intervention_completed');
   expect(posts[0].metric_values.breaks).toBe(0);
 });
@@ -133,7 +133,7 @@ test('failed saves keep every answer and retry only when the person asks', async
   expect(screen.getByLabelText('Optional note')).toHaveDisplayValue('  A quiet evening.  ');
   expect(posts).toHaveLength(1);
   fireEvent.press(screen.getByRole('button', { name: 'Try saving again' }));
-  expect(await screen.findByText('Done for today')).toBeVisible();
+  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
   expect(posts).toHaveLength(2);
 });
 
@@ -175,7 +175,7 @@ test('a saved check-in whose progress reload fails is not submitted again', asyn
   expect(await screen.findByText(/check-in was saved/i)).toBeVisible();
   expect(posts).toHaveLength(1); failRefresh = false;
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByText('Done for today')).toBeVisible();
+  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
   expect(posts).toHaveLength(1);
 });
 
@@ -194,7 +194,7 @@ test('a second Save tap is ignored while the first request is pending', async ()
   const busy = await screen.findByRole('button', { name: 'Saving…' });
   expect(busy).toBeDisabled(); fireEvent.press(busy); expect(sending).toBe(1);
   await act(async () => { release(); });
-  expect(await screen.findByText('Done for today')).toBeVisible(); expect(posts).toHaveLength(1);
+  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible(); expect(posts).toHaveLength(1);
 });
 
 test('a save with an expired session hides the form and signs out', async () => {
@@ -208,7 +208,7 @@ test.each([true, false])('save confirmation stays immediate with reduced motion 
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduced);
   const timing = jest.spyOn(Animated, 'timing').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
   await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
-  expect(await screen.findByText('Done for today')).toBeVisible();
+  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
   expect(screen.getByText('Check-in saved.')).toBeVisible();
   if (reduced) expect(timing).not.toHaveBeenCalled();
   else expect(timing).toHaveBeenCalled();
@@ -229,7 +229,7 @@ test('a saved check-in reschedules the opted-in reminder from refreshed progress
   await open(); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
   const before = notifications.scheduleNotificationAsync.mock.calls.length;
   await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
-  await screen.findByText('Done for today');
+  await screen.findByText(/^Day \d+ recorded\.$/);
   await waitFor(() => expect(notifications.scheduleNotificationAsync.mock.calls.length).toBeGreaterThan(before));
   expect(notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger).toMatchObject({ date: new Date('2026-11-02T18:45:00Z') });
 });
@@ -238,7 +238,7 @@ test('a saved check-in reschedules the opted-in reminder from refreshed progress
 test("a next-day notification opens a fresh form without copying yesterday's unsaved answers", async () => {
   await open(); await answer(); serverDay = 5; active.progress = { ...active.progress, phase_day: 2 };
   await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', active.id))); });
-  expect(await screen.findByText('Day 5 · Test')).toBeVisible();
+  expect(await screen.findByText('← Day 5 of 10')).toBeVisible();
   await waitFor(() => expect(screen.getByLabelText('Breaks')).toHaveDisplayValue(''));
   expect(screen.getByLabelText('Optional note')).toHaveDisplayValue(''); expect(posts).toHaveLength(0);
 });

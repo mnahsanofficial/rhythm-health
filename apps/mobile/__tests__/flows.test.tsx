@@ -132,7 +132,12 @@ describe('check-in', () => {
   test('if the refresh fails, the saved check-in stays saved and is not sent again', async () => {
     await openCheckin();
     answerAll();
-    routes[`GET /api/experiments/${ID}/progress`] = { status: 503, body: {} };
+    const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
+    fake.mockImplementation(async (url, options) => {
+      const reply = await original(url, options);
+      if (options?.method === 'POST') routes[`GET /api/experiments/${ID}/progress`] = { status: 503, body: {} };
+      return reply;
+    });
     await press("Save today's check-in");
     expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
     expect(await screen.findByText('Your check-in was saved. Refresh Today to see your progress.')).toBeVisible();

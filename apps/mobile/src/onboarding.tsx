@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, findNodeHandle, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { COLORS, LAYOUT, MOTION_DURATION_MS, SPACING } from '@rhythm-health/brand';
+import { COLORS, LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type Profile, type ProfileInput } from '@rhythm-health/contract';
 import { TimeField } from './time-field';
 import { Action, Alert, Copy, Loading, styles, Status } from './ui';
@@ -91,7 +91,12 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
     {offline && <Alert>No connection. Your answers stay on this device; reconnect to save your rhythm.</Alert>}
     {storageError && <><Alert>Couldn&apos;t keep your setup on this device. Your answers are still here while this screen is open.</Alert>
       <Action label="Retry keeping my answers" secondary onPress={() => persist(data)} /></>}
-    {step !== 0 && step !== 8 && <Copy style={styles.number}>{String(step).padStart(2, '0')} / 07</Copy>}
+    {step !== 0 && step !== 8 && <>
+      <View accessible accessibilityRole="progressbar" accessibilityLabel="Setup progress" accessibilityValue={{ min: 1, max: 7, now: step, text: `Question ${step} of 7` }} style={local.segments}>
+        {[1, 2, 3, 4, 5, 6, 7].map(n => <View key={n} style={[local.segment, n <= step! && local.segmentDone]} />)}
+      </View>
+      <Copy style={styles.number}>{String(step).padStart(2, '0')} / 07</Copy>
+    </>}
     <Text ref={heading} accessibilityRole="header" accessible {...(Platform.OS === 'web' ? { tabIndex: -1 } : {})} style={styles.title}>
       {step === 0 ? 'First, your rhythm.' : step === 8 ? "Here's your rhythm." : QUESTIONS[step! - 1][0]}
     </Text>
@@ -216,6 +221,9 @@ function RhythmRing({ draft, description = true }: { draft: Draft; description?:
   </View>;
 }
 const local = StyleSheet.create({
+  segments: { flexDirection: 'row', gap: SPACING.xs + 2 },
+  segment: { flex: 1, height: SPACING.xs + 2, borderRadius: RADII.pill, backgroundColor: COLORS.line },
+  segmentDone: { backgroundColor: COLORS.moss },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   choice: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', padding: SPACING.md, gap: SPACING.xs, backgroundColor: COLORS.paper,
     borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, borderRadius: SPACING.lg },

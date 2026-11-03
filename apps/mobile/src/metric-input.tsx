@@ -11,8 +11,8 @@ export function Radio({ label, selected, onPress, disabled, text = label }: {
     disabled={disabled} onPress={onPress} style={({ pressed }) => ({
       minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, justifyContent: 'center', alignItems: 'center',
       padding: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2,
-      borderColor: selected ? COLORS.moss : COLORS.line, backgroundColor: selected || pressed ? COLORS['moss-tint'] : COLORS.paper,
-    })}><Copy>{text}</Copy></Pressable>;
+      borderColor: selected ? COLORS.moss : COLORS.line, backgroundColor: selected ? COLORS.moss : pressed ? COLORS['moss-tint'] : COLORS.paper,
+    })}><Copy style={selected ? { color: COLORS.paper } : undefined}>{text}</Copy></Pressable>;
 }
 export function MetricInput({ metric, value, onChange, disabled, error }: {
   metric: Metric; value: string | boolean | undefined; onChange: (value: string | boolean) => void; disabled: boolean; error?: string;
@@ -21,7 +21,7 @@ export function MetricInput({ metric, value, onChange, disabled, error }: {
   const low = metric.min_label ?? 'Low', high = metric.max_label ?? 'High';
   const min = metric.min ?? 1, max = metric.max ?? 10;
   return <View style={styles.stack}>
-    <Copy>{metric.label}</Copy>
+    <Copy testID="metric-label" accessibilityRole="header" style={styles.sectionTitle}>{metric.label}</Copy>
     {metric.type === 'scale' && <Copy style={styles.muted}>{min} {low} · {max} {high}</Copy>}
     {metric.type === 'boolean' ? <View accessibilityRole="radiogroup" accessibilityLabel={metric.label} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
       {[true, false].map(choice => <Radio key={String(choice)} label={`${metric.label}: ${choice ? 'Yes' : 'No'}`} text={choice ? 'Yes' : 'No'}

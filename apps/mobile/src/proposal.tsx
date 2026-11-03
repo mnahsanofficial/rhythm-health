@@ -172,7 +172,11 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
     {busy === 'proposing' && <View style={ui.stack}>
       <Status>Finding a small change you can test…</Status>
       <Copy style={ui.muted}>Your plan and forecast will arrive together. This can take a little while.</Copy>
-      <View accessible={false} style={ui.skeletonBody} />
+      {[['01', 'A suitable question', 'Check that this fits a small habit experiment.'], ['02', 'A plan for your day', 'Shape one change around your routine.'], ['03', 'An honest forecast', 'Estimate a range, including what is uncertain.']].map(([number, title, text]) => <View key={number} style={local.ingredient}>
+        <Copy accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={local.curiosity}>{number}</Copy>
+        <Copy>{title}</Copy>
+        <Copy style={local.helpText}>{text}</Copy>
+      </View>)}
     </View>}
     {failure && <View style={ui.stack}>
       <Alert>{failureTitle(failure)} {failure.message}</Alert>
@@ -189,14 +193,15 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', kn
         <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
       </>}
     </View>}
-    {!knownActive && <View style={ui.divider}>
+    {!knownActive && <View style={local.hunches}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Start with a hunch</Copy>
       <Copy style={ui.muted}>Inspired by your goals and everyday questions. Pick one, then make it yours.</Copy>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
-        onPress={() => reset(starter)} style={({ pressed }) => [local.starter, pressed && { backgroundColor: COLORS['moss-tint'] }]}>
-        <Copy>{starter}</Copy>
+        onPress={() => reset(starter)} style={({ pressed }) => [local.starter, pressed && { backgroundColor: COLORS.paper }]}>
+        <Copy>{starter} <Copy accessible={false} style={{ color: COLORS.moss }}>↗</Copy></Copy>
       </Pressable>)}
     </View>}
+    {!knownActive && <Copy style={local.helpText}>First a plan. Then a prediction. You decide whether to begin.</Copy>}
   </View>;
 }
 
@@ -246,11 +251,14 @@ function PlanDetails({ proposal }: { proposal: ExperimentProposal }) {
     <View style={ui.divider}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>{`A ${total}-day timeline`}</Copy>
       <Copy style={ui.muted}>{`${proposal.baseline_days} baseline · ${proposal.intervention_days} test`}</Copy>
-      <View accessible accessibilityLabel={`Days 1 to ${proposal.baseline_days} are baseline. Days ${proposal.baseline_days + 1} to ${total} are test days.`} style={local.days}>
+      <View testID="plan-days" accessible accessibilityLabel={`Days 1 to ${proposal.baseline_days} are baseline. Days ${proposal.baseline_days + 1} to ${total} are test days.`} style={local.days}>
         {Array.from({ length: total }, (_, index) => {
           const baseline = index < proposal.baseline_days;
-          return <View key={index} style={[local.day, { backgroundColor: COLORS[baseline ? 'night-tint' : 'moss-tint'] }]}>
-            <Copy style={[ui.number, local.dayNumber, { color: COLORS[baseline ? 'night' : 'moss'] }]}>{index + 1}</Copy>
+          return <View key={index} style={local.dayCell}>
+            <View style={[local.day, { backgroundColor: COLORS[baseline ? 'night-tint' : 'moss-tint'] }]}>
+              <Copy style={[ui.number, local.dayNumber, { color: COLORS[baseline ? 'night' : 'moss'] }]}>{index + 1}</Copy>
+            </View>
+            <Copy maxFontSizeMultiplier={1.2} style={local.dayLabel}>{baseline ? 'Baseline' : 'Test'}</Copy>
           </View>;
         })}
       </View>
@@ -280,11 +288,15 @@ const local = StyleSheet.create({
   reviewText: { color: COLORS.clay },
   fixed: { padding: SPACING.md, gap: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   change: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
-  days: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  days: { flexDirection: 'row', flexWrap: 'wrap', rowGap: SPACING.sm },
+  dayCell: { width: '20%', alignItems: 'center', gap: SPACING.xs },
+  dayLabel: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
+  ingredient: { gap: SPACING.xs, paddingTop: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
+  hunches: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
   day: { minWidth: LAYOUT.tapTarget, minHeight: LAYOUT.tapTarget, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill },
   dayNumber: { ...NATIVE_TYPOGRAPHY.caption },
   metric: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
   guessRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   guessInput: { flex: 1, ...NATIVE_TYPOGRAPHY.lead },
-  starter: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
+  starter: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.moss },
 });
