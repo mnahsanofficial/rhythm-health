@@ -72,7 +72,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
     </View>}
     <View style={ui.stack}>
       <Copy style={local.eyebrow}>Lab Report{finishedOn ? ` · finished ${finishedOn}` : ''}</Copy>
-      <Title textRef={heading}>{experiment.question}</Title>
+      <Title small textRef={heading}>{experiment.question}</Title>
     </View>
     {offline && <Status style={ui.muted}>You&apos;re offline. These results are the last ones loaded.</Status>}
 

@@ -147,10 +147,12 @@ function ActiveLab({ data: { experiment, timeline }, onAsk, onDetail }: { data: 
   const { progress } = timeline;
   const baseline = progress.phase === 'baseline';
   return <>
-    <Copy style={styles.number}>{progress.state === 'in_progress' ? `Day ${progress.day_number} of ${progress.total_days}`
-      : progress.state === 'ended' ? 'Experiment days ended' : progress.state === 'completed' ? 'Completed' : 'Not started'}</Copy>
-    <Action label="Test another habit" onPress={onAsk} />
-    <Title>{experiment.question}</Title>
+    <View style={labStyles.top}>
+      <Copy style={labStyles.day}>{progress.state === 'in_progress' ? `Day ${progress.day_number} of ${progress.total_days}`
+        : progress.state === 'ended' ? 'Experiment days ended' : progress.state === 'completed' ? 'Completed' : 'Not started'}</Copy>
+      <Action label="Test another habit" inline onPress={onAsk} />
+    </View>
+    <Title small>{experiment.question}</Title>
     <BaselineContext timeline={timeline} />
     <View style={labStyles.change}>
       <Copy style={styles.muted}>{baseline ? 'Keep your usual routine' : 'Your small change'}</Copy>
@@ -161,6 +163,8 @@ function ActiveLab({ data: { experiment, timeline }, onAsk, onDetail }: { data: 
   </>;
 }
 const labStyles = StyleSheet.create({
+  top: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm },
+  day: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   change: { gap: SPACING.xs, borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.moss, paddingLeft: SPACING.md },
   action: { ...NATIVE_TYPOGRAPHY.lead },
 });

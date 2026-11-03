@@ -14,6 +14,7 @@ import { ReminderProvider, useReminders } from './reminder-context';
 import { ReminderNotice } from './settings';
 import { Today } from './today';
 import { AuthForm } from './auth-form';
+import { Landing } from './landing';
 import { Onboarding } from './onboarding';
 import { clearDraft } from './lib/onboarding';
 import { readConfig } from './lib/config';
@@ -58,13 +59,15 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   const [authAttempt, setAuthAttempt] = useState(0);
   const [editingProfile, setEditingProfile] = useState(false);
   const [section, setSection] = useState<Section>('lab');
+  /** A cold start with no session opens on the public page; signing out or expiring goes to the form. */
+  const [visitor, setVisitor] = useState<'landing' | 'signIn' | 'signUp'>('landing');
   const [navigation, setNavigation] = useState(0);
   const pendingDraftRemoval = useRef<string | null>(null);
   const lastOwner = useRef<string | null>(null);
 
   const signOut = useCallback(async (reason: string | null = null) => {
     if (!reason && session) pendingDraftRemoval.current = session.user.id;
-    setSection('lab'); setEditingProfile(false); setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
+    setVisitor('signIn'); setSection('lab'); setEditingProfile(false); setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
     try {
       if (pendingDraftRemoval.current) { await clearDraft(pendingDraftRemoval.current); pendingDraftRemoval.current = null; }
       await reminders.signOut();
@@ -118,7 +121,8 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   const retry = () => { setReady(false); setAuthFailure(null); setProfile({ kind: 'loading' }); setAuthAttempt(n => n + 1); };
 
   const hasProfile = profile.kind === 'ready' && profile.owner === owner && profile.profile !== null;
-  const header = <AppHeader account={session ? {
+  const onLanding = ready && !session && !authFailure && visitor === 'landing';
+  const header = <AppHeader onSignIn={onLanding ? () => setVisitor('signIn') : undefined} account={session ? {
     email: session.user.email ?? 'your account', section, hasProfile,
     onSection: next => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); },
     onEditProfile: () => setEditingProfile(true),
@@ -129,8 +133,8 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       {authFailure ? <>
         <Alert>{authFailure === 'restore' ? "Couldn't restore your saved session." : "Couldn't remove your saved session."} Try again.</Alert>
         <Action label="Try again" onPress={authFailure === 'signout' ? () => void signOut(message) : retry} />
-      </> : !ready ? <Loading message="Opening your rhythm…" /> : !session ? <AuthForm
-        offline={offline} message={message}
+      </> : !ready ? <Loading message="Opening your rhythm…" /> : !session ? visitor === 'landing' ? <Landing onStart={() => setVisitor('signUp')} /> : <AuthForm key={visitor}
+        offline={offline} message={message} initialMode={visitor} onBack={message ? undefined : () => setVisitor('landing')}
         authenticate={async (mode, email, password) => {
           const { data, error } = mode === 'signIn'
             ? await client.auth.signInWithPassword({ email, password })

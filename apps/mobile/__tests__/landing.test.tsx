@@ -49,14 +49,14 @@ test('the header offers Sign in, which opens the form on sign-in', async () => {
 test('Run your first experiment opens account creation', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'How it works' });
-  await press('Run your first experiment');
+  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Run your first experiment' })[0]); });
   expect(await screen.findByRole('header', { name: 'Create an account.' })).toBeVisible();
 });
 
 test('the form can go back to the landing', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'How it works' });
-  await press('Run your first experiment');
+  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Run your first experiment' })[0]); });
   await press('Back to rhythm');
   expect(await screen.findByRole('header', { name: 'How it works' })).toBeVisible();
 });

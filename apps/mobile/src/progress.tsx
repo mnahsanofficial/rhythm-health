@@ -46,7 +46,7 @@ export function Observations({ data: { experiment, timeline }, title, token, off
   const followed = testDays.filter(value => value.intervention_completed).length;
   return <View style={styles.divider}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>{title}</Copy>
-    <Copy style={styles.number}>{`${timeline.recorded_days} of ${progress.total_days} days recorded`}</Copy>
+    <Copy style={[styles.number, { color: COLORS.ink }]}>{`${timeline.recorded_days} of ${progress.total_days} days recorded`}</Copy>
     {progress.state === 'in_progress' && <Copy style={local.small}>{`${progress.phase === 'baseline' ? 'Baseline' : 'Test'} day ${progress.phase_day} of ${progress.phase_days} · ${progress.days_remaining} days remaining`}</Copy>}
     {testDays.length > 0 && <Copy style={local.small}>{`Change made on ${followed} of ${testDays.length} test days`}</Copy>}
     {experiment.is_seeded && <Copy style={local.small}>Sample check-ins for demonstration. These answers are excluded from your real experiment history.</Copy>}
@@ -75,7 +75,7 @@ export function Observations({ data: { experiment, timeline }, title, token, off
             <Copy style={local.value}>{`${shown(value)}${metric.type === 'scale' && metric.max !== null ? `/${metric.max}` : ''}`}</Copy>
           </View>;
         })}
-        {recorded.note && <Copy>“{recorded.note}”</Copy>}
+        {recorded.note && <Copy style={local.note}>“{recorded.note}”</Copy>}
       </View> : <><Copy>No answers returned for this day.</Copy><Action label="Retry answers" secondary disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>)}
     </>}
   </View>;
@@ -116,8 +116,9 @@ const local = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: SPACING.md, rowGap: SPACING.xs },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   key: { width: SPACING.sm + 2, height: SPACING.sm + 2, borderRadius: RADII.pill },
-  panel: { padding: SPACING.md, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
+  panel: { paddingTop: SPACING.md, gap: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   panelTitle: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   answer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.md },
   value: { ...styles.number, color: COLORS.ink },
+  note: { paddingTop: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
 });

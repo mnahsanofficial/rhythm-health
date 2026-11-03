@@ -86,6 +86,9 @@ describe('controls have names and 48pt targets', () => {
   test('sign in', async () => {
     mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     render(<MobileApp />);
+    await screen.findByRole('header', { name: 'How it works' });
+    auditControls();
+    await press('Sign in');
     await screen.findByLabelText('Email');
     auditControls();
   });

@@ -46,11 +46,11 @@ afterEach(() => jest.restoreAllMocks());
 
 const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask a question.' }); };
 
-test('signed out, the header is only the mark and the name', async () => {
+test('signed out, the header is the mark, the name and Sign in', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
   render(<MobileApp />);
-  await screen.findByLabelText('Email');
-  expect(screen.getByTestId('app-header')).toBeVisible();
+  await screen.findByRole('header', { name: 'How it works' });
+  expect(within(screen.getByTestId('app-header')).getByRole('button', { name: 'Sign in' })).toBeVisible();
   expect(within(screen.getByTestId('app-header')).getByText('Rhythm')).toBeVisible();
   expect(screen.queryByRole('button', { name: /^Account menu/ })).toBeNull();
 });

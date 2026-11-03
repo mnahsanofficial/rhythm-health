@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
-import { Action, Alert, Copy, styles, Title, Status } from './ui';
+import { Action, Alert, BackLink, Copy, styles, Title, Status } from './ui';
 
-export function AuthForm({ offline, message, authenticate }: {
-  offline: boolean; message: string | null;
+export function AuthForm({ offline, message, initialMode = 'signIn', onBack, authenticate }: {
+  offline: boolean; message: string | null; initialMode?: 'signIn' | 'signUp'; onBack?: () => void;
   authenticate: (mode: 'signIn' | 'signUp', email: string, password: string) => Promise<boolean>;
 }) {
-  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [mode, setMode] = useState<'signIn' | 'signUp'>(initialMode);
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [shown, setShown] = useState(false); const [focused, setFocused] = useState<string | null>(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
@@ -31,6 +31,7 @@ export function AuthForm({ offline, message, authenticate }: {
   }
   return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.stack}>
+      {onBack && <BackLink to="Rhythm" disabled={busy} onPress={onBack} />}
       <Title>{mode === 'signIn' ? 'Welcome back.' : 'Create an account.'}</Title>
       <Copy style={styles.muted}>{mode === 'signIn' ? 'Sign in to keep up with your daily experiment.' : 'Your experiments start from your rhythm. Seven quick questions come next.'}</Copy>
       {offline && <Alert>No connection</Alert>}

@@ -23,7 +23,7 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
     <View style={styles.stack}>
       <BackLink to="Your lab" onPress={onBack} />
       <Copy style={local.status}>{status}</Copy>
-      <Title textRef={heading}>{experiment.question}</Title>
+      <Title small textRef={heading}>{experiment.question}</Title>
     </View>
     <BaselineContext timeline={timeline} />
     <TodayCard data={data} disabled={disabled} onCheckin={onCheckin} onOpenReport={onOpenReport} />
