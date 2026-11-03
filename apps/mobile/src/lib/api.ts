@@ -1,8 +1,9 @@
 import { readConfig } from './config';
 
 export class ApiError extends Error {
-  constructor(readonly status: number, message: string, readonly fields: Record<string, string> = {}) { super(message); }
+  constructor(readonly status: number, message: string, readonly fields: Record<string, string> = {}, readonly detail?: unknown) { super(message); }
 }
+export const detailCode = (error: ApiError): unknown => member(error.detail, 'code');
 const member = (value: unknown, key: string): unknown => value !== null && typeof value === 'object' ? Reflect.get(value, key) : undefined;
 
 async function request<T>(token: string, path: string, failure: string, body?: unknown, method: 'POST' | 'PUT' = 'POST'): Promise<T> {
@@ -25,7 +26,8 @@ async function request<T>(token: string, path: string, failure: string, body?: u
       const message = member(item, 'message') ?? member(item, 'msg');
       if (typeof field === 'string' && typeof message === 'string') fields[field] = message;
     }
-    throw new ApiError(response.status, typeof detail === 'string' ? detail : failure, fields);
+    const text = member(detail, 'message');
+    throw new ApiError(response.status, typeof detail === 'string' ? detail : typeof text === 'string' ? text : failure, fields, detail);
   }
   try { return await response.json() as T; }
   catch { throw new ApiError(502, failure); }

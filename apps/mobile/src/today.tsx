@@ -7,14 +7,15 @@ import { Progress } from './progress';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
 import { CheckinForm } from './checkin';
-import type { Experiment, ExperimentTimeline } from '@rhythm-health/contract';
+import { ProposalFlow } from './proposal';
+import type { Experiment, ExperimentTimeline, Profile } from '@rhythm-health/contract';
 import { Action, Alert, Copy, Loading, styles, Title } from './ui';
 import { ApiError } from './lib/api';
 import { getProgress, listActiveExperiments } from './lib/experiments';
 
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
-export function Today({ token, offline, openWeb, onExpired, email, signOut, editProfile }: {
-  token: string; offline: boolean; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void; editProfile?: () => void;
+export function Today({ token, offline, profile, openWeb, onExpired, email, signOut, editProfile }: {
+  token: string; offline: boolean; profile: Profile; openWeb: (path: string) => void; onExpired: () => void; email?: string; signOut: () => void; editProfile?: () => void;
 }) {
   const { service: reminders, state: reminderState } = useReminders();
   const [screen, setScreen] = useState<'today' | 'settings' | 'progress'>('today');
@@ -24,6 +25,8 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut, edit
   const generation = useRef(0);
   const [editing, setEditing] = useState<DayData | null>(null);
   const [saved, setSaved] = useState(false);
+  const [asking, setAsking] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
   const load = useCallback(async () => {
     if (offline) return;
     const request = ++generation.current;
@@ -66,6 +69,9 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut, edit
   if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
     onBack={() => { setEditing(null); void load(); }}
     onSaved={() => { setEditing(null); setSaved(true); void load(); }} />;
+  if (asking !== null) return <ProposalFlow token={token} offline={offline} profile={profile} initialQuestion={asking} onExpired={onExpired} onEditProfile={editProfile}
+    onBack={() => { setAsking(null); void load(); }}
+    onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); setSaved(false); void load(); }} />;
   if (screen === 'progress' && data) return <View style={styles.stack}>{nav}<ReminderNotice feedbackOnly />
     {error && <><Alert>{error}</Alert><Action label="Try again" disabled={offline || busy} onPress={() => void load()} /></>}
     <Progress key={data.experiment.id} data={data} token={token} offline={offline} onExpired={onExpired} />
@@ -75,6 +81,7 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut, edit
       {nav}
       <ReminderNotice />
       {saved && <SavedReceipt failed={error !== null} />}
+      {started && <Copy accessibilityLiveRegion="polite">Your experiment has started.</Copy>}
       {offline && <Copy accessibilityLiveRegion="polite" style={styles.muted}>{loaded
         ? `Offline, last updated ${loaded.at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`
         : 'No connection'}</Copy>}
@@ -82,13 +89,13 @@ export function Today({ token, offline, openWeb, onExpired, email, signOut, edit
       {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
         : !data ? <>
           <Title>Nothing running yet.</Title>
-          <Copy style={styles.muted}>Start your next experiment on the web, then come back here for your daily check-in.</Copy>
-          <Action label="Start an experiment on the web" link onPress={() => openWeb('/experiments/new')} />
+          <Copy style={styles.muted}>Turn a question about your habits into a short experiment. First a plan, then a prediction. You decide whether to begin.</Copy>
+          <Action label="Ask a question" onPress={() => { setStarted(false); setAsking(''); }} />
           {sampleControls}
         </> : <>
           {sampleControls}
           <TodaySummary data={data} disabled={disabled} openWeb={openWeb}
-            onCheckin={() => { setSaved(false); setEditing(data); }} />
+            onCheckin={() => { setSaved(false); setStarted(false); setEditing(data); }} />
           {!offline && busy && <Copy accessibilityLiveRegion="polite" style={styles.muted}>Refreshing your day…</Copy>}
         </>}
     </View>

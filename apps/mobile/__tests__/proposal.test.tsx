@@ -90,6 +90,7 @@ test('no active experiment opens the native question, not the web', async () => 
 });
 
 test('suggestions from the goals only fill the field and never make a paid call', async () => {
+  queue('GET /api/profile', { body: { ...profile, goals: ['More energy in the morning'] } });
   await openAsk();
   fireEvent.press(screen.getByRole('button', { name: 'What could give me more energy in the morning?' }));
   expect(screen.getByLabelText('Your question or goal').props.value).toBe('What could give me more energy in the morning?');

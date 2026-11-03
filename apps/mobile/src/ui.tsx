@@ -1,14 +1,29 @@
-import { createContext, useContext, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
+import { createContext, useCallback, useContext, useEffect, useRef, type ComponentRef, type ReactNode, type Ref } from 'react';
+import { AccessibilityInfo, findNodeHandle, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 
 const FontAvailability = createContext(true);
-export function Copy(props: TextProps) {
+const ScrollToTop = createContext<() => void>(() => undefined);
+export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) {
   const available = useContext(FontAvailability);
   return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
 }
-export function Title({ children }: { children: ReactNode }) { return <Copy accessibilityRole="header" style={styles.title}>{children}</Copy>; }
+export function Title({ children, textRef }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>> }) { return <Copy ref={textRef} accessibilityRole="header" style={styles.title}>{children}</Copy>; }
+/** A new step in a flow starts at its heading: back to the top, keyboard away, screen reader on the title. */
+export function useStepFocus(step: string) {
+  const heading = useRef<ComponentRef<typeof Text>>(null);
+  const scrollToTop = useContext(ScrollToTop);
+  useEffect(() => {
+    scrollToTop();
+    Keyboard.dismiss();
+    const node = heading.current;
+    if (!node) return;
+    if (Platform.OS === 'web') node.focus?.();
+    else { const tag = findNodeHandle(node); if (tag) AccessibilityInfo.setAccessibilityFocus(tag); }
+  }, [step, scrollToTop]);
+  return heading;
+}
 export function Alert({ children }: { children: ReactNode }) {
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
@@ -30,15 +45,17 @@ export function Action({ label, onPress, disabled = false, secondary = false, li
   );
 }
 export function Frame({ children, fontsReady = true }: { children: ReactNode; fontsReady?: boolean }) {
+  const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
+  const scrollToTop = useCallback(() => { scroller.current?.scrollTo?.({ y: 0, animated: false }); }, []);
   return (
-    <FontAvailability.Provider value={fontsReady}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
+    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+      <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.column}>
           <Copy style={styles.wordmark}>Rhythm</Copy>
           <View style={styles.content}>{children}</View>
         </View>
       </ScrollView>
-    </SafeAreaView></FontAvailability.Provider>
+    </SafeAreaView></ScrollToTop.Provider></FontAvailability.Provider>
   );
 }
 export function Loading({ message }: { message: string }) {
