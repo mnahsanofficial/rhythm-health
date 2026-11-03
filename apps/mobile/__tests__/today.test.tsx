@@ -64,10 +64,10 @@ test('a recorded current day shows Done for today and uses the returned next ope
   expect(screen.getByRole('button', { name: "Change today's answers" })).toBeEnabled();
 });
 
-test('no active experiment links to the web without fetching progress', async () => {
+test('no active experiment offers the native question without fetching progress', async () => {
   list = []; render(<MobileApp />);
   expect(await screen.findByText('Nothing running yet.')).toBeVisible();
-  expect(screen.getByRole('link', { name: 'Start an experiment on the web' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Ask a question' })).toBeVisible();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active']);
 });
 
