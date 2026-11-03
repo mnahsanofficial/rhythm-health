@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeExperience } from "@/components/home-experience";
-import type { Experiment } from "@/lib/types/api";
+import type { Experiment, TodayCheckin } from "@/lib/types/api";
 import { experiment, profile } from "../support/fixtures";
 import { timelineFixture } from "../support/timeline-fixture";
 import { server } from "../support/server";
@@ -40,11 +40,16 @@ function running(n: number, day: number, extra: Partial<Experiment> = {}): Exper
   };
 }
 
+function due(items: Experiment[], all_recorded = false): TodayCheckin {
+  return { revision: "r", experiments: items.map(item => ({ id: item.id, question: item.question, action: "a", timing: "t", day_number: 1, total_days: 10, phase: "baseline", change_required: false, change_made: null, recorded: all_recorded })), questions: [], note: null, all_recorded };
+}
+
 function install(experiments: Experiment[], capacity = { active: experiments.length, limit: 3, can_start: experiments.length < 3 }) {
   server.use(
     http.get(`${api}/api/profile`, () => HttpResponse.json(profile)),
     http.get(`${api}/api/experiments`, () => HttpResponse.json(experiments)),
     http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json(capacity)),
+    http.get(`${api}/api/checkins/today`, () => HttpResponse.json(due(experiments.filter(item => !item.is_seeded)))),
     ...experiments.map(item => http.get(`${api}/api/experiments/${item.id}/progress`, () => HttpResponse.json(timelineFixture(item)))),
   );
 }
@@ -70,6 +75,29 @@ describe("Your lab with several experiments", () => {
     expect(within(two).getByRole("link", { name: "See your experiment" })).toHaveAttribute("href", `/experiments/${second.id}`);
     expect(screen.getByRole("heading", { name: "2 experiments running", level: 1 })).toBeVisible();
     expect(screen.getByRole("button", { name: "Test another habit" })).toBeVisible();
+  });
+
+  it("offers one check-in for everything due today", async () => {
+    install([running(1, 2), running(2, 5)]);
+    render(home());
+    expect(await screen.findByRole("link", { name: "Check in for today" })).toHaveAttribute("href", "/check-in");
+    expect(screen.getByText("One check-in for all 2 experiments.")).toBeVisible();
+  });
+
+  it("says when today's check-ins are all done, and lets you change them", async () => {
+    const all = [running(1, 2), running(2, 5)];
+    install(all);
+    server.use(http.get(`${api}/api/checkins/today`, () => HttpResponse.json(due(all, true))));
+    render(home());
+    expect(await screen.findByText("Done for today: all 2 check-ins are recorded.")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Change today's answers" })).toHaveAttribute("href", "/check-in");
+  });
+
+  it("offers no combined check-in when only one real experiment is due", async () => {
+    install([running(1, 2), running(2, 5, { is_seeded: true })]);
+    render(home());
+    await screen.findByRole("heading", { name: "2 experiments running", level: 1 });
+    expect(screen.queryByRole("link", { name: "Check in for today" })).not.toBeInTheDocument();
   });
 
   it("offers no new question at the limit, and says why", async () => {
