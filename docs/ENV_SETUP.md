@@ -25,6 +25,14 @@ Read in `frontend/lib/api/client.ts` and `frontend/lib/auth/supabase.ts`. Next.j
 
 Fill in both Supabase values before signing in. If either is missing or blank, the app still loads and the sign-in page names the variable that needs to be set. Authentication remains unavailable until both values are configured.
 
+## backend/.env
+
+Used only to run migrations from the repo. The app never reads this file. Gitignored, like the others.
+
+| Variable | What it's for | Where to get it | Secret? |
+|---|---|---|---|
+| `SUPABASE_DB_URL` | Direct Postgres access for `supabase db push` and read-only checks | Supabase → Connect → **Session pooler** (port 5432), with the database password filled in. The direct `db.<ref>.supabase.co` host is IPv6-only, so it fails on most networks | **Yes. Full database access. Never paste it into a prompt** |
+
 ## backend/.env.local
 
 Every variable is a field of `Settings` in `backend/app/config.py`, read from `backend/.env.local`. A blank model variable falls back to its default.

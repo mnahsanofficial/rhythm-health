@@ -32,15 +32,17 @@ The Lab Report compares **Your guess / We predicted / You saw**. The existing re
 
 Sources: [analysis schema](../backend/app/schemas/analysis.py), [analysis service](../backend/app/services/analysis.py), [completion test](../backend/tests/test_completion.py), [report comparison](../frontend/components/report/prediction-vs-reality.tsx), [report page](../frontend/components/report/lab-report.tsx).
 
-## Migration: Nazmul runs this, not an agent
+## Migration
 
-**Not before Sunday 1 Nov 2026, 10:00 Asia/Dhaka (04:00 UTC).** This is the notice time Nazmul gave Shakeb. No shared migration has been applied by Codex. The application is safe to deploy before it.
+**Applied 4 Nov 2026** to the [new Supabase project](DECISIONS.md#new-supabase-project--4-nov-2026), with the other migrations, after Nazmul typed "apply". 8x asked for this in the feedback call. Verified read-only: the column exists and is nullable, the −100 to +200 check is defined, and the backend's probe returns true, so `personal_guess_available` is true. The range behaviour itself is proved on a disposable database below, not by a test write on the live one. No real account has saved a guess yet.
+
+The rest of this section is the original runbook, for any project set up by hand.
 
 Forward: [20261031000000_personal_guess.sql](../supabase/migrations/20261031000000_personal_guess.sql). It adds one nullable double-precision column and a bounds constraint, leaves existing rows/policies/grants untouched, and requests a PostgREST schema-cache reload. Reapplying the file is safe.
 
 From the repository root, use the **Session pooler** host and user shown in Supabase Dashboard → Connect (port 5432). `psql` asks for the database password privately. Do not use the anon/service-role API key as that password. Do not paste any connection values into chat or logs.
 
-Exact apply command, for Nazmul's local zsh terminal after the notice time:
+Exact apply command, for a local zsh terminal:
 
 ```bash
 read "RHYTHM_DB_HOST?Session-pooler host from Dashboard Connect: "

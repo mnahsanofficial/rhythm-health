@@ -112,4 +112,14 @@ D2/D3 are implemented additively, without a migration: nullable `Metric.min_labe
 - **One reminder per experiment,** so up to three a day, each opening its own check-in. The lock screen still shows only the day.
 - **Not built:** combining check-ins across experiments, warning when a new question tests the same thing as a running one, and telling the proposal AI what else is running.
 
-The migration is **not yet applied to the shared database** as of this entry. Until it is, the old index still stops a second start with a 409.
+The migration is applied to the [new Supabase project](#new-supabase-project--4-nov-2026).
+
+## New Supabase project — 4 Nov 2026
+
+Decided by Nazmul after the 8x feedback call: 8x asked for the #39 migration to be applied, the old project's dashboard belonged to Shakeb, and Shakeb wasn't available. So the app moved to a new project on Nazmul's account. This is the reason Nazmul gave; there is no call transcript in the repo.
+
+- **Nothing carried over.** The old project's accounts and experiments stay there, and everyone signs up again.
+- **Applied 4 Nov with `supabase db push`** over the Session pooler, after a dry run on the empty project: all 8 migrations, including #39's and the three-active limit from #55, recorded in `supabase_migrations.schema_migrations`. Verified read-only: 4 tables with row security on, the guess column and range, the limit trigger, no one-active index, and 8 recorded migrations.
+- **Undoing it:** [`20261028000000_initial_schema.sql`](../supabase/rollbacks/20261028000000_initial_schema.sql) removes the schema and refuses once any profile exists. After that, use the per-migration rollbacks.
+- **Email confirmation is on** in the new project and was off in the old one. Both apps handle it. It's a dashboard setting for Nazmul, and worth checking before a demo.
+- **Shakeb's env files still point at the old project.** Shakeb needs the new values, sent privately, and should use the new project from now on.

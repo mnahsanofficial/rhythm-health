@@ -1,6 +1,6 @@
 # Remaining work
 
-Status updated **1 Nov 2026** against `main` at `4e8f170` (after #39), with B12/B11/F13 implemented on `feat/scale-words-chart-days`. S6’s shared migration remains pending Nazmul’s apply. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
+Status updated **1 Nov 2026** against `main` at `4e8f170` (after #39), with B12/B11/F13 implemented on `feat/scale-words-chart-days`. **Update 4 Nov:** the database moved to a [new Supabase project](DECISIONS.md#new-supabase-project--4-nov-2026) and S6’s migration is applied there. Next feedback call: **Mon 2 Nov**. Final demos: **Thu 5 Nov**.
 
 V2 work is split **by feature**: both of us work across frontend, backend and database ([pair rule](rules/pair-rule.md)). Each item names an owner. Owners marked "(proposed)" are to be confirmed together.
 
@@ -22,7 +22,7 @@ V2 work is split **by feature**: both of us work across frontend, backend and da
 | #36 | Mobile Today and Check-in; automatic saved-state refresh and real-iPhone close/reopen verification |
 | #37 | Mobile local reminders, Settings and read-only Progress; iPhone notification/cold-start/cancellation checks passed |
 | #38 | Your normal, on day 4 (S8): authoritative baseline context on web and mobile Today, with no migration |
-| #39 | Your own guess (S6): pre-forecast commitment and deterministic three-way report comparison; nullable migration written/tested locally, not applied to shared Supabase |
+| #39 | Your own guess (S6): pre-forecast commitment and deterministic three-way report comparison; nullable migration written/tested locally, applied 4 Nov to the new Supabase |
 
 ---
 
