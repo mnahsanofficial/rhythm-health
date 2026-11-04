@@ -329,3 +329,16 @@ Web collects a primary-metric percentage guess before mounting the AI forecast. 
 ## Scale words and chart day flags (B12/B11/F13)
 
 Design can add optional nullable `Metric.min_label` / `max_label`, stored in existing metric JSON and rendered by web/mobile Check-in with Low / High for missing ends. Every chart point carries `missed` from stored deterministic analysis; the web chart no longer receives a missing-days list or calculates a day rule. No migration, paid call or shared write was needed. [Contract, code sources, tests and evidence](SCALE_WORDS_CHART_DAYS.md).
+
+## Paid AI limit and usage tracking (4 Nov 2026)
+
+**What:** every OpenRouter call writes one row to `ai_calls` (profile, kind, model, status, latency, time; never prompt or response text). Before paid work, `/propose` and `POST /report` check a per-person daily limit (`AI_DAILY_LIMIT_PROPOSE`, default 5; `AI_DAILY_LIMIT_REPORT`, default 3) and answer 429 with `code: ai_daily_limit`. Web and mobile show the message and offer no retry.
+
+**Why:** nothing capped what one account could spend, and nothing showed what was being spent.
+
+**What counts:** the limit counts finished attempts, so a validation retry uses one, not two. `ok` and `invalid` count. `retry` is the first half of an attempt, and `error` never reached a model. A report that's already written comes back free, even at the limit. Days run on UTC.
+
+**Trade-offs:**
+- If usage can't be read, the call goes ahead. A tracking problem doesn't stop anyone using the app, and the app keeps working until the migration is applied. The cost is that the cap is off during a database problem.
+- Classification (`kind: other`) is tracked but not limited, because it runs on every question, including ones the safety rules stop. Someone could keep sending blocked questions and pay only for that cheap call.
+- Two requests at the same moment can both pass the check. A person double-tapping costs one extra call at most, so this doesn't take a database lock.
