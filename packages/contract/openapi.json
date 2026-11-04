@@ -3302,6 +3302,17 @@
               }
             ],
             "title": "Suggested Alternative"
+          },
+          "suggested_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Question"
           }
         },
         "type": "object",

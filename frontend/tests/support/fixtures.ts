@@ -58,7 +58,7 @@ export const proposeResponse: ProposeResponse = {
   personal_guess_available: false,
   proposal: { ...proposal, metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null })) },
   prediction,
-  safety: { allowed: true, reason: null, suggested_alternative: null },
+  safety: { allowed: true, reason: null, suggested_alternative: null, suggested_question: null },
   habit_check: null,
   classification: { category: "energy", intent: "behavior_change", risk: "low" },
 };

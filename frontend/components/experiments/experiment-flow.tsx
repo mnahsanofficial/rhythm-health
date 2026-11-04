@@ -101,6 +101,7 @@ export function ExperimentFlow({
       if (response.safety.allowed && !response.habit_check && (!response.proposal || !response.prediction)) {
         throw new ApiError(502, "The plan came back incomplete. Please retry.");
       }
+      if (!response.safety.allowed && !response.safety.suggested_question) setQuestion("");
       setResult(response);
     } catch (e) {
       if (isActiveLimitReached(e)) {
@@ -239,7 +240,7 @@ export function ExperimentFlow({
             <>
               <p className="font-display text-title">Let&apos;s find a gentler experiment.</p>
               <p className="mt-3 text-muted">{result.safety.reason || "This question isn’t suitable for a small habit experiment."}</p>
-              {result.safety.suggested_alternative && <div className="mt-5 border-t border-line pt-5"><p>{result.safety.suggested_alternative}</p><button type="button" className={`${secondary} mt-4`} onClick={() => chooseQuestion(result.safety.suggested_alternative!)}>Use this instead</button></div>}
+              {result.safety.suggested_question ? <div className="mt-5 border-t border-line pt-5"><p>{result.safety.suggested_question}</p><button type="button" className={`${secondary} mt-4`} onClick={() => chooseQuestion(result.safety.suggested_question!)}>Use this instead</button></div> : result.safety.suggested_alternative && <p className="mt-5 border-t border-line pt-5">{result.safety.suggested_alternative}</p>}
             </>
       </section>}
       {result?.safety.allowed && result.proposal && result.prediction && (

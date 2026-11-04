@@ -28,7 +28,7 @@ const api = "http://api.test.invalid";
 const question = "Does a short evening walk help my morning energy?";
 const expectedReview: ProposeResponse = {
   ...proposeResponse,
-  safety: { allowed: true, reason: "Keep the walk gentle and comfortable.", suggested_alternative: null },
+  safety: { allowed: true, reason: "Keep the walk gentle and comfortable.", suggested_alternative: null, suggested_question: null },
   classification: { ...proposeResponse.classification, risk: "review" },
 };
 const activeExperiment: Experiment = {

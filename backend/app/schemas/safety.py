@@ -11,4 +11,7 @@ class HabitCheck(BaseModel):
 class SafetyDecision(BaseModel):
     allowed: bool
     reason: str | None = None
+    # Advice to read. Never put this in the question box.
     suggested_alternative: str | None = None
+    # A question the app can test. Only this fills the box.
+    suggested_question: str | None = None
