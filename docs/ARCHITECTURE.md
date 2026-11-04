@@ -329,3 +329,28 @@ Web collects a primary-metric percentage guess before mounting the AI forecast. 
 ## Scale words and chart day flags (B12/B11/F13)
 
 Design can add optional nullable `Metric.min_label` / `max_label`, stored in existing metric JSON and rendered by web/mobile Check-in with Low / High for missing ends. Every chart point carries `missed` from stored deterministic analysis; the web chart no longer receives a missing-days list or calculates a day rule. No migration, paid call or shared write was needed. [Contract, code sources, tests and evidence](SCALE_WORDS_CHART_DAYS.md).
+
+## Async AI client and concurrent reads (4 Nov 2026)
+
+**What:** the OpenRouter client uses `httpx.AsyncClient`, and `/propose`, `/complete` and both `/report` routes are async. Connecting times out after 5s. Reading times out after 75s (`OPENROUTER_TIMEOUT_SECONDS`), or 30s for Jev. One retry follows a connection failure, 429 or 5xx. Independent reads run together through `read_together`:
+
+| Route | Reads that now run together |
+|---|---|
+| `POST /propose` | history, running questions |
+| `POST /complete` | check-ins, other experiments |
+| `GET /report` | report, check-ins |
+| `POST /report` | report, check-ins, profile |
+
+**Why:** each AI call held a worker thread for up to 90s, so a few slow calls could use up the pool and stall everyone else. Sequential reads also added their waits together.
+
+**Where reads can't run together:**
+- The Supabase client is plain blocking HTTP over PostgREST, with no async version here. Its reads overlap on worker threads, so each one still holds a thread while it waits.
+- History (`services/history.py`) stays sequential: reports are looked up by the experiment ids the first read returns.
+- `owned_experiment` stays sequential: it needs the profile before it can read the experiment.
+- Writes in `/complete` stay in order: the report is saved before the status changes.
+
+**Trade-offs:**
+- A read timeout isn't retried. The model probably ran and was paid for, and a retry would double a long wait, so the person sees the existing error and can choose to retry.
+- A new client per call is slower to connect than a shared one, but that's small next to a model call, and it avoids lifecycle problems across event loops.
+- A call that took 75–90s used to succeed and now fails with the 503 screen. If `ai_calls` shows real latencies near 75s, raise the setting.
+- In `GET` and `POST /report`, check-ins are now read even when there's no report. A database failure on that second read answers 503 rather than 404.

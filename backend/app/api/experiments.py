@@ -1,3 +1,4 @@
+import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -21,9 +22,9 @@ router = APIRouter(prefix="/api/experiments")
 
 
 @router.post("/propose", response_model=ProposeResponse)
-def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_user)):
+async def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_user)):
     try:
-        row = profiles.get_by_user_id(user_id)
+        row = await asyncio.to_thread(profiles.get_by_user_id, user_id)
     except SupabaseUnavailable:
         raise db_error()
     if row is None:
@@ -31,10 +32,11 @@ def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_
 
     try:
         # Before any paid AI work: a plan that couldn't be started is money wasted.
-        if not experiment_limit.capacity(str(row["id"])).can_start:
+        capacity = await asyncio.to_thread(experiment_limit.capacity, str(row["id"]))
+        if not capacity.can_start:
             raise experiment_limit.limit_reached()
-        available = experiments.supports_personal_guess(str(row["id"]))
-        result = propose(body.question, ProfileOut.model_validate(row))
+        available = await asyncio.to_thread(experiments.supports_personal_guess, str(row["id"]))
+        result = await propose(body.question, ProfileOut.model_validate(row))
         return result.model_copy(update={"personal_guess_available": available})
     except SupabaseUnavailable:
         raise db_error()

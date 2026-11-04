@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from collections.abc import Callable
@@ -13,6 +14,11 @@ logger = logging.getLogger(__name__)
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
 T = TypeVar("T", bound=BaseModel)
+CONNECT_TIMEOUT_SECONDS = 5.0
+DECISION_READ_TIMEOUT_SECONDS = 30.0
+RETRY_DELAY_SECONDS = 0.5
+# Worth one more try: the request never reached a model, or the service said to try again.
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
 
 class AIError(Exception):
@@ -27,14 +33,14 @@ class AIInvalidOutput(AIError):
     """The model answered, but not with data matching the schema (after one retry)."""
 
 
-def complete(
+async def complete(
     *,
     task: str,
     model: str,
     schema: type[T],
     system: str,
     user: str,
-    timeout: float = 90,
+    timeout: float | None = None,
     check: Callable[[T], None] | None = None,
 ) -> T:
     """Ask `model` for JSON matching `schema`; validate with Pydantic, retry once.
@@ -46,6 +52,7 @@ def complete(
     """
     if not settings.openrouter_api_key:
         raise AIUnavailable("OpenRouter is not configured")
+    timeout = settings.openrouter_timeout_seconds if timeout is None else timeout
 
     messages = [
         {"role": "system", "content": system},
@@ -53,7 +60,7 @@ def complete(
     ]
     for attempt in (0, 1):
         started = time.monotonic()
-        content = _call(task, model, schema, messages, timeout)
+        content = await _call(task, model, schema, messages, timeout)
         try:
             result = schema.model_validate_json(content)
             if check is not None:
@@ -87,20 +94,20 @@ def _feedback(exc: ValueError) -> str:
     return exc.json(include_input=False) if isinstance(exc, ValidationError) else str(exc)
 
 
-def decide(
-    *, task: str, model: str, state: dict, questions: dict, timeout: float = 30
+async def decide(
+    *, task: str, model: str, state: dict, questions: dict, timeout: float = DECISION_READ_TIMEOUT_SECONDS
 ) -> dict:
     """Typed decisions (Jev) via OpenRouter's Decisions API. Returns the `answers` map."""
     if not settings.openrouter_api_key:
         raise AIUnavailable("OpenRouter is not configured")
-    data = _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
+    data = await _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
     try:
         return data["answers"]
     except (KeyError, TypeError) as exc:
         raise AIInvalidOutput(task) from exc
 
 
-def _call(task: str, model: str, schema: type[BaseModel], messages: list[dict], timeout: float) -> str:
+async def _call(task: str, model: str, schema: type[BaseModel], messages: list[dict], timeout: float) -> str:
     payload = {
         "model": model,
         "messages": messages,
@@ -113,26 +120,41 @@ def _call(task: str, model: str, schema: type[BaseModel], messages: list[dict], 
             },
         },
     }
-    data = _post(task, model, OPENROUTER_URL, payload, timeout)
+    data = await _post(task, model, OPENROUTER_URL, payload, timeout)
     try:
         return data["choices"][0]["message"]["content"] or ""
     except (KeyError, IndexError, TypeError) as exc:
         raise AIUnavailable(task) from exc
 
 
-def _post(task: str, model: str, url: str, payload: dict, timeout: float) -> dict:
-    try:
-        res = httpx.post(
-            url,
-            headers={"Authorization": f"Bearer {settings.openrouter_api_key}"},
-            json=payload,
-            timeout=timeout,
-        )
-        res.raise_for_status()
-        return res.json()
-    except httpx.HTTPStatusError as exc:
-        logger.error("ai_http_error task=%s model=%s status=%s", task, model, exc.response.status_code)
-        raise AIUnavailable(task) from exc
-    except (httpx.HTTPError, ValueError) as exc:
-        logger.error("ai_error task=%s model=%s error_type=%s", task, model, type(exc).__name__)
-        raise AIUnavailable(task) from exc
+async def _post(task: str, model: str, url: str, payload: dict, timeout: float) -> dict:
+    """POST once, and once more if the first try failed in a way that cost nothing.
+
+    A read timeout isn't retried: the model probably ran and was paid for, and trying again
+    would double a wait that's already long. The person can choose to retry from the screen.
+    """
+    limits = httpx.Timeout(timeout, connect=CONNECT_TIMEOUT_SECONDS)
+    async with httpx.AsyncClient(timeout=limits) as client:
+        for attempt in (0, 1):
+            try:
+                res = await client.post(
+                    url,
+                    headers={"Authorization": f"Bearer {settings.openrouter_api_key}"},
+                    json=payload,
+                )
+                res.raise_for_status()
+                return res.json()
+            except httpx.HTTPStatusError as exc:
+                status = exc.response.status_code
+                logger.error("ai_http_error task=%s model=%s status=%s attempt=%s", task, model, status, attempt)
+                if attempt == 1 or status not in RETRYABLE_STATUS:
+                    raise AIUnavailable(task) from exc
+            except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+                logger.error("ai_error task=%s model=%s error_type=%s attempt=%s", task, model, type(exc).__name__, attempt)
+                if attempt == 1:
+                    raise AIUnavailable(task) from exc
+            except (httpx.HTTPError, ValueError) as exc:
+                logger.error("ai_error task=%s model=%s error_type=%s attempt=%s", task, model, type(exc).__name__, attempt)
+                raise AIUnavailable(task) from exc
+            await asyncio.sleep(RETRY_DELAY_SECONDS)
+    raise AssertionError("unreachable")

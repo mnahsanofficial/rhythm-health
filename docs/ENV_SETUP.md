@@ -46,6 +46,7 @@ Every variable is a field of `Settings` in `backend/app/config.py`, read from `b
 | `OPENROUTER_API_KEY` | Calls to the reasoning model and Jev through OpenRouter | OpenRouter → Keys | **Yes. Backend only. Each call costs money** |
 | `OPENROUTER_REASONING_MODEL` | Model for experiment design and prediction | Optional. Defaults to `anthropic/claude-sonnet-5.5` | No |
 | `OPENROUTER_JEV_MODEL` | Jev classifier model (category, intent, risk) | Optional. Defaults to `typesafe/jev-router` | No |
+| `OPENROUTER_TIMEOUT_SECONDS` | How long to wait for the reasoning model's answer | Optional. Defaults to 75 | No |
 
 Without the Supabase values, protected routes answer 503 ("Auth is not configured"). Without the OpenRouter key, `/api/experiments/propose` answers 503 ("AI service unavailable").
 

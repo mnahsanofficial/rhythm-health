@@ -20,6 +20,7 @@ class Tiny(BaseModel):
     ok: bool
 
 
+REAL_CLIENT = httpx.AsyncClient
 GOOD = {"choices": [{"message": {"content": '{"ok": true}'}}]}
 
 
@@ -38,8 +39,7 @@ def transport(monkeypatch):
             raise reply
         return reply
 
-    real = httpx.AsyncClient
-    monkeypatch.setattr(openrouter.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    monkeypatch.setattr(openrouter.httpx, "AsyncClient", lambda **kw: REAL_CLIENT(transport=httpx.MockTransport(handler), **kw))
     return state
 
 
@@ -110,8 +110,7 @@ def test_a_slow_ai_call_leaves_the_event_loop_free(transport, monkeypatch):
             await release.wait()
             return httpx.Response(200, json=GOOD)
 
-        real = httpx.AsyncClient
-        monkeypatch.setattr(openrouter.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(slow_handler), **kw))
+        monkeypatch.setattr(openrouter.httpx, "AsyncClient", lambda **kw: REAL_CLIENT(transport=httpx.MockTransport(slow_handler), **kw))
         call = asyncio.create_task(openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u"))
         for _ in range(5):
             await asyncio.sleep(0)

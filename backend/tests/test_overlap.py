@@ -1,3 +1,4 @@
+import asyncio
 """Overlap between experiments is worked out in Python, from real windows and recorded days."""
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
@@ -176,7 +177,7 @@ def test_the_report_writer_gets_the_overlap_and_a_rule_against_inventing_it(monk
     result = analyze(mine(), recorded(), END, others=[other(days(3))])
     experiment = {**mine(), "hypothesis": "h", "intervention": {"action": "walk"}}
     with pytest.raises(AssertionError, match="stop before"):
-        write_narrative(experiment, result, recorded(), {})
+        asyncio.run(write_narrative(experiment, result, recorded(), {}))
     prompt = complete.call_args.kwargs["user"]
     assert "Does less coffee help?" in prompt and '"test_days_overlapping":4' in prompt
     assert "overlaps" in SYSTEM

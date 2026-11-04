@@ -16,8 +16,10 @@ class Settings(BaseSettings):
     openrouter_reasoning_model: str = "anthropic/claude-sonnet-5.5"
     # Jev classifier, served through OpenRouter.
     openrouter_jev_model: str = "typesafe/jev-router"
+    # How long to wait for the reasoning model's answer.
+    openrouter_timeout_seconds: float = 75.0
 
-    @field_validator("openrouter_reasoning_model", "openrouter_jev_model", mode="before")
+    @field_validator("openrouter_reasoning_model", "openrouter_jev_model", "openrouter_timeout_seconds", mode="before")
     @classmethod
     def _blank_means_default(cls, v, info):
         # `KEY=` in .env.local arrives as "", which should fall back to the default.
