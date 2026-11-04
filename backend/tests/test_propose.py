@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -128,7 +129,7 @@ def test_happy_path_returns_everything(api):
     res = propose()
     assert res.status_code == 200
     body = res.json()
-    assert body["safety"] == {"allowed": True, "reason": None, "suggested_alternative": None}
+    assert body["safety"] == {"allowed": True, "reason": None, "suggested_alternative": None, "suggested_question": None}
     assert body["proposal"]["success_criteria"]["primary_metric"] == "morning_energy"
     assert body["prediction"]["expected_change_min"] == 8
     assert body["classification"] == CLASSIFICATION
@@ -458,3 +459,32 @@ def test_each_suggested_rewording_is_safe_and_reads_as_a_habit_question(api, cat
     assert safety.check_text(suggested).allowed
     assert 5 <= len(suggested) <= 500
     assert suggested.startswith("Does ")
+
+
+TESTABLE = re.compile(r"^Does [^?]+\?$")
+
+
+@pytest.mark.parametrize("text", [
+    "I want to sleep 3 hours per night for a week",
+    "Should I stop my medication?",
+    "What if I do a water fast?",
+    "I will run until I collapse",
+    "Does adderall help me focus?",
+    "What if I fast for 48 hours?",
+    "Can I eat 800 calories a day?",
+])
+def test_every_rule_offers_a_testable_question_that_passes_the_rules(api, text):
+    fake = api()
+    safety_reply = propose(text).json()["safety"]
+    assert safety_reply["allowed"] is False
+    assert TESTABLE.match(safety_reply["suggested_question"])
+    assert safety.check_text(safety_reply["suggested_question"]).allowed
+    assert "experiment_design" not in fake.tasks
+
+
+def test_a_classifier_block_offers_a_question_and_keeps_the_advice_apart(api):
+    api(classification={"category": "other", "intent": "other", "risk": "blocked"})
+    safety_reply = propose("Tell me something unwise to try").json()["safety"]
+    assert safety_reply["suggested_question"] == "Does a consistent bedtime help me feel rested?"
+    assert "clinician" in safety_reply["suggested_alternative"]
+    assert "clinician" not in safety_reply["suggested_question"]

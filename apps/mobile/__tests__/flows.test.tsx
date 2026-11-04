@@ -174,9 +174,8 @@ describe('question flow', () => {
     const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
     fake.mockImplementation((url, options) => String(url).endsWith('/propose') ? new Promise<Response>(resolve => { release = resolve; }) : original(url, options));
     await press('Design experiment');
-    const panel = await screen.findByText('Finding a small change you can test…');
-    expect(panel).toBeVisible();
-    expect(screen.getByText('This can take a little while.')).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Planning your experiment.' })).toBeVisible();
+    expect(screen.getByText('Usually 10–20 seconds.')).toBeVisible();
     await act(async () => { release({ ok: true, status: 200, json: async () => routes['POST /api/experiments/propose'].body } as Response); });
   });
 

@@ -263,12 +263,12 @@ describe('reading order', () => {
     expect(flat(starter).maxWidth).toBe('100%');
   });
 
-  test('waiting is one status and one complete line', async () => {
+  test('waiting is a designed moment with one honest line', async () => {
     await signedIn();
     (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => undefined));
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
-    expect(screen.getByText('This can take a little while.')).toBeVisible();
+    expect(screen.getByText('Usually 10–20 seconds.')).toBeVisible();
     expect(screen.queryByText('A suitable question')).toBeNull();
   });
 

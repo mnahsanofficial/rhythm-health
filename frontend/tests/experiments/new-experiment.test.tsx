@@ -438,3 +438,35 @@ describe("a question that is not about a habit", () => {
     expect(bodies[1]).toEqual({ question: "What is the capital of France?", continue_anyway: true });
   });
 });
+
+describe("a safety block", () => {
+  const advice = "Try a small, low-risk habit change, and ask a clinician about anything medical.";
+  async function askBlocked(suggested_question: string | null) {
+    server.use(
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+      http.post(`${api}/api/experiments/propose`, () => HttpResponse.json({
+        ...proposeResponse, proposal: null, prediction: null,
+        safety: { allowed: false, reason: "Not this one.", suggested_alternative: advice, suggested_question },
+      })),
+    );
+    const user = userEvent.setup();
+    render(<NewExperiment />);
+    await user.type(await screen.findByLabelText(/your question/i), "Something that gets blocked");
+    await user.click(screen.getByRole("button", { name: /design experiment/i }));
+    await screen.findByText("Let's find a gentler experiment.");
+    return user;
+  }
+
+  it("fills the box with a testable question, never the advice", async () => {
+    const user = await askBlocked("Does a consistent bedtime help me feel rested?");
+    await user.click(screen.getByRole("button", { name: "Use this instead" }));
+    expect(screen.getByLabelText(/your question/i)).toHaveValue("Does a consistent bedtime help me feel rested?");
+  });
+
+  it("with only advice, shows it as text and leaves the box empty", async () => {
+    await askBlocked(null);
+    expect(screen.getByText(advice)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Use this instead" })).toBeNull();
+    expect(screen.getByLabelText(/your question/i)).toHaveValue("");
+  });
+});
