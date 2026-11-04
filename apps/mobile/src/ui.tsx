@@ -7,7 +7,8 @@ import { useColors, themedStyles } from './theme-core';
 
 const PRESSED_SCALE = 0.98;
 const FontAvailability = createContext(true);
-const ScrollToTop = createContext<() => void>(() => undefined);
+const ScrollToTop = createContext<(settle?: boolean) => void>(() => undefined);
+const TopSlot = createContext<((node: ReactNode) => void) | null>(null);
 const FooterSlot = createContext<((node: ReactNode) => void) | null>(null);
 export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { const styles = useStyles();
   const available = useContext(FontAvailability);
@@ -29,9 +30,9 @@ export function useStepFocus(step: string) {
   return heading;
 }
 /** For a flow that moves focus itself: settle in and go to the top when `step` changes. */
-export function useScreenEnter(step: unknown) {
+export function useScreenEnter(step: unknown, settle = true) {
   const scrollToTop = useContext(ScrollToTop);
-  useEffect(() => { scrollToTop(); }, [step, scrollToTop]);
+  useEffect(() => { scrollToTop(settle); }, [step, scrollToTop, settle]);
 }
 const spoken = (node: ReactNode): string => Array.isArray(node) ? node.map(spoken).join('') : typeof node === 'string' || typeof node === 'number' ? String(node) : '';
 /** Android reads live regions; iOS ignores them, so VoiceOver needs an explicit announcement. */
@@ -117,7 +118,14 @@ export function StickyAction({ children }: { children: ReactNode }) {
   useEffect(() => () => fill?.(null), [fill]);
   return fill ? null : <>{children}</>;
 }
-function useKeyboardOpen() {
+/** Held above the scroller, under the header: what must stay in view while the content below it moves. */
+export function PinnedTop({ children }: { children: ReactNode }) {
+  const fill = useContext(TopSlot);
+  useEffect(() => { fill?.(children); }, [fill, children]);
+  useEffect(() => () => fill?.(null), [fill]);
+  return fill ? null : <>{children}</>;
+}
+export function useKeyboardOpen() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
@@ -129,33 +137,40 @@ function useKeyboardOpen() {
 /** `bare` hands the whole screen, up under the status bar, to one that lays itself out and doesn't scroll. */
 export function Frame({ children, header, tabs, fontsReady = true, bare = false }: { children: ReactNode; header?: ReactNode; tabs?: ReactNode; fontsReady?: boolean; bare?: boolean }) { const styles = useStyles();
   const [footer, setFooter] = useState<ReactNode>(null);
+  const [top, setTop] = useState<ReactNode>(null);
+  /** The bar floats over the scroller, so the content always ends this far above the bottom. Measured, because large text makes it taller. */
+  const [footerHeight, setFooterHeight] = useState<number>(LAYOUT.primaryAction + SPACING.md);
   const keyboardOpen = useKeyboardOpen();
   const bottomInset = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const opacity = useSharedValue(1);
   const rise = useSharedValue(0);
   // Called when a flow moves to a new screen: back to the top, then a short settle that keeps your place.
-  const scrollToTop = useCallback(() => {
+  const scrollToTop = useCallback((settle = true) => {
     scroller.current?.scrollTo?.({ y: 0, animated: false });
+    if (!settle) return;
     const timing = { duration: MOTION_DURATION_MS.panel, easing: Easing.bezier(...MOTION_EASE.settle), reduceMotion: ReduceMotion.System };
     opacity.set(0); rise.set(SPACING.xs + 2);
     opacity.set(withTiming(1, timing)); rise.set(withTiming(0, timing));
   }, [opacity, rise]);
   const enter = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ translateY: rise.get() }] }));
   return (
-    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><FooterSlot.Provider value={setFooter}><SafeAreaView style={styles.safe} edges={bare ? ['left', 'right'] : ['top', 'left', 'right']}>
+    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><FooterSlot.Provider value={setFooter}><TopSlot.Provider value={setTop}><SafeAreaView style={styles.safe} edges={bare ? ['left', 'right'] : ['top', 'left', 'right']}>
       {header}
+      {top}
       {bare ? <View style={[styles.bare, { paddingBottom: bottomInset }]}>{children}</View> : <KeyboardAvoidingView style={styles.bare} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView ref={scroller} style={styles.bare} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-          <View style={styles.column}>
-            <Animated.View style={[styles.content, enter]}>{children}</Animated.View>
-          </View>
-        </ScrollView>
-        {footer && <View style={styles.footer}><View style={[styles.column, styles.stack]}>{footer}</View></View>}
+        <View style={styles.bare}>
+          <ScrollView ref={scroller} style={styles.bare} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.scroll, footer ? { paddingBottom: footerHeight } : null]}>
+            <View style={[styles.column, top ? styles.columnUnderTop : null]}>
+              <Animated.View style={[styles.content, top ? styles.contentUnderTop : null, enter]}>{children}</Animated.View>
+            </View>
+          </ScrollView>
+          {footer && <View testID="sticky-footer" onLayout={event => setFooterHeight(event.nativeEvent.layout.height)} style={styles.footer}><View style={[styles.column, styles.stack]}>{footer}</View></View>}
+        </View>
         {!keyboardOpen && tabs}
         {!keyboardOpen && <View style={{ height: bottomInset }} />}
       </KeyboardAvoidingView>}
-    </SafeAreaView></FooterSlot.Provider></ScrollToTop.Provider></FontAvailability.Provider>
+    </SafeAreaView></TopSlot.Provider></FooterSlot.Provider></ScrollToTop.Provider></FontAvailability.Provider>
   );
 }
 export function Loading({ message }: { message: string }) { const styles = useStyles();
@@ -171,12 +186,14 @@ export function Loading({ message }: { message: string }) { const styles = useSt
 export const useStyles = themedStyles(COLORS => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.oat },
   bare: { flex: 1 },
-  footer: { paddingHorizontal: LAYOUT.gutter.min, paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border, backgroundColor: COLORS.background },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: LAYOUT.gutter.min, paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border, backgroundColor: COLORS.background },
   hint: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   scroll: { flexGrow: 1, padding: LAYOUT.gutter.min },
   column: { width: '100%', maxWidth: LAYOUT.contentWidth / 3, alignSelf: 'center' },
   backLink: { minHeight: LAYOUT.primaryAction, alignSelf: 'flex-start', justifyContent: 'center' },
   content: { paddingTop: SPACING.lg, paddingBottom: SPACING.lg, gap: SPACING.lg },
+  columnUnderTop: { flexGrow: 1 },
+  contentUnderTop: { flexGrow: 1, paddingTop: SPACING.xs, paddingBottom: 0 },
   body: { fontFamily: FONT_FAMILIES.sans, ...NATIVE_TYPOGRAPHY.body, color: COLORS.ink },
   title: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.headline, color: COLORS.ink },
   number: { fontFamily: FONT_FAMILIES.mono, ...NATIVE_TYPOGRAPHY.body, color: COLORS.text },

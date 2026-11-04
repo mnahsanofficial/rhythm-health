@@ -1,6 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, Animated, Platform } from 'react-native';
-import { MOTION_DURATION_MS } from '@rhythm-health/brand';
 import { FIRST_RUN_KEY } from '../src/first-run-guide';
 import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
@@ -228,8 +227,8 @@ async function completeQuestions() {
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   fireEvent.press(screen.getByRole('checkbox', { name: 'Better focus' }));
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Skip' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Skip' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
 }
 
@@ -290,7 +289,7 @@ test('summary edits preserve answers and return directly to the summary', async 
   fireEvent.press(screen.getByRole('button', { name: /^Goals:/ }));
   expect(screen.getByRole('checkbox', { name: 'Better focus' })).toBeChecked();
   fireEvent.press(screen.getByRole('checkbox', { name: 'Calmer evenings' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(await screen.findByText('Better focus, Calmer evenings')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeEnabled();
 });
@@ -370,10 +369,10 @@ test('goal limits, case-insensitive custom choices and optional habits match web
   expect(screen.getByRole('checkbox', { name: 'Steadier mornings' })).toBeChecked();
   expect(screen.getByRole('checkbox', { name: 'Better focus' })).toBeEnabled();
   expect(screen.getByRole('checkbox', { name: 'Fall asleep faster' })).toBeDisabled();
-  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   fireEvent.press(screen.getByRole('button', { name: /^Habits:/ }));
   fireEvent.press(screen.getByRole('checkbox', { name: 'Phone in bed' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(screen.getByText('Phone in bed · 23:00')).toBeVisible();
 });
 
@@ -434,7 +433,7 @@ test('onboarding remains editable offline and reconnects before saving', async (
   expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeDisabled();
   fireEvent.press(screen.getByRole('button', { name: /^Goals:/ }));
   fireEvent.press(screen.getByRole('checkbox', { name: 'Calmer evenings' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(screen.getByText('Better focus, Calmer evenings')).toBeVisible();
   mockNetwork.isConnected = true; screen.rerender(<MobileApp />);
   expect(await screen.findByRole('button', { name: 'Save my rhythm' })).toBeEnabled();
@@ -448,8 +447,8 @@ test.each([true, false])('rhythm reveal respects reduced motion=%s without delay
     await openSetup(); await completeQuestions(); await act(async () => {});
     expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeEnabled();
     expect(screen.getByText('23:30 to 07:00')).toBeVisible();
-    if (reduce) expect(timing).not.toHaveBeenCalled();
-    else expect(timing).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ duration: MOTION_DURATION_MS.reveal, useNativeDriver: true }));
+    // The ring assembles through Reanimated now, on the scene. This keeps the old Animated API out of it.
+    expect(timing).not.toHaveBeenCalled();
   } finally { timing.mockRestore(); }
 });
 

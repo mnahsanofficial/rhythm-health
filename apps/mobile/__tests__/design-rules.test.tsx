@@ -71,7 +71,7 @@ describe('where you are', () => {
   test('the step rail reports progress and names the current step', () => {
     render(<StepRail current={2} />);
     expect(screen.getByRole('progressbar', { name: 'Setup progress' }).props.accessibilityValue).toMatchObject({ now: 2, max: STEP_NAMES.length });
-    expect(screen.getByText('Question 2 of 7 · Sleep')).toBeTruthy();
+    expect(screen.getByText('2 of 7 · Sleep')).toBeTruthy();
   });
 
   test('the day rail says the experiment\'s real shape in words', () => {

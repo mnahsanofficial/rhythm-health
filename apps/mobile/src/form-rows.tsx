@@ -6,20 +6,22 @@ import { Copy, useStyles } from './ui';
 import { themedStyles, useColors } from './theme-core';
 
 /** Icon, label, value, chevron: one button per row. The value wraps under the label at large text. */
-export function FormRow({ icon, label, value, onPress, disabled = false, hint = 'Change', name, trailing }: {
+export function FormRow({ icon, label, value, onPress, disabled = false, hint = 'Change', name, trailing, compact = false }: {
   icon?: IconName; label: string; value?: string; onPress?: () => void; disabled?: boolean; hint?: string; name?: string; trailing?: ReactNode;
+  /** A one-line row for a screen of many. The spoken name still has the whole value. */
+  compact?: boolean;
 }) { const COLORS = useColors(); const local = useLocal();
   const body = <>
-    {icon && <Icon name={icon} />}
-    <View style={local.words}>
+    {icon && <Icon name={icon} size={compact ? SPACING.lg - SPACING.xs : undefined} />}
+    <View style={[local.words, compact && local.wordsCompact]}>
       <Copy style={local.label}>{label}</Copy>
-      {value !== undefined && <Copy style={local.value}>{value}</Copy>}
+      {value !== undefined && <Copy numberOfLines={compact ? 1 : undefined} style={local.value}>{value}</Copy>}
     </View>
     {trailing ?? (onPress && <Icon name="chevron" size={20} color={COLORS.muted} />)}
   </>;
   if (!onPress) return <View style={local.row}>{body}</View>;
   return <Pressable accessibilityRole="button" accessibilityLabel={name ?? (value ? `${label}: ${value}` : label)} accessibilityHint={hint} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
-    style={({ pressed }) => [local.row, pressed && { backgroundColor: COLORS['accent-tint'] }]}>{body}</Pressable>;
+    style={({ pressed }) => [local.row, compact && local.rowCompact, pressed && { backgroundColor: COLORS['accent-tint'] }]}>{body}</Pressable>;
 }
 
 /** A group of rows reads as one list, so only the group has an edge. */
@@ -69,6 +71,8 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   group: { borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control, backgroundColor: COLORS.surface, overflow: 'hidden' },
   row: { minHeight: LAYOUT.primaryAction + SPACING.sm, flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: COLORS.border },
   words: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: SPACING.md },
+  wordsCompact: { flexWrap: 'nowrap' },
+  rowCompact: { minHeight: LAYOUT.primaryAction, paddingVertical: SPACING.xs },
   label: { fontFamily: FONT_FAMILIES.sansMedium },
   value: { color: COLORS.muted, flexShrink: 1 },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md },

@@ -144,15 +144,15 @@ describe('check-in', () => {
 });
 
 describe('onboarding', () => {
-  test('each question shows the segmented progress bar', async () => {
+  test('every step shows the progress bar, which fills as you go', async () => {
     routes['GET /api/profile'] = { status: 404, body: {} };
     render(<MobileApp />);
     const start = await screen.findByRole('button', { name: 'Start' });
-    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.getByRole('progressbar', { name: 'Setup progress' }).props.accessibilityValue).toMatchObject({ now: 0, max: 7 });
     await act(async () => { fireEvent.press(start); });
     const bar = await screen.findByRole('progressbar', { name: 'Setup progress' });
     expect(bar.props.accessibilityValue).toMatchObject({ now: 1, max: 7, text: 'Question 1 of 7' });
-    expect(screen.getByText('Question 1 of 7 · Age')).toBeVisible();
+    expect(screen.getByText('1 of 7 · Age')).toBeVisible();
   });
 });
 

@@ -260,3 +260,16 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `progress-da
 **Finish flow:** the three facts are rows with their label beside the value. Each choice is a 48pt+ row with a hint that says where it goes. Overlaps with other experiments are shown here, because a one-sentence result without them could mislead. A failed save is an alert, and the rows stay usable.
 
 **Not checked, and on PR 3's iPhone list:** VoiceOver through the finish flow; the largest text sizes on long questions in Progress.
+
+## Re-audit: mobile PR 4, onboarding template
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `onboarding-template.test.tsx` and Expo web in both modes (`docs/screenshots/mobile-onboarding/`).
+
+**Scenes:** hidden from screen readers, and never the only place for a fact: bedtime, hours, activity and picks are all in words or controls. Hour labels are `text` from the dark theme on a night sky in both modes.
+
+**Controls:** choices stay radios and checkboxes with their names, at 48pt or more. Icons on goals and habits are decorative. Compact Review rows are 48pt, cut long values to one line on screen, and speak the whole value.
+
+**Focus:** moves to the heading on each step, as before. The slide doesn't move focus or delay any control.
+
+**Not checked, and on the PR's iPhone list:** VoiceOver through all steps; Reduce Motion on a device; the largest text sizes, where Review and Limits will scroll, which the padding allows for; the native time rows, because Expo web draws a browser input there.
+
