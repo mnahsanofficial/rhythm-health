@@ -83,7 +83,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
     {offline && <Notice>You&apos;re offline. These results are the last ones loaded.</Notice>}
 
     {primary && <View style={ui.stack}>
-      <Copy accessibilityRole="header" style={local.headline}>{resultSentence(primary.label, primary.percent_change, analysis.signal.classification)}</Copy>
+      <Copy accessibilityRole="header" style={local.headline}>{resultSentence(primary.label, primary.percent_change, analysis.signal.classification, analysis.signal.reasons)}</Copy>
       <Copy style={local.small}>A short personal experiment shows a pattern, not proof.</Copy>
     </View>}
 
