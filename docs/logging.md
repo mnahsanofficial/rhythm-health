@@ -68,6 +68,12 @@ echo "{\"transcript_path\":\"$SD/$SESSION.jsonl\"}" | CLAUDE_PROJECT_DIR="$WT" C
 
 This adds one symlink in `~/.claude/projects/`, and nothing in the repo except the log. Keep the same alias for the whole session.
 
+**On a new branch from `main`:** if your session's log isn't on `main` yet, the script can't see it and starts a second file with a new timestamp. There must be one file per session, so first bring the existing one across, and regenerate after that:
+
+```bash
+git show <branch with the log>:.claude-logs/<log file> > .claude-logs/<log file>
+```
+
 **How to check it's right:**
 
 ```bash

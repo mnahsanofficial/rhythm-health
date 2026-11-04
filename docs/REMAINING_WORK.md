@@ -8,10 +8,7 @@ The history of this list is in git. V2 is split by feature: both of us work acro
 
 | # | Item | Rule |
 |---|---|---|
-| C1 | History shows the list first, with "8 points away" wording | Waits for Nazmul's iPhone check |
-| C2 | Empty Progress gets an action, and screens use our own error wording | Waits for Nazmul's iPhone check |
-| C3 | Landing dots reach the 44 target | Waits for Nazmul's iPhone check |
-| C4 | A soft check when a question isn't about a habit, with "Continue anyway" | After C1–C3. If it isn't green by 13:00 on 5 Nov, it moves below |
+| C4 | A soft check when a question isn't about a habit, with "Continue anyway" ([#93](https://github.com/mnahsanofficial/rhythm-health/pull/93)) | Waits for Nazmul's iPhone check. If it isn't ready by 13:00 on 5 Nov, it moves below |
 
 **Check before the demo:** email confirmation in the Supabase dashboard, and that `EXPO_PUBLIC_DEV_TOOLS` isn't set, so "Send test reminder" stays hidden.
 

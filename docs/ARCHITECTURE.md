@@ -373,7 +373,7 @@ The web landing keeps its scrolling day story, and mobile has its own carousel. 
 
 ## 9. Tests
 
-CI runs on every PR and on `main` ([workflow](../.github/workflows/ci.yml)), with no secrets, so nothing in it can reach Supabase or OpenRouter. On `main` after #88: 466 backend, 244 web and 521 mobile unit tests all passed, plus the browser suite.
+CI runs on every PR and on `main` ([workflow](../.github/workflows/ci.yml)), with no secrets, so nothing in it can reach Supabase or OpenRouter. It also scans all of history for secrets, applies, rolls back and re-applies every migration on a disposable Postgres service, fails lint on any warning, and checks a PR's new commit messages ([ADR 12](adr/0012-ci-discipline-no-prettier.md)). On `main` after #88: 466 backend, 244 web and 521 mobile unit tests all passed, plus the browser suite.
 
 | Suite | Tools | Mocked |
 |---|---|---|
@@ -383,6 +383,6 @@ CI runs on every PR and on `main` ([workflow](../.github/workflows/ci.yml)), wit
 | Mobile | Jest, React Native Testing Library | Auth, API, storage, notifications |
 | Contract and brand | Node | Fails if generated files drift |
 | Logs | Node and Python | Fails on any drift from the guide's format |
-| Migrations | Disposable Postgres scripts in [`backend/tests/migrations/`](../backend/tests/migrations/) | Supabase's roles and defaults, as far as modelled |
+| Migrations | [`check_all_migrations.py`](../backend/tests/migrations/check_all_migrations.py) in CI, and the per-migration scripts beside it by hand | Supabase's roles and defaults, as far as modelled |
 
 **CI can't cover:** real sign-in, real AI output, VoiceOver, real large text, reminders, and the installed app's splash. Those are checked by hand on an iPhone; each PR says what was checked. Rules: [testing](rules/testing.md).
