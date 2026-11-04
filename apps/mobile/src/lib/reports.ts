@@ -31,6 +31,21 @@ export const SIGNAL_COPY: Record<SignalClass, { label: string; summary: string }
   probably_noise: { label: 'Probably noise', summary: 'The changes were small or inconsistent compared with your normal variation.' },
 };
 
+const VERDICT: Record<SignalClass, string> = {
+  likely_signal: ', likely real, not chance.',
+  possible_signal: ', possibly real, but the evidence is limited.',
+  unclear: ", but it's too unclear to say whether that's real.",
+  probably_noise: ', probably just chance.',
+};
+
+/** The whole result in one plain sentence. The percent and the verdict are the server's; this only words them. */
+export function resultSentence(label: string, percent: number | null, signal: SignalClass): string {
+  if (percent === null) return `There isn't enough data to say what happened to ${label}.`;
+  const size = Math.abs(Math.round(percent));
+  if (size === 0) return `${label} stayed about the same.`;
+  return `${label} ${percent > 0 ? 'rose' : 'fell'} ${size}%${VERDICT[signal]}`;
+}
+
 export function reasonText(reason: SignalReason, criteriaPercent: number): string {
   switch (reason) {
     case 'insufficient_data': return "One of the phases didn't have enough check-ins to compare.";

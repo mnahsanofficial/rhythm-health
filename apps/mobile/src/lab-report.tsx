@@ -5,7 +5,7 @@ import type { Experiment, LabReport, PersonalGuessComparison, PredictionComparis
 import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
 import { getCapacity } from './lib/experiments';
-import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
+import { getExperiment, getReport, reasonText, reportPercent, resultSentence, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
 import { useNavScreen } from './nav';
 import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
@@ -82,6 +82,13 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
     </View>
     {offline && <Notice>You&apos;re offline. These results are the last ones loaded.</Notice>}
 
+    {primary && <View style={ui.stack}>
+      <Copy accessibilityRole="header" style={local.headline}>{resultSentence(primary.label, primary.percent_change, analysis.signal.classification)}</Copy>
+      <Copy style={local.small}>A short personal experiment shows a pattern, not proof.</Copy>
+    </View>}
+
+    {primary && <DayChart chart={report.chart} />}
+
     {analysis.prediction && primary
       ? <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} guess={analysis.personal_guess} onRevealed={() => setRevealed(true)} />
       : <View style={local.card}>
@@ -103,7 +110,6 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
       <Copy style={NATIVE_TYPOGRAPHY.lead}>{signal.summary}</Copy>
       {primary && primary.percent_change !== null && <Copy style={ui.muted}>{`${primary.label}: ${reportPercent(primary.percent_change)} on test days compared with your baseline${primary.baseline.mean !== null && primary.intervention.mean !== null ? ` (${primary.baseline.mean.toFixed(1)} → ${primary.intervention.mean.toFixed(1)} on average)` : ''}.`}</Copy>}
       {analysis.signal.reasons.map(reason => <Copy key={reason}>{reasonText(reason, analysis.success_criteria_percent)}</Copy>)}
-      <Copy style={local.small}>A short personal experiment shows a pattern, not proof.</Copy>
     </View>
 
     <View style={ui.divider}>
@@ -113,8 +119,6 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
       <Stat label="Made the change, test days" value={`${a.intervention_days_completed} of ${a.intervention_days_logged}`} />
       <Stat label="Missed" value={a.missing_days.length === 0 ? 'None' : `${a.missing_days.length === 1 ? 'Day' : 'Days'} ${a.missing_days.join(', ')}`} />
     </View>
-
-    {primary && <DayChart chart={report.chart} />}
 
     {others.length > 0 && <View style={ui.divider}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>The other things you tracked</Copy>
@@ -181,7 +185,7 @@ function PredictionVsReality({ comparison, metricLabel, guess, onRevealed }: { o
       {revealed ? <Animated.View style={entering}><Copy style={local.big}>{reportPercent(observed)}</Copy></Animated.View> : <Copy style={ui.muted}>Your observations are ready.</Copy>}
       <Copy style={local.small}>Measured from your recorded days.</Copy>
     </View>
-    <Action label={revealed ? 'Replay comparison' : 'Reveal my result'} secondary={revealed} onPress={() => { setReplay(n => n + 1); onRevealed(); }} />
+    <Action label={revealed ? 'Replay comparison' : 'Compare with the prediction'} secondary={revealed} onPress={() => { setReplay(n => n + 1); onRevealed(); }} />
     <Status>{status}</Status>
     <View accessible accessibilityRole="image" accessibilityLabel={`${guess ? `Your guess ${reportPercent(guess.guessed_change_percent, 2)}; ` : ''}Predicted range ${reportPercent(min)} to ${reportPercent(max)}${revealed ? `; observed ${reportPercent(observed)}` : '; reveal to compare your result'}.`} style={local.scale}>
       <View style={local.scaleTrack} />

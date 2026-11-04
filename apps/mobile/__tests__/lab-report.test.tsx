@@ -204,7 +204,7 @@ describe('comparison', () => {
     expect(screen.getByText('Locked before you saw the AI forecast.')).toBeVisible();
     expect(screen.getByText('+8% to +15%')).toBeVisible();
     expect(screen.queryByText('+21%')).toBeNull();
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(screen.getByText('+21%')).toBeVisible();
     expect(screen.getByText('Your result, +21%, landed outside the predicted range. Your guess was 8 percentage points away.')).toBeVisible();
     expect(screen.getByText('61%')).toBeVisible();
@@ -214,7 +214,7 @@ describe('comparison', () => {
   test('an older report without a guess says so', async () => {
     await openReport();
     expect(screen.getByText('No guess was recorded for this experiment.')).toBeVisible();
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(screen.getByText('Your result, +21%, landed outside the predicted range.')).toBeVisible();
   });
 
@@ -222,7 +222,7 @@ describe('comparison', () => {
     await openReportWithoutPrediction();
     expect(screen.getByText(/Your guess: \+12\.5%\. A percentage comparison is unavailable because a baseline or test average is missing, or the baseline is zero\./)).toBeVisible();
     expect(screen.getByText("There wasn't enough data in both phases to compare with the prediction.")).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Reveal my result' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compare with the prediction' })).toBeNull();
   });
   async function openReportWithoutPrediction() {
     const report = { ...labReport, analysis: { ...labReport.analysis, prediction: null, personal_guess: { guessed_change_percent: 12.5, observed_change_percent: null, error_points: null } } };
@@ -236,7 +236,7 @@ describe('comparison', () => {
     const timing = jest.spyOn(Animated, 'timing');
     await openReport();
     await act(async () => { await Promise.resolve(); });
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(screen.getByText('+21%')).toBeVisible();
     expect(timing).not.toHaveBeenCalled();
   });
@@ -246,8 +246,44 @@ describe('comparison', () => {
     await openReport();
     await act(async () => { await Promise.resolve(); });
     const timing = jest.spyOn(Animated, 'timing');
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('the result comes first', () => {
+  const withResult = (classification: LabReport['analysis']['signal']['classification'], percent: number | null): LabReport => ({
+    ...labReport,
+    analysis: {
+      ...labReport.analysis,
+      signal: { ...labReport.analysis.signal, classification },
+      metrics: labReport.analysis.metrics.map(metric => metric.key === labReport.analysis.primary_metric ? { ...metric, percent_change: percent } : metric),
+    },
+  });
+  test.each([
+    ['likely_signal', 11, 'Morning energy rose 11%, likely real, not chance.'],
+    ['likely_signal', 20.5, 'Morning energy rose 21%, likely real, not chance.'],
+    ['possible_signal', -8, 'Morning energy fell 8%, possibly real, but the evidence is limited.'],
+    ['unclear', 3, "Morning energy rose 3%, but it's too unclear to say whether that's real."],
+    ['probably_noise', -2, 'Morning energy fell 2%, probably just chance.'],
+    ['probably_noise', 0.2, 'Morning energy stayed about the same.'],
+    ['unclear', null, "There isn't enough data to say what happened to Morning energy."],
+  ] as const)('%s at %s%% reads as one plain sentence', async (classification, percent, sentence) => {
+    await openReport(withResult(classification, percent));
+    expect(screen.getByRole('header', { name: sentence })).toBeVisible();
+  });
+  test('the sentence comes before the chart, the chart before the prediction, and both before the details', async () => {
+    await openReport();
+    const page = JSON.stringify(screen.toJSON());
+    const order = ['Morning energy rose 21%', 'A short personal experiment shows', 'Day 1, ', 'Prediction vs reality', 'How the days went'].map(text => page.indexOf(text));
+    expect(order.every(index => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+  test('with the result already said, the reveal is a comparison with the prediction', async () => {
+    await openReport();
+    expect(screen.queryByRole('button', { name: 'Reveal my result' })).toBeNull();
+    await press('Compare with the prediction');
+    expect(screen.getByRole('button', { name: 'Replay comparison' })).toBeVisible();
   });
 });
 
