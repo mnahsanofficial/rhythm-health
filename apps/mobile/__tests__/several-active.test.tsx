@@ -146,8 +146,8 @@ describe('your lab with several experiments', () => {
       answers: { 'first-id:energy': 7, 'first-id:focus': 6 },
     }));
     expect(await screen.findByText('2 check-ins recorded')).toBeVisible();
-    expect(screen.getByText('Day 1 of 10')).toBeVisible();
-    expect(screen.getByText('Day 2 of 10')).toBeVisible();
+    expect(screen.getAllByText('Day 1 of 10')[0]).toBeVisible(); // Today sits behind it with the same day.
+    expect(screen.getAllByText('Day 2 of 10')[0]).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
     await press('Continue');
     expect(screen.queryByText('2 check-ins recorded')).toBeNull();

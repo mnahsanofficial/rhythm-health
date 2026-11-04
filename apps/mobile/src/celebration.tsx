@@ -17,8 +17,10 @@ const leftWords = (left: number) => left === 0 ? 'That was the last day.' : `${l
  * After a check-in is saved: the sun, or the moon in dark mode, rises along the rhythm ring. Every saved day looks the same,
  * so it can't nudge the answers. Counts come from the server's refreshed progress, and aren't shown until they've arrived.
  */
-export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, onDone }: {
+export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, title, lines, onDone }: {
   day: number; totalDays: number | null; recordedDays: number | null; daysLeft: number | null; seeded: boolean; onDone: () => void;
+  /** For one check-in covering several experiments: the heading, and each one's day. */
+  title?: string; lines?: string[];
 }) { const COLORS = useColors(); const local = useLocal(); const { scheme } = useTheme();
   const reduce = useReducedMotion();
   const heading = useStepFocus('celebration');
@@ -42,7 +44,9 @@ export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, on
     return () => { active = false; if (timer) clearTimeout(timer); };
   }, [done]);
   const words = daysLeft === null ? null : leftWords(daysLeft);
-  const spoken = `Day ${day} recorded.${words ? ` ${words.endsWith('.') ? words : `${words}.`}` : ''}`;
+  const headline = title ?? `Day ${day} recorded`;
+  const details = lines ?? (words ? [words] : []);
+  const spoken = [headline, ...details].map(text => text.endsWith('.') ? text : `${text}.`).join(' ');
   useEffect(() => { if (Platform.OS !== 'web') AccessibilityInfo.announceForAccessibility(spoken); }, [spoken]);
 
   const ink = scheme === 'dark' ? COLORS.text : COLORS['on-accent'];
@@ -65,8 +69,8 @@ export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, on
             </Svg>
           </Animated.View>
         </View>
-        <Copy ref={heading} accessibilityRole="header" style={[local.heading, { color: ink }]}>{`Day ${day} recorded`}</Copy>
-        {words && <Copy style={[local.words, { color: ink }]}>{words}</Copy>}
+        <Copy ref={heading} accessibilityRole="header" style={[local.heading, { color: ink }]}>{headline}</Copy>
+        {details.map(text => <Copy key={text} style={[local.words, { color: ink }]}>{text}</Copy>)}
       </View>
       <View style={local.bottom}><Action wide secondary onDark={ink} label="Continue" onPress={done} /></View></View>
     </Pressable>

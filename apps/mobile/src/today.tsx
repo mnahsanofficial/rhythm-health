@@ -40,6 +40,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const generation = useRef(0);
   const [editing, setEditing] = useState<DayData | null>(null);
   const [savedDay, setSavedDay] = useState<number | null>(null);
+  const [savedAll, setSavedAll] = useState<TodayCheckin | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [report, setReport] = useState<{ id: string; initial?: LabReport } | null>(null);
@@ -82,7 +83,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
 
   // Choosing a section in the header leaves open screens. An open proposal stays mounted (below): it was paid for.
   const [seenNavigation, setSeenNavigation] = useState(navigation);
-  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setChosen(null); setCombined(null); }
+  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setSavedAll(null); setChosen(null); setCombined(null); }
 
   const disabled = offline || busy || error !== null;
   const entries = loaded?.value ?? [];
@@ -118,7 +119,8 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const openDetail = (entry: DayData) => { setChosen(entry.experiment.id); setDetail(true); };
   useNavScreen(section !== 'lab' && !combined && !editing && savedDay === null && !report ? { kind: 'section', onBack: toLab } : null);
   const content = () => {
-    if (combined) return <CombinedCheckin key={combined.revision} initial={combined} token={token} offline={offline} onExpired={onExpired} onBack={() => { setCombined(null); void load(); }} />;
+    if (combined) return <CombinedCheckin key={combined.revision} initial={combined} token={token} offline={offline} onExpired={onExpired} onBack={() => { setCombined(null); void load(); }}
+      onSaved={result => { setCombined(null); setSavedAll(result); void load(); }} />;
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
       onBack={() => { setEditing(null); void load(); }}
       onSaved={() => { setSavedDay(editing.timeline.progress.day_number); setEditing(null); void load(); }} />;
@@ -176,6 +178,9 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const fresh = saved && !busy && error === null ? saved : null;
   return <View style={styles.stack}>{flow}{content()}
     {savedDay !== null && <Celebration day={savedDay} totalDays={saved?.progress.total_days ?? null} recordedDays={fresh?.recorded_days ?? null} daysLeft={fresh?.progress.days_remaining ?? null} seeded={Boolean(data?.experiment.is_seeded)} onDone={() => setSavedDay(null)} />}
+    {savedAll && savedAll.experiments.length > 0 && <Celebration day={savedAll.experiments[0].day_number} totalDays={savedAll.experiments[0].total_days} recordedDays={null} daysLeft={null}
+      seeded={entries.some(entry => entry.experiment.is_seeded && savedAll.experiments.some(item => item.id === entry.experiment.id))}
+      title={`${savedAll.experiments.length} check-ins recorded`} lines={savedAll.experiments.map(item => `Day ${item.day_number} of ${item.total_days}`)} onDone={() => setSavedAll(null)} />}
   </View>;
 }
 
