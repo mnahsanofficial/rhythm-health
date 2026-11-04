@@ -31,19 +31,18 @@ export const SIGNAL_COPY: Record<SignalClass, { label: string; summary: string }
   probably_noise: { label: 'Probably noise', summary: 'The changes were small or inconsistent compared with your normal variation.' },
 };
 
-const VERDICT: Record<SignalClass, string> = {
-  likely_signal: ', likely real, not chance.',
-  possible_signal: ', possibly real, but the evidence is limited.',
-  unclear: ", but it's too unclear to say whether that's real.",
-  probably_noise: ', probably just chance.',
-};
-
-/** The whole result in one plain sentence. The percent and the verdict are the server's; this only words them. */
-export function resultSentence(label: string, percent: number | null, signal: SignalClass): string {
-  if (percent === null) return `There isn't enough data to say what happened to ${label}.`;
+/** The whole result in one plain sentence. The percent, verdict and reasons are the server's; this only words them. */
+export function resultSentence(label: string, percent: number | null, signal: SignalClass, reasons: SignalReason[]): string {
+  if (percent === null || reasons.includes('insufficient_data')) return 'Not enough days recorded to tell yet.';
   const size = Math.abs(Math.round(percent));
   if (size === 0) return `${label} stayed about the same.`;
-  return `${label} ${percent > 0 ? 'rose' : 'fell'} ${size}%${VERDICT[signal]}`;
+  const moved = `${label} ${percent > 0 ? 'rose' : 'fell'} ${size}%`;
+  switch (signal) {
+    case 'likely_signal': return `${moved}, more than your normal ups and downs.`;
+    case 'possible_signal': return `${moved}, possibly more than your normal ups and downs.`;
+    case 'unclear': return `${moved}, but the days were too mixed to tell.`;
+    case 'probably_noise': return `${label} changed ${size}%, within your normal ups and downs.`;
+  }
 }
 
 export function reasonText(reason: SignalReason, criteriaPercent: number): string {
