@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { LAYOUT, THEMES } from '@rhythm-health/brand';
 import { Action, CountUp, Notice, useStyles } from '../src/ui';
+import { AuthForm } from '../src/auth-form';
 import { DayRail, StepRail, STEP_NAMES } from '../src/rails';
 
 const MODES = ['light', 'dark'] as const;
@@ -20,10 +21,49 @@ describe('the rules in docs/design/05-design-system.md', () => {
     expect(secondary.borderColor).toBe(THEMES[mode].control);
   });
 
+  test.each(MODES)('a form or carousel action can match the width of what it sits with, in %s', mode => {
+    const { wide } = useStyles.forMode(mode);
+    expect(wide.alignSelf).toBe('stretch');
+    expect(wide.maxWidth).toBeUndefined();
+  });
+
   test('a disabled action says so without fading its words away', () => {
     render(<Action label="Continue" disabled onPress={() => undefined} />);
     const label = StyleSheet.flatten(screen.getByText('Continue').props.style);
     expect(label.color).toBe(THEMES.light.muted);
+  });
+});
+
+describe('sign-in and sign-up', () => {
+  const form = (initialMode: 'signIn' | 'signUp') => render(<AuthForm offline={false} message={null} initialMode={initialMode} authenticate={async () => true} />);
+
+  test.each(['signIn', 'signUp'] as const)('showing the password is an eye inside the field on %s', mode => {
+    form(mode);
+    const eye = screen.getByRole('button', { name: 'Show password' });
+    expect(screen.queryByText('Show password')).toBeNull();
+    expect(StyleSheet.flatten(eye.props.style).minWidth).toBeGreaterThanOrEqual(LAYOUT.tapTarget);
+    expect(StyleSheet.flatten(eye.props.style).position).toBe('absolute');
+    expect(screen.getByLabelText('Password').props.secureTextEntry).toBe(true);
+    fireEvent.press(eye);
+    expect(screen.getByLabelText('Password').props.secureTextEntry).toBe(false);
+    expect(screen.getByRole('button', { name: 'Hide password' }).props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  test('the submit button lines up with the fields', () => {
+    form('signIn');
+    expect(StyleSheet.flatten(screen.getByTestId('submit-action').props.style).alignSelf).toBe('stretch');
+  });
+
+  test('switching between the two is a quiet link, not a second button', () => {
+    form('signIn');
+    expect(screen.getByRole('link', { name: 'Create an account' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('link', { name: 'Create an account' }));
+    expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy();
+  });
+
+  test('creating an account says how long the password must be', () => {
+    form('signUp');
+    expect(screen.getByText('At least 6 characters.')).toBeTruthy();
   });
 });
 

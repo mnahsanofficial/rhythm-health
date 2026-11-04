@@ -10,7 +10,7 @@ const BUTTON_MAX = 320;
 const MIN_HEIGHT = 48;
 
 type Measured = {
-  filled: { name: string; width: number; height: number; pinned: boolean }[];
+  filled: { name: string; width: number; height: number; pinned: boolean; submit: boolean }[];
   fields: { name: string; border: string }[];
 };
 
@@ -38,7 +38,7 @@ async function measure(page: Page): Promise<Measured> {
         .filter(el => getComputedStyle(el).backgroundColor === accentRgb)
         .map(el => {
           const r = el.getBoundingClientRect();
-          return { name: (el.textContent ?? "").trim().slice(0, 40), width: r.width, height: r.height, pinned: pinned(el) };
+          return { name: (el.textContent ?? "").trim().slice(0, 40), width: r.width, height: r.height, pinned: pinned(el), submit: el.matches("form button[type=submit]") };
         }),
       fields: [...document.querySelectorAll("main input:not([type=radio]):not([type=checkbox]):not([type=range]):not([type=hidden]), main textarea, main select")].filter(shown)
         .map(el => ({ name: el.getAttribute("name") ?? el.id, border: getComputedStyle(el).borderTopColor })),
@@ -56,7 +56,7 @@ async function expectRules(page: Page, screen: string, width: number, mode: "lig
     expect.soft(button.height, `${screen}: "${button.name}" height`).toBeGreaterThanOrEqual(MIN_HEIGHT);
     if (width > 640) {
       expect.soft(button.width, `${screen}: "${button.name}" fits its words on wide screens`).toBeLessThanOrEqual(BUTTON_MAX);
-    } else if (!button.pinned) {
+    } else if (!button.pinned && !button.submit) { // A form's submit lines up with its fields on phones.
       expect.soft(button.width, `${screen}: "${button.name}" is full width without being pinned`).toBeLessThanOrEqual(BUTTON_MAX);
     }
   }
@@ -121,6 +121,18 @@ for (const mode of ["light", "dark"] as const) for (const width of [390, 1440]) 
     }
   });
 }
+
+test("the sign-in button lines up with its fields on a phone, and fits its words on a wide screen", async ({ page }) => {
+  await installApiMocks(page);
+  for (const [width, matches] of [[390, true], [1440, false]] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/sign-in");
+    const field = (await page.getByLabel("Email", { exact: true }).boundingBox())!;
+    const submit = (await page.getByRole("button", { name: "Sign in", exact: true }).boundingBox())!;
+    if (matches) expect(submit.width).toBeCloseTo(field.width, 0);
+    else expect(submit.width).toBeLessThanOrEqual(BUTTON_MAX);
+  }
+});
 
 test("the Lab Report's next step moves from revealing to writing", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

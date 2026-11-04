@@ -67,6 +67,7 @@
   --motion-response: 280ms;
   --motion-step: 350ms;
   --motion-reveal: 480ms;
+  --motion-dwell: 4500ms;
   --header-h: 4rem;
   --content-width: 90rem;
   --gutter: clamp(1rem, 4vw, 4rem);
