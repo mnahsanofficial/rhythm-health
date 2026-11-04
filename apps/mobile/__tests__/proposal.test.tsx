@@ -486,6 +486,7 @@ describe('a question that is not about a habit', () => {
     expect(screen.getByRole('button', { name: 'Use this instead' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue anyway' })).toBeVisible();
     expect(screen.queryByText(/The plan came back incomplete/)).toBeNull();
+    expect(screen.queryByLabelText('Suggestions')).toBeNull(); // Both choices stay on screen, without scrolling.
     expect(count(PROPOSE)).toBe(1);
   });
 
