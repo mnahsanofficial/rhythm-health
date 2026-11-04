@@ -11,6 +11,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Inherited text colour is already resolved, so a nested light region has to set its own. */
+[data-theme] {
+  color: var(--color-ink);
+}
+
 body {
   font-family: var(--font-sans);
   font-size: var(--text-body);

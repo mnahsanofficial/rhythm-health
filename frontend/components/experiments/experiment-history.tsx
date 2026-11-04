@@ -19,7 +19,7 @@ type HistoryLoad =
   | { kind: "error"; status: number; message: string };
 
 const secondary = "inline-flex min-h-11 items-center rounded-pill px-4 text-body font-medium text-moss underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss";
-const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-body font-medium text-paper hover:bg-moss-deep";
+const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-body font-medium text-on-accent hover:bg-moss-deep";
 
 export function ExperimentHistory() {
   const router = useRouter();
@@ -115,7 +115,7 @@ export function ExperimentHistory() {
               {(["newest", "oldest"] as const).map(value => (
                 <label
                   key={value}
-                  className={`inline-flex min-h-11 cursor-pointer items-center rounded-pill px-4 text-body has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${order === value ? "bg-moss text-paper" : "text-muted hover:text-ink"}`}
+                  className={`inline-flex min-h-11 cursor-pointer items-center rounded-pill px-4 text-body has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${order === value ? "bg-moss text-on-accent" : "text-muted hover:text-ink"}`}
                 >
                   <input type="radio" name="history-order" value={value} checked={order === value} onChange={() => setOrder(value)} className="sr-only" />
                   {value === "newest" ? "Newest first" : "Oldest first"}

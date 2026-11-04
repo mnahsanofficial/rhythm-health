@@ -2,6 +2,20 @@ import tokens from "./tokens.json";
 
 /** Portable numeric tokens. Native font loading remains the app's responsibility. */
 export const COLORS = tokens.colors;
+/** Semantic colours for each mode. New code should use these names. */
+export const THEMES = tokens.themes;
+export type ThemeName = keyof typeof THEMES;
+export type ThemeColors = (typeof THEMES)[ThemeName];
+export const COLOR_ALIASES = tokens.colorAliases;
+
+/** One mode's colours under both names, so older colour names keep working in that mode. */
+export function themeColors(mode: ThemeName): typeof COLORS & ThemeColors {
+  const theme = THEMES[mode];
+  const aliased = Object.fromEntries(
+    Object.entries(COLOR_ALIASES).map(([name, semantic]) => [name, theme[semantic as keyof ThemeColors]]),
+  );
+  return { ...COLORS, ...theme, ...aliased } as typeof COLORS & ThemeColors;
+}
 export const FONT_FAMILIES = {
   display: tokens.fonts.display.family,
   sans: tokens.fonts.sans.family,

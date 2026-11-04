@@ -46,3 +46,11 @@ afterEach(() => {
   server.resetHandlers();
 });
 afterAll(() => server.close());
+
+// jsdom has no matchMedia. A light system unless a test says otherwise.
+window.matchMedia ??= ((query: string) => ({
+  matches: query.includes("light"),
+  media: query,
+  addEventListener: () => undefined,
+  removeEventListener: () => undefined,
+})) as unknown as typeof window.matchMedia;

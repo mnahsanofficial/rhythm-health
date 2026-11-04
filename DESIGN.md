@@ -26,6 +26,16 @@ Colour, type, spacing, shape and motion values live in [`packages/brand/src/toke
 
 ### Colour
 
+Every colour has a light and a dark value under `themes` in the tokens, verified against WCAG AA by `packages/brand/tests/themes.test.mjs`. The rationale and full table are in [`docs/design/05-design-system.md`](docs/design/05-design-system.md).
+
+**Use the semantic names in new code:** `background`, `surface`, `raised`, `text`, `muted`, `border`, `control`, `accent`, `accent-press`, `on-accent`, `accent-tint`, `success`, `warning`, `danger` (each with a `-tint`), `night-text`, `night-tint`, `chart-1` to `chart-3`, `chart-band`, `marker`.
+
+The names in the table below keep working in both modes (`colorAliases` in the tokens: `bg-oat` is `background`, `paper` is `surface`). Their values are the light ones. **Text on `moss` is `on-accent`, never `paper`**, because `paper` becomes a dark surface in dark mode. `border` and `line` are for dividers; the edge of an input or choice uses `control`, at 3:1.
+
+**Modes.** Light, dark or system, remembered per device; system until someone chooses.
+- Web: `lib/theme.ts` and `components/theme-control.tsx`. An inline script in `app/layout.tsx` sets `data-theme` on `<html>` before first paint. Illustrations with their own colours sit inside `data-theme="light"`, which resets every themed name.
+- Mobile: `src/theme-core.tsx` and `src/theme.tsx`. Use `useColors()` in components and `themedStyles(colors => StyleSheet.create(...))` for stylesheets. Never read `COLORS` from the brand package for anything that should change with the mode.
+
 | Token | Value | Role |
 |---|---|---|
 | `oat` | `#f6f3ec` | Page background (also the browser `themeColor`) |
@@ -78,7 +88,7 @@ Every page works at any width from 320px to 2560px, and at 200% browser zoom. Th
 - **Grids and cards use the width; paragraphs don't.** A global rule caps every `<p>` at `48ch` (about 65–75 characters a line, measured for Instrument Sans). Don't override it with a wider `max-w-*` on a paragraph. Let cards, timelines and multi-column grids take the extra width instead.
 - **Fluid, not stepped.** Prefer `clamp()`, `var(--gutter)`, `minmax()` grid tracks and wrapping flex rows over adding breakpoints. Use a breakpoint where the layout really changes, such as a second column from `lg`.
 - **The header is fixed.** `SiteHeader` is `sticky top-0` with a solid oat background and a bottom border, and its height is `--header-h` (4rem). Anything else that sticks to the top offsets by it: `top-[var(--header-h)]` or `top-[calc(var(--header-h)+2rem)]`, and screen-high sections use `calc(100svh - var(--header-h))`. `html` has `scroll-padding-top` set, so focused headings and anchors land below it.
-- **Header contents.** Visitors see the logo and Sign in. Signed-in people see the logo, the main sections (Your lab, History, Demo) with the current one marked by `aria-current="page"` and a moss underline, and an account button (their initial). It opens a panel with their email, Update your rhythm and Sign out; Escape or a click outside closes it and returns focus. Below `md` the sections move into that panel, so the bar holds only the logo and one 44px button.
+- **Header contents.** Visitors see the logo and Sign in. Signed-in people see the logo, the main sections (Your lab, History, Demo) with the current one marked by `aria-current="page"` and a moss underline, and an account button (their initial). It opens a panel with their email, Update your rhythm and Sign out; Escape or a click outside closes it and returns focus. Below `md` the sections move into that panel, so the bar holds only the logo, the account button and the theme button.
 - **Pinned phone action bars** (`sticky bottom-0`) bleed to the screen edge with `-mx-[var(--gutter)] px-[var(--gutter)]`, not hard-coded `-mx-4`.
 - **Nothing scrolls sideways.** No element may be wider than the viewport. Illustrations use `preserveAspectRatio="xMidYMax slice"` or `w-full h-auto`, never a fixed pixel width.
 
@@ -100,6 +110,8 @@ The shared brand JSON stores durations in milliseconds and easing as numeric tup
 | `reveal` | 0.48 | `--motion-reveal: 480ms` | Forecast range, completed rhythm arc, report comparison |
 | `settle` easing | `[0.22, 1, 0.36, 1]` | `--ease-settle` | A change settling into place |
 
+Counts may count up over `response` (days recorded, questions answered). Predictions, measured changes, accuracy and other health estimates never animate through values; they appear at their final value.
+
 Small existing selection springs, chart fades and panel departures keep their local settings. They are supporting interactions, not additional signature moments. Avoid inventing another timing where a shared role fits.
 
 ### Two memorable moments
@@ -119,7 +131,7 @@ Small existing selection springs, chart fades and panel departures keep their lo
 | Public landing | "A day in the life": scrolling moves one example day from night to morning, noon, evening and back to night. Sky, light, sun and moon follow the scroll position directly (`useScroll` + `useTransform`, opacity and transforms only), so stopping the scroll stops the scene. No snapping or scroll-jacking. Only the sets near the current position are mounted. With reduced motion, the stage is not mounted and each scene shows a still illustration above its text. |
 | History | Native newest/oldest controls reorder existing rows through position transforms. Report state stays with each experiment; seeded rows are labelled as samples. |
 
-Do not add global page entrance effects. Preserve context through persistent questions, directional step transitions, focused headings and stable panels.
+Do not add page or section entrance effects. The one exception is a short transition (`panel`, 6px and opacity) when navigating between screens, so you keep your place. Preserve context through persistent questions, directional step transitions, focused headings and stable panels.
 
 ### Loading and reduced motion
 

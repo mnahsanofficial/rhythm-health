@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import type { Metric } from '@rhythm-health/contract';
-import { COLORS, LAYOUT, RADII, SPACING } from '@rhythm-health/brand';
-import { Copy, styles } from './ui';
+import { LAYOUT, RADII, SPACING } from '@rhythm-health/brand';
+import { Copy, useStyles } from './ui';
+import { useColors } from './theme-core';
 
 export function Radio({ label, selected, onPress, disabled, text = label }: {
   label: string; text?: string; selected: boolean; onPress: () => void; disabled: boolean;
-}) {
+}) { const COLORS = useColors();
   return <Pressable accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ checked: selected, disabled }}
     disabled={disabled} onPress={onPress} style={({ pressed }) => ({
       minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, justifyContent: 'center', alignItems: 'center',
       padding: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2,
       borderColor: selected ? COLORS.moss : COLORS.line, backgroundColor: selected ? COLORS.moss : pressed ? COLORS['moss-tint'] : COLORS.paper,
-    })}><Copy style={selected ? { color: COLORS.paper } : undefined}>{text}</Copy></Pressable>;
+    })}><Copy style={selected ? { color: COLORS['on-accent'] } : undefined}>{text}</Copy></Pressable>;
 }
 export function MetricInput({ metric, value, onChange, disabled, error }: {
   metric: Metric; value: string | boolean | undefined; onChange: (value: string | boolean) => void; disabled: boolean; error?: string;
-}) {
+}) { const COLORS = useColors(); const styles = useStyles();
   const [focused, setFocused] = useState(false);
   const low = metric.min_label ?? 'Low', high = metric.max_label ?? 'High';
   const min = metric.min ?? 1, max = metric.max ?? 10;

@@ -122,7 +122,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                 <p className="mt-1 text-body text-muted">Your rhythm is in your account. Next, pick something to test.</p>
                 <Link
                   href="/"
-                  className="mt-4 inline-flex min-h-11 items-center rounded-pill bg-moss px-5 text-body font-medium text-paper hover:bg-moss-deep"
+                  className="mt-4 inline-flex min-h-11 items-center rounded-pill bg-moss px-5 text-body font-medium text-on-accent hover:bg-moss-deep"
                 >
                   Back to home
                 </Link>
@@ -149,7 +149,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                   onClick={handleSave}
                   disabled={!input || save === "saving"}
                   aria-busy={save === "saving"}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-paper transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60 sm:w-auto"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60 sm:w-auto"
                 >
                   {save === "saving" ? "Saving…" : "Save my rhythm"}
                 </button>

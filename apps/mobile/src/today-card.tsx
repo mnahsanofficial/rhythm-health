@@ -1,12 +1,13 @@
 import { StyleSheet, View } from 'react-native';
-import { COLORS, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { DayData } from './today';
-import { Action, Copy, styles } from './ui';
+import { Action, Copy, useStyles } from './ui';
+import { themedStyles } from './theme-core';
 
 /** The one thing to do now: check in, wait for tomorrow, finish, or read the results. */
 export function TodayCard({ data: { experiment, timeline }, disabled, onCheckin, onOpenReport }: {
   data: DayData; disabled: boolean; onCheckin: () => void; onOpenReport: () => void;
-}) {
+}) { const local = useLocal(); const styles = useStyles();
   const { progress } = timeline;
   if (experiment.is_seeded && progress.state !== 'in_progress') return <View style={local.plain}><Copy>This sample has ended. Remove it to free up a slot for a real experiment.</Copy></View>;
   if (progress.state === 'completed') return <View style={styles.decision}>
@@ -40,9 +41,9 @@ export function TodayCard({ data: { experiment, timeline }, disabled, onCheckin,
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles(COLORS => StyleSheet.create({
   plain: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   doneRow: { flexDirection: 'row', gap: SPACING.sm },
   done: { color: COLORS.moss },
-});
+}));

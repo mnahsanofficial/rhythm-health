@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
-import { Action, Alert, BackLink, Copy, styles, Title, Status } from './ui';
+import { Action, Alert, BackLink, Copy, useStyles, Title, Status } from './ui';
 
 export function AuthForm({ offline, message, initialMode = 'signIn', onBack, authenticate }: {
   offline: boolean; message: string | null; initialMode?: 'signIn' | 'signUp'; onBack?: () => void;
   authenticate: (mode: 'signIn' | 'signUp', email: string, password: string) => Promise<boolean>;
-}) {
+}) { const styles = useStyles();
   const [mode, setMode] = useState<'signIn' | 'signUp'>(initialMode);
   const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
   const [shown, setShown] = useState(false); const [focused, setFocused] = useState<string | null>(null);

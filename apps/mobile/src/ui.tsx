@@ -1,15 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useRef, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { AccessibilityInfo, findNodeHandle, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { useColors, themedStyles } from './theme-core';
 
 const FontAvailability = createContext(true);
 const ScrollToTop = createContext<() => void>(() => undefined);
-export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) {
+export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { const styles = useStyles();
   const available = useContext(FontAvailability);
   return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
 }
-export function Title({ children, textRef, small = false }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>>; small?: boolean }) { return <Copy ref={textRef} accessibilityRole="header" style={[styles.title, small && NATIVE_TYPOGRAPHY.headline]}>{children}</Copy>; }
+export function Title({ children, textRef, small = false }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>>; small?: boolean }) { const styles = useStyles(); return <Copy ref={textRef} accessibilityRole="header" style={[styles.title, small && NATIVE_TYPOGRAPHY.headline]}>{children}</Copy>; }
 /** A new step in a flow starts at its heading: back to the top, keyboard away, screen reader on the title. */
 export function useStepFocus(step: string) {
   const heading = useRef<ComponentRef<typeof Text>>(null);
@@ -33,13 +34,13 @@ export function Status(props: TextProps) {
   useAnnounce(spoken(props.children));
   return <Copy accessibilityLiveRegion="polite" {...props} />;
 }
-export function Alert({ children }: { children: ReactNode }) {
+export function Alert({ children }: { children: ReactNode }) { const styles = useStyles();
   useAnnounce(spoken(children));
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
 export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, inline = false }: {
   label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean; inline?: boolean;
-}) {
+}) { const COLORS = useColors(); const styles = useStyles();
   return (
     <Pressable
       accessibilityRole={link ? 'link' : 'button'}
@@ -55,18 +56,18 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
   );
 }
 /** The web's "← Your lab" link. The arrow is visual; the spoken name says where it goes. */
-export function BackLink({ to, name, onPress, disabled = false }: { to: string; name?: string; onPress: () => void; disabled?: boolean }) {
+export function BackLink({ to, name, onPress, disabled = false }: { to: string; name?: string; onPress: () => void; disabled?: boolean }) { const COLORS = useColors(); const styles = useStyles();
   return <Pressable accessibilityRole="button" accessibilityLabel={name ?? `Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }, disabled && styles.disabled]}>
     <Copy style={{ color: COLORS.moss }}>← {to}</Copy>
   </Pressable>;
 }
-export function ForwardLink({ label, onPress }: { label: string; onPress: () => void }) {
+export function ForwardLink({ label, onPress }: { label: string; onPress: () => void }) { const COLORS = useColors(); const styles = useStyles();
   return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }]}>
     <Copy style={{ color: COLORS.moss, fontFamily: FONT_FAMILIES.sansMedium }}>{label}  →</Copy>
   </Pressable>;
 }
-export function Frame({ children, header, fontsReady = true }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean }) {
+export function Frame({ children, header, fontsReady = true }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean }) { const styles = useStyles();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const scrollToTop = useCallback(() => { scroller.current?.scrollTo?.({ y: 0, animated: false }); }, []);
   return (
@@ -80,7 +81,7 @@ export function Frame({ children, header, fontsReady = true }: { children: React
     </SafeAreaView></ScrollToTop.Provider></FontAvailability.Provider>
   );
 }
-export function Loading({ message }: { message: string }) {
+export function Loading({ message }: { message: string }) { const styles = useStyles();
   return (
     <View style={styles.stack}>
       <Status>{message}</Status>
@@ -90,7 +91,7 @@ export function Loading({ message }: { message: string }) {
     </View>
   );
 }
-export const styles = StyleSheet.create({
+export const useStyles = themedStyles(COLORS => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.oat },
   scroll: { flexGrow: 1, padding: LAYOUT.gutter.min },
   column: { width: '100%', maxWidth: LAYOUT.contentWidth / 3, alignSelf: 'center' },
@@ -110,7 +111,7 @@ export const styles = StyleSheet.create({
   stack: { gap: SPACING.md },
   action: { minHeight: LAYOUT.primaryAction, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.moss, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center' },
-  actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.lead, color: COLORS.paper, textAlign: 'center' },
+  actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.lead, color: COLORS['on-accent'], textAlign: 'center' },
   inline: { alignSelf: 'flex-start' },
   secondary: { backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   disabled: { opacity: 0.5 },
@@ -119,4 +120,4 @@ export const styles = StyleSheet.create({
   skeletonTitle: { height: LAYOUT.primaryAction, width: '80%', backgroundColor: COLORS.line, borderRadius: RADII.pill },
   skeletonBody: { height: LAYOUT.headerHeight, backgroundColor: COLORS.line, borderRadius: RADII.card },
   skeletonAction: { height: LAYOUT.primaryAction, backgroundColor: COLORS['moss-tint'], borderRadius: RADII.pill },
-});
+}));

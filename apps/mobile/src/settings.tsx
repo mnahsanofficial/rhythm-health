@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Linking, Platform, Switch, View } from 'react-native';
-import { COLORS, LAYOUT, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, SPACING } from '@rhythm-health/brand';
 import { onlySamples } from './lib/reminders';
 import { useReminders } from './reminder-context';
-import { Action, Alert, Copy, styles, Title, Status } from './ui';
-export function Settings() {
+import { Action, Alert, Copy, useStyles, Title, Status } from './ui';
+import { useColors } from './theme-core';
+export function Settings() { const COLORS = useColors(); const styles = useStyles();
   const { service, state } = useReminders();
   const [error, setError] = useState(false);
   return <View style={styles.stack}>
@@ -12,7 +13,7 @@ export function Settings() {
     {Platform.OS === 'web' && <Copy>Reminders are available in the phone app.</Copy>}
     <View style={styles.divider}><Copy>Daily reminders</Copy>
       <Switch style={{ minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction }} hitSlop={SPACING.sm} accessibilityLabel="Daily reminders" value={!onlySamples(state.data) && state.choice === 'on' && state.permission} disabled={onlySamples(state.data) || !state.ready || state.busy || Platform.OS === 'web'}
-        trackColor={{ false: COLORS.line, true: COLORS.moss }} thumbColor={COLORS.paper} onValueChange={value => void service.choose(value)} />
+        trackColor={{ false: COLORS.line, true: COLORS.moss }} thumbColor={COLORS['on-accent']} onValueChange={value => void service.choose(value)} />
       {onlySamples(state.data) && <Copy>Reminders are off for this sample. Your reminder preference is kept for real experiments.</Copy>}
       <Copy style={styles.muted}>At the next opening returned by your experiment. The lock screen shows the day, never your habit question.</Copy>
     </View>
@@ -24,7 +25,7 @@ export function Settings() {
     {state.notice && <Status>{state.notice}</Status>}
   </View>;
 }
-export function ReminderNotice({ feedbackOnly = false }: { feedbackOnly?: boolean }) {
+export function ReminderNotice({ feedbackOnly = false }: { feedbackOnly?: boolean }) { const styles = useStyles();
   const { service, state } = useReminders();
   return <>
     {state.error && <><Alert>{state.error}</Alert><Action label="Retry reminder" secondary disabled={state.busy} onPress={() => void service.retry()} /></>}

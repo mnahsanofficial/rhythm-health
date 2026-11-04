@@ -105,7 +105,7 @@ function AccountMenu({ email, pathname }: { email: string; pathname: string }) {
         }}
         className="flex min-h-11 min-w-11 items-center gap-2 rounded-pill py-1 pr-2 pl-1 hover:bg-line/60 md:pr-3"
       >
-        <span aria-hidden="true" className="grid size-9 place-items-center rounded-pill bg-moss font-medium text-paper uppercase">
+        <span aria-hidden="true" className="grid size-9 place-items-center rounded-pill bg-moss font-medium text-on-accent uppercase">
           {email.charAt(0)}
         </span>
         <svg viewBox="0 0 20 20" aria-hidden="true" className="size-4 text-muted md:hidden" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round">

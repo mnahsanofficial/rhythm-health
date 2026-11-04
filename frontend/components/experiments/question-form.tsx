@@ -62,7 +62,7 @@ export function QuestionForm({
         <button
           type="submit"
           disabled={busy || blocked || length < 5 || length > 500}
-          className="mt-5 min-h-12 w-full rounded-pill bg-moss px-6 py-3 font-medium text-paper transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:w-auto"
+          className="mt-5 min-h-12 w-full rounded-pill bg-moss px-6 py-3 font-medium text-on-accent transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:w-auto"
         >
           {busy ? "Shaping your experiment…" : "Design my experiment"}
         </button>

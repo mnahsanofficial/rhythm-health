@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import type { ExperimentTimeline } from '@rhythm-health/contract';
-import { Copy, styles } from './ui';
+import { Copy, useStyles } from './ui';
 
-export function BaselineContext({ timeline }: { timeline: ExperimentTimeline }) {
+export function BaselineContext({ timeline }: { timeline: ExperimentTimeline }) { const styles = useStyles();
   const summary = timeline.baseline_summary;
   if (!summary || timeline.progress.state !== 'in_progress' || timeline.progress.phase !== 'intervention') return null;
   return <View style={styles.divider}>

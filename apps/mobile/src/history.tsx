@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, LabReport } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
 import { getReport, reportPercent, SIGNAL_COPY } from './lib/reports';
-import { Action, Alert, BackLink, Copy, Loading, styles as ui, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status } from './ui';
+import { useColors, themedStyles } from './theme-core';
 
 /** Held by Today for this app session, so going offline can still show what was read. Not an offline database. */
 export type HistoryCache = { value: { experiments: Experiment[]; at: Date; reports: Record<string, LabReport | null> } | null };
@@ -16,7 +17,7 @@ const stamp = (item: Experiment) => Date.parse(item.completed_at ?? item.created
 export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk, onBack }: {
   token: string; offline: boolean; cache: HistoryCache; onExpired: () => void;
   onOpen: (id: string, cached?: LabReport) => void; onAsk: () => void; onBack: () => void;
-}) {
+}) { const local = useLocal(); const ui = useStyles();
   const [list, setList] = useState<Experiment[] | null>(cache.value?.experiments ?? null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -71,7 +72,7 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk,
   </View>;
 }
 
-export function DemoScreen({ token, offline, onExpired, onOpen, onBack }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void; onBack: () => void }) {
+export function DemoScreen({ token, offline, onExpired, onOpen, onBack }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void; onBack: () => void }) { const local = useLocal(); const ui = useStyles();
   const heading = useStepFocus('demo');
   return <View style={local.page}>
     <View style={ui.stack}>
@@ -87,7 +88,7 @@ type RowState = { kind: 'loading' } | { kind: 'ready'; report: LabReport | null 
 
 function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
   experiment: Experiment; token: string; offline: boolean; cache: HistoryCache; onExpired: () => void; onOpen: (id: string, cached?: LabReport) => void;
-}) {
+}) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const stored = cache.value?.reports[experiment.id];
   const [state, setState] = useState<RowState>(stored !== undefined ? { kind: 'ready', report: stored } : { kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -144,7 +145,7 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
 }
 
 /** A write, so it only happens on a tap. Resets just the completed sample; no AI call, no active experiment touched. */
-function DemoEntry({ token, offline, onExpired, onOpen }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void }) {
+function DemoEntry({ token, offline, onExpired, onOpen }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void }) { const local = useLocal(); const ui = useStyles();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -168,7 +169,7 @@ function DemoEntry({ token, offline, onExpired, onOpen }: { token: string; offli
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
   page: { gap: SPACING.xl },
   eyebrow: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption },
   empty: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
@@ -176,4 +177,4 @@ const local = StyleSheet.create({
   sort: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   sample: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.night },
   fact: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
-});
+}); });

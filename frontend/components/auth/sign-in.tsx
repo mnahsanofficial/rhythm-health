@@ -22,7 +22,7 @@ export function SignIn() {
         <p className="mt-2 text-body text-muted">As {session.user.email}.</p>
         <Link
           href={next}
-          className="mt-6 inline-flex min-h-12 items-center rounded-pill bg-moss px-6 text-lead font-medium text-paper hover:bg-moss-deep"
+          className="mt-6 inline-flex min-h-12 items-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent hover:bg-moss-deep"
         >
           Continue
         </Link>

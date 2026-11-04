@@ -94,7 +94,7 @@ export function DayStory() {
   const animate = isClient && !reduce;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} data-theme="light" className="relative">
       {/* Not a scroll anchor: its layers stay put while the page moves and mount as scenes change,
           so the browser must not use them to adjust the reader's scroll position. */}
       <div

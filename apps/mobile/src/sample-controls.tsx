@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { Experiment } from '@rhythm-health/contract';
-import { Action, Alert, Copy, styles } from './ui';
+import { Action, Alert, Copy, useStyles } from './ui';
 import { ApiError, apiPost } from './lib/api';
 
 export function SampleControls({ experiment, token, disabled, onChanged, onExpired }: {
   experiment?: Experiment; token: string; disabled: boolean; onChanged: () => Promise<void>; onExpired: () => void;
-}) {
+}) { const styles = useStyles();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();

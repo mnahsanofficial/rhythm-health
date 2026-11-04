@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, findNodeHandle, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { COLORS, LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type Profile, type ProfileInput } from '@rhythm-health/contract';
 import { TimeField } from './time-field';
-import { Action, Alert, Copy, Loading, styles, Status } from './ui';
+import { Action, Alert, Copy, Loading, useStyles, Status } from './ui';
 import { ApiError, saveProfile } from './lib/profile';
 import { ACTIVITY_OPTIONS, AGE_OPTIONS, clearDraft, CONSTRAINTS, duration, GOALS, HABITS, habitTime, maxSleep, minutes, nightMinutes, plausible, QUESTIONS, readDraft, suggestedSleep, toProfileInput, writeDraft, type Draft, type StoredDraft } from './lib/onboarding';
+import { useColors, themedStyles } from './theme-core';
 
 export function Onboarding({ owner, token, offline, initial, onSaved, onExpired, onCancel }: {
   owner: string; token: string; offline: boolean; initial?: Profile; onSaved: (profile: Profile) => void; onExpired: () => void; onCancel?: () => void;
-}) {
+}) { const local = useLocal(); const styles = useStyles();
   const [data, setData] = useState<StoredDraft | null>(null);
   const [loadError, setLoadError] = useState(false); const [attempt, setAttempt] = useState(0);
   const [storageError, setStorageError] = useState(false);
@@ -155,13 +156,13 @@ function profileDraft(p: ProfileInput): Draft {
   return { age_range: p.age_range, usual_sleep_schedule: p.usual_sleep_schedule, usual_sleep_hours: p.usual_sleep_hours,
     activity_level: p.activity_level, goals: p.goals, regular_habits: p.regular_habits, constraints: p.constraints };
 }
-function Field({ label, value, onChange, placeholder, maxLength }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number }) {
+function Field({ label, value, onChange, placeholder, maxLength }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; maxLength?: number }) { const styles = useStyles();
   const [focused, setFocused] = useState(false);
   return <View><Copy style={styles.label}>{label}</Copy><TextInput accessibilityLabel={label} value={value} onChangeText={onChange}
     placeholder={placeholder} maxLength={maxLength} autoCorrect={false} autoCapitalize="none" style={[styles.input, focused && styles.focus]}
     onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} /></View>;
 }
-function Choice({ label, hint, picked, onPress, multiple = false, disabled = false }: { label: string; hint?: string; picked: boolean; onPress: () => void; multiple?: boolean; disabled?: boolean }) {
+function Choice({ label, hint, picked, onPress, multiple = false, disabled = false }: { label: string; hint?: string; picked: boolean; onPress: () => void; multiple?: boolean; disabled?: boolean }) { const local = useLocal(); const styles = useStyles();
   return <Pressable accessibilityRole={multiple ? 'checkbox' : 'radio'} accessibilityLabel={hint ? `${label}. ${hint}` : label}
     accessibilityState={{ checked: picked, disabled }} disabled={disabled} onPress={onPress}
     style={[local.choice, picked && local.picked, disabled && styles.disabled]}>
@@ -169,7 +170,7 @@ function Choice({ label, hint, picked, onPress, multiple = false, disabled = fal
     {hint && <Copy style={picked ? local.pickedText : styles.muted}>{hint}</Copy>}
   </Pressable>;
 }
-function MultiChoice({ options, values, onChange, max, addLabel, placeholder }: { options: string[]; values: string[]; onChange: (v: string[]) => void; max: number; addLabel: string; placeholder: string }) {
+function MultiChoice({ options, values, onChange, max, addLabel, placeholder }: { options: string[]; values: string[]; onChange: (v: string[]) => void; max: number; addLabel: string; placeholder: string }) { const styles = useStyles();
   const [custom, setCustom] = useState(''); const chips = [...options, ...values.filter(v => !options.includes(v))];
   const full = values.length >= max;
   function add() {
@@ -188,7 +189,7 @@ function MultiChoice({ options, values, onChange, max, addLabel, placeholder }: 
   </View>;
 }
 
-function RhythmRing({ draft, description = true }: { draft: Draft; description?: boolean }) {
+function RhythmRing({ draft, description = true }: { draft: Draft; description?: boolean }) { const COLORS = useColors(); const styles = useStyles();
   const [opacity] = useState(() => new Animated.Value(1));
   useEffect(() => {
     let active = true; let animation: Animated.CompositeAnimation | undefined;
@@ -220,12 +221,12 @@ function RhythmRing({ draft, description = true }: { draft: Draft; description?:
     {placed.map(h => <Copy key={h.label}>{h.time ? `${h.label} · ${h.time}` : `No set time, so not on the ring: ${h.label}.`}</Copy>)}
   </View>;
 }
-const local = StyleSheet.create({
+const useLocal = themedStyles(COLORS => StyleSheet.create({
   segments: { flexDirection: 'row', gap: SPACING.xs + 2 },
   segment: { flex: 1, height: SPACING.xs + 2, borderRadius: RADII.pill, backgroundColor: COLORS.line },
   segmentDone: { backgroundColor: COLORS.moss },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   choice: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', padding: SPACING.md, gap: SPACING.xs, backgroundColor: COLORS.paper,
     borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, borderRadius: SPACING.lg },
-  picked: { backgroundColor: COLORS.moss, borderColor: COLORS.moss }, pickedText: { color: COLORS.paper },
-});
+  picked: { backgroundColor: COLORS.moss, borderColor: COLORS.moss }, pickedText: { color: COLORS['on-accent'] },
+}));

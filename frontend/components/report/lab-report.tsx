@@ -19,7 +19,7 @@ type Load =
   | { kind: "error"; status: number; message: string };
 
 const SIGNAL_TONE: Record<SignalClass, string> = {
-  likely_signal: "bg-moss text-paper",
+  likely_signal: "bg-moss text-on-accent",
   possible_signal: "bg-moss-tint text-moss",
   unclear: "bg-line text-ink",
   probably_noise: "bg-oat text-muted border border-line",
@@ -29,7 +29,7 @@ const secondaryLink =
   "inline-flex min-h-12 items-center justify-center rounded-pill border border-line bg-paper px-6 text-body font-medium text-ink hover:border-moss hover:text-moss";
 
 const linkButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-paper transition-[background-color,scale] hover:bg-moss-deep active:scale-[0.98]";
+  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-[background-color,scale] hover:bg-moss-deep active:scale-[0.98]";
 
 export function LabReport({ id }: { id: string }) {
   const router = useRouter();

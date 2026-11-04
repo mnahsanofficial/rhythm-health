@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Checkin, ExperimentDay, MetricValue } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { listCheckins } from './lib/checkins';
-import { Action, Alert, Copy, Loading, styles, Status } from './ui';
+import { Action, Alert, Copy, Loading, useStyles, Status } from './ui';
 import type { DayData } from './today';
+import { useColors, themedStyles } from './theme-core';
 
 const STATE_WORDS: Record<ExperimentDay['state'], string> = {
   recorded: 'logged', current: 'today, not logged yet', missed: 'missed', not_observed: 'not recorded before completion', future: 'upcoming',
@@ -15,7 +16,7 @@ const shown = (value: MetricValue) => typeof value === 'boolean' ? value ? 'Yes'
 /** "Your observations": server-owned counts and day states, with recorded answers read beside them. */
 export function Observations({ data: { experiment, timeline }, title, token, offline, onExpired }: {
   data: DayData; title: string; token: string; offline: boolean; onExpired: () => void;
-}) {
+}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const latest = [...timeline.days].reverse().find(day => day.state === 'recorded')?.day_number;
   const [selected, setSelected] = useState(latest);
   const [answers, setAnswers] = useState<Checkin[] | null>(null);
@@ -81,12 +82,12 @@ export function Observations({ data: { experiment, timeline }, title, token, off
   </View>;
 }
 
-function DayCell({ item, isToday, open, onPress }: { item: ExperimentDay; isToday: boolean; open: boolean; onPress: () => void }) {
+function DayCell({ item, isToday, open, onPress }: { item: ExperimentDay; isToday: boolean; open: boolean; onPress: () => void }) { const COLORS = useColors(); const local = useLocal();
   const baseline = item.phase === 'baseline';
   const recorded = item.state === 'recorded';
   const missed = item.state === 'missed';
   const label = `Day ${item.day_number}, ${baseline ? 'baseline' : 'test'}, ${STATE_WORDS[item.state]}`;
-  const ink = recorded ? COLORS.paper : missed ? COLORS.muted : COLORS[baseline ? 'night' : 'moss'];
+  const ink = recorded ? COLORS['on-accent'] : missed ? COLORS.muted : COLORS[baseline ? 'night' : 'moss'];
   const circle = <View style={[local.ring, open && recorded ? { borderColor: COLORS.sun } : isToday && { borderColor: COLORS.ink }]}>
     <View style={[local.circle, missed ? local.missed : { backgroundColor: recorded ? COLORS[baseline ? 'night' : 'moss'] : COLORS[baseline ? 'night-tint' : 'moss-tint'] }]}>
       <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.mark, { color: ink }]}>{recorded ? '✓' : missed ? '–' : item.day_number}</Copy>
@@ -102,7 +103,7 @@ function DayCell({ item, isToday, open, onPress }: { item: ExperimentDay; isToda
 }
 
 const SIZE = SPACING.xl + SPACING.sm;
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: SPACING.sm },
   cell: { width: '20%', alignItems: 'center' },
@@ -121,4 +122,4 @@ const local = StyleSheet.create({
   answer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.md },
   value: { ...styles.number, color: COLORS.ink },
   note: { paddingTop: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
-});
+}); });

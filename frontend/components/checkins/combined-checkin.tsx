@@ -210,7 +210,7 @@ export function CombinedCheckin() {
                     <label
                       key={label}
                       className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] active:scale-[0.98] motion-reduce:transition-none ${
-                        selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
+                        selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
                       }`}
                     >
                       <input

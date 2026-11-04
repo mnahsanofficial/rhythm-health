@@ -98,7 +98,7 @@ function ScaleInput({
             <label
               key={n}
               className={`grid min-h-12 cursor-pointer place-items-center rounded-card border font-mono text-lead tabular-nums transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-95 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-                selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
+                selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
               }`}
             >
               <input
@@ -134,7 +134,7 @@ function YesNo({ name, value, onChange }: { name: string; value: boolean | undef
           <label
             key={label}
             className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-              selected ? "border-moss bg-moss text-paper" : "border-line bg-paper text-ink hover:border-muted"
+              selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
             }`}
           >
             <input type="radio" name={name} checked={selected} onChange={() => onChange(v)} className="sr-only" />

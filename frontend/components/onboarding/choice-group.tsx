@@ -64,7 +64,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
                   <motion.path
                     d="M3.5 8.5 L6.5 11.5 L12.5 4.5"
                     fill="none"
-                    stroke="var(--color-paper)"
+                    stroke="var(--color-on-accent)"
                     strokeWidth={2.25}
                     strokeLinecap="round"
                     strokeLinejoin="round"

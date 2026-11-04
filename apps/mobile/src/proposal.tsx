@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { ExperimentProposal, Profile, ProposeResponse } from '@rhythm-health/contract';
 import { Forecast } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
-import { Action, Alert, BackLink, Copy, styles as ui, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Status } from './ui';
+import { useColors, themedStyles } from './theme-core';
 
 type Failure = { status: number; message: string };
 type Props = {
@@ -28,7 +29,7 @@ function failureTitle({ status }: Failure) {
  * tap, guarded by one synchronous lock; the result stays in this component's state, so returning
  * to the foreground or a refreshed token never asks again.
  */
-export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, onExpired, onBack, onStarted, onEditProfile }: Props) {
+export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, onExpired, onBack, onStarted, onEditProfile }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
@@ -200,7 +201,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
 
 function GuessStep({ heading, proposal, onReveal, onBack }: {
   heading: ReturnType<typeof useStepFocus>; proposal: ExperimentProposal; onReveal: (guess: number) => void; onBack: () => void;
-}) {
+}) { const local = useLocal(); const ui = useStyles();
   const [answer, setAnswer] = useState('');
   const [focused, setFocused] = useState(false);
   const metric = proposal.metrics.find(item => item.primary) ?? proposal.metrics[0];
@@ -227,7 +228,7 @@ function GuessStep({ heading, proposal, onReveal, onBack }: {
   </View>;
 }
 
-function PlanDetails({ proposal }: { proposal: ExperimentProposal }) {
+function PlanDetails({ proposal }: { proposal: ExperimentProposal }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const total = proposal.baseline_days + proposal.intervention_days;
   const primary = proposal.metrics.find(metric => metric.key === proposal.success_criteria.primary_metric)?.label ?? proposal.success_criteria.primary_metric;
   return <>
@@ -267,7 +268,7 @@ function PlanDetails({ proposal }: { proposal: ExperimentProposal }) {
   </>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
   curiosity: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption },
   question: { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' },
   help: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm, marginTop: SPACING.sm },
@@ -292,4 +293,4 @@ const local = StyleSheet.create({
   guessRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   guessInput: { flex: 1, ...NATIVE_TYPOGRAPHY.lead },
   starter: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.moss },
-});
+}); });

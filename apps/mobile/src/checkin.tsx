@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { COLORS, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
-import { Action, BackLink, Alert, Copy, Loading, styles, Title, Status, useStepFocus } from './ui';
+import { Action, BackLink, Alert, Copy, Loading, useStyles, Title, Status, useStepFocus } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
 import { getProgress } from './lib/experiments';
 import type { DayData } from './today';
+import { useColors, themedStyles } from './theme-core';
 
 /** Helps the person fix an answer before sending. The backend's validation is the real check. */
 export function metricAnswer(metric: Metric, raw: string | boolean | undefined): { value: boolean | number } | { error: string } {
@@ -23,7 +24,7 @@ export function metricAnswer(metric: Metric, raw: string | boolean | undefined):
 
 export function CheckinForm({ data: { experiment, timeline }, token, offline, onExpired, onSaved, onBack }: {
   data: DayData; token: string; offline: boolean; onExpired: () => void; onSaved: () => void; onBack: () => void;
-}) {
+}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const day = timeline.progress.day_number;
   const test = timeline.days.find(item => item.day_number === day)?.phase === 'test';
   const [values, setValues] = useState<Record<string, string | boolean>>({});
@@ -140,7 +141,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
 /** The web's confirmation. Counts come from the refreshed progress, and only once it has arrived. */
 export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder, onRetry, onBack, onChange }: {
   day: number; data: DayData | null | undefined; refreshing: boolean; failed: boolean; receipt: React.ReactNode; reminder: React.ReactNode; onRetry: () => void; onBack: () => void; onChange: () => void;
-}) {
+}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const heading = useStepFocus('saved');
   const progress = data?.timeline.progress;
   return <View style={styles.stack}>
@@ -154,7 +155,7 @@ export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder,
         {data.timeline.days.map(item => {
           const logged = item.state === 'recorded';
           return <View key={item.day_number} accessible accessibilityLabel={`Day ${item.day_number}${logged ? ', logged' : ''}`} style={[local.dot, logged ? local.dotLogged : item.day_number <= day ? local.dotPast : local.dotFuture]}>
-            <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.dotText, logged && { color: COLORS.paper }]}>{logged ? '✓' : item.day_number}</Copy>
+            <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.dotText, logged && { color: COLORS['on-accent'] }]}>{logged ? '✓' : item.day_number}</Copy>
           </View>;
         })}
       </View>
@@ -165,7 +166,7 @@ export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder,
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   phase: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   meter: { gap: SPACING.sm, paddingVertical: SPACING.md, borderTopWidth: LAYOUT.focusWidth / 2, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   meterRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
@@ -183,4 +184,4 @@ const local = StyleSheet.create({
   dotPast: { borderColor: COLORS.line, backgroundColor: COLORS.paper },
   dotFuture: { borderColor: COLORS.line, borderStyle: 'dashed' },
   dotText: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption, color: COLORS.ink },
-});
+}); });

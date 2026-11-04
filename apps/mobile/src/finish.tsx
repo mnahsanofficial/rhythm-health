@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { COLORS, LAYOUT, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, ExperimentTimeline, LabReport } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { completeExperiment, getReport, notEnoughCheckins } from './lib/reports';
-import { Action, Alert, Copy, styles } from './ui';
+import { Action, Alert, Copy, useStyles } from './ui';
+import { themedStyles } from './theme-core';
 
 /**
  * Offered once there is a recorded test day; the backend owns the minimum counts and explains a
@@ -12,7 +13,7 @@ import { Action, Alert, Copy, styles } from './ui';
  */
 export function FinishCard({ experiment, timeline, token, offline, onExpired, onCompleted }: {
   experiment: Experiment; timeline: ExperimentTimeline; token: string; offline: boolean; onExpired: () => void; onCompleted: (report: LabReport) => void;
-}) {
+}) { const local = useLocal(); const styles = useStyles();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +61,6 @@ export function FinishCard({ experiment, timeline, token, offline, onExpired, on
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles(COLORS => StyleSheet.create({
   card: { padding: SPACING.lg, gap: SPACING.md, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
-});
+}));

@@ -2,21 +2,25 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
-import { COLORS, FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
-import { Copy, styles as ui } from './ui';
+import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { Copy, useStyles } from './ui';
+import { ThemeControl, ThemeCycleButton } from './theme';
+import { useColors, themedStyles } from './theme-core';
+
+const fixedRow = { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs } as const;
 
 export type Section = 'lab' | 'history' | 'demo' | 'reminders';
 const SECTIONS: { key: Section; label: string }[] = [{ key: 'lab', label: 'Your lab' }, { key: 'history', label: 'History' }, { key: 'demo', label: 'Demo' }];
 
 /** The web's mark: a 24-hour dial, midnight at the top, with night from 22:00 to 06:00 and a midday sun. */
-function Mark() {
+function Mark() { const COLORS = useColors();
   return <Svg width={SPACING.lg} height={SPACING.lg} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     <Circle cx={12} cy={12} r={10} fill={COLORS.paper} stroke={COLORS.ink} strokeWidth={1.5} />
     <Path d="M12 12 L7.5 4.21 A9 9 0 0 1 21 12 Z" fill={COLORS.night} />
     <Circle cx={10.3} cy={18.3} r={2} fill={COLORS.sun} stroke={COLORS.ink} strokeWidth={0.75} />
   </Svg>;
 }
-function MenuIcon() {
+function MenuIcon() { const COLORS = useColors();
   return <Svg width={SPACING.md} height={SPACING.md} viewBox="0 0 20 20" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     {[6, 10, 14].map(y => <Line key={y} x1={3.5} x2={16.5} y1={y} y2={y} stroke={COLORS.muted} strokeWidth={1.75} strokeLinecap="round" />)}
   </Svg>;
@@ -28,18 +32,21 @@ type Account = {
 };
 
 /** Pinned above the scrolling page with a solid background and a border, as on the web at phone width. */
-export function AppHeader({ account, onSignIn }: { account?: Account; onSignIn?: () => void }) {
+export function AppHeader({ account, onSignIn }: { account?: Account; onSignIn?: () => void }) { const COLORS = useColors(); const local = useLocal();
   return <View testID="app-header" style={local.bar}>
     <View style={local.brand}>
       <Mark />
       <Copy style={local.name}>Rhythm</Copy>
     </View>
-    {account && <AccountMenu account={account} />}
+    <View style={fixedRow}>
+      {!account && <ThemeCycleButton />}
+      {account && <AccountMenu account={account} />}
     {onSignIn && <Pressable accessibilityRole="button" accessibilityLabel="Sign in" onPress={onSignIn} style={({ pressed }) => [local.signIn, pressed && { backgroundColor: COLORS.line }]}><Copy style={local.email}>Sign in</Copy></Pressable>}
+    </View>
   </View>;
 }
 
-function AccountMenu({ account }: { account: Account }) {
+function AccountMenu({ account }: { account: Account }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [open, setOpen] = useState(false);
   const choose = (action: () => void) => () => { setOpen(false); action(); };
   const trigger = <Pressable accessibilityRole="button" accessibilityLabel={`Account menu for ${account.email}`} accessibilityState={{ expanded: open }}
@@ -66,6 +73,7 @@ function AccountMenu({ account }: { account: Account }) {
                 <Row label="Update your rhythm" onPress={choose(account.onEditProfile)} />
                 <Row label="Daily reminders" selected={account.section === 'reminders'} onPress={choose(() => account.onSection('reminders'))} />
               </>}
+              <View style={local.who}><ThemeControl /></View>
               <Row label="Sign out" onPress={choose(account.onSignOut)} />
             </View>
           </View>
@@ -75,21 +83,21 @@ function AccountMenu({ account }: { account: Account }) {
   </>;
 }
 
-function Row({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
+function Row({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) { const COLORS = useColors(); const local = useLocal();
   return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} onPress={onPress}
     style={({ pressed }) => [local.row, pressed && { backgroundColor: COLORS.oat }]}>
     <Copy style={selected ? local.current : undefined}>{label}</Copy>
   </Pressable>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles(COLORS => StyleSheet.create({
   bar: { minHeight: LAYOUT.headerHeight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, paddingHorizontal: LAYOUT.gutter.min, backgroundColor: COLORS.oat, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   brand: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flexShrink: 1 },
   name: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title, color: COLORS.ink },
   signIn: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.md, borderRadius: RADII.pill },
   trigger: { minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.xs, paddingLeft: SPACING.xs, paddingRight: SPACING.sm, borderRadius: RADII.pill },
   initial: { minWidth: SPACING.xl + SPACING.xs, minHeight: SPACING.xl + SPACING.xs, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill, backgroundColor: COLORS.moss },
-  initialText: { fontFamily: FONT_FAMILIES.sansMedium, color: COLORS.paper, textTransform: 'uppercase' },
+  initialText: { fontFamily: FONT_FAMILIES.sansMedium, color: COLORS['on-accent'], textTransform: 'uppercase' },
   panelRow: { alignItems: 'flex-end', paddingHorizontal: LAYOUT.gutter.min, paddingTop: LAYOUT.headerHeight },
   panel: { width: '100%', maxWidth: LAYOUT.headerHeight * 4.5, padding: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
   sections: { paddingBottom: SPACING.sm, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
@@ -97,4 +105,4 @@ const local = StyleSheet.create({
   email: { fontFamily: FONT_FAMILIES.sansMedium },
   row: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.sm + SPACING.xs, borderRadius: RADII.card },
   current: { fontFamily: FONT_FAMILIES.sansMedium, color: COLORS.moss },
-});
+}));

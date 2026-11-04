@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthNav } from "@/components/auth-nav";
+import { ThemeControl } from "@/components/theme-control";
 
 /** The mark: a 24-hour dial (midnight at the top) with night from 22:00 to 06:00 and a midday sun. */
 function Mark() {
@@ -29,6 +30,7 @@ export function SiteHeader() {
         <Suspense fallback={<NavPlaceholder />}>
           <AuthNav />
         </Suspense>
+        <ThemeControl />
       </div>
     </header>
   );

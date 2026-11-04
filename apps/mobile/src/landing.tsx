@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
-import { COLORS, FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
-import { Action, Copy, styles, useStepFocus } from './ui';
+import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
+import { Action, Copy, useStyles, useStepFocus } from './ui';
+import { useColors, themedStyles } from './theme-core';
 
 const SCENES = [
   { time: '22:30 · Night', title: 'Your sleep is the experiment.', body: 'Ask one habit question. Rhythm turns it into a small experiment that changes one thing at a time, so you can tell what made the difference.' },
@@ -21,7 +22,7 @@ const QUESTIONS = ['Does walking after dinner improve my sleep?', 'Does less caf
  * The web's public page, as text. The scrolling day illustration stays web-only; the scenes read like
  * the web's reduced-motion version, without the stills.
  */
-export function Landing({ onStart }: { onStart: () => void }) {
+export function Landing({ onStart }: { onStart: () => void }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const heading = useStepFocus('landing');
   const start = <View style={styles.stack}>
     <Action label="Run your first experiment" onPress={onStart} />
@@ -60,7 +61,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
   </View>;
 }
 
-const local = StyleSheet.create({
+const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   page: { gap: SPACING.xl },
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   number: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
@@ -68,4 +69,4 @@ const local = StyleSheet.create({
   step: { gap: SPACING.xs, paddingTop: SPACING.sm },
   question: { flexDirection: 'row', gap: SPACING.md, paddingVertical: SPACING.md, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   questionText: { flex: 1, fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title },
-});
+}); });
