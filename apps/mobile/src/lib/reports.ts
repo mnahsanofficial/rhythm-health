@@ -5,14 +5,14 @@ const path = (id: string) => `/api/experiments/${encodeURIComponent(id)}`;
 
 /** A 404 means no report yet, or an experiment this account can't reach; `getExperiment` tells them apart. */
 export async function getReport(token: string, id: string): Promise<LabReport | null> {
-  try { return await apiGet<LabReport>(token, `${path(id)}/report`, "We couldn't load this report."); }
+  try { return await apiGet<LabReport>(token, `${path(id)}/report`, "Couldn't load this report."); }
   catch (cause) { if (cause instanceof ApiError && cause.status === 404) return null; throw cause; }
 }
 export const getExperiment = (token: string, id: string): Promise<Experiment> =>
-  apiGet(token, path(id), "We couldn't load this report.");
+  apiGet(token, path(id), "Couldn't load this report.");
 /** Deterministic and free. The written narrative stays null until `writeReport`. */
 export const completeExperiment = (token: string, id: string): Promise<LabReport> =>
-  apiPost(token, `${path(id)}/complete`, {}, "Couldn't finish the experiment.");
+  apiPost(token, `${path(id)}/complete`, {}, "Couldn't finish the experiment. Try again.");
 /** One paid model call, from an explicit tap only. Never sends ?regenerate=true. */
 export const writeReport = (token: string, id: string): Promise<LabReport> =>
   apiPost(token, `${path(id)}/report`, {}, 'Something went wrong while writing your report.');
@@ -58,6 +58,6 @@ export function writeErrorText(status: number, message: string): string {
   if (status === 502) return "We couldn't write a report that matched your results.";
   if (status === 409) return 'This experiment needs to be finished before its report can be written.';
   if (status === 404) return 'There are no results to write about yet.';
-  if (status === 0) return "We couldn't reach the server. Check your connection.";
+  if (status === 0) return "Couldn't reach the server. Check your connection and try again.";
   return message || 'Something went wrong while writing your report.';
 }

@@ -323,7 +323,7 @@ describe("ask from Your lab", () => {
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
     // Already on Your lab, so a link to "/" would do nothing: this has to reload.
     server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([activeExperiment])));
-    await user.click(screen.getByRole("button", { name: "Go to Your lab" }));
+    await user.click(screen.getByRole("button", { name: "Back to your lab" }));
     expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
   });
 });

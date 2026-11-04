@@ -8,7 +8,7 @@ Our rules still apply: sentence case, real numbers, no "unlock", "journey", "dis
 
 1. **Buttons: verb first, 3 words or fewer where possible.** The rest of the sentence goes in a caption next to the button, which is where the detail belongs.
 2. **One name for one thing.** It's "Your lab", "Lab Report", "check-in".
-3. **Going back uses one pattern:** `← Your lab`, naming the destination.
+3. **Going back names the destination:** `← Your lab` as a link, "Back to your lab" as a button. One spelling each. *Changed while building: a button reads better with the words.*
 4. **Retry is always "Try again".** The sentence above it says what was kept.
 5. **Errors: what happened, then what to do.** No "Something went wrong" alone.
 

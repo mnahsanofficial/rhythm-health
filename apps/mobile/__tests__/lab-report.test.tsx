@@ -434,7 +434,7 @@ describe('run this experiment', () => {
     await finish();
     expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one before starting this one.")).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Run this experiment' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Go to Your lab' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Go to your lab' })).toBeVisible();
   });
 
   test('with another experiment running below the limit, it still offers the next one', async () => {

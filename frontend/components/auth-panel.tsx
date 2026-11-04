@@ -101,7 +101,7 @@ function SignedIn({ email }: { email: string }) {
       const me = await apiGet<{ user_id: string }>("/api/me", true);
       setResult(`Backend verified you: ${me.user_id}`);
     } catch (e) {
-      setResult(e instanceof Error ? e.message : "Request failed");
+      setResult(e instanceof Error ? e.message : "Couldn't reach the server. Check your connection and try again.");
     }
   }
 

@@ -294,8 +294,8 @@ export function ExperimentFlow({
   const hasShownResult = useRef(false);
 
   const labLink = onReloadLab
-    ? <button type="button" onClick={onReloadLab} className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</button>
-    : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to Your lab</Link>;
+    ? <button type="button" onClick={onReloadLab} className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Back to your lab</button>
+    : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Back to your lab</Link>;
 
   useEffect(() => {
     if (result) output.current?.focus();
@@ -329,7 +329,7 @@ export function ExperimentFlow({
       if (status === 401) router.replace(`/sign-in?next=${returnTo}`);
       setError({
         status,
-        message: e instanceof Error ? e.message : "Something went wrong. Please try again.",
+        message: e instanceof Error ? e.message : "Couldn't finish that. Try again.",
       });
     } finally {
       inFlight.current = false;
@@ -386,10 +386,10 @@ export function ExperimentFlow({
         } else if (cause instanceof ApiError && cause.status === 409 && await alreadyStarted(experimentId)) {
           router.push(`/experiments/${encodeURIComponent(experimentId)}`);
         } else {
-          setStartError(`Your experiment was saved, but it couldn’t be started: ${cause instanceof Error ? cause.message : "Please try again."}`);
+          setStartError(`Your experiment was saved, but it couldn’t be started: ${cause instanceof Error ? cause.message : "Try again."}`);
         }
       } else {
-        setStartError(cause instanceof Error ? cause.message : "Couldn’t save your experiment. Please try again.");
+        setStartError(cause instanceof Error ? cause.message : "Couldn't save your experiment. Try again.");
       }
     } finally {
       inFlight.current = false;

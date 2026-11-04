@@ -4,9 +4,9 @@ import { apiPost } from './api';
 export const proposeExperiment = (token: string, question: string): Promise<ProposeResponse> =>
   apiPost(token, '/api/experiments/propose', { question }, "Your question hasn't been submitted successfully.");
 export const saveExperiment = (token: string, body: SaveExperimentRequest): Promise<Experiment> =>
-  apiPost(token, '/api/experiments', body, "Couldn't save your experiment. Please try again.");
+  apiPost(token, '/api/experiments', body, "Couldn't save your experiment. Try again.");
 export const startExperiment = (token: string, id: string): Promise<Experiment> =>
-  apiPost(token, `/api/experiments/${encodeURIComponent(id)}/start`, {}, 'Please try again.');
+  apiPost(token, `/api/experiments/${encodeURIComponent(id)}/start`, {}, 'Try again.');
 
 export const QUESTION_MIN = 5;
 export const QUESTION_MAX = 500;

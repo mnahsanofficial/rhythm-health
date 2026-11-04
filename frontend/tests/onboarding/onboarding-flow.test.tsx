@@ -141,6 +141,6 @@ describe("onboarding flow", () => {
 
     await waitFor(() => expect(saveProfile).toHaveBeenCalledWith(draft));
     expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
-    expect(within(screen.getByRole("status")).getByRole("link", { name: "Back to home" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("status")).getByRole("link", { name: "Back to your lab" })).toHaveAttribute("href", "/");
   });
 });

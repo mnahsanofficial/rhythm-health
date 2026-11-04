@@ -55,7 +55,7 @@ test('answers have loading and error/retry states without hiding the authoritati
   readStatus = 503; await open(); expect(await screen.findByText('Loading recorded answers…')).toBeVisible();
   expect(screen.getByText('2 of 10 days recorded')).toBeVisible(); await act(async () => { release(); });
   expect(await screen.findByRole('alert')).toHaveTextContent(/Answers unavailable/); expect(screen.queryByLabelText('Day 3 answers')).toBeNull();
-  readStatus = 200; fireEvent.press(screen.getByRole('button', { name: 'Retry answers' })); expect(await screen.findByLabelText('Day 3 answers')).toBeVisible();
+  readStatus = 200; fireEvent.press(screen.getByRole('button', { name: 'Try again' })); expect(await screen.findByLabelText('Day 3 answers')).toBeVisible();
 });
 
 test('an expired answers session hides private progress and returns to sign-in', async () => {

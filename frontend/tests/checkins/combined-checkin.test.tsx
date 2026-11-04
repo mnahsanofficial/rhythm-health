@@ -81,7 +81,7 @@ describe("today's check-in for several experiments", () => {
     await user.click(screen.getByRole("button", { name: "Save check-in" }));
     expect(await screen.findByRole("heading", { name: "Today's check-ins are recorded." })).toBeVisible();
     expect(saved).toEqual({ revision: "rev-1", answers: { [`${A}:energy`]: 7, [`${B}:focus`]: 6 }, changes: { [A]: true }, note: "late night" });
-    expect(screen.getByRole("link", { name: "Back to Your lab" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Back to your lab" })).toHaveAttribute("href", "/");
   });
 
   it("prefills what's already recorded and says saving replaces it", async () => {

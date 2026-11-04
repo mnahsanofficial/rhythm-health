@@ -74,7 +74,7 @@ export function ExperimentDetail({ id }: { id: string }) {
         setLoad({
           kind: "error",
           status: cause instanceof ApiError ? cause.status : 0,
-          message: cause instanceof Error ? cause.message : "Something went wrong.",
+          message: cause instanceof Error ? cause.message : "Couldn't load this. Try again.",
         });
       });
     return () => {
@@ -148,7 +148,7 @@ export function ExperimentDetail({ id }: { id: string }) {
         />}
       </div>
 
-      <section aria-labelledby="timeline-heading" className="mt-8 rounded-card border border-line bg-paper p-5 sm:p-7">
+      <section aria-labelledby="timeline-heading" className="mt-8 border-t border-line pt-7">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 id="timeline-heading" className="font-display text-title">
             Your timeline
@@ -236,7 +236,7 @@ function FinishCard({
         );
         onDataChanged();
       } else {
-        setError(e instanceof Error ? e.message : "Couldn't finish the experiment.");
+        setError(e instanceof Error ? e.message : "Couldn't finish the experiment. Try again.");
       }
       setBusy(false);
     }

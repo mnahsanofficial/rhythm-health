@@ -50,7 +50,7 @@ export function ExperimentHistory() {
         setLoad({
           kind: "error",
           status: error instanceof ApiError ? error.status : 0,
-          message: error instanceof Error ? error.message : "Something went wrong.",
+          message: error instanceof Error ? error.message : "Couldn't load this. Try again.",
         });
       });
 
@@ -101,8 +101,8 @@ export function ExperimentHistory() {
 
       {load.experiments.length === 0 ? (
         <section className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
-          <h2 className="font-display text-title">Your next discovery starts with a question.</h2>
-          <p className="mt-2 text-body text-muted">Completed experiments will appear here.</p>
+          <h2 className="font-display text-title">Your finished experiments land here.</h2>
+          <p className="mt-2 text-body text-muted">Each one keeps its prediction, what happened and what you learned.</p>
           <Link href="/experiments/new" className={`${primary} mt-5`}>Test a new question</Link>
         </section>
       ) : (
@@ -159,7 +159,7 @@ function HistoryItem({ experiment }: { experiment: Experiment }) {
         }
         setReportState({
           kind: "error",
-          message: error instanceof Error ? error.message : "Something went wrong.",
+          message: error instanceof Error ? error.message : "Couldn't load this. Try again.",
         });
       });
 

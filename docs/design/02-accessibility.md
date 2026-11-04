@@ -137,3 +137,13 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, from source, the existing
 **Found and fixed in this pass:** suggestion chips were 44pt; they're now 48pt, the app's own rule. Disabled actions no longer fade their words.
 
 **Still not checked:** VoiceOver and TalkBack; anything on a real device, including Reanimated motion and Reduce Motion (no simulator on this Mac). See the iPhone list in the PR.
+
+## Re-audit: PR 4, remaining screens
+
+Run on 4 Nov 2026 with `/design:accessibility-review`. Web: the same browser measurement rules on demo and history (`design-rules.spec.ts`). Mobile: `accessibility.test.tsx` and Expo web at 390px.
+
+**Fixed:** demo and history button edges, faint secondaries on sample controls, and "discovery" removed. Being offline is now a polite notice on the warning colour, not an error.
+
+**Found while building:** on the mobile Lab Report and proposal, renaming a button to "Back to your lab" gave it the same name as the back link above it, so a screen reader couldn't tell them apart. It stays "Go to your lab" there.
+
+**Still not checked:** screen readers and real devices.

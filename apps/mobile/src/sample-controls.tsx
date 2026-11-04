@@ -20,7 +20,7 @@ export function SampleControls({ experiment, token, disabled, onChanged, onExpir
       setConfirm(false); await onChanged();
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) onExpired();
-      else setError(cause instanceof Error ? cause.message : 'Please try again.');
+      else setError(cause instanceof Error ? cause.message : 'Try again.');
     } finally { pending.current = false; setBusy(false); }
   }
   if (experiment && !experiment.is_seeded) return null;

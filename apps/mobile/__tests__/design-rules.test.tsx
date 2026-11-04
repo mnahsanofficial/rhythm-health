@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { LAYOUT, THEMES } from '@rhythm-health/brand';
-import { Action, useStyles } from '../src/ui';
+import { Action, CountUp, Notice, useStyles } from '../src/ui';
 import { DayRail, StepRail, STEP_NAMES } from '../src/rails';
 
 const MODES = ['light', 'dark'] as const;
@@ -38,5 +38,19 @@ describe('where you are', () => {
   test('the day rail says the experiment\'s real shape in words', () => {
     render(<DayRail />);
     expect(screen.getByLabelText('3 normal days, then 7 test days')).toBeTruthy();
+  });
+});
+
+describe('states', () => {
+  test('being offline is a notice, not an error, and is announced politely', () => {
+    render(<Notice>You&apos;re offline.</Notice>);
+    const notice = screen.getByText("You're offline.");
+    expect(notice.props.accessibilityLiveRegion).toBe('polite');
+    expect(StyleSheet.flatten(notice.props.style).backgroundColor).toBe(THEMES.light['warning-tint']);
+  });
+
+  test('a count lands on its real value', () => {
+    render(<CountUp value={3} suffix=" of 10 days recorded" />);
+    expect(screen.getByText('3 of 10 days recorded')).toBeTruthy();
   });
 });

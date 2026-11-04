@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Experiment } from "@rhythm-health/contract";
 import { ApiError } from "@/lib/api/client";
 import { removeSample, startActiveSample } from "@/lib/data/demo";
+import { button as buttonLook } from "@/components/ui/button";
 
 export function SampleControls({ experiment, onChanged }: { experiment?: Experiment; onChanged: () => void }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export function SampleControls({ experiment, onChanged }: { experiment?: Experim
   const pending = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const button = "min-h-12 rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss disabled:opacity-60";
+  const action = buttonLook("secondary");
   async function act() {
     if (pending.current) return;
     pending.current = true; setBusy(true); setError(undefined);
@@ -24,7 +25,7 @@ export function SampleControls({ experiment, onChanged }: { experiment?: Experim
       setConfirm(false); onChanged();
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) router.replace("/sign-in?next=/");
-      else setError(cause instanceof Error ? cause.message : "Please try again.");
+      else setError(cause instanceof Error ? cause.message : "Try again.");
     } finally { pending.current = false; setBusy(false); }
   }
   if (experiment && !experiment.is_seeded) return null;
@@ -37,10 +38,10 @@ export function SampleControls({ experiment, onChanged }: { experiment?: Experim
       <h2 id="sample-removal-heading" tabIndex={-1} ref={heading} className="font-display text-title">Remove this sample experiment?</h2>
       <p className="mt-2">Only this sample and its check-ins will be deleted. Your real experiments stay saved.</p>
       <div className="mt-4 flex flex-wrap gap-3">
-        <button type="button" className={button} disabled={busy} onClick={() => void act()}>{busy ? "Removing sample…" : "Confirm remove sample"}</button>
-        <button type="button" className={button} disabled={busy} onClick={() => { setConfirm(false); requestAnimationFrame(() => trigger.current?.focus()); }}>Keep sample</button>
+        <button type="button" className={action} disabled={busy} onClick={() => void act()}>{busy ? "Removing sample…" : "Confirm remove sample"}</button>
+        <button type="button" className={action} disabled={busy} onClick={() => { setConfirm(false); requestAnimationFrame(() => trigger.current?.focus()); }}>Keep sample</button>
       </div>
-    </div> : <button ref={trigger} type="button" className={`${button} mt-4`} disabled={busy} onClick={() => {
+    </div> : <button ref={trigger} type="button" className={`${action} mt-4`} disabled={busy} onClick={() => {
       if (experiment) { setConfirm(true); requestAnimationFrame(() => heading.current?.focus()); }
       else void act();
     }}>{busy ? "Starting sample…" : experiment ? "Remove sample" : "Try a sample experiment"}</button>}

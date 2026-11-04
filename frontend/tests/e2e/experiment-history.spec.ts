@@ -135,7 +135,7 @@ test("shows a useful empty state when there are no completed experiments", async
 
   await page.goto("/history");
   await expect(page.getByRole("heading", { name: "Your experiment history" })).toBeVisible();
-  await expect(page.getByText("Completed experiments will appear here.")).toBeVisible();
+  await expect(page.getByText("Your finished experiments land here.")).toBeVisible();
 });
 
 test("shows a retry when the completed-experiment list cannot be loaded", async ({ page }) => {
@@ -159,7 +159,7 @@ test("shows a retry when the completed-experiment list cannot be loaded", async 
   const historyError = page.getByRole("alert").filter({ hasText: "History is unavailable" });
   await expect(historyError).toContainText("History is unavailable");
   await historyError.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByText("Completed experiments will appear here.")).toBeVisible();
+  await expect(page.getByText("Your finished experiments land here.")).toBeVisible();
   expect(attempts).toBe(2);
 });
 
