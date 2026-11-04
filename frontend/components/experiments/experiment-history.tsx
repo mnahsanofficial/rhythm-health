@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CalibrationCard } from "@/components/experiments/calibration-card";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listExperiments } from "@/lib/data/experiments";
@@ -96,6 +97,8 @@ export function ExperimentHistory() {
           Look back at your predictions and the patterns your experiments found.
         </p>
       </div>
+
+      <CalibrationCard />
 
       {load.experiments.length === 0 ? (
         <section className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">

@@ -265,6 +265,30 @@
         ]
       }
     },
+    "/api/experiments/calibration": {
+      "get": {
+        "summary": "Get Calibration",
+        "description": "How close this person's own guesses were to what happened. Never calls AI.",
+        "operationId": "get_calibration_api_experiments_calibration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Calibration"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/experiments/{experiment_id}": {
       "get": {
         "summary": "Get Experiment",
@@ -1158,6 +1182,104 @@
           "metrics"
         ],
         "title": "BaselineSummary"
+      },
+      "Calibration": {
+        "properties": {
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/CalibrationPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "average_off_by_points": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Off By Points"
+          },
+          "trend": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "closer",
+                  "further",
+                  "steady"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trend"
+          },
+          "example": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalibrationPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "points"
+        ],
+        "title": "Calibration",
+        "description": "How close this person's own guesses were to what happened, oldest first."
+      },
+      "CalibrationPoint": {
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "guessed_change_percent": {
+            "type": "number",
+            "title": "Guessed Change Percent"
+          },
+          "observed_change_percent": {
+            "type": "number",
+            "title": "Observed Change Percent"
+          },
+          "off_by_points": {
+            "type": "number",
+            "title": "Off By Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "question",
+          "guessed_change_percent",
+          "observed_change_percent",
+          "off_by_points"
+        ],
+        "title": "CalibrationPoint"
       },
       "ChartData": {
         "properties": {
