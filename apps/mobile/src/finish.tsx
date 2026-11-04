@@ -7,23 +7,19 @@ import { completeExperiment, getReport, notEnoughCheckins } from './lib/reports'
 import { Action, Alert, Copy, useStyles } from './ui';
 import { themedStyles } from './theme-core';
 
-/**
- * Offered once there is a recorded test day; the backend owns the minimum counts and explains a
- * refusal. A failure with an unknown outcome reads the saved report before anyone retries.
- */
-export function FinishCard({ experiment, timeline, token, offline, onExpired, onCompleted }: {
-  experiment: Experiment; timeline: ExperimentTimeline; token: string; offline: boolean; onExpired: () => void; onCompleted: (report: LabReport) => void;
-}) { const local = useLocal(); const styles = useStyles();
-  const [confirming, setConfirming] = useState(false);
+type FinishProps = { experiment: Experiment; token: string; offline: boolean; onExpired: () => void; onCompleted: (report: LabReport) => void };
+
+/** Nothing is left to record: the server says the days are over, or the last one is in. */
+export function allDaysDone({ progress, days }: ExperimentTimeline) {
+  if (progress.state === 'ended') return true;
+  return progress.state === 'in_progress' && progress.days_remaining === 0 && days.some(day => day.day_number === progress.day_number && day.state === 'recorded');
+}
+
+/** A failure with an unknown outcome reads the saved report before anyone retries. */
+function useFinish({ experiment, token, offline, onExpired, onCompleted }: FinishProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
-  const { progress } = timeline;
-  const early = progress.state === 'in_progress';
-  const eligible = progress.state === 'ended' || (early && timeline.days.some(day => day.phase === 'test' && day.state === 'recorded'));
-  if (experiment.is_seeded || !eligible) return null;
-  const left = early ? progress.days_remaining ?? 0 : 0;
-
   async function finish() {
     if (inFlight.current || offline) return;
     inFlight.current = true;
@@ -46,14 +42,36 @@ export function FinishCard({ experiment, timeline, token, offline, onExpired, on
       setError(cause instanceof Error ? cause.message : "Couldn't finish the experiment. Try again.");
     } finally { inFlight.current = false; setBusy(false); }
   }
+  return { busy, error, finish };
+}
+
+/** All days are done, so there's nothing to confirm: one tap finishes and opens the result. */
+export function FinishNow({ disabled = false, ...props }: FinishProps & { disabled?: boolean }) {
+  const { busy, error, finish } = useFinish(props);
+  return <>
+    {error && <Alert>{error}</Alert>}
+    <Action wide label={busy ? 'Getting your results…' : 'See your results'} disabled={disabled || busy || props.offline} onPress={() => void finish()} />
+  </>;
+}
+
+/**
+ * Finishing before the last day: offered once there is a recorded test day. It loses days, so it asks first.
+ * The backend owns the minimum counts and explains a refusal.
+ */
+export function FinishCard({ timeline, ...props }: FinishProps & { timeline: ExperimentTimeline }) { const local = useLocal(); const styles = useStyles();
+  const { experiment, offline } = props;
+  const [confirming, setConfirming] = useState(false);
+  const { busy, error, finish } = useFinish(props);
+  const { progress } = timeline;
+  const eligible = progress.state === 'in_progress' && timeline.days.some(day => day.phase === 'test' && day.state === 'recorded');
+  if (experiment.is_seeded || !eligible || allDaysDone(timeline)) return null;
+  const left = progress.days_remaining ?? 0;
 
   return <View style={local.card}>
-    <Copy accessibilityRole="header" style={styles.sectionTitle}>{early ? 'You can finish early.' : 'Ready for your results.'}</Copy>
-    <Copy>{early
-      ? `You have enough days recorded to try.${left > 0 ? ` Finishing now skips ${left} test ${left === 1 ? 'day' : 'days'}, so there's less evidence to go on.` : ''}`
-      : 'Finishing runs the analysis and compares it with the prediction.'}</Copy>
+    <Copy accessibilityRole="header" style={styles.sectionTitle}>You can finish early.</Copy>
+    <Copy>{`You have enough days recorded to try.${left > 0 ? ` Finishing now skips ${left} test ${left === 1 ? 'day' : 'days'}, so there's less evidence to go on.` : ''}`}</Copy>
     {error && <Alert>{error}</Alert>}
-    {!confirming ? <Action label="See results" secondary={early} disabled={offline} onPress={() => setConfirming(true)} /> : <>
+    {!confirming ? <Action label="See results" secondary disabled={offline} onPress={() => setConfirming(true)} /> : <>
       <Copy>Finish this experiment now? You can&apos;t add check-ins after.</Copy>
       <Action label={busy ? 'Analysing…' : 'Yes, finish'} disabled={busy || offline} onPress={() => void finish()} />
       <Action label="Keep going" secondary disabled={busy} onPress={() => setConfirming(false)} />

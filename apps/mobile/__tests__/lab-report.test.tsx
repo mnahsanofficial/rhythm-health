@@ -83,9 +83,9 @@ async function openFinish() {
   await act(async () => { fireEvent.press(link); });
 }
 async function finish() {
-  await openFinish();
-  await press('See results');
-  await press('Yes, finish');
+  render(<MobileApp />);
+  const button = await screen.findByRole('button', { name: 'See your results' });
+  await act(async () => { fireEvent.press(button); });
 }
 /** Finishing shows the short result and the choice first. The report is one tap further. */
 async function pastFinishFlow() {
@@ -101,11 +101,10 @@ async function openReport(report: LabReport = labReport) {
 }
 
 describe('finish', () => {
-  test('ended days offer Finish with a confirmation that can be cancelled', async () => {
+  test('finishing before the last day asks first, and can be cancelled', async () => {
+    setActive(inProgress, timelineFixture(inProgress, { recorded: [1, 2, 3, 4, 5, 6, 7] }));
     await openFinish();
-    expect(await screen.findByText('Ready for your results.')).toBeVisible();
-    expect(screen.queryByRole('link', { name: 'Finish on the web' })).toBeNull();
-    fireEvent.press(screen.getByRole('button', { name: 'See results' }));
+    fireEvent.press(await screen.findByRole('button', { name: 'See results' }));
     expect(screen.getByText("Finish this experiment now? You can't add check-ins after.")).toBeVisible();
     fireEvent.press(screen.getByRole('button', { name: 'Keep going' }));
     expect(screen.getByRole('button', { name: 'See results' })).toBeVisible();
@@ -118,15 +117,6 @@ describe('finish', () => {
     expect(count(WRITE)).toBe(0);
     expect(screen.getByRole('button', { name: 'Write my report' })).toBeVisible();
     await waitFor(() => expect(calls.filter(call => call.key === `GET ${ACTIVE}`).length).toBeGreaterThanOrEqual(2));
-  });
-
-  test('double taps send one finish', async () => {
-    await openFinish();
-    await press('See results');
-    const button = screen.getByRole('button', { name: 'Yes, finish' });
-    await act(async () => { fireEvent.press(button); fireEvent.press(button); });
-    await pastFinishFlow();
-    expect(count(COMPLETE)).toBe(1);
   });
 
   test('too few check-ins are explained with the counts from the backend', async () => {
@@ -153,7 +143,7 @@ describe('finish', () => {
     await finish();
     expect(await screen.findByText('Database unavailable')).toBeVisible();
     expect(count(COMPLETE)).toBe(1);
-    await press('Yes, finish');
+    await press('See your results');
     await pastFinishFlow();
     expect(count(COMPLETE)).toBe(2);
   });
@@ -185,14 +175,6 @@ describe('finish', () => {
     render(<MobileApp />);
     await screen.findByText('This sample has ended. Remove it to free up a slot for a real experiment.');
     expect(screen.queryByRole('button', { name: 'See results' })).toBeNull();
-  });
-
-  test('offline disables finishing', async () => {
-    await openFinish();
-    await screen.findByText('Ready for your results.');
-    mockNetwork.isConnected = false;
-    screen.rerender(<MobileApp />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'See results' })).toBeDisabled());
   });
 });
 

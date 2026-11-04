@@ -122,12 +122,8 @@ describe('finishing on day 10', () => {
     routes[`POST /api/experiments/${ID}/complete`] = { body: writtenLabReport };
     routes[`POST /api/experiments/${ID}/outcome`] = { body: { experiment_id: ID, choice: 'keep' } };
     render(<MobileApp />);
-    const open = await screen.findByRole('button', { name: /See results/ });
+    const open = await screen.findByRole('button', { name: 'See your results' });
     await act(async () => { fireEvent.press(open); });
-    const results = await screen.findByRole('button', { name: 'See results' });
-    await act(async () => { fireEvent.press(results); });
-    const yes = await screen.findByRole('button', { name: 'Yes, finish' });
-    await act(async () => { fireEvent.press(yes); });
     await screen.findByRole('button', { name: /^Keep this habit/ });
   };
 

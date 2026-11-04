@@ -199,9 +199,7 @@ for (const scheme of ["light", "dark"] as const) {
     await page.getByLabel("Email").fill("learner@example.invalid");
     await page.getByLabel("Password", { exact: true }).fill("fake-test-password");
     await page.getByTestId("submit-action").getByRole("button").click();
-    await button("See results").click();
-    await button("See results").click();
-    await button("Yes, finish").click();
+    await button("See your results").click();
     await shot("30-finish-flow", () => button("See full Lab Report").waitFor());
     state.compared = [trend("Morning energy", [["a", QUESTION, 5.4, 6.6, 22.2], ["b", "Does less coffee help?", 6.1, 6.8, 11.5]], 0.7)];
     await button(/^Keep this habit/).click();

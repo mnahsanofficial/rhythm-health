@@ -30,7 +30,7 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
       <Title small textRef={heading}>{experiment.question}</Title>
     </View>
     <BaselineContext timeline={timeline} />
-    <TodayCard data={data} disabled={disabled} onCheckin={onCheckin} onOpenReport={onOpenReport} />
+    <TodayCard data={data} disabled={disabled} token={token} offline={offline} onExpired={onExpired} onCompleted={onCompleted} onCheckin={onCheckin} onOpenReport={onOpenReport} />
     <FinishCard experiment={experiment} timeline={timeline} token={token} offline={offline} onExpired={onExpired} onCompleted={onCompleted} />
     <Observations data={data} title="Your timeline" token={token} offline={offline} onExpired={onExpired} />
     <View style={local.change}>
