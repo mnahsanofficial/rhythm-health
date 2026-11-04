@@ -61,7 +61,7 @@ Every pair below passes. Script output on 4 Nov; it becomes a `brand` unit test 
 
 | Role | Token | Web | Native | Font |
 |---|---|---|---|---|
-| Display | `display` | 44–72 (was 44–60) | 44 | Fraunces |
+| Display | `display` | 44–72 (was 44–60; applied with the landing page in PR 2) | 44 | Fraunces |
 | Display, small | `display-sm` | 36–44 | 36 | Fraunces |
 | Heading | `headline` | 28–32 | 28 | Fraunces |
 | Section title | `title` | 22–24 | 22 | Fraunces |
@@ -134,7 +134,7 @@ Web uses `motion/react`, mobile uses `react-native-reanimated`, and times come f
 - **Default:** follows the system. **Choices:** Light, Dark, System. **Remembered per device**, not per account: no backend change.
 - **Web:** the choice goes in `localStorage`. A small inline script in `<head>` sets `data-theme` before first paint, so there's no flash, and semantic tokens are CSS variables that switch on it. `themeColor` follows, and `color-scheme` is set so form controls match. Check `frontend/node_modules/next/dist/docs/` first, as our Next version differs.
 - **Mobile:** `ThemeProvider` reads `useColorScheme` and the saved choice in `expo-secure-store`, already a dependency, with no new storage package. `StatusBar` follows. Screens use `useTheme()` and `useThemedStyles()`.
-- **Where:** web header icon for everyone, opening a small menu, with the same control in the account panel. Mobile has it in Settings and on the landing header.
+- **Where:** web header button for everyone, opening a small menu. Mobile has the full control in the account menu, and a button in the header before sign-in. *Changed while building: one place on each platform, so it isn't repeated on a screen.*
 
 **Migration, so that no merge leaves a half-themed app:**
 - **Web:** existing Tailwind names keep working as aliases (`bg-oat` resolves to `background`), so all screens theme at once without touching files Shakeb may be editing. `text-paper` on moss is the one exception: 31 uses move to `text-on-accent`, because `paper` becomes a dark surface in dark mode.

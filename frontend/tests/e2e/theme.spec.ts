@@ -42,6 +42,8 @@ for (const width of [390, 1440]) {
       const sky = page.locator('[data-sky="day"]');
       await expect(sky).toBeAttached();
       await expect(sky).toHaveCSS("background-color", hexToRgb(THEMES.light.background));
+      // The text on the illustration's light card must not inherit the dark page's light text.
+      await expect(page.getByRole("heading", { name: /Stop guessing/ }).first()).toHaveCSS("color", hexToRgb(THEMES.light.text));
     });
   });
 }

@@ -101,10 +101,7 @@ export function ThemeControl() {
                 name={`${panelId}-theme`}
                 value={value}
                 checked={choice === value}
-                onChange={() => {
-                  setSaveFailed(!setChoice(value));
-                  applyTheme(value);
-                }}
+                onChange={() => setSaveFailed(!setChoice(value))}
                 className="size-4 accent-[var(--color-accent)]"
               />
               {label}

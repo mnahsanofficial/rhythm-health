@@ -97,3 +97,21 @@ Web: `prefers-reduced-motion` is handled globally in `globals.css` and by `Motio
 3. **A3 dark mode**: 8x's direct feedback.
 4. **A2 hero text on a solid surface**: first screen of the demo.
 5. **A9 the disabled "Skip"**: on the demo path, one-line fix.
+
+## Re-audit: PR 1, dark mode and theme controls
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, using the same browser script in dark mode.
+
+**Measured:** 13 web screens at 390px and 1440px in dark: no text below AA, no control under 44px, no missing label or name. All token pairs are now a unit test in `packages/brand/tests/themes.test.mjs`.
+
+**Found and fixed in this PR:**
+- Landing headline invisible in dark: text in the light illustration region inherited the dark page's light text. Fixed in `globals.css`, with a browser test.
+- Mobile header: theme button floated mid-bar before sign-in.
+
+**Theme controls:**
+- Web: named button (`Theme: System`), native radios in a labelled group, Escape closes and returns focus, clicking outside closes. 44px targets.
+- Mobile: radios with role, name and checked state, 48pt targets. The header button says its state and what it changes to.
+
+**Still open, not new:** A1 (control borders), A2 (landing card), A9 (disabled "Skip"), A7 and A8 (buttons) are fixed with their screens in PR 2 and PR 3.
+
+**Not checked:** VoiceOver and TalkBack; native rendering on a device (no simulator here, so the iPhone list in the PR covers it); text over the landing scene, which the script can't measure.

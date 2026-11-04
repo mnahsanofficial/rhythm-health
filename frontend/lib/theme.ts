@@ -14,7 +14,11 @@ export function resolveTheme(choice: ThemeChoice): ThemeName {
   return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
 }
 
+/** A choice the browser refused to store still holds until the page reloads. */
+let unsaved: ThemeChoice | null = null;
+
 export function readThemeChoice(): ThemeChoice {
+  if (unsaved) return unsaved;
   try {
     const saved = localStorage.getItem(THEME_KEY);
     return saved === "light" || saved === "dark" ? saved : "system";
@@ -28,8 +32,10 @@ export function saveThemeChoice(choice: ThemeChoice): boolean {
   try {
     if (choice === "system") localStorage.removeItem(THEME_KEY);
     else localStorage.setItem(THEME_KEY, choice);
+    unsaved = null;
     return true;
   } catch {
+    unsaved = choice;
     return false;
   }
 }

@@ -7,6 +7,8 @@ import { Copy, useStyles } from './ui';
 import { ThemeControl, ThemeCycleButton } from './theme';
 import { useColors, themedStyles } from './theme-core';
 
+const fixedRow = { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs } as const;
+
 export type Section = 'lab' | 'history' | 'demo' | 'reminders';
 const SECTIONS: { key: Section; label: string }[] = [{ key: 'lab', label: 'Your lab' }, { key: 'history', label: 'History' }, { key: 'demo', label: 'Demo' }];
 
@@ -36,9 +38,11 @@ export function AppHeader({ account, onSignIn }: { account?: Account; onSignIn?:
       <Mark />
       <Copy style={local.name}>Rhythm</Copy>
     </View>
-    {!account && <ThemeCycleButton />}
-    {account && <AccountMenu account={account} />}
+    <View style={fixedRow}>
+      {!account && <ThemeCycleButton />}
+      {account && <AccountMenu account={account} />}
     {onSignIn && <Pressable accessibilityRole="button" accessibilityLabel="Sign in" onPress={onSignIn} style={({ pressed }) => [local.signIn, pressed && { backgroundColor: COLORS.line }]}><Copy style={local.email}>Sign in</Copy></Pressable>}
+    </View>
   </View>;
 }
 

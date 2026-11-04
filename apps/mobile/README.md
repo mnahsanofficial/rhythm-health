@@ -44,6 +44,10 @@ The app no longer links to the web. Native requests do not need CORS changes. Ex
 - Reviewed [8x template apps/mobile](https://github.com/8xsocial/template-monorepo/tree/ec30efdd7b1d8f9604950e54d1802376216651e1/apps/mobile). Follow its Router entry, npm workspace, `app`/`lib` layout and Jest/React Native Testing Library conventions. Its SDK 55 pins, analytics, subscriptions, native custom plugins, NativeWind and example features are not copied. SDK 58 [automatically handles npm monorepos](https://docs.expo.dev/guides/monorepos/); no legacy Metro resolver overrides are needed.
 - Dependencies follow Expo 58.0.21's `bundledNativeModules.json`. React/React DOM remain 19.3.0 in both apps. Web Vitest/Playwright remain separate from native Jest.
 
+## Theme and motion
+
+Light, dark or system, per device, in SecureStore. `src/theme-core.tsx` holds the provider and hooks; screens read `useColors()` and `themedStyles()`. New motion uses `react-native-reanimated`, which Expo Go includes and `babel-preset-expo` configures. Tests map it to a small double in `__tests__/support/reanimated.ts`. **After pulling a dependency change, stop Metro and restart with `--clear`.**
+
 ## Auth and storage
 
 [Supabase's native guidance](https://supabase.com/docs/guides/auth/quickstarts/react-native) supplies the session options and foreground token refresh. Every product request carries the user's Bearer token. `GET /api/profile`, typed as shared `Profile`, gates the daily loop: 404 opens native onboarding, 401 clears the session and returns to sign-in, and server/network failures offer retry. Sign-out uses `scope: local`, so it does not sign out the web browser.
