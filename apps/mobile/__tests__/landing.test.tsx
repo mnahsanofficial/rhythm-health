@@ -1,7 +1,7 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { AccessibilityInfo, AppState } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo, AppState, StyleSheet } from 'react-native';
 import * as Reanimated from 'react-native-reanimated';
-import { MOTION_DURATION_MS } from '@rhythm-health/brand';
+import { LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
 import { MobileApp } from '../src/mobile-app';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
@@ -162,4 +162,17 @@ test('signing out goes to the form rather than the landing', async () => {
   await press('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
   expect(screen.queryByRole('header', { name: FIRST })).toBeNull();
+});
+
+test('the picture of the app is a real phone frame, labelled as an example, that overlaps the edge of the sky', async () => {
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  const frame = StyleSheet.flatten(screen.getAllByTestId('landing-phone')[0].props.style) as { width: number; height: number; borderWidth: number; borderRadius: number };
+  expect(frame.borderWidth).toBeGreaterThanOrEqual(SPACING.xs);
+  expect(frame.borderRadius).toBeGreaterThanOrEqual(RADII.card);
+  expect(frame.height / frame.width).toBeGreaterThan(1.4);
+  expect(frame.width).toBeLessThanOrEqual(LAYOUT.buttonMaxWidth);
+  const sky = StyleSheet.flatten(screen.getAllByTestId('landing-sky')[0].props.style) as { bottom: number };
+  expect(sky.bottom).toBeGreaterThanOrEqual(SPACING.section);
+  expect(screen.getAllByText('Example').length).toBeGreaterThan(0);
 });
