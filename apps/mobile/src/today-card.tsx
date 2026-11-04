@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { isLastBaselineDay, testStartsLine } from './lib/experiments';
 import type { LabReport } from '@rhythm-health/contract';
 import { allDaysDone, FinishNow } from './finish';
 import type { DayData } from './today';
@@ -40,6 +41,7 @@ export function TodayCard({ data: { experiment, timeline }, disabled, token, off
   if (done) return <View style={styles.decision}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>{`Day ${day} recorded`}</Copy>
     <Copy>{counts}</Copy>
+    {isLastBaselineDay(timeline) && <Copy>{`Baseline done. ${testStartsLine(experiment.intervention.action)}`}</Copy>}
     <Copy>{opens && progress.days_remaining ? `Day ${day + 1} opens ${opens}.` : "That was the last day. Finish when you're ready."}</Copy>
     <Action label="Edit answers" secondary disabled={disabled} onPress={onCheckin} />
   </View>;
