@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # Jev classifier, served through OpenRouter.
     openrouter_jev_model: str = "typesafe/jev-router"
 
+    # Optional. Blank means no error reporting.
+    sentry_dsn: str = ""
+
     # Paid AI actions one person can use per UTC day.
     ai_daily_limit_propose: int = 5
     ai_daily_limit_report: int = 3

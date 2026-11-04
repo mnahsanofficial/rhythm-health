@@ -22,6 +22,7 @@ Read in `frontend/lib/api/client.ts` and `frontend/lib/auth/supabase.ts`. Next.j
 | `NEXT_PUBLIC_API_URL` | Base URL of the FastAPI backend | `http://localhost:8001` locally, already filled in `.env.example`. Unset, it falls back to the same | No |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL, for sign-in in the browser | Supabase → Project Settings → API | No |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key, for sign-in in the browser | Supabase → Project Settings → API → anon / public key | No (public by design; RLS protects the data) |
+| `NEXT_PUBLIC_SENTRY_DSN` | Browser error reporting | Optional. Sentry → Project Settings → Client Keys. Blank means nothing is loaded | No (public by design) |
 
 Fill in both Supabase values before signing in. If either is missing or blank, the app still loads and the sign-in page names the variable that needs to be set. Authentication remains unavailable until both values are configured.
 
@@ -46,6 +47,7 @@ Every variable is a field of `Settings` in `backend/app/config.py`, read from `b
 | `OPENROUTER_API_KEY` | Calls to the reasoning model and Jev through OpenRouter | OpenRouter → Keys | **Yes. Backend only. Each call costs money** |
 | `OPENROUTER_REASONING_MODEL` | Model for experiment design and prediction | Optional. Defaults to `anthropic/claude-sonnet-5.5` | No |
 | `OPENROUTER_JEV_MODEL` | Jev classifier model (category, intent, risk) | Optional. Defaults to `typesafe/jev-router` | No |
+| `SENTRY_DSN` | Backend error reporting | Optional. Sentry → Project Settings → Client Keys. Blank means it does nothing | No |
 | `AI_DAILY_LIMIT_PROPOSE` | Experiment plans one person can make per UTC day | Optional. Defaults to 5 | No |
 | `AI_DAILY_LIMIT_REPORT` | Reports one person can have written per UTC day | Optional. Defaults to 3 | No |
 
