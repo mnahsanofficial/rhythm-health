@@ -141,4 +141,4 @@ Decided by Nazmul: with several experiments running, answering the same question
 
 Nazmul authorized agent merges for #85–#88 on 4 Nov to meet the demo freeze.
 
-This is one exception, not a change to the rule: agents still never merge PRs. It covered merge commits only, with every check green first, and it doesn't extend to any other PR. Nazmul had already merged #85 himself.
+This is one exception, not a change to the rule: agents still never merge PRs. It covered merge commits only, with every check green first, and it doesn't extend to any other PR. Nazmul had already merged #85.
