@@ -1,0 +1,21 @@
+# Secret scan, run in CI over all of history. See docs/rules/secrets.md and docs/adr/0012-ci-discipline-no-prettier.md.
+# Keep allowlists narrow: exempt one exact false positive by its text, never a file or folder.
+# .claude-logs/ is public, so it must always be scanned.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "openrouter-api-key"
+description = "OpenRouter API key"
+regex = '''sk-or-v1-[a-f0-9]{32,}'''
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret key"
+regex = '''sb_secret_[A-Za-z0-9_-]{16,}'''
+
+[[allowlists]]
+description = "React's duplicate-key warning, quoted in a session log, names a record id, not a secret"
+regexTarget = "line"
+regexes = ['''Encountered two children with the same key''']
