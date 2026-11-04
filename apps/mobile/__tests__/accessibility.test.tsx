@@ -150,8 +150,8 @@ describe('controls have names and 48pt targets', () => {
     await press('Yes, finish');
     const report = await screen.findByRole('button', { name: 'See full Lab Report' });
     await act(async () => { fireEvent.press(report); });
-    await screen.findByRole('button', { name: 'Reveal my result' });
-    await press('Reveal my result');
+    await screen.findByRole('button', { name: 'Compare with the prediction' });
+    await press('Compare with the prediction');
     auditControls();
   });
 });
@@ -193,7 +193,7 @@ describe('screen readers hear what changes', () => {
     await press('Yes, finish');
     const report = await screen.findByRole('button', { name: 'See full Lab Report' });
     await act(async () => { fireEvent.press(report); });
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(announce).toHaveBeenCalledWith('Your result, +21%, landed outside the predicted range.');
   });
 

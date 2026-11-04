@@ -204,7 +204,7 @@ describe('comparison', () => {
     expect(screen.getByText('Locked before you saw the AI forecast.')).toBeVisible();
     expect(screen.getByText('+8% to +15%')).toBeVisible();
     expect(screen.queryByText('+21%')).toBeNull();
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(screen.getByText('+21%')).toBeVisible();
     expect(screen.getByText('Your result, +21%, landed outside the predicted range. Your guess was 8 percentage points away.')).toBeVisible();
     expect(screen.getByText('61%')).toBeVisible();
@@ -214,7 +214,7 @@ describe('comparison', () => {
   test('an older report without a guess says so', async () => {
     await openReport();
     expect(screen.getByText('No guess was recorded for this experiment.')).toBeVisible();
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(screen.getByText('Your result, +21%, landed outside the predicted range.')).toBeVisible();
   });
 
@@ -222,7 +222,7 @@ describe('comparison', () => {
     await openReportWithoutPrediction();
     expect(screen.getByText(/Your guess: \+12\.5%\. A percentage comparison is unavailable because a baseline or test average is missing, or the baseline is zero\./)).toBeVisible();
     expect(screen.getByText("There wasn't enough data in both phases to compare with the prediction.")).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Reveal my result' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compare with the prediction' })).toBeNull();
   });
   async function openReportWithoutPrediction() {
     const report = { ...labReport, analysis: { ...labReport.analysis, prediction: null, personal_guess: { guessed_change_percent: 12.5, observed_change_percent: null, error_points: null } } };
@@ -236,7 +236,7 @@ describe('comparison', () => {
     const timing = jest.spyOn(Animated, 'timing');
     await openReport();
     await act(async () => { await Promise.resolve(); });
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     expect(screen.getByText('+21%')).toBeVisible();
     expect(timing).not.toHaveBeenCalled();
   });
@@ -246,7 +246,7 @@ describe('comparison', () => {
     await openReport();
     await act(async () => { await Promise.resolve(); });
     const timing = jest.spyOn(Animated, 'timing');
-    await press('Reveal my result');
+    await press('Compare with the prediction');
     await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
   });
 });
