@@ -6,7 +6,7 @@ import { Forecast } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
-import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 type Failure = { status: number; message: string };
@@ -96,8 +96,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       } else if (id && cause instanceof ApiError && cause.status === 409) {
         await explainConflict(id);
       } else if (id) {
-        setStartError(`Your experiment was saved, but it couldn't be started: ${message(cause, 'Please try again.')}`);
-      } else setStartError(message(cause, "Couldn't save your experiment. Please try again."));
+        setStartError(`Your experiment was saved, but it couldn't be started: ${message(cause, 'Try again.')}`);
+      } else setStartError(message(cause, "Couldn't save your experiment. Try again."));
     } finally { inFlight.current = false; setStarting(false); }
   }
 
@@ -114,7 +114,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
 
   const blockedNotice = limit !== null && <View style={ui.stack}>
     <Alert>{limit}</Alert>
-    {onBack && <Action label="Go to Your lab" secondary onPress={onBack} />}
+    {onBack && <Action label="Go to your lab" secondary onPress={onBack} />}
   </View>;
 
   if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} onReveal={setGuess} onBack={() => reset('')} />;
@@ -134,10 +134,10 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       <Copy>This plan and prediction become fixed once you start.</Copy>
       <Copy style={ui.muted}>Your original forecast stays in place so you can compare it with what happens.</Copy>
     </View>
-    {offline && <Status style={ui.muted}>You&apos;re offline. Your plan is kept; reconnect to start.</Status>}
+    {offline && <Notice>You&apos;re offline. Your plan is kept; reconnect to start.</Notice>}
     {startError && <Alert>{startError}</Alert>}
-    {guessUnavailable && <Action label="Continue without saving my guess" secondary disabled={starting || offline} onPress={() => void begin(true)} />}
-    {startAtLimit && onBack && <Action label="Go to Your lab" secondary onPress={onBack} />}
+    {guessUnavailable && <Action label="Skip my guess" secondary disabled={starting || offline} onPress={() => void begin(true)} />}
+    {startAtLimit && onBack && <Action label="Go to your lab" secondary onPress={onBack} />}
     {startError && <Action label="Try again" secondary disabled={starting || offline} onPress={() => void begin()} />}
     {!startError && <Action label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} />}
     <Action label="Ask something else" secondary disabled={starting} onPress={() => reset('')} />
@@ -160,8 +160,14 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>
       </View>
     </View>
-    {offline && <Status style={ui.muted}>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Status>}
-    <Action label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design my experiment'}
+    {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
+    {!hideStarters && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
+      {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
+        onPress={() => reset(starter)} style={({ pressed }) => [local.chip, pressed && { backgroundColor: COLORS.border }]}>
+        <Copy>{starter}</Copy>
+      </Pressable>)}
+    </View>}
+    <Action label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design experiment'}
       disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} />
     {busy === 'proposing' && <View style={ui.stack}>
       <Status>Finding a small change you can test…</Status>
@@ -186,14 +192,6 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         <Copy>{result.safety.suggested_alternative}</Copy>
         <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
       </>}
-    </View>}
-    {!hideStarters && <View style={local.hunches}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>Start with a hunch</Copy>
-      <Copy style={ui.muted}>Inspired by your goals and everyday questions. Pick one, then make it yours.</Copy>
-      {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
-        onPress={() => reset(starter)} style={({ pressed }) => [local.starter, pressed && { backgroundColor: COLORS.paper }]}>
-        <Copy>{starter} <Copy accessible={false} style={{ color: COLORS.moss }}>↗</Copy></Copy>
-      </Pressable>)}
     </View>}
     {!hideStarters && <Copy style={local.helpText}>First a plan. Then a prediction. You decide whether to begin.</Copy>}
   </View>;
@@ -223,7 +221,7 @@ function GuessStep({ heading, proposal, onReveal, onBack }: {
       </View>
     </View>
     <Copy style={ui.muted}>Your guess locks when you reveal the AI prediction. It is saved if you start the experiment, so your report can compare both with what happens.</Copy>
-    <Action label="Reveal the AI prediction" disabled={value === null} onPress={reveal} />
+    <Action label="Show prediction" disabled={value === null} onPress={reveal} />
     <Action label="Ask something else" secondary onPress={onBack} />
   </View>;
 }
@@ -286,11 +284,11 @@ const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(m
   dayCell: { width: '20%', alignItems: 'center', gap: SPACING.xs },
   dayLabel: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   ingredient: { gap: SPACING.xs, paddingTop: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
-  hunches: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  chip: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS['accent-tint'] },
   day: { minWidth: LAYOUT.tapTarget, minHeight: LAYOUT.tapTarget, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill },
   dayNumber: { ...NATIVE_TYPOGRAPHY.caption },
   metric: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
   guessRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   guessInput: { flex: 1, ...NATIVE_TYPOGRAPHY.lead },
-  starter: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.moss },
 }); });

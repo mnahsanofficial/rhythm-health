@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
 import { Action, Copy, useStyles, useStepFocus } from './ui';
 import { useColors, themedStyles } from './theme-core';
+import { DayRail } from './rails';
 
 const SCENES = [
   { time: '22:30 · Night', title: 'Your sleep is the experiment.', body: 'Ask one habit question. Rhythm turns it into a small experiment that changes one thing at a time, so you can tell what made the difference.' },
@@ -25,14 +26,15 @@ const QUESTIONS = ['Does walking after dinner improve my sleep?', 'Does less caf
 export function Landing({ onStart }: { onStart: () => void }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const heading = useStepFocus('landing');
   const start = <View style={styles.stack}>
-    <Action label="Run your first experiment" onPress={onStart} />
+    <Action label="Start an experiment" onPress={onStart} />
     <Copy style={local.small}>About a minute to set up.</Copy>
   </View>;
   return <View style={local.page}>
     <View style={styles.stack}>
-      <Copy ref={heading} accessibilityRole="header" style={styles.title}>{'Stop guessing what works for you.\n'}<Copy style={[styles.title, { color: COLORS.muted }]}>Test it.</Copy></Copy>
+      <Copy ref={heading} accessibilityRole="header" style={local.hero}>{'Stop guessing what works for you.\n'}<Copy style={[local.hero, { color: COLORS.muted }]}>Test it.</Copy></Copy>
       <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>Turn a habit question into a small personal experiment. Record your usual routine, test one change, then compare the forecast with what you observed.</Copy>
       {start}
+      <DayRail />
     </View>
     {SCENES.map(scene => <View key={scene.title} style={styles.divider}>
       <Copy style={local.number}>{scene.time}</Copy>
@@ -62,7 +64,8 @@ export function Landing({ onStart }: { onStart: () => void }) { const COLORS = u
 }
 
 const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
-  page: { gap: SPACING.xl },
+  page: { gap: SPACING.xxl },
+  hero: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY['display-sm'], color: COLORS.text },
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   number: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   headline: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.headline, color: COLORS.ink },

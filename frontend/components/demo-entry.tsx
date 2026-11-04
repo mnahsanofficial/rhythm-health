@@ -5,9 +5,9 @@ import { useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { resetDemo } from "@/lib/data/demo";
+import { button } from "@/components/ui/button";
 
-const buttonClass =
-  "inline-flex min-h-12 shrink-0 items-center justify-center whitespace-nowrap rounded-pill border border-line bg-paper px-6 text-body font-medium text-ink transition-colors hover:border-moss hover:text-moss disabled:cursor-wait disabled:opacity-60";
+const buttonClass = button("primary");
 
 export function DemoEntry() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export function DemoEntry() {
         router.replace("/sign-in?next=/");
         return;
       }
-      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+      setError(e instanceof Error ? e.message : "Couldn't finish that. Try again.");
     } finally {
       setPreparing(false);
     }
@@ -57,7 +57,7 @@ export function DemoEntry() {
             type="button"
             disabled={preparing}
             onClick={() => void openDemo()}
-            className="min-h-11 rounded-pill bg-paper px-5 text-body font-medium text-ink disabled:opacity-60"
+            className={button("secondary")}
           >
             Try again
           </button>

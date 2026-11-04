@@ -109,15 +109,15 @@ test('scheduling failure is visible with retry and Today remains usable', async 
   notifications.scheduleNotificationAsync.mockRejectedValueOnce(new Error('native failure'));
   render(<MobileApp />); notificationState.granted = true; await settings(); fireEvent(screen.getByRole('switch', { name: 'Daily reminders' }), 'valueChange', true);
   expect(await screen.findByText(/Couldn't update your reminder/)).toBeVisible();
-  fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(2));
+  fireEvent.press(screen.getByRole('button', { name: 'Try again' })); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(2));
 });
 
 test('development test uses a one-off ten-second trigger and production hides it', async () => {
   const view = render(<MobileApp />); await enable();
-  fireEvent.press(screen.getByRole('button', { name: 'Send a test reminder in 10 seconds' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Send test reminder' }));
   await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalledWith(expect.objectContaining({ identifier: 'rhythm.test', trigger: expect.objectContaining({ seconds: 10, repeats: false }) })));
   view.unmount(); const old = Reflect.get(globalThis, '__DEV__'); Reflect.set(globalThis, '__DEV__', false);
-  try { render(<MobileApp />); await settings(); expect(screen.queryByRole('button', { name: 'Send a test reminder in 10 seconds' })).toBeNull(); } finally { Reflect.set(globalThis, '__DEV__', old); }
+  try { render(<MobileApp />); await settings(); expect(screen.queryByRole('button', { name: 'Send test reminder' })).toBeNull(); } finally { Reflect.set(globalThis, '__DEV__', old); }
 });
 
 test('turning reminders off cancels immediately even if saving the preference fails', async () => {
@@ -134,7 +134,7 @@ test('a preference read error can be retried instead of leaving Settings disable
   const store = jest.requireMock('expo-secure-store') as typeof import('expo-secure-store');
   jest.mocked(store.getItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
   render(<MobileApp />); await settings(); await screen.findByText(/Couldn't update your reminder/);
-  fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
   await waitFor(() => expect(screen.getByRole('switch', { name: 'Daily reminders' })).toBeEnabled());
 });
 
@@ -174,9 +174,9 @@ test('a cancellation failure stays visible after signing out and can be retried'
   notifications.cancelScheduledNotificationAsync.mockRejectedValueOnce(new Error('native cancel failed'));
   await goTo('Sign out'); await screen.findByLabelText('Email');
   expect(await screen.findByText(/Couldn't update your reminder/)).toBeVisible();
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Retry reminder' })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled());
   await waitFor(() => expect(mockAuth.signOut).toHaveBeenCalled());
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Try again' })); });
   await waitFor(() => expect(screen.queryByText(/Couldn't update your reminder/)).toBeNull());
 });
 
@@ -206,8 +206,8 @@ test('retrying preference restoration retains the already loaded server progress
   const store = jest.requireMock('expo-secure-store') as typeof import('expo-secure-store');
   jest.mocked(store.getItemAsync).mockRejectedValueOnce(new Error('storage unavailable'));
   render(<MobileApp />); await settings(); await screen.findByText(/Couldn't update your reminder/);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Retry reminder' })).toBeEnabled());
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Retry reminder' })); });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled());
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Try again' })); });
   await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
 });
 

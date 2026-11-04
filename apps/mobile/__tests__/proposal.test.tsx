@@ -72,12 +72,12 @@ async function openAsk() {
   await screen.findByRole('header', { name: 'Ask a question.' });
 }
 function typeQuestion(text = QUESTION) { fireEvent.changeText(screen.getByLabelText('Your question or goal'), text); }
-const design = () => screen.getByRole('button', { name: 'Design my experiment' });
+const design = () => screen.getByRole('button', { name: 'Design experiment' });
 async function submit(text = QUESTION) { typeQuestion(text); await act(async () => { fireEvent.press(design()); }); }
 async function toGuess() { await openAsk(); await submit(); await screen.findByRole('header', { name: 'What do you think will happen?' }); }
 async function reveal(value = '+12') {
   fireEvent.changeText(screen.getByLabelText('Your guess for Morning energy'), value);
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Reveal the AI prediction' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
 }
 async function toPlan() { await toGuess(); await reveal(); await screen.findByRole('button', { name: 'Start this experiment' }); }
 const startNow = async () => { await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Start this experiment' })); }); };
@@ -121,7 +121,7 @@ test('the limit from the backend is explained, and Design stays off until the qu
   await submit();
   expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
   expect(screen.queryByText('Your profile needs to be saved first.')).toBeNull();
-  expect(screen.getByRole('button', { name: 'Design my experiment' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Design experiment' })).toBeDisabled();
   expect(count(PROPOSE)).toBe(1);
 });
 
@@ -243,7 +243,7 @@ test.each([['0', '0%'], ['-5', '-5%'], ['+12', '+12%'], ['7,5', '+7.5%'], ['-100
 test.each(['', 'abc', '-101', '201', '1e2', '--2', '1,2,3'])('rejects the guess "%s"', async value => {
   await toGuess();
   fireEvent.changeText(screen.getByLabelText('Your guess for Morning energy'), value);
-  expect(screen.getByRole('button', { name: 'Reveal the AI prediction' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Show prediction' })).toBeDisabled();
   expect(screen.queryByText('The original forecast')).toBeNull();
 });
 
@@ -355,7 +355,7 @@ test('only the guess error offers to continue without saving it, and only on tha
   expect(await screen.findByText('Your guess could not be saved yet.')).toBeVisible();
   expect(count(START)).toBe(0);
   queue(`GET ${ACTIVE}`, { body: [started] });
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Continue without saving my guess' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Skip my guess' })); });
   await screen.findByText(started.question);
   expect(calls.filter(call => call.key === SAVE)[1]?.body).not.toHaveProperty('personal_guess_percent');
 });
@@ -365,7 +365,7 @@ test('other save errors do not offer to drop the guess', async () => {
   queue(SAVE, { status: 503, body: { detail: 'Database unavailable' } });
   await startNow();
   expect(await screen.findByText(/Database unavailable/)).toBeVisible();
-  expect(screen.queryByRole('button', { name: 'Continue without saving my guess' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Skip my guess' })).toBeNull();
 });
 
 test('a start that already went through is recognised, not reported as a failure', async () => {

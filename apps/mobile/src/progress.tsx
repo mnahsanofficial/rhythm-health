@@ -4,7 +4,7 @@ import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand'
 import type { Checkin, ExperimentDay, MetricValue } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { listCheckins } from './lib/checkins';
-import { Action, Alert, Copy, Loading, useStyles, Status } from './ui';
+import { Action, Alert, Copy, Loading, useStyles, Status, CountUp } from './ui';
 import type { DayData } from './today';
 import { useColors, themedStyles } from './theme-core';
 
@@ -47,7 +47,7 @@ export function Observations({ data: { experiment, timeline }, title, token, off
   const followed = testDays.filter(value => value.intervention_completed).length;
   return <View style={styles.divider}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>{title}</Copy>
-    <Copy style={[styles.number, { color: COLORS.ink }]}>{`${timeline.recorded_days} of ${progress.total_days} days recorded`}</Copy>
+    <CountUp value={timeline.recorded_days} suffix={` of ${progress.total_days} days recorded`} style={[styles.number, { color: COLORS.ink }]} />
     {progress.state === 'in_progress' && <Copy style={local.small}>{`${progress.phase === 'baseline' ? 'Baseline' : 'Test'} day ${progress.phase_day} of ${progress.phase_days} · ${progress.days_remaining} days remaining`}</Copy>}
     {testDays.length > 0 && <Copy style={local.small}>{`Change made on ${followed} of ${testDays.length} test days`}</Copy>}
     {experiment.is_seeded && <Copy style={local.small}>Sample check-ins for demonstration. These answers are excluded from your real experiment history.</Copy>}
@@ -64,7 +64,7 @@ export function Observations({ data: { experiment, timeline }, title, token, off
     {!hasRecorded ? <Copy style={styles.muted}>No days recorded yet. Your next check-in will start the record.</Copy> : <>
       {offline && answers === null ? <Copy>No connection. Reconnect to load recorded answers.</Copy>
         : answers === null && !error ? <Loading message="Loading recorded answers…" /> : null}
-      {error && <><Alert>{error}</Alert><Action label="Retry answers" secondary disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>}
+      {error && <><Alert>{error}</Alert><Action label="Try again" secondary disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>}
       {busy && answers !== null && <Status style={local.small}>Refreshing recorded answers…</Status>}
       {answers !== null && (recorded ? <View accessibilityLabel={`Day ${recorded.day_number} answers`} accessibilityLiveRegion="polite" style={local.panel}>
         <Copy style={local.panelTitle}>{`Day ${recorded.day_number} · ${recorded.phase === 'intervention' ? 'Test' : 'Baseline'}`}</Copy>
@@ -77,7 +77,7 @@ export function Observations({ data: { experiment, timeline }, title, token, off
           </View>;
         })}
         {recorded.note && <Copy style={local.note}>“{recorded.note}”</Copy>}
-      </View> : <><Copy>No answers returned for this day.</Copy><Action label="Retry answers" secondary disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>)}
+      </View> : <><Copy>No answers returned for this day.</Copy><Action label="Try again" secondary disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>)}
     </>}
   </View>;
 }

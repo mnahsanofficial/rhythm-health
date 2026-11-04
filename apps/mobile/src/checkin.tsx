@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
-import { Action, BackLink, Alert, Copy, Loading, useStyles, Title, Status, useStepFocus } from './ui';
+import { Action, BackLink, Alert, Copy, Loading, useStyles, Title, Status, useStepFocus, Notice } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
@@ -94,7 +94,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     {experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample experiment · Sample check-in</Copy>}
     <Title>Today&apos;s check-in.</Title>
     <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{test ? 'A test day. Tell us whether you made the change, then how it went.' : "A normal day. Don't change anything yet, just notice how it went."}</Copy>
-    {offline && <Status>You&apos;re offline; your answers are kept</Status>}
+    {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {!ready ? readError ? <><Alert>{readError}</Alert><Action label="Try again" disabled={offline} onPress={() => { setReadError(undefined); setAttempt(value => value + 1); }} /></>
       : offline ? <Copy>Reconnect to load your previous answers.</Copy> : <Loading message="Loading your answers…" />
       : <>
@@ -132,7 +132,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
             style={[styles.input, noteFocused && styles.focus, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
           {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
         </View>
-        <View style={{ paddingTop: SPACING.md }}><Action label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update today's check-in" : "Save today's check-in"}
+        <View style={{ paddingTop: SPACING.md }}><Action label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update check-in" : "Save check-in"}
           disabled={busy || offline} onPress={() => void save()} /></View>
       </>}
   </View>;
@@ -162,7 +162,7 @@ export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder,
     </>}
     {failed && <Action label="Try again" secondary disabled={refreshing} onPress={onRetry} />}
     <Action label="Back to your experiment" onPress={onBack} />
-    <Action label="Change today's answers" secondary onPress={onChange} />
+    <Action label="Edit answers" secondary onPress={onChange} />
   </View>;
 }
 

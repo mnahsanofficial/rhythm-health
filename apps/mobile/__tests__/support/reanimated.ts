@@ -7,9 +7,10 @@ import { ScrollView, Text, View } from 'react-native';
  */
 export const ReduceMotion = { System: 'system', Always: 'always', Never: 'never' } as const;
 export const Easing = { bezier: () => (value: number) => value };
-export const useSharedValue = <T,>(initial: T) => useMemo(() => ({ value: initial }), []); // eslint-disable-line react-hooks/exhaustive-deps
+export const useSharedValue = <T,>(initial: T) => useMemo(() => { let value = initial; return { get: () => value, set: (next: T) => { value = next; } }; }, []); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/immutability
 export const useAnimatedStyle = <T,>(build: () => T) => build();
 export const withTiming = <T,>(value: T) => value;
-export const useReducedMotion = () => false;
+export const FadeInDown = { duration: () => ({ reduceMotion: () => undefined }) };
+export const useReducedMotion = () => true;
 const Animated = { View, Text, ScrollView, createAnimatedComponent: <T,>(component: T) => component };
 export default Animated;

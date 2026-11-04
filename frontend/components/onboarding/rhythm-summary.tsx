@@ -125,7 +125,7 @@ export function RhythmSummary({ draft, onEdit, headingRef }: Props) {
                   href="/"
                   className={`${button("primary")} mt-4`}
                 >
-                  Back to home
+                  Back to your lab
                 </Link>
               </div>
             ) : sessionLoading ? (

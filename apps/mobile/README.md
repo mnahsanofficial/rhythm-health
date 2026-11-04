@@ -78,7 +78,7 @@ Local-only limits: an experiment finished on the web while the phone app is clos
 
 ### iPhone test without waiting a day
 
-In Expo Go, sign in and open **Settings → Daily reminders**. Enable them and allow notifications. Tap **Send a test reminder in 10 seconds**, lock the phone, then tap the notification. It should open today's Check-in; no need to save again. Repeat while force-closing the app before delivery to check cold start. To check cancellation, schedule another test and turn reminders off before ten seconds; it should not arrive. The test uses a one-off ten-second interval solely in `__DEV__`; its button and action are unavailable in production, with the button label absent from both production native exports.
+In Expo Go, sign in and open **Settings → Daily reminders**. Enable them and allow notifications. Tap **Send test reminder**, lock the phone, then tap the notification. It should open today's Check-in; no need to save again. Repeat while force-closing the app before delivery to check cold start. To check cancellation, schedule another test and turn reminders off before ten seconds; it should not arrive. The test uses a one-off ten-second interval solely in `__DEV__`; its button and action are unavailable in production, with the button label absent from both production native exports.
 
 ## Progress
 

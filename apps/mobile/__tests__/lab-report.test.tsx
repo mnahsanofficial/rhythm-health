@@ -79,12 +79,12 @@ afterEach(() => jest.restoreAllMocks());
 const press = (name: string | RegExp) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
 async function openFinish() {
   render(<MobileApp />);
-  const link = await screen.findByRole('button', { name: /^(Finish and see results|See your experiment)$/ });
+  const link = await screen.findByRole('button', { name: /^(See results|See your experiment)$/ });
   await act(async () => { fireEvent.press(link); });
 }
 async function finish() {
   await openFinish();
-  await press('Finish and see results');
+  await press('See results');
   await press('Yes, finish');
 }
 async function openReport(report: LabReport = labReport) {
@@ -99,10 +99,10 @@ describe('finish', () => {
     await openFinish();
     expect(await screen.findByText('Ready for your results.')).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Finish on the web' })).toBeNull();
-    fireEvent.press(screen.getByRole('button', { name: 'Finish and see results' }));
+    fireEvent.press(screen.getByRole('button', { name: 'See results' }));
     expect(screen.getByText("Finish this experiment now? You can't add check-ins after.")).toBeVisible();
     fireEvent.press(screen.getByRole('button', { name: 'Keep going' }));
-    expect(screen.getByRole('button', { name: 'Finish and see results' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'See results' })).toBeVisible();
     expect(count(COMPLETE)).toBe(0);
   });
 
@@ -116,7 +116,7 @@ describe('finish', () => {
 
   test('double taps send one finish', async () => {
     await openFinish();
-    await press('Finish and see results');
+    await press('See results');
     const button = screen.getByRole('button', { name: 'Yes, finish' });
     await act(async () => { fireEvent.press(button); fireEvent.press(button); });
     await screen.findByRole('header', { name: 'Prediction vs reality' });
@@ -170,7 +170,7 @@ describe('finish', () => {
     setActive(baselineDay, timelineFixture(baselineDay, { recorded: [1] }));
     await openFinish();
     await screen.findByText('Day 2 of 10 · Baseline day 2 of 3');
-    expect(screen.queryByRole('button', { name: 'Finish and see results' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'See results' })).toBeNull();
   });
 
   test('samples are never finished', async () => {
@@ -178,7 +178,7 @@ describe('finish', () => {
     setActive(sample);
     render(<MobileApp />);
     await screen.findByText('This sample has ended. Remove it to free up a slot for a real experiment.');
-    expect(screen.queryByRole('button', { name: 'Finish and see results' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'See results' })).toBeNull();
   });
 
   test('offline disables finishing', async () => {
@@ -186,7 +186,7 @@ describe('finish', () => {
     await screen.findByText('Ready for your results.');
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Finish and see results' })).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'See results' })).toBeDisabled());
   });
 });
 
@@ -422,7 +422,7 @@ describe('run this experiment', () => {
     await act(async () => { await Promise.resolve(); });
     expect(count(PROPOSE)).toBe(0);
     defaults[PROPOSE] = { body: { ...proposeResponse, personal_guess_available: true } };
-    await press('Design my experiment');
+    await press('Design experiment');
     await screen.findByRole('header', { name: 'What do you think will happen?' });
     expect(calls.find(call => call.key === PROPOSE)?.body).toEqual({ question: next });
   });
@@ -434,7 +434,7 @@ describe('run this experiment', () => {
     await finish();
     expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one before starting this one.")).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Run this experiment' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Go to Your lab' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Go to your lab' })).toBeVisible();
   });
 
   test('with another experiment running below the limit, it still offers the next one', async () => {

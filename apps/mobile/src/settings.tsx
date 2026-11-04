@@ -21,14 +21,14 @@ export function Settings() { const COLORS = useColors(); const styles = useStyle
       <Action label="Open phone Settings" secondary onPress={() => { void Linking.openSettings().catch(() => setError(true)); }} /></>}
     {state.choice === 'off' && <Copy>Reminders are off.</Copy>}
     {error && <Alert>Couldn&apos;t open Settings. Open your phone Settings and choose Notifications → Expo Go.</Alert>}
-    {__DEV__ && <Action label="Send a test reminder in 10 seconds" secondary disabled={onlySamples(state.data) || state.busy || !state.permission || state.choice !== 'on' || !state.data?.some(item => !item.experiment.is_seeded && item.timeline.progress.state === 'in_progress')} onPress={() => void service.test()} />}
+    {__DEV__ && <Action label="Send test reminder" secondary disabled={onlySamples(state.data) || state.busy || !state.permission || state.choice !== 'on' || !state.data?.some(item => !item.experiment.is_seeded && item.timeline.progress.state === 'in_progress')} onPress={() => void service.test()} />}
     {state.notice && <Status>{state.notice}</Status>}
   </View>;
 }
 export function ReminderNotice({ feedbackOnly = false }: { feedbackOnly?: boolean }) { const styles = useStyles();
   const { service, state } = useReminders();
   return <>
-    {state.error && <><Alert>{state.error}</Alert><Action label="Retry reminder" secondary disabled={state.busy} onPress={() => void service.retry()} /></>}
+    {state.error && <><Alert>{state.error}</Alert><Action label="Try again" secondary disabled={state.busy} onPress={() => void service.retry()} /></>}
     {!feedbackOnly && !onlySamples(state.data) && state.ready && state.choice === null && state.data?.some(item => !item.experiment.is_seeded && item.timeline.recorded_days > 0) && Platform.OS !== 'web' && <View style={styles.decision}>
       <Copy>A reminder when the next day opens can help you keep a small daily record. It shows only the day on your lock screen.</Copy>
       <Action label="Enable daily reminders" disabled={state.busy} onPress={() => void service.choose(true)} />

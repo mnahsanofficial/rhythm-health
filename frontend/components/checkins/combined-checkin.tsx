@@ -80,7 +80,7 @@ export function CombinedCheckin() {
       .catch((e: unknown) => {
         if (cancelled) return;
         if (e instanceof ApiError && e.status === 401) router.replace(SIGN_IN);
-        else setLoad({ kind: "error", message: e instanceof Error ? e.message : "Something went wrong." });
+        else setLoad({ kind: "error", message: e instanceof Error ? e.message : "Couldn't load this. Try again." });
       });
     return () => { cancelled = true; };
   }, [session, sessionLoading, router, attempt]);
@@ -129,7 +129,7 @@ export function CombinedCheckin() {
           ))}
         </ul>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/" className={primaryButton}>Back to Your lab</Link>
+          <Link href="/" className={primaryButton}>Back to your lab</Link>
           <button type="button" onClick={() => setSaved(false)} className={secondaryButton}>Change today&apos;s answers</button>
         </div>
       </Shell>
