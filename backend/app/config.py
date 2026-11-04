@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     openrouter_reasoning_model: str = "anthropic/claude-sonnet-5.5"
     # Jev classifier, served through OpenRouter.
     openrouter_jev_model: str = "typesafe/jev-router"
+    # How long to wait for the reasoning model's answer.
+    openrouter_timeout_seconds: float = 75.0
 
     # Optional. Blank means no error reporting.
     sentry_dsn: str = ""
@@ -25,7 +27,11 @@ class Settings(BaseSettings):
     ai_daily_limit_report: int = 3
 
     @field_validator(
-        "openrouter_reasoning_model", "openrouter_jev_model", "ai_daily_limit_propose", "ai_daily_limit_report",
+        "openrouter_reasoning_model",
+        "openrouter_jev_model",
+        "openrouter_timeout_seconds",
+        "ai_daily_limit_propose",
+        "ai_daily_limit_report",
         mode="before",
     )
     @classmethod

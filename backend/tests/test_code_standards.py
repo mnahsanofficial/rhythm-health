@@ -1,4 +1,5 @@
 """Route logic lives in services, rows have types, and analysis stays in small modules."""
+import asyncio
 import typing
 from pathlib import Path
 
@@ -35,7 +36,7 @@ def test_only_an_active_experiment_can_be_completed(status, message):
 
 
 def test_the_service_saves_the_report_then_completes_the_experiment(db):
-    report = completion.complete_experiment(db.experiment, db.experiment["profile_id"], EXP_ID)
+    report = asyncio.run(completion.complete_experiment(db.experiment, db.experiment["profile_id"], EXP_ID))
     assert report.experiment.status == "completed"
     assert EXP_ID in db.reports
 
@@ -43,7 +44,7 @@ def test_the_service_saves_the_report_then_completes_the_experiment(db):
 def test_too_few_checkins_carry_the_counts(db, monkeypatch):
     monkeypatch.setattr(checkins, "list_for_experiment", lambda _id: [])
     with pytest.raises(completion.CompletionConflict) as caught:
-        completion.complete_experiment(experiment_row(), "profile", EXP_ID)
+        asyncio.run(completion.complete_experiment(experiment_row(), "profile", EXP_ID))
     assert caught.value.detail["message"] == "Not enough check-ins to complete this experiment yet"
     assert caught.value.detail["baseline_checkins"] == 0
 

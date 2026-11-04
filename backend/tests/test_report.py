@@ -34,7 +34,7 @@ class FakeModel:
         self.replies = list(replies)
         self.calls: list[list[dict]] = []
 
-    def __call__(self, task, model, schema, messages, timeout):
+    async def __call__(self, task, model, schema, messages, timeout):
         self.calls.append([dict(m) for m in messages])
         reply = self.replies[min(len(self.calls), len(self.replies)) - 1]
         if isinstance(reply, Exception):

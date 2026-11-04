@@ -184,17 +184,16 @@ def propose_api(monkeypatch, db):
     fake = FakeAI()
     prompts = []
 
-    def complete(**kw):
+    async def complete(**kw):
         if kw["task"] == "experiment_design":
             prompts.append((kw["system"], kw["user"]))
-        return fake(**kw)
+        return await fake(**kw)
+
+    async def decide(**_kw):
+        return {k: {"type": "choice", "choice": v} for k, v in CLASSIFICATION.items()}
 
     monkeypatch.setattr(openrouter, "complete", complete)
-    monkeypatch.setattr(
-        openrouter,
-        "decide",
-        lambda **_kw: {k: {"type": "choice", "choice": v} for k, v in CLASSIFICATION.items()},
-    )
+    monkeypatch.setattr(openrouter, "decide", decide)
     yield prompts
     app.dependency_overrides.clear()
 

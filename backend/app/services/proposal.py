@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from app.integrations import jev
+from app.integrations.concurrency import read_together
 from app.integrations.supabase import SupabaseUnavailable
 from app.repositories import experiments
 from app.schemas.classification import Classification
@@ -38,16 +39,20 @@ def running_questions(profile_id: str) -> list[dict]:
     return list(seen.values())
 
 
-def propose(question: str, profile: ProfileOut) -> ProposeResponse:
+async def propose(question: str, profile: ProfileOut) -> ProposeResponse:
     """Classify, safety-check, then design and predict in one call. Nothing is persisted."""
-    classification = jev.classify(question)
+    classification = await jev.classify(question)
 
     decision = safety.evaluate(question, classification)
     if not decision.allowed:
         return ProposeResponse(safety=decision, classification=classification)
 
-    past = history.load(str(profile.id), classification.category)
-    designed = experiment_designer.design(question, profile, classification, past, running_questions(str(profile.id)))
+    profile_id = str(profile.id)
+    past, running = await read_together(
+        lambda: history.load(profile_id, classification.category),
+        lambda: running_questions(profile_id),
+    )
+    designed = await experiment_designer.design(question, profile, classification, past, running)
     proposal, prediction = designed.proposal, designed.prediction
 
     # The model's own output goes through the same rules before the user sees it.
