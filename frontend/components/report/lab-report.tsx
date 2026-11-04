@@ -134,7 +134,7 @@ export function LabReport({ id }: { id: string }) {
       {experiment.is_seeded && (
         <div role="note" aria-label="Sample experiment" className="mb-5 border-l-2 border-night pl-4">
           <p className="font-medium text-night">Sample experiment</p>
-          <p className="mt-1 text-body text-muted">This report is based on seeded example check-ins.</p>
+          <p className="mt-1 text-body text-muted">This report is based on seeded example check-ins{analysis.personal_guess ? " and an invented guess" : ""}.</p>
         </div>
       )}
       <p className="font-mono text-caption text-moss">Lab Report{completedOn ? ` · finished ${completedOn}` : ""}</p>

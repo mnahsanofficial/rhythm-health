@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { CheckinForm, CheckinSkeleton } from "@/components/checkins/checkin-form";
+import { CheckinSkeleton } from "@/components/checkins/checkin-chrome";
+import { CheckinForm } from "@/components/checkins/checkin-form";
 
 export const metadata: Metadata = { title: "Today's check-in · Rhythm" };
 

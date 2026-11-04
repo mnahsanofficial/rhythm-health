@@ -222,40 +222,30 @@ function Stage({ target }: { target: React.RefObject<HTMLDivElement | null> }) {
       <Layer><Hills /></Layer>
       <div className="absolute inset-0 lg:left-[28%]">
         {has("bedroom") && (
-          <motion.div data-scene="bedroom" className="absolute inset-0" style={{ opacity: bedroom }}>
-            <Layer><Bedroom poses={{ standPhone, phoneDown, lie, sitUp, standMug }} /></Layer>
-          </motion.div>
+          <FadeLayer scene="bedroom" opacity={bedroom}><Bedroom poses={{ standPhone, phoneDown, lie, sitUp, standMug }} /></FadeLayer>
         )}
         {has("office") && (
-          <motion.div data-scene="office" className="absolute inset-0" style={{ opacity: office }}>
-            <Layer><Office /></Layer>
-          </motion.div>
+          <FadeLayer scene="office" opacity={office}><Office /></FadeLayer>
         )}
         {has("street") && (
-          <motion.div data-scene="street" className="absolute inset-0" style={{ opacity: street }}>
-            <Layer><Street walkerX={walkerX} step={[stepA, stepB]} evening={withCup} night={withoutCup} /></Layer>
-          </motion.div>
+          <FadeLayer scene="street" opacity={street}><Street walkerX={walkerX} step={[stepA, stepB]} evening={withCup} night={withoutCup} /></FadeLayer>
         )}
         {has("dinner") && (
-          <motion.div data-scene="dinner" className="absolute inset-0" style={{ opacity: dinner }}>
-            <Layer><Dinner /></Layer>
-          </motion.div>
+          <FadeLayer scene="dinner" opacity={dinner}><Dinner /></FadeLayer>
         )}
       </div>
 
       <motion.div className="absolute inset-0 bg-night" style={{ opacity: dark }} />
 
-      <motion.div className="absolute inset-0" style={{ opacity: stars }}>
-        <Layer><Stars /></Layer>
-      </motion.div>
+      <FadeLayer opacity={stars}><Stars /></FadeLayer>
       <motion.div className="absolute top-0 left-0 -mt-6 -ml-6 size-12" style={{ x: moonX, y: moonY, opacity: moonOpacity }}>
         <svg viewBox="0 0 48 48" className="size-full"><Moon cx={24} cy={24} r={20} /></svg>
       </motion.div>
 
       <div className="absolute inset-0 lg:left-[28%]">
-        {has("bedroom") && <motion.div className="absolute inset-0" style={{ opacity: bedside }}><Layer><Glow {...LAMPS.bedside} /></Layer></motion.div>}
-        {has("dinner") && <motion.div className="absolute inset-0" style={{ opacity: pendant }}><Layer><Glow {...LAMPS.pendant} /></Layer></motion.div>}
-        {has("street") && <motion.div className="absolute inset-0" style={{ opacity: streetLamp }}><Layer><Glow {...LAMPS.street} /></Layer></motion.div>}
+        {has("bedroom") && <FadeLayer opacity={bedside}><Glow {...LAMPS.bedside} /></FadeLayer>}
+        {has("dinner") && <FadeLayer opacity={pendant}><Glow {...LAMPS.pendant} /></FadeLayer>}
+        {has("street") && <FadeLayer opacity={streetLamp}><Glow {...LAMPS.street} /></FadeLayer>}
       </div>
 
       <div className="absolute right-[var(--gutter)] bottom-6 rounded-pill bg-paper/95 px-4 py-2">
@@ -263,6 +253,15 @@ function Stage({ target }: { target: React.RefObject<HTMLDivElement | null> }) {
         <DayStrip day={4} opacity={day4} overlay />
       </div>
     </>
+  );
+}
+
+/** One full-stage illustration layer that fades with the scroll. */
+function FadeLayer({ opacity, scene, children }: { opacity: MotionValue<number>; scene?: string; children: React.ReactNode }) {
+  return (
+    <motion.div data-scene={scene} className="absolute inset-0" style={{ opacity }}>
+      <Layer>{children}</Layer>
+    </motion.div>
   );
 }
 

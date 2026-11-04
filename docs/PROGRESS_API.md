@@ -2,7 +2,7 @@
 
 `GET /api/experiments/{id}/progress` is the read-only source of day states for web and the planned mobile Progress screen. It accepts the user's Bearer access token, never a user/profile ID or request body. It makes no model call or database write and needs no migration.
 
-Sources: [route](../backend/app/api/experiments.py), [response models](../backend/app/schemas/progress.py), [timeline assembly](../backend/app/services/timeline.py), [existing rolling-day calculation](../backend/app/services/progress.py) and [shared adherence rule](../backend/app/services/analysis.py).
+Sources: [route](../backend/app/api/experiments.py), [response models](../backend/app/schemas/progress.py), [timeline assembly](../backend/app/services/timeline.py), [existing rolling-day calculation](../backend/app/services/progress.py) and [shared adherence rule](../backend/app/services/analysis/).
 
 ## Response
 
@@ -104,7 +104,7 @@ Final verification on 31 Oct 2026 after fetching and merging `origin/main` at `6
 
 `baseline_summary` is an additive, nullable response field. The [timeline service](../backend/app/services/timeline.py) returns it only during the active test phase (`progress.state = in_progress`, `progress.phase = intervention`), after the existing rolling baseline intervals have finished. It is null on baseline days, before start, after the experiment ends and after completion. Clients tolerate older responses that omit it. There is no migration, new endpoint, write or AI request.
 
-The [deterministic summary](../backend/app/services/analysis.py) uses only stored `phase = baseline` check-ins, without filling missing days or dropping outliers. [Models](../backend/app/schemas/progress.py):
+The [deterministic summary](../backend/app/services/analysis/) uses only stored `phase = baseline` check-ins, without filling missing days or dropping outliers. [Models](../backend/app/schemas/progress.py):
 
 - `BaselineSummary`: `days_recorded`, `days_planned`, `metrics`.
 - Each `BaselineMetric`: `key`, `label`, `n`, nullable `minimum`/`maximum`, nullable `yes_count`, and `description`.

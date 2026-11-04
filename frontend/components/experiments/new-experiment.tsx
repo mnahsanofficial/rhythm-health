@@ -9,7 +9,6 @@ import { getProfile } from "@/lib/data/profile";
 import type { Profile } from "@/lib/types/api";
 import { button } from "@/components/ui/button";
 
-export { ForecastCard } from "@/components/experiments/experiment-flow";
 
 const secondary = button("secondary");
 

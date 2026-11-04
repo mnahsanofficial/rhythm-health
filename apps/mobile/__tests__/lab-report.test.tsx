@@ -377,6 +377,11 @@ describe('written report', () => {
     expect(count(WRITE)).toBe(2);
   });
 
+  test("a sample with a guess says the guess is invented too", async () => {
+    await openReport(guessed({ ...labReport, experiment: { ...labReport.experiment, is_seeded: true } }));
+    expect(await screen.findByText('This report is based on seeded example check-ins and an invented guess.')).toBeVisible();
+  });
+
   test('the daily limit shows its message, keeps the results and offers no retry', async () => {
     await openReport();
     const text = "You've used all of today's written reports. You can write this one tomorrow.";

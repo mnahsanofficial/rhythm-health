@@ -309,7 +309,7 @@ describe('calibration card', () => {
     const example = await screen.findByTestId('calibration-example');
     expect(example.props.accessibilityLabel).toBe('Example, not your results');
     expect(within(example).getByText('Example')).toBeVisible();
-    expect(within(example).getByText(/Built from invented check-ins/)).toBeVisible();
+    expect(within(example).getByText("Built from invented check-ins and an invented guess. It isn't part of your results.")).toBeVisible();
     expect(within(example).getByText('Guessed +5% · It changed +10.9% · Off by 5.9 points')).toBeVisible();
     expect(screen.queryAllByTestId('calibration-point')).toHaveLength(0);
     expect(screen.queryByText(/on average/)).toBeNull();

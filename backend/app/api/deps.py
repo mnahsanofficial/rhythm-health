@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from app.integrations.supabase import SupabaseUnavailable
 from app.repositories import experiments, profiles
+from app.schemas.rows import ExperimentRow
 
 
 def db_error() -> HTTPException:
@@ -21,7 +22,7 @@ def profile_id_for(user_id: str) -> str:
     return row["id"]
 
 
-def owned_experiment(user_id: str, experiment_id: UUID) -> dict:
+def owned_experiment(user_id: str, experiment_id: UUID) -> ExperimentRow:
     """The experiment, only if it belongs to the token's user (otherwise 404)."""
     profile_id = profile_id_for(user_id)
     try:
