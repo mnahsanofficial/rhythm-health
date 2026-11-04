@@ -117,7 +117,7 @@ export function DayStory() {
             change, then compare the forecast with what you observed.
           </p>
           <div className="mt-7"><HomeCta wide="hero" /></div>
-          <p className="mt-6 border-t border-line pt-4 text-caption text-muted">
+          <p className="mt-6 max-w-[46ch] border-t border-line pt-4 text-caption text-muted">
             An example day, illustrated. He&apos;s on day 3 of a 10-day experiment. Scroll to follow it.
           </p>
         </StorySection>
