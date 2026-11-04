@@ -179,3 +179,21 @@ test("suggestions sit under the question field and fill it", async ({ page }) =>
   await chips.first().click();
   await expect(field).toHaveValue(words);
 });
+
+test("the other screens keep the same button edges, and no banned words", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const counts = await installApiMocks(page);
+  await answerOnboardingWithMouse(page);
+  await createAccountAndSaveProfile(page, counts);
+  await page.route(`${API}/api/experiments?**`, route => route.fulfill({ json: [] }));
+  for (const [path, heading] of [["/demo", /Explore a sample experiment/], ["/history", "Your experiment history"]] as const) {
+    await page.goto(path);
+    await page.getByRole("heading", { name: heading }).first().waitFor();
+    await page.waitForTimeout(450);
+    const faint = await page.evaluate(line => [...document.querySelectorAll("main button, main a[href]")]
+      .filter(el => parseFloat(getComputedStyle(el).borderTopWidth) > 0 && getComputedStyle(el).borderTopColor === line)
+      .map(el => el.textContent), rgb(THEMES.light.border));
+    expect.soft(faint, `${path}: buttons with a divider's edge`).toEqual([]);
+    await expect.soft(page.locator("main")).not.toContainText(/discover|unlock|journey/i);
+  }
+});
