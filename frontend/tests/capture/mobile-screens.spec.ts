@@ -17,16 +17,21 @@ const running = { ...experiment, id: "running-id", status: "active", started_at:
 const timeline = timelineFixture(running as never, { recorded: [1, 3], missed: [2], nextDayAt: "2026-11-05T10:00:00Z" });
 const USER = { id: "11111111-1111-4111-8111-111111111111", aud: "authenticated", role: "authenticated", email: "learner@example.invalid", app_metadata: {}, user_metadata: {}, created_at: "2026-10-01T00:00:00Z" };
 
-async function mocks(page: Page, state: { hasProfile: boolean; active: unknown[] }) {
-  await page.route(/supabase\.test\.invalid/, route => route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" }, json: {
-    access_token: "fake-access-token", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: "fake-refresh-token", user: USER,
-  } }));
-  await page.route(/api\.test\.invalid/, route => {
+type State = { hasProfile: boolean; active: unknown[]; saved: boolean; blocked: string[] };
+const APP = process.env.MOBILE_URL ?? "http://127.0.0.1:8092";
+const savedAnswers = [{ id: "saved", experiment_id: "running-id", day_number: 4, phase: "intervention", metric_values: { morning_energy: 7, sleep_quality: 7 }, intervention_completed: false, note: null }];
+
+/** Only the app's own origin reaches the network. Auth and API calls are answered here, whatever host the build points at, and anything else is refused. */
+async function mocks(page: Page, state: State) {
+  await page.route("**/*", route => {
     const request = route.request();
-    const path = new URL(request.url()).pathname + new URL(request.url()).search;
+    const url = new URL(request.url());
+    if (url.origin === new URL(APP).origin) return route.continue();
+    const path = url.pathname + url.search;
     const headers = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
     const json = (body: unknown, status = 200) => route.fulfill({ status, headers, json: body });
     if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (path.startsWith("/auth/v1/")) return json({ access_token: "fake-access-token", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: "fake-refresh-token", user: USER });
     if (path === "/api/profile") {
       if (request.method() === "PUT") { state.hasProfile = true; return json(profile); }
       return state.hasProfile ? json(profile) : json({ detail: "Profile not found" }, 404);
@@ -35,10 +40,15 @@ async function mocks(page: Page, state: { hasProfile: boolean; active: unknown[]
     if (path === "/api/experiments?status=completed") return json([writtenLabReport.experiment]);
     if (path === "/api/experiments/propose") return json({ ...proposeResponse, personal_guess_available: true });
     if (path === "/api/experiments/calibration") return json({ points: [], trend: null, average_off_by_points: null, example: null, count: 0 });
-    if (path.endsWith("/progress")) return json(timeline);
-    if (path.endsWith("/checkins")) return json([]);
+    if (path.endsWith("/progress")) return json(state.saved ? timelineFixture(running as never, { recorded: [1, 3, 4], missed: [2], nextDayAt: "2026-11-05T10:00:00Z" }) : timeline);
+    if (path.endsWith("/checkins")) {
+      if (request.method() === "POST") { state.saved = true; return json(savedAnswers[0]); }
+      return json(state.saved ? savedAnswers : []);
+    }
     if (path.endsWith("/report")) return json(writtenLabReport);
-    return json({ detail: "Not mocked" }, 404);
+    if (path.startsWith("/api/")) return json({ detail: "Not mocked" }, 404);
+    state.blocked.push(url.host);
+    return route.abort();
   });
 }
 
@@ -46,7 +56,7 @@ for (const scheme of ["light", "dark"] as const) {
   test(`phone ${scheme}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.setViewportSize({ width: 390, height: 844 });
-    const state = { hasProfile: false, active: [] as unknown[] };
+    const state: State = { hasProfile: false, active: [], saved: false, blocked: [] };
     await mocks(page, state);
     const folder = `${out}/${scheme}`;
     mkdirSync(folder, { recursive: true });
@@ -58,7 +68,9 @@ for (const scheme of ["light", "dark"] as const) {
       await page.screenshot({ path: `${folder}/${name}.png` });
     };
 
-    await page.goto("http://127.0.0.1:8092");
+    // In a development build on web, Expo's warning toast covers the page. It reports web-only warnings (BackHandler, SVG props).
+    await page.addInitScript(() => addEventListener("DOMContentLoaded", () => { const style = document.createElement("style"); style.textContent = "#error-toast { display: none !important; }"; document.head.append(style); }));
+    await page.goto(APP);
     await button("Sign in").click();
     await page.getByLabel("Email").fill("learner@example.invalid");
     await page.getByLabel("Password", { exact: true }).fill("fake-test-password");
@@ -130,11 +142,24 @@ for (const scheme of ["light", "dark"] as const) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("radio", { name: "Not today" }).click();
     for (const metric of proposeResponse.proposal!.metrics) await page.getByRole("radio", { name: `${metric.label}: 7` }).click();
+    await shot("23-checkin-answered");
     await button("Save check-in").click();
-    await page.getByText(/Day 4 recorded/).first().waitFor();
+    await button("Continue").waitFor();
     await page.waitForTimeout(700);
-    await page.screenshot({ path: `${folder}/23-celebration.png` });
-    await page.waitForTimeout(2200);
-    await page.screenshot({ path: `${folder}/24-today-after.png` });
+    await page.screenshot({ path: `${folder}/24-celebration-after-save.png` });
+    // react-native-web reports a screen reader as on, so here the celebration waits for a tap, as it does with VoiceOver.
+    await button("Continue").click();
+    await shot("25-today-after-save", () => button("Edit answers").waitFor());
+    await button("Edit answers").click();
+    await button("Update check-in").waitFor();
+    await page.getByRole("radio", { name: "Morning energy: 8" }).click();
+    await shot("26-checkin-updating");
+    await button("Update check-in").click();
+    await button("Continue").waitFor();
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${folder}/27-celebration-after-update.png` });
+    await button("Continue").click();
+    await shot("28-today-after-update", () => button("Edit answers").waitFor());
+    console.log(`refused hosts: ${state.blocked.length ? [...new Set(state.blocked)].join(", ") : "none"}`);
   });
 }
