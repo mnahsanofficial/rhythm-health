@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { isAuthConfigured, missingAuthVariables, supabase } from "@/lib/auth/supabase";
+import { button } from "@/components/ui/button";
 
 export type AuthMode = "sign-in" | "sign-up";
 
@@ -14,7 +15,7 @@ type Props = {
 };
 
 /** Shared by both fields, so the password looks exactly like the email. */
-const FIELD = "min-h-12 w-full rounded-card border border-line bg-paper px-4 text-lead text-ink focus-visible:border-moss";
+const FIELD = "min-h-12 w-full rounded-control border border-control bg-paper px-4 text-lead text-ink focus-visible:border-moss";
 
 const COPY = {
   "sign-in": { submit: "Sign in", busy: "Signing in…", switchPrompt: "New here?", switchLabel: "Create an account" },
@@ -157,7 +158,7 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
         type="submit"
         disabled={busy}
         aria-busy={busy}
-        className="min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60"
+        className={`${button("primary")} text-lead`}
       >
         {busy ? copy.busy : copy.submit}
       </button>

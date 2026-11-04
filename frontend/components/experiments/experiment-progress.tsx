@@ -7,9 +7,10 @@ import Link from "next/link";
 import { useId, useState } from "react";
 import { checkInReminder } from "@/lib/calendar/check-in-reminder";
 import type { Checkin, Experiment, ExperimentTimeline, MetricValue } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
 
-const primaryButton = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
-const secondaryButton = "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
+const primaryButton = `${button("primary")} text-lead`;
+const secondaryButton = button("secondary");
 
 function formatValue(value: MetricValue): string {
   if (typeof value === "boolean") return value ? "Yes" : "No";

@@ -33,7 +33,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
             // which steals focus from the radio and breaks arrow keys.
             <label
               key={option.value}
-              className="relative flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-line bg-paper px-4 py-3 transition-[scale] duration-[var(--motion-press)] active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss"
+              className="relative flex min-h-14 cursor-pointer items-center gap-3 rounded-control border border-control bg-paper px-4 py-3 transition-[scale] duration-[var(--motion-press)] active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-3 has-focus-visible:outline-moss"
             >
               {selected && (
                 <motion.span
@@ -57,7 +57,7 @@ export function ChoiceGroup<T extends string>({ legend, options, value, onChange
               <span
                 aria-hidden="true"
                 className={`relative grid size-6 place-items-center rounded-full border-2 ${
-                  selected ? "border-moss bg-moss" : "border-line bg-paper"
+                  selected ? "border-moss bg-moss" : "border-control bg-paper"
                 }`}
               >
                 <svg viewBox="0 0 16 16" className="size-3.5">

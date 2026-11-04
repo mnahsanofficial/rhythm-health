@@ -115,3 +115,15 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, using the same browser sc
 **Still open, not new:** A1 (control borders), A2 (landing card), A9 (disabled "Skip"), A7 and A8 (buttons) are fixed with their screens in PR 2 and PR 3.
 
 **Not checked:** VoiceOver and TalkBack; native rendering on a device (no simulator here, so the iPhone list in the PR covers it); text over the landing scene, which the script can't measure.
+
+## Re-audit: PR 2, web demo path
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, on 13 screens at 390px and 1440px, light and dark.
+
+**Fixed from the first audit:** A1 (control edges now 3:1 or more), A2 (solid landing card), A7 and A8 (one primary, buttons fit their words), A9 (no "Skip" on a required step), A13 (scale ends line up). Rules are now measured by `tests/e2e/design-rules.spec.ts`.
+
+**Found and fixed in this pass:** disabled primary text was 4.11:1 on its fill. WCAG exempts disabled controls, but it's now 5.85:1 anyway.
+
+**Result:** no text under AA, no target under 44px, no missing label or name, in either mode.
+
+**Not checked:** screen readers; landing text over the moving scene is on a solid card now, so it's measured against the card.

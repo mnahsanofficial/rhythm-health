@@ -4,14 +4,16 @@ import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
 
 import { motion, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
+import { button } from "@/components/ui/button";
 import { signedPercent } from "@/lib/report/copy";
 import type { PersonalGuessComparison, PredictionComparison } from "@rhythm-health/contract";
 
 /** The original prediction stays fixed; a user action reveals the measured comparison. */
-export function PredictionVsReality({ comparison, metricLabel, personalGuess }: {
+export function PredictionVsReality({ comparison, metricLabel, personalGuess, onRevealed }: {
   comparison: PredictionComparison;
   metricLabel: string;
   personalGuess?: PersonalGuessComparison | null;
+  onRevealed?: () => void;
 }) {
   const reduce = useReducedMotion();
   const [replay, setReplay] = useState(0);
@@ -41,8 +43,11 @@ export function PredictionVsReality({ comparison, metricLabel, personalGuess }: 
         <button
           type="button"
           aria-controls={resultId}
-          onClick={() => setReplay(n => n + 1)}
-          className="min-h-12 rounded-pill bg-moss px-6 font-medium text-on-accent transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+          onClick={() => {
+            setReplay(n => n + 1);
+            onRevealed?.();
+          }}
+          className={button(revealed ? "secondary" : "primary")}
         >
           {revealed ? "Replay comparison" : "Reveal my result"}
         </button>

@@ -12,6 +12,7 @@ import { listExperiments } from "@/lib/data/experiments";
 import { getReport } from "@/lib/data/reports";
 import { SIGNAL_COPY, signedPercent } from "@/lib/report/copy";
 import type { Experiment, LabReport } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
 
 type HistoryLoad =
   | { kind: "loading" }
@@ -19,7 +20,7 @@ type HistoryLoad =
   | { kind: "error"; status: number; message: string };
 
 const secondary = "inline-flex min-h-11 items-center rounded-pill px-4 text-body font-medium text-moss underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss";
-const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-body font-medium text-on-accent hover:bg-moss-deep";
+const primary = button("primary");
 
 export function ExperimentHistory() {
   const router = useRouter();

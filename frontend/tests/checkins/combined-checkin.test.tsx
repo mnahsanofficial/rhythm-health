@@ -78,7 +78,7 @@ describe("today's check-in for several experiments", () => {
     render(<CombinedCheckin />);
     await fill(user);
     await user.type(screen.getByRole("textbox", { name: /Anything unusual/ }), " late night ");
-    await user.click(screen.getByRole("button", { name: "Save today's check-in" }));
+    await user.click(screen.getByRole("button", { name: "Save check-in" }));
     expect(await screen.findByRole("heading", { name: "Today's check-ins are recorded." })).toBeVisible();
     expect(saved).toEqual({ revision: "rev-1", answers: { [`${A}:energy`]: 7, [`${B}:focus`]: 6 }, changes: { [A]: true }, note: "late night" });
     expect(screen.getByRole("link", { name: "Back to Your lab" })).toHaveAttribute("href", "/");
@@ -96,7 +96,7 @@ describe("today's check-in for several experiments", () => {
     expect(within(energy).getByRole("radio", { name: /^8/ })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Not today" })).toBeChecked();
     expect(screen.getByRole("textbox", { name: /Anything unusual/ })).toHaveValue("earlier note");
-    expect(screen.getByRole("button", { name: "Update today's check-in" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Update check-in" })).toBeVisible();
   });
 
   it("stops before sending when answers are missing", async () => {
@@ -105,7 +105,7 @@ describe("today's check-in for several experiments", () => {
     const post = vi.fn(() => HttpResponse.json(today));
     server.use(http.post(`${api}/api/checkins/today`, post));
     render(<CombinedCheckin />);
-    await user.click(await screen.findByRole("button", { name: "Save today's check-in" }));
+    await user.click(await screen.findByRole("button", { name: "Save check-in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("A few answers are still missing.");
     expect(post).not.toHaveBeenCalled();
   });
@@ -116,7 +116,7 @@ describe("today's check-in for several experiments", () => {
     server.use(http.post(`${api}/api/checkins/today`, () => HttpResponse.json({ detail: [{ field: `change:${A}`, message: "Required on a test day" }] }, { status: 422 })));
     render(<CombinedCheckin />);
     await fill(user);
-    await user.click(screen.getByRole("button", { name: "Save today's check-in" }));
+    await user.click(screen.getByRole("button", { name: "Save check-in" }));
     expect(await screen.findByText("Required on a test day")).toBeVisible();
     expect(within(screen.getByRole("group", { name: /Morning energy/ })).getByRole("radio", { name: /^7/ })).toBeChecked();
   });
@@ -127,7 +127,7 @@ describe("today's check-in for several experiments", () => {
     server.use(http.post(`${api}/api/checkins/today`, () => HttpResponse.json(limitDetail, { status: 409 })));
     render(<CombinedCheckin />);
     await fill(user);
-    await user.click(screen.getByRole("button", { name: "Save today's check-in" }));
+    await user.click(screen.getByRole("button", { name: "Save check-in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Today's check-in has changed.");
     install({ ...today, revision: "rev-2", experiments: [today.experiments[1], { ...today.experiments[0], id: "cccccccc-1111-4111-8111-111111111111" }] });
     await user.click(screen.getByRole("button", { name: "Reload today's check-in" }));

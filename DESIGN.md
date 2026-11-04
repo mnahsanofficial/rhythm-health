@@ -79,6 +79,15 @@ Scale: `text-caption` 14, `text-body` 16, `text-lead` 18 (px, fixed). Headings a
 
 Use Tailwind's spacing scale. Keep the typography and palette consistent across public and signed-in pages. Current comparison markers use a border rather than a shadow.
 
+## Buttons
+
+Use `button("primary" | "secondary" | "quiet")` from `components/ui/button.ts`, on `<button>` and `<Link>` alike. `tests/e2e/design-rules.spec.ts` measures these on the demo path, in both modes, at 390px and 1440px.
+
+- At least 48px high, and each fits its words, up to `--button-max` (320px).
+- One primary per screen. When the next step changes, the primary moves: on the Lab Report it goes from Reveal my result to Write my report.
+- On phones, only the single primary pinned to the bottom may be full width.
+- Choices (Yes / Not today, scale numbers, answer rows) aren't buttons, so they may fill their row. Their edge and any input's edge use `control`.
+
 ## Layout
 
 Every page works at any width from 320px to 2560px, and at 200% browser zoom. There are no fixed "phone" and "desktop" designs: sizes flow between them.

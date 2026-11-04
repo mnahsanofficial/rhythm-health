@@ -41,7 +41,7 @@ describe("landing day story", () => {
     expect(screen.getByText(/likely signal or just noise/)).toBeVisible();
     expect(screen.getByRole("heading", { level: 2, name: "How it works" })).toBeVisible();
 
-    const ctas = screen.getAllByRole("link", { name: "Run your first experiment" });
+    const ctas = screen.getAllByRole("link", { name: "Start an experiment" });
     expect(ctas.length).toBeGreaterThan(0);
     for (const cta of ctas) expect(cta).toHaveAttribute("href", "/onboarding");
     const last = ctas.at(-1)!;

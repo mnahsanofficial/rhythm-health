@@ -37,7 +37,7 @@ async function measure(page: Page, wide: boolean): Promise<Problems> {
     const describe = (el: Element) => `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().slice(0, 40)}"`;
 
     const header = document.querySelector("body > * header, header")!;
-    const frames = [header, ...document.querySelector("main")!.children].filter(visible);
+    const frames = [header, ...(document.querySelector("main [data-screen]") ?? document.querySelector("main")!).children].filter(visible);
     const offCentre = frames
       .map(el => { const r = el.getBoundingClientRect(); return { el, gap: Math.abs(r.left - (vw - r.right)) }; })
       .filter(({ gap }) => gap > 2)

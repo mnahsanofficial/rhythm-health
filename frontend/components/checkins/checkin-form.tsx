@@ -12,6 +12,7 @@ import { useSession } from "@/lib/auth/session";
 import { listCheckins, submitCheckin } from "@/lib/data/checkins";
 import { getExperiment } from "@/lib/data/experiments";
 import { MAX_NOTE_LENGTH, type Checkin, type Experiment, type MetricValue } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
 
 type Load =
   | { kind: "loading" }
@@ -26,10 +27,8 @@ type Answers = {
   note: string;
 };
 
-export const primaryButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-transform duration-[var(--motion-press)] motion-reduce:transition-none hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
-export const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss";
+export const primaryButton = `${button("primary")} text-lead`;
+export const secondaryButton = button("secondary");
 
 export function without(errors: Record<string, string>, key: string): Record<string, string> {
   const next = { ...errors };
@@ -340,7 +339,7 @@ export function CheckinForm({ id }: { id: string }) {
                   <label
                     key={label}
                     className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-                      selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
+                      selected ? "border-moss bg-moss text-on-accent" : "border-control bg-paper text-ink hover:border-ink"
                     }`}
                   >
                     <input
@@ -386,14 +385,14 @@ export function CheckinForm({ id }: { id: string }) {
             value={answers.note}
             onChange={(e) => setAnswers((a) => ({ ...a, note: e.target.value }))}
             placeholder="Late night, a stressful day, a long run…"
-            className="mt-3 w-full resize-y rounded-card border border-line bg-paper p-4 text-body text-ink placeholder:text-muted/70 focus-visible:border-moss"
+            className="mt-3 w-full resize-y rounded-control border border-control bg-paper p-4 text-body text-ink placeholder:text-muted/70 focus-visible:border-moss"
           />
           {fieldErrors.note && <p className="mt-2 text-caption font-medium text-clay">{fieldErrors.note}</p>}
         </div>
 
-        <div className="sticky bottom-0 -mx-[var(--gutter)] border-t border-line bg-oat/95 px-[var(--gutter)] py-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
-          <button type="submit" disabled={saving} aria-busy={saving} className={`${primaryButton} w-full sm:w-auto`}>
-            {saving ? "Saving…" : alreadyToday ? "Update today's check-in" : "Save today's check-in"}
+        <div className="sticky bottom-0 -mx-[var(--gutter)] border-t border-line bg-oat px-[var(--gutter)] py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+          <button type="submit" disabled={saving} aria-busy={saving} className={`${primaryButton} w-full max-w-none sm:w-fit`}>
+            {saving ? "Saving…" : alreadyToday ? "Update check-in" : "Save check-in"}
           </button>
         </div>
       </form>

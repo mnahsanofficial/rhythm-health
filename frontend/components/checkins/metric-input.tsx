@@ -86,7 +86,7 @@ function ScaleInput({
   const options = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <>
-      <p id={descriptionId} className="mt-2 flex flex-wrap justify-between gap-x-5 gap-y-1 text-body text-muted">
+      <p id={descriptionId} className="mt-2 flex max-w-none flex-wrap justify-between gap-x-5 gap-y-1 text-body text-muted">
         <span className="min-w-0 max-w-full [overflow-wrap:anywhere]">{min} {low}</span>
         <span className="min-w-0 max-w-full [overflow-wrap:anywhere]">{max} {high}</span>
       </p>
@@ -98,7 +98,7 @@ function ScaleInput({
             <label
               key={n}
               className={`grid min-h-12 cursor-pointer place-items-center rounded-card border font-mono text-lead tabular-nums transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-95 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-                selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
+                selected ? "border-moss bg-moss text-on-accent" : "border-control bg-paper text-ink hover:border-ink"
               }`}
             >
               <input
@@ -134,7 +134,7 @@ function YesNo({ name, value, onChange }: { name: string; value: boolean | undef
           <label
             key={label}
             className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-              selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
+              selected ? "border-moss bg-moss text-on-accent" : "border-control bg-paper text-ink hover:border-ink"
             }`}
           >
             <input type="radio" name={name} checked={selected} onChange={() => onChange(v)} className="sr-only" />
@@ -170,7 +170,7 @@ function NumberInput({
         value={text}
         onChange={(e) => onChange(e.target.value)}
         aria-label={duration ? `${label}, in minutes` : label}
-        className="min-h-12 w-32 rounded-card border border-line bg-paper px-4 font-mono text-lead text-ink tabular-nums focus-visible:border-moss"
+        className="min-h-12 w-32 rounded-control border border-control bg-paper px-4 font-mono text-lead text-ink tabular-nums focus-visible:border-moss"
       />
       {duration && <span className="text-body text-muted">minutes</span>}
     </div>

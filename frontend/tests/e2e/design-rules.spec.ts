@@ -84,7 +84,7 @@ for (const mode of ["light", "dark"] as const) for (const width of [390, 1440]) 
 
     await page.goto("/");
     await page.getByRole("heading", { name: /Stop guessing/ }).first().waitFor();
-    await expectRules(page, "landing", width, mode, 2); // The first and last scenes, a screen apart.
+    await expectRules(page, "landing", width, mode, 3); // The story's start and end, and the page's end: screens apart.
 
     await page.goto("/sign-in");
     await page.getByRole("heading").first().waitFor();
@@ -129,10 +129,12 @@ test("the Lab Report's next step moves from revealing to writing", async ({ page
   await createAccountAndSaveProfile(page, counts);
   await page.route(`${API}/api/experiments/${completedId}/report`, route => route.fulfill({ json: { ...report, narrative: null } }));
   await page.goto(`/experiments/${completedId}/report`);
+  await page.getByRole("button", { name: "Reveal my result" }).waitFor();
+  expect((await measure(page)).filled.map(f => f.name)).toEqual(["Reveal my result"]);
   await page.getByRole("button", { name: "Reveal my result" }).click();
-  await page.waitForTimeout(100);
-  const { filled } = await measure(page);
-  expect(filled.map(f => f.name)).toEqual(["Write my report"]);
+  await page.mouse.move(0, 0); // Hover changes the fill this measures.
+  await page.waitForTimeout(300);
+  expect((await measure(page)).filled.map(f => f.name)).toEqual(["Write my report"]);
 });
 
 test("onboarding names the steps and doesn't offer Skip on a required one", async ({ page }) => {

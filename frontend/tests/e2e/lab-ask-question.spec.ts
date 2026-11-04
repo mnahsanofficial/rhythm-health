@@ -15,7 +15,7 @@ for (const width of [390, 768, 1440]) {
       await page.goto("/");
       await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
       const field = page.getByRole("textbox", { name: "Your question or goal" });
-      const submit = page.getByRole("button", { name: "Design my experiment" });
+      const submit = page.getByRole("button", { name: "Design experiment" });
       await expect(field).toBeVisible();
       await expect(page.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
       await expect(submit).toBeDisabled();
@@ -123,7 +123,7 @@ test("home explains the limit when the backend refuses a proposal", async ({ pag
     json: { detail: { code: "active_limit_reached", message: "You're running 3 experiments, the most at once. Finish one to start another.", limit: 3 } },
   }));
   await field.fill("Does less caffeine improve my focus?");
-  await page.getByRole("button", { name: "Design my experiment" }).click();
+  await page.getByRole("button", { name: "Design experiment" }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText("You're running 3 experiments");
   expect(counts.saves).toBe(0);
   // Already on Your lab, so this reloads rather than linking to the same page.

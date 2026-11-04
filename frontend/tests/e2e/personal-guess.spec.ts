@@ -22,7 +22,7 @@ for (const width of [390, 1440]) for (const reducedMotion of ["reduce", "no-pref
     });
     await page.goto("/experiments/new");
     await page.getByRole("textbox", { name: "Your question or goal" }).fill("Does an evening walk help my morning energy?");
-    await page.getByRole("button", { name: "Design my experiment" }).click();
+    await page.getByRole("button", { name: "Design experiment" }).click();
     const input = page.getByRole("textbox", { name: "Your guess for Morning energy" });
     await expect(input).toBeVisible();
     await expect(page.getByText("The original forecast")).toHaveCount(0);
@@ -33,7 +33,7 @@ for (const width of [390, 1440]) for (const reducedMotion of ["reduce", "no-pref
       await page.screenshot({ path: `../docs/screenshots/personal-guess/${width}-${state}.png`, fullPage: true });
     };
     await capture("guess-before-ai");
-    await page.getByRole("button", { name: "Reveal the AI prediction" }).click();
+    await page.getByRole("button", { name: "Show prediction" }).click();
     await expect(page.getByText("The original forecast")).toBeVisible();
     await expect(input).toHaveCount(0);
     await capture("forecast");

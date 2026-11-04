@@ -58,11 +58,11 @@ for (const width of [390, 1440]) {
       await expect(progress).toHaveAttribute("aria-valuenow", "3");
       await capture("answers", "after");
       await expect(page.getByRole("status").filter({ hasText: "3 of 3 answered" })).toBeVisible();
-      await page.getByRole("button", { name: "Save today's check-in" }).click();
+      await page.getByRole("button", { name: "Save check-in" }).click();
       await expect(page.getByRole("main").getByRole("alert")).toContainText("Please try saving again");
       await expect(page.getByRole("radio", { name: "Not today", exact: true })).toBeChecked();
       await capture("saved", "before");
-      await page.getByRole("button", { name: "Save today's check-in" }).click();
+      await page.getByRole("button", { name: "Save check-in" }).click();
       await expect(page.getByRole("heading", { name: "Day 4 recorded." })).toBeFocused();
       await capture("saved", "during");
       await capture("saved", "after");

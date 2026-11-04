@@ -216,7 +216,7 @@ describe("ask from Your lab", () => {
     render(home());
 
     const field = await screen.findByRole("textbox", { name: "Your question or goal" });
-    const design = screen.getByRole("button", { name: "Design my experiment" });
+    const design = screen.getByRole("button", { name: "Design experiment" });
     expect(screen.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
     expect(screen.getByText("A little curiosity, a little evidence")).toBeVisible();
     expect(screen.getByText("5–500 characters. One small change at a time.")).toBeVisible();
@@ -265,7 +265,7 @@ describe("ask from Your lab", () => {
     );
     render(home());
     await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), "  Does evening walking help my sleep?  ");
-    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    await user.click(screen.getByRole("button", { name: "Design experiment" }));
     expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
     expect(screen.getByRole("heading", { name: experiment.question })).toBeVisible();
     expect(router.push).not.toHaveBeenCalled();
@@ -304,7 +304,7 @@ describe("ask from Your lab", () => {
     expect(screen.getByRole("link", { name: "See your experiment" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Test another habit" }));
     expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue("Does less caffeine improve my focus?");
-    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    await user.click(screen.getByRole("button", { name: "Design experiment" }));
     expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
     expect(propose).toHaveBeenCalledOnce();
   });
@@ -318,7 +318,7 @@ describe("ask from Your lab", () => {
     );
     render(home());
     await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), "Does evening walking help my sleep?");
-    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    await user.click(screen.getByRole("button", { name: "Design experiment" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("You're running 3 experiments");
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
     // Already on Your lab, so a link to "/" would do nothing: this has to reload.

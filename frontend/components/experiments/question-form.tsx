@@ -1,4 +1,5 @@
 import { useId, type RefObject } from "react";
+import { button } from "@/components/ui/button";
 
 type Props = {
   inputRef: RefObject<HTMLTextAreaElement | null>;
@@ -8,6 +9,8 @@ type Props = {
   busy: boolean;
   blocked: boolean;
   headingLevel: 1 | 2;
+  suggestions?: string[];
+  onSuggestion?: (question: string) => void;
 };
 
 /** The same native form and validation on Your lab and the dedicated question page. */
@@ -19,6 +22,8 @@ export function QuestionForm({
   busy,
   blocked,
   headingLevel,
+  suggestions = [],
+  onSuggestion,
 }: Props) {
   const id = useId();
   const Heading = headingLevel === 1 ? "h1" : "h2";
@@ -34,7 +39,7 @@ export function QuestionForm({
         What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.
       </p>
       <form
-        className="mt-8"
+        className="mt-8 max-w-3xl"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -53,18 +58,33 @@ export function QuestionForm({
           aria-describedby={`${id}-help ${id}-count`}
           rows={4}
           placeholder="Does walking after dinner improve my sleep?"
-          className="mt-3 w-full resize-y rounded-card border border-line bg-paper p-4 text-body placeholder:text-muted disabled:opacity-70"
+          className="mt-3 w-full resize-y rounded-control border border-control bg-paper p-4 text-body placeholder:text-muted disabled:opacity-70"
         />
         <div className="mt-2 flex justify-between gap-4 text-caption text-muted">
           <p id={`${id}-help`}>5–500 characters. One small change at a time.</p>
           <span id={`${id}-count`} className="font-mono">{question.length}/500</span>
         </div>
+        {suggestions.length > 0 && (
+          <div role="group" aria-label="Suggestions" className="mt-4 flex flex-wrap gap-2">
+            {suggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                disabled={busy}
+                onClick={() => onSuggestion?.(suggestion)}
+                className="min-h-11 rounded-pill bg-accent-tint px-4 py-2 text-left text-body text-ink transition-[scale] duration-[var(--motion-press)] hover:text-accent active:scale-[0.98] disabled:opacity-60 motion-reduce:transition-none"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="submit"
           disabled={busy || blocked || length < 5 || length > 500}
-          className="mt-5 min-h-12 w-full rounded-pill bg-moss px-6 py-3 font-medium text-on-accent transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:w-auto"
+          className={`${button("primary")} mt-6`}
         >
-          {busy ? "Shaping your experiment…" : "Design my experiment"}
+          {busy ? "Shaping your experiment…" : "Design experiment"}
         </button>
       </form>
     </>

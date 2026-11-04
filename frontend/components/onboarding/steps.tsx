@@ -112,7 +112,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
         required
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="min-h-14 w-full rounded-card border border-line bg-paper px-4 font-mono text-lead text-ink tabular-nums focus-visible:border-moss"
+        className="min-h-14 w-full rounded-control border border-control bg-paper px-4 font-mono text-lead text-ink tabular-nums focus-visible:border-moss"
       />
     </label>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ExperimentProposal } from "@rhythm-health/contract";
+import { button } from "@/components/ui/button";
 
 /** Mount before the forecast so the first guess cannot be anchored by the AI range. */
 export function PersonalGuess({ proposal, onReveal, onBack, headingLevel }: {
@@ -42,7 +43,7 @@ export function PersonalGuess({ proposal, onReveal, onBack, headingLevel }: {
             aria-describedby="guess-help guess-frozen"
             value={answer}
             onChange={(event) => setAnswer(event.target.value)}
-            className="min-h-12 min-w-0 w-full rounded-card border border-line bg-paper px-4 text-lead"
+            className="min-h-12 min-w-0 w-full rounded-control border border-control bg-paper px-4 text-lead"
           />
           <span aria-hidden="true" className="font-mono text-title">%</span>
         </div>
@@ -53,11 +54,11 @@ export function PersonalGuess({ proposal, onReveal, onBack, headingLevel }: {
           <button
             type="submit"
             disabled={!valid}
-            className="min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-on-accent hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50"
+            className={button("primary")}
           >
-            Reveal the AI prediction
+            Show prediction
           </button>
-          <button type="button" onClick={onBack} className="min-h-11 rounded-pill border border-line px-5 py-2 font-medium">
+          <button type="button" onClick={onBack} className={button("secondary")}>
             Ask something else
           </button>
         </div>
