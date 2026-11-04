@@ -19,3 +19,6 @@ export function readConfig() {
   const web = new URL(apiUrl); web.port = '3000'; web.pathname = '/'; web.search = ''; web.hash = '';
   return { supabaseUrl, anonKey: values.EXPO_PUBLIC_SUPABASE_ANON_KEY!, apiUrl, webUrl: web.toString() };
 }
+
+/** Tools for testing on a device, off in a demo. Set EXPO_PUBLIC_DEV_TOOLS=1 in apps/mobile/.env.local to show them. */
+export const devToolsOn = () => process.env.EXPO_PUBLIC_DEV_TOOLS === '1';

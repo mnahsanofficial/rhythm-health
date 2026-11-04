@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import type { DayData } from '../today';
+import { devToolsOn } from './config';
 
 const DAILY = 'rhythm.next-day', TEST = 'rhythm.test';
 const dailyId = (experiment: string) => `${DAILY}.${experiment}`;
@@ -161,7 +162,7 @@ export class Reminders {
     return () => listener.remove();
   };
   test = () => {
-    if (!__DEV__ || Platform.OS === 'web') return Promise.resolve();
+    if (!devToolsOn() || Platform.OS === 'web') return Promise.resolve();
     return this.run(async () => {
       const { owner, choice, permission, data } = this.state;
       const entry = data?.find(item => !item.experiment.is_seeded && item.timeline.progress.state === 'in_progress');
