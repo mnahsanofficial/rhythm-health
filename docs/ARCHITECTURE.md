@@ -341,3 +341,11 @@ Design can add optional nullable `Metric.min_label` / `max_label`, stored in exi
 - Sentry events drop request details, local variables and breadcrumbs, so a report has less context. Prompts and check-in notes must never leave the app this way.
 - Web uses `@sentry/browser`, downloaded only when a DSN is set, rather than `@sentry/nextjs`. That leaves the build config alone the day before the demo, but gives no source maps or server-side capture.
 - `/health` stays as a plain liveness check, because the web app's status badge uses it.
+
+## Continuous integration (4 Nov 2026)
+
+**What:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull request and on `main`. The `checks` job runs lint, typecheck, root `npm test` (with `logs:check`), `contract:check`, `brand:check`, the web build and backend `pytest`. The `browser` job runs the Playwright suite.
+
+**Why:** until now these ran only if someone remembered to run them on their own machine.
+
+**Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.
