@@ -1,8 +1,8 @@
 import type { Experiment, ProposeResponse, SaveExperimentRequest } from '@rhythm-health/contract';
 import { apiPost } from './api';
 
-export const proposeExperiment = (token: string, question: string): Promise<ProposeResponse> =>
-  apiPost(token, '/api/experiments/propose', { question }, "Your question hasn't been submitted successfully.");
+export const proposeExperiment = (token: string, question: string, continueAnyway = false): Promise<ProposeResponse> =>
+  apiPost(token, '/api/experiments/propose', continueAnyway ? { question, continue_anyway: true } : { question }, "Your question hasn't been submitted successfully.");
 export const saveExperiment = (token: string, body: SaveExperimentRequest): Promise<Experiment> =>
   apiPost(token, '/api/experiments', body, "Couldn't save your experiment. Try again.");
 export const startExperiment = (token: string, id: string): Promise<Experiment> =>

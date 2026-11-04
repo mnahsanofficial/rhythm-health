@@ -795,6 +795,16 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * HabitCheck
+         * @description A soft check: the person can use the rewording, or continue anyway.
+         */
+        HabitCheck: {
+            /** Message */
+            message: string;
+            /** Suggested Question */
+            suggested_question: string;
+        };
         /** Intervention */
         Intervention: {
             /** Action */
@@ -1117,6 +1127,11 @@ export interface components {
         ProposeRequest: {
             /** Question */
             question: string;
+            /**
+             * Continue Anyway
+             * @default false
+             */
+            continue_anyway: boolean;
         };
         /** ProposeResponse */
         ProposeResponse: {
@@ -1128,6 +1143,7 @@ export interface components {
             proposal?: components["schemas"]["ExperimentProposal"] | null;
             prediction?: components["schemas"]["Prediction"] | null;
             safety: components["schemas"]["SafetyDecision"];
+            habit_check?: components["schemas"]["HabitCheck"] | null;
             classification: components["schemas"]["Classification"];
         };
         /**

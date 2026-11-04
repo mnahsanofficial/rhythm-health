@@ -186,6 +186,10 @@ sequenceDiagram
     alt Blocked
         API-->>App: Reason and a safer suggestion, no plan
     end
+    alt Not about a habit, and not continuing anyway
+        API-->>App: Soft check with a rewording, no design call
+        P->>App: Use this instead, or Continue anyway
+    end
     API->>DB: Read past results and running questions together
     API->>AI: Design and forecast, one call
     AI-->>API: JSON, with at most one retry if invalid
@@ -204,6 +208,8 @@ sequenceDiagram
 ```
 
 A failed start retries with the saved id, so it never creates a second experiment.
+
+**The soft habit check** ([`habit_check.py`](../backend/app/services/habit_check.py)) never blocks. It reads the labels Jev already returned: intent `other`, or category `other` with anything but a proposed habit change. A wrong label costs one extra tap, because "Continue anyway" always carries on. Safety rules still apply on that path, which is why it classifies again instead of trusting the client.
 
 ### Daily check-in
 
@@ -317,6 +323,8 @@ flowchart LR
 |---|---|---|---|
 | Propose an allowed question | 2: Jev, then design and forecast | 5, through a design retry and the Jev fallback | Yes, 5 per day. Jev isn't capped because it runs on every question |
 | Question blocked by safety | 1: Jev | 3, through the Jev fallback | No |
+| Question that isn't about a habit | 1: Jev, then it stops for the soft check | 3, through the Jev fallback | No |
+| Continue anyway, after the soft check | 2: Jev again, then design and forecast | 5, as for an allowed question | Yes, as a proposal |
 | Save, start, check in, finish, read, Day 10 choice, samples | 0 | 0 | No |
 | Write a report for the first time | 1 | 2, through one retry | Yes, 3 per day |
 | Write a report already written | 0 | 0 | No |
