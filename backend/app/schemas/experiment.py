@@ -21,6 +21,8 @@ class ProposeRequest(BaseModel):
     question: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=5, max_length=500)
     ]
+    # After the soft habit check, the person chose to carry on. Safety rules still apply.
+    continue_anyway: bool = False
 
 
 class Intervention(BaseModel):

@@ -152,5 +152,5 @@ Decided by Nazmul, from the [completeness audit](FEEDBACK_TRACKER.md).
 
 - **Mobile is the product.** Web features were frozen on 2 Nov, as 8x's feedback pointed that way, so [web and mobile differ on purpose](ARCHITECTURE.md#8-deliberate-web-and-mobile-differences). Bringing web level is after the demo.
 - **CI adopts the template's checks, without Prettier** ([ADR 12](adr/0012-ci-discipline-no-prettier.md)).
-- **Questions that aren't about a habit get a soft check, never a hard block,** so a wrong label can't stop the demo. It stops before the paid design call, and offers a rewording and "Continue anyway". It waits until after the demo if it isn't green by 13:00 on 5 Nov.
+- **Questions that aren't about a habit get a soft check, never a hard block,** so a wrong label can't stop the demo. It stops before the paid design call, and offers a rewording and "Continue anyway". Merged in [#93](https://github.com/mnahsanofficial/rhythm-health/pull/93).
 - **Moved to after the demo:** editing a plan before starting (F10), mobile error reporting, the two-week follow-up, the dead web files and the Day 10 ×. See [REMAINING_WORK](REMAINING_WORK.md#after-the-demo).

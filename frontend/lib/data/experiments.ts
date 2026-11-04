@@ -1,8 +1,8 @@
 import { ApiError, apiGet, apiSend } from "@/lib/api/client";
 import type { ActiveCapacity, Calibration, Experiment, ExperimentTimeline, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
 
-export function proposeExperiment(question: string): Promise<ProposeResponse> {
-  return apiSend("POST", "/api/experiments/propose", { question });
+export function proposeExperiment(question: string, continueAnyway = false): Promise<ProposeResponse> {
+  return apiSend("POST", "/api/experiments/propose", continueAnyway ? { question, continue_anyway: true } : { question });
 }
 
 export function saveExperiment(input: SaveExperimentRequest): Promise<Experiment> {

@@ -6,9 +6,7 @@ The history of this list is in git. V2 is split by feature: both of us work acro
 
 ## Before the freeze
 
-| # | Item | Rule |
-|---|---|---|
-| C4 | A soft check when a question isn't about a habit, with "Continue anyway" ([#93](https://github.com/mnahsanofficial/rhythm-health/pull/93)) | Waits for Nazmul's iPhone check. If it isn't ready by 13:00 on 5 Nov, it moves below |
+The audit's app fixes, C1–C4, are all merged ([#92](https://github.com/mnahsanofficial/rhythm-health/pull/92), [#93](https://github.com/mnahsanofficial/rhythm-health/pull/93)).
 
 **Check before the demo:** email confirmation in the Supabase dashboard, and that `EXPO_PUBLIC_DEV_TOOLS` isn't set, so "Send test reminder" stays hidden.
 

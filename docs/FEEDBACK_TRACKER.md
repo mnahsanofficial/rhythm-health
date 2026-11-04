@@ -1,6 +1,6 @@
 # 8x feedback tracker
 
-Every piece of feedback from the 8x calls: what we did, where it is, and what's left. Audited on **4 Nov 2026** against `main` at `a4aa237` (after #89), then updated for #91 and #92.
+Every piece of feedback from the 8x calls: what we did, where it is, and what's left. Audited on **4 Nov 2026** against `main` at `a4aa237` (after #89), then updated for #91, #92 and #93.
 
 **How it was checked:** by reading the code and tests on `main` and the CI logs from the last full run. "Done" means it exists in code with tests. The app wasn't run for this audit. Items marked *per records* rely on PR records rather than a new check of the live database. iPhone results are in each PR.
 
@@ -17,7 +17,7 @@ Every piece of feedback from the 8x calls: what we did, where it is, and what's 
 | Lab Report on mobile | **Done** | #47, #83, #86 | Yes | Yes | Finish an experiment, or History, then Explore a completed example. [`lab-report.tsx`](../apps/mobile/src/lab-report.tsx) | Plain first sentence and new verdict wording are [mobile only](ARCHITECTURE.md#8-deliberate-web-and-mobile-differences) |
 | A landing page unique to the app | **Done** | #18, #54, #64, #67, #92 | Carousel | Scrolling day story | Signed out. [`landing.tsx`](../apps/mobile/src/landing.tsx), [`day-story.tsx`](../frontend/components/landing/day-story.tsx) | |
 | Retention | **Partial** | #29, #37, #38, #79, #85, #87 | Yes | Calendar file | Reminders, Day 3 "your test starts tomorrow", celebration, first-run guide, "your normal" on day 4 | Two-week follow-up isn't built. Most of this is mobile only, on purpose |
-| "You can't cover every habit; let users set their own, with AI validation" | **Partial** | #4, #13, #45, #46 | Yes | Yes | Any free-text question on Ask; add-your-own habits and goals in onboarding. [`proposal.py`](../backend/app/services/proposal.py), [`safety.py`](../backend/app/services/safety.py) | Validation checks safety only. The classifier's intent label isn't used, so a question that isn't about a habit still gets a plan (C4 below). Plans can't be edited before starting (F10) |
+| "You can't cover every habit; let users set their own, with AI validation" | **Done** | #4, #13, #45, #46, #93 | Yes | Simple version | Any free-text question on Ask; add-your-own habits and goals in onboarding. AI classification and safety rules first, then a [soft check](../backend/app/services/habit_check.py) when a question isn't about a habit | Plans can't be edited before starting (F10, after the demo) |
 | "What does a user learn after 10 days?" | **Partial** | #39, #75, #80, #83, #86 | Yes | Report and guess history | Lab Report's first sentence, the guess against the prediction, Day 10 choice, "Habits I kept", guess history | The Day 10 choice and "Habits I kept" are mobile only, on purpose |
 | Multiple experiments | **Done** | #55, #58, #80 | Yes | Yes | Up to 3 active, overlap in the report, one combined check-in, comparison on Progress. [Decision](DECISIONS.md#several-active-experiments--4-nov-2026) | No warning when two experiments test the same thing |
 | Top-notch UI, in light and dark, with motion | **Partial** | #59–64, #67, #78–88, #92 | Yes | Yes | [Review](design/06-product-review.md), [screenshots](screenshots/), [motion rules](rules/ui-motion.md) | Finding 10 and the scene treatment are [after the demo](REMAINING_WORK.md#after-the-demo). VoiceOver and real large text need an iPhone |
@@ -62,6 +62,6 @@ Every piece of feedback from the 8x calls: what we did, where it is, and what's 
 | C1 | History shows the list first, with "8 points away" wording | **Done** ([#92](https://github.com/mnahsanofficial/rhythm-health/pull/92)) |
 | C2 | Progress offers Ask when nothing is running, and an outage shows our own wording | **Done** (#92) |
 | C3 | Landing dots reach the 44 target | **Done** (#92) |
-| C4 | A soft check when a question isn't about a habit, with "Continue anyway" | **Open, awaiting Nazmul's iPhone check** ([#93](https://github.com/mnahsanofficial/rhythm-health/pull/93)). Moves to after the demo if it isn't ready by 13:00 on 5 Nov |
+| C4 | A soft check when a question isn't about a habit, with "Continue anyway" | **Done** ([#93](https://github.com/mnahsanofficial/rhythm-health/pull/93)). Automated tests fake the classifier; live labels are checked by hand on an iPhone |
 
 Everything else is listed in [REMAINING_WORK](REMAINING_WORK.md#after-the-demo).

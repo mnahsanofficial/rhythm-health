@@ -470,3 +470,64 @@ test('the sample offer leaves once a plan is open, and comes back when it is cle
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask something else' })); });
   expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
 });
+
+describe('a question that is not about a habit', () => {
+  const OFF_TOPIC = "What's the capital of France?";
+  const SUGGESTED = 'Does a 20-minute walk after dinner improve my morning energy?';
+  const softCheck: ProposeResponse = { ...withGuess, proposal: null, prediction: null,
+    habit_check: { message: "This doesn't look like a habit question.", suggested_question: SUGGESTED } };
+
+  test('shows the check, a rewording and both choices, with no plan', async () => {
+    await openAsk();
+    queue(PROPOSE, { body: softCheck });
+    await submit(OFF_TOPIC);
+    expect(await screen.findByText("This doesn't look like a habit question.")).toBeVisible();
+    expect(screen.getByText(SUGGESTED)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Use this instead' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Continue anyway' })).toBeVisible();
+    expect(screen.queryByText(/The plan came back incomplete/)).toBeNull();
+    expect(screen.queryByLabelText('Suggestions')).toBeNull(); // Both choices stay on screen, without scrolling.
+    expect(count(PROPOSE)).toBe(1);
+  });
+
+  test('Use this instead fills in the rewording and asks nothing until the person does', async () => {
+    await openAsk();
+    queue(PROPOSE, { body: softCheck });
+    await submit(OFF_TOPIC);
+    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Use this instead' })); });
+    expect(screen.getByLabelText('Your question or goal').props.value).toBe(SUGGESTED);
+    expect(screen.queryByText("This doesn't look like a habit question.")).toBeNull();
+    expect(count(PROPOSE)).toBe(1);
+  });
+
+  test('Continue anyway carries on to the plan, saying so to the server', async () => {
+    await openAsk();
+    queue(PROPOSE, { body: softCheck });
+    await submit(OFF_TOPIC);
+    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Continue anyway' })); });
+    expect(await screen.findByRole('header', { name: 'What do you think will happen?' })).toBeVisible();
+    expect(calls.filter(call => call.key === PROPOSE).map(call => call.body)).toEqual([
+      { question: OFF_TOPIC }, { question: OFF_TOPIC, continue_anyway: true },
+    ]);
+  });
+
+  test('a retry after Continue anyway does not ask the same thing twice', async () => {
+    await openAsk();
+    queue(PROPOSE, { body: softCheck }, { status: 503, body: { detail: 'AI service unavailable, please try again' } });
+    await submit(OFF_TOPIC);
+    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Continue anyway' })); });
+    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Retry' })); });
+    expect(calls.filter(call => call.key === PROPOSE).at(-1)?.body).toEqual({ question: OFF_TOPIC, continue_anyway: true });
+  });
+
+  test('editing the question starts again without the override', async () => {
+    await openAsk();
+    queue(PROPOSE, { body: softCheck });
+    await submit(OFF_TOPIC);
+    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Continue anyway' })); });
+    await screen.findByRole('header', { name: 'What do you think will happen?' });
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: /Ask something else|Back/ })); });
+    await submit(QUESTION);
+    expect(calls.filter(call => call.key === PROPOSE).at(-1)?.body).toEqual({ question: QUESTION });
+  });
+});

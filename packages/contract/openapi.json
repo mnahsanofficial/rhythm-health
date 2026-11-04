@@ -2187,6 +2187,25 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HabitCheck": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "suggested_question": {
+            "type": "string",
+            "title": "Suggested Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "suggested_question"
+        ],
+        "title": "HabitCheck",
+        "description": "A soft check: the person can use the rewording, or continue anyway."
+      },
       "Intervention": {
         "properties": {
           "action": {
@@ -3151,6 +3170,11 @@
             "maxLength": 500,
             "minLength": 5,
             "title": "Question"
+          },
+          "continue_anyway": {
+            "type": "boolean",
+            "title": "Continue Anyway",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -3190,6 +3214,16 @@
           },
           "safety": {
             "$ref": "#/components/schemas/SafetyDecision"
+          },
+          "habit_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HabitCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "classification": {
             "$ref": "#/components/schemas/Classification"

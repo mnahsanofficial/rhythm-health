@@ -398,3 +398,63 @@ def test_propose_continues_without_running_questions_if_they_cannot_be_read(api,
     monkeypatch.setattr(experiments, "list_for_profile", flaky)
     api()
     assert client.post("/api/experiments/propose", json={"question": "Does a walk after dinner help my energy?"}).status_code == 200
+
+
+NOT_A_HABIT = {"category": "other", "intent": "other", "risk": "low"}
+HABIT_CHECK_MESSAGE = "This doesn't look like a habit question."
+
+
+def test_a_question_that_is_not_about_a_habit_stops_before_the_paid_design_call(api):
+    fake = api(classification=NOT_A_HABIT)
+    res = propose("What's the capital of France?")
+    assert res.status_code == 200
+    body = res.json()
+    assert fake.tasks == ["classification"]
+    assert body["safety"]["allowed"] is True
+    assert body["proposal"] is None and body["prediction"] is None
+    assert body["habit_check"]["message"] == HABIT_CHECK_MESSAGE
+    assert body["habit_check"]["suggested_question"].endswith("?")
+
+
+def test_continue_anyway_carries_on_to_the_plan_as_today(api):
+    fake = api(classification=NOT_A_HABIT)
+    body = propose("What's the capital of France?", continue_anyway=True).json()
+    assert fake.tasks == ["classification", "experiment_design"]
+    assert body["habit_check"] is None
+    assert body["proposal"]["question"] == PROPOSAL["question"]
+    assert body["prediction"] is not None
+
+
+@pytest.mark.parametrize("category,intent,flagged", [
+    ("other", "other", True),
+    ("sleep", "other", True),
+    ("other", "question", True),
+    ("other", "goal", True),
+    ("other", "behavior_change", False),
+    ("sleep", "question", False),
+    ("energy", "goal", False),
+    ("exercise", "behavior_change", False),
+])
+def test_which_labels_get_the_soft_check(api, category, intent, flagged):
+    api(classification={"category": category, "intent": intent, "risk": "low"})
+    body = propose().json()
+    assert (body["habit_check"] is not None) is flagged
+    assert (body["proposal"] is None) is flagged
+
+
+@pytest.mark.parametrize("continue_anyway", [False, True])
+def test_a_blocked_question_stays_blocked(api, continue_anyway):
+    fake = api(classification={"category": "other", "intent": "other", "risk": "blocked"})
+    body = propose("Tell me something unwise to try", continue_anyway=continue_anyway).json()
+    assert fake.tasks == ["classification"]
+    assert body["safety"]["allowed"] is False
+    assert body["habit_check"] is None and body["proposal"] is None
+
+
+@pytest.mark.parametrize("category", ["sleep", "energy", "focus", "exercise", "nutrition", "stress", "routine", "other"])
+def test_each_suggested_rewording_is_safe_and_reads_as_a_habit_question(api, category):
+    api(classification={"category": category, "intent": "other", "risk": "low"})
+    suggested = propose().json()["habit_check"]["suggested_question"]
+    assert safety.check_text(suggested).allowed
+    assert 5 <= len(suggested) <= 500
+    assert suggested.startswith("Does ")
