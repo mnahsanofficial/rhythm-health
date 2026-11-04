@@ -249,7 +249,7 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   stepOn: { backgroundColor: COLORS.moss, borderColor: COLORS.moss },
   controls: { minHeight: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row' },
-  dotTarget: { minWidth: LAYOUT.tapTarget - SPACING.sm, minHeight: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center' },
+  dotTarget: { minWidth: LAYOUT.tapTarget, minHeight: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center' },
   dot: { width: SPACING.sm, height: SPACING.sm, borderRadius: RADII.pill, backgroundColor: COLORS.control, overflow: 'hidden' },
   dotOn: { backgroundColor: COLORS.moss },
   pause: { position: 'absolute', right: LAYOUT.gutter.min - SPACING.sm, minWidth: LAYOUT.primaryAction, minHeight: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center' },
