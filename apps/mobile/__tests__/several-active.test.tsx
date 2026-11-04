@@ -115,6 +115,18 @@ describe('your lab with several experiments', () => {
     expect(screen.getByText(second.question)).toBeVisible();
   });
 
+  test('two experiments both on day 1 keep their own keys, on Today and in the combined check-in', async () => {
+    const warn = jest.spyOn(console, 'error');
+    install([running('first-id', 1), running('second-id', 1)]);
+    render(<MobileApp />);
+    expect(await screen.findByText('One check-in for all 2 experiments.')).toBeVisible();
+    expect(screen.getByText('Question first-id?')).toBeVisible();
+    expect(screen.getByText('Question second-id?')).toBeVisible();
+    await press('Check in for today');
+    expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
+    expect(warn.mock.calls.filter(([message]) => String(message).includes('same key'))).toEqual([]);
+  });
+
   test('one check-in saves everything due today in one request', async () => {
     install([first, second]);
     let body: unknown;

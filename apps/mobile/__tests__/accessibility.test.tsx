@@ -176,8 +176,8 @@ describe('screen readers hear what changes', () => {
       ? new Promise<Response>(resolve => { release = resolve; }) : original(url, options));
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
     await press('Design experiment');
-    await screen.findByText('Usually 10–20 seconds.');
-    expect(announce).toHaveBeenCalledWith('Usually 10–20 seconds.');
+    await screen.findByText('Usually 10–30 seconds.');
+    expect(announce).toHaveBeenCalledWith('Usually 10–30 seconds.');
     await act(async () => { release({ ok: true, status: 200, json: async () => routes['POST /api/experiments/propose'].body } as Response); });
   });
 

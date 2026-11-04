@@ -1,6 +1,6 @@
 # 8x feedback tracker
 
-Every piece of feedback from the 8x calls: what we did, where it is, and what's left. Audited on **4 Nov 2026** against `main` at `a4aa237` (after #89), then updated for #91, #92 and #93.
+Every piece of feedback from the 8x calls: what we did, where it is, and what's left. Audited on **4 Nov 2026** against `main` at `a4aa237` (after #89), then updated for #91, #92, #93 and #95, and for the [live check](#live-check-of-the-question-flow).
 
 **How it was checked:** by reading the code and tests on `main` and the CI logs from the last full run. "Done" means it exists in code with tests. The app wasn't run for this audit. Items marked *per records* rely on PR records rather than a new check of the live database. iPhone results are in each PR.
 
@@ -63,5 +63,28 @@ Every piece of feedback from the 8x calls: what we did, where it is, and what's 
 | C2 | Progress offers Ask when nothing is running, and an outage shows our own wording | **Done** (#92) |
 | C3 | Landing dots reach the 44 target | **Done** (#92) |
 | C4 | A soft check when a question isn't about a habit, with "Continue anyway" | **Done** ([#93](https://github.com/mnahsanofficial/rhythm-health/pull/93)). Automated tests fake the classifier; live labels are checked by hand on an iPhone |
+
+## Live check of the question flow
+
+**Checked by Claude on Expo web against the live API and classifier on 4 Nov; not yet on an iPhone.** At 390 × 844, on a backend run from this repo at `main` after #95, using Nazmul's own account, which he signed in himself. No test account was created, and no experiment was started or changed. [Screenshots](screenshots/live-check-4-nov/).
+
+| Check | Result | Classifier labels | Paid calls |
+|---|---|---|---|
+| "Does a walk after dinner help me sleep?" | **Pass.** Planning screen showed the ring, sun and three steps. Plan arrived in 29.7 s | `sleep`, `question`, `low` | 2 |
+| "What's the capital of France?" | **Pass.** Soft check appeared in 1.8 s, with a rewording | `other`, `question`, `low` | 1 |
+| Continue anyway on that question | **Works, but see below.** Plan arrived in 12.6 s, about phone use before bed, with no link to the question | `other`, `question`, `low` | 2 |
+| "How can I be more productive?" | **Pass.** No soft check. A plan in 13.3 s about writing down priorities | `focus`, `question`, `low` | 2 |
+| "Should I stop taking my medication to sleep better?" | **Pass.** Blocked in 2.0 s. Use this instead filled the box with "Does a consistent wake time improve my morning energy?" | `sleep`, `question`, `blocked` | 1 |
+| Tap × during a planning wait | **Pass.** Leave sheet appeared. Leave returned to an empty Ask, and the late answer (12.2 s) was dropped. One request in the network log, no second call | `sleep`, `question`, `low` | 2 |
+| Duplicate key, two experiments on day 1 | **Pass, mocked.** No "same key" warning on Today or the combined check-in. React's production web build doesn't show this warning, so this is a Jest test | n/a | 0 |
+
+**Paid calls: 10 of the 10 allowed,** confirmed against `ai_calls`: 6 classification and 4 design, all `ok`.
+
+**What this showed:**
+- **The time was wrong.** The 4 full plans took 12.2 to 29.7 seconds, so the planning screen now says "Usually 10–30 seconds." Four plans is a small sample.
+- **The intent label alone wouldn't have caught France.** Jev labelled it `question`, so the soft check depends on the category `other` as well.
+- **Continue anyway doesn't warn that the plan has changed subject.** The AI answers an off-topic question with an unrelated habit plan. It's honest once you read the plan, but it isn't what was asked. Listed in [after the demo](REMAINING_WORK.md#after-the-demo).
+
+**Not covered:** a real iPhone, VoiceOver, real large text, reminders, and how smooth the animation is on a device.
 
 Everything else is listed in [REMAINING_WORK](REMAINING_WORK.md#after-the-demo).

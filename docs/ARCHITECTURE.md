@@ -211,6 +211,8 @@ A failed start retries with the saved id, so it never creates a second experimen
 
 **The soft habit check** ([`habit_check.py`](../backend/app/services/habit_check.py)) never blocks. It reads the labels Jev already returned: intent `other`, or category `other` with anything but a proposed habit change. A wrong label costs one extra tap, because "Continue anyway" always carries on. Safety rules still apply on that path, which is why it classifies again instead of trusting the client.
 
+**How long a plan takes:** 12–30 seconds across 4 live plans on 4 Nov, so the planning screen says "Usually 10–30 seconds." A soft check or a block comes back in about 2 seconds, because it stops after classification.
+
 ### Daily check-in
 
 ```mermaid
