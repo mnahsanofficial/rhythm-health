@@ -25,6 +25,8 @@
 
 ## Consequences
 
+- **The first scan found one false positive and no secrets:** a React duplicate-key warning in a session log, quoting a record id. It's allowlisted by that exact text in [`.gitleaks.toml`](../../.gitleaks.toml). No file or folder is exempt.
+
 - A leaked secret, a broken rollback or a new lint warning now fails CI.
 - A false positive could block a last-minute fix, so the secret scan's allowlist needs to stay narrow and easy to extend.
 - Formatting stays inconsistent until after the demo.
