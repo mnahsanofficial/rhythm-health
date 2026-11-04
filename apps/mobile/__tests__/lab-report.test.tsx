@@ -196,6 +196,79 @@ describe('finish', () => {
   });
 });
 
+describe('finishing from Today when all days are done', () => {
+  const seq = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
+  const lastDay = withProgress('in_progress', { day_number: 10, phase: 'intervention', phase_day: 7, phase_days: 7, days_remaining: 0 });
+  const seeResults = async () => { const button = await screen.findByRole('button', { name: 'See your results' }); await act(async () => { fireEvent.press(button); }); };
+
+  test('ended days: one button on the card finishes in one tap, with no confirmation', async () => {
+    render(<MobileApp />);
+    expect(await screen.findByText('All 10 days are done.')).toBeVisible();
+    await seeResults();
+    expect(await screen.findByRole('button', { name: 'See full Lab Report' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Yes, finish' })).toBeNull();
+    expect(count(COMPLETE)).toBe(1);
+    expect(count(WRITE)).toBe(0);
+  });
+
+  test('day 10 recorded: the card offers the results, and nothing says finish early', async () => {
+    setActive(lastDay, timelineFixture(lastDay, { recorded: seq(10) }));
+    render(<MobileApp />);
+    expect(await screen.findByText('All 10 days are done.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Edit answers' })).toBeVisible();
+    const link = screen.getByRole('button', { name: 'See your experiment' });
+    await act(async () => { fireEvent.press(link); });
+    await screen.findByText('Your timeline');
+    expect(screen.queryByText('You can finish early.')).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'See your results' })).toHaveLength(1);
+    await seeResults();
+    expect(await screen.findByRole('button', { name: 'See full Lab Report' })).toBeVisible();
+    expect(count(COMPLETE)).toBe(1);
+  });
+
+  test('day 10 not recorded yet: the check-in comes first', async () => {
+    setActive(lastDay, timelineFixture(lastDay, { recorded: seq(9) }));
+    render(<MobileApp />);
+    expect(await screen.findByRole('button', { name: 'Check in now, day 10' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'See your results' })).toBeNull();
+  });
+
+  test('double taps send one finish', async () => {
+    render(<MobileApp />);
+    const button = await screen.findByRole('button', { name: 'See your results' });
+    await act(async () => { fireEvent.press(button); fireEvent.press(button); });
+    await screen.findByRole('button', { name: 'See full Lab Report' });
+    expect(count(COMPLETE)).toBe(1);
+  });
+
+  test('a failure stays on the card, and a tap retries', async () => {
+    queue(COMPLETE, { status: 503, body: { detail: 'Database unavailable' } });
+    queue(READ, { status: 404, body: { detail: 'No report for this experiment yet' } });
+    render(<MobileApp />);
+    await seeResults();
+    expect(await screen.findByText('Database unavailable')).toBeVisible();
+    await seeResults();
+    expect(await screen.findByRole('button', { name: 'See full Lab Report' })).toBeVisible();
+    expect(count(COMPLETE)).toBe(2);
+  });
+
+  test('offline disables it', async () => {
+    render(<MobileApp />);
+    await screen.findByRole('button', { name: 'See your results' });
+    mockNetwork.isConnected = false;
+    screen.rerender(<MobileApp />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'See your results' })).toBeDisabled());
+  });
+
+  test('a sample on its last day has no button', async () => {
+    const sample = { ...lastDay, is_seeded: true };
+    setActive(sample, timelineFixture(sample, { recorded: seq(10) }));
+    render(<MobileApp />);
+    await screen.findByText(sample.question);
+    expect(screen.queryByRole('button', { name: 'See your results' })).toBeNull();
+  });
+});
+
 describe('comparison', () => {
   test('shows the guess and forecast first, then reveals the measured change on a tap', async () => {
     (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(true);
