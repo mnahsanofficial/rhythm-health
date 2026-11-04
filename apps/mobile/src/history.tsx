@@ -53,10 +53,9 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
       ? <Status style={ui.muted}>{`Offline, last updated ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>
       : <Status>Reconnect to load your history.</Status>)}
     {!offline && error && <View style={ui.stack}>
-      <Alert>We couldn&apos;t load your history. {error}</Alert>
+      <Alert>{error}</Alert>
       <Action label="Try again" secondary onPress={() => { setError(null); setAttempt(n => n + 1); }} />
     </View>}
-    {list !== null && <CalibrationCard token={token} offline={offline} onExpired={onExpired} />}
     {list === null ? (!offline && !error && <Loading message="Loading your history…" />)
       : list.length === 0 ? <View style={local.empty}>
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Nothing finished yet.</Copy>
@@ -70,6 +69,7 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
         </View>
         {ordered.map(item => <HistoryRow key={item.id} experiment={item} token={token} offline={offline} cache={cache} onExpired={onExpired} onOpen={onOpen} />)}
       </View>}
+    {list !== null && <CalibrationCard token={token} offline={offline} onExpired={onExpired} />}
   </View>;
 }
 
@@ -124,8 +124,7 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
     </View>
     {state.kind === 'loading' && <Status style={ui.muted}>Loading report…</Status>}
     {state.kind === 'error' && <View style={ui.stack}>
-      <Alert>Couldn&apos;t load this report.</Alert>
-      <Copy style={ui.muted}>{state.message}</Copy>
+      <Alert>{state.message}</Alert>
       <Action label="Try again" name={`Try again for ${experiment.question}`} secondary disabled={offline} onPress={() => { setState({ kind: 'loading' }); setAttempt(n => n + 1); }} />
     </View>}
     {state.kind === 'ready' && !report && <Copy style={ui.muted}>Report not available yet.</Copy>}

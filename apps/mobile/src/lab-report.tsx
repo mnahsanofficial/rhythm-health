@@ -47,7 +47,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
     : <Loading message="Loading your report…" />;
   if (load.kind === 'missing') return <View style={ui.stack}><Alert>We couldn&apos;t find that experiment.</Alert>{back}</View>;
   if (load.kind === 'error') return <View style={ui.stack}>
-    <Alert>We couldn&apos;t load this report. {load.message}</Alert>
+    <Alert>{load.message}</Alert>
     <Action label="Try again" secondary disabled={offline} onPress={() => { setLoad({ kind: 'loading' }); setAttempt(n => n + 1); }} />
     {back}
   </View>;

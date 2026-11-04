@@ -3,6 +3,8 @@ import { readConfig } from './config';
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly fields: Record<string, string> = {}, readonly detail?: unknown) { super(message); }
 }
+/** The backend's wording for an outage, written for logs. People get the screen's own failure text instead. */
+const INFRASTRUCTURE = new Set(['Database unavailable', 'Service unavailable']);
 export const detailCode = (error: ApiError): unknown => member(error.detail, 'code');
 const member = (value: unknown, key: string): unknown => value !== null && typeof value === 'object' ? Reflect.get(value, key) : undefined;
 
@@ -27,7 +29,8 @@ async function request<T>(token: string, path: string, failure: string, body?: u
       if (typeof field === 'string' && typeof message === 'string') fields[field] = message;
     }
     const text = member(detail, 'message');
-    throw new ApiError(response.status, typeof detail === 'string' ? detail : typeof text === 'string' ? text : failure, fields, detail);
+    const readable = typeof detail === 'string' ? detail : typeof text === 'string' ? text : failure;
+    throw new ApiError(response.status, INFRASTRUCTURE.has(readable) ? failure : readable, fields, detail);
   }
   try { return await response.json() as T; }
   catch { throw new ApiError(502, failure); }

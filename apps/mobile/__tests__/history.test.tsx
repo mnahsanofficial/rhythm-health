@@ -141,7 +141,8 @@ describe('history', () => {
   test('a failed list read is an error with retry, never an empty list', async () => {
     queue(`GET ${COMPLETED}`, { status: 503, body: { detail: 'Database unavailable' } });
     await openHistory();
-    expect(await screen.findByText(/We couldn't load your history\. Database unavailable/)).toBeVisible();
+    expect(await screen.findByText("Couldn't load your history. Try again.")).toBeVisible();
+    expect(screen.queryByText(/Database unavailable/)).toBeNull();
     expect(screen.queryByText('Nothing finished yet.')).toBeNull();
     await press('Try again');
     expect((await screen.findAllByTestId('history-row')).length).toBe(2);
@@ -283,14 +284,22 @@ describe('calibration card', () => {
     guessed_change_percent: guess, observed_change_percent: observed, off_by_points: off,
   });
 
+  test('comes after the list, so past reports are the first thing on the screen', async () => {
+    await openHistory();
+    await screen.findByText('How close your guesses were');
+    const page = JSON.stringify(screen.toJSON());
+    expect(page.indexOf(older.question)).toBeGreaterThan(-1);
+    expect(page.indexOf(older.question)).toBeLessThan(page.indexOf('How close your guesses were'));
+  });
+
   test('shows each guess against what happened, newest first, and the trend', async () => {
     defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 30, 20), point(2, 10, 12.5, 2.5)], average_off_by_points: 11.3, trend: 'closer', example: null } };
     await openHistory();
     expect(await screen.findByText('Your guesses are getting closer.')).toBeVisible();
-    expect(screen.getByText('Off by 11.3 points on average across 2 experiments. A few short experiments show a pattern, not proof.')).toBeVisible();
+    expect(screen.getByText('11.3 points away on average across 2 experiments. A few short experiments show a pattern, not proof.')).toBeVisible();
     const items = screen.getAllByTestId('calibration-point');
     expect(within(items[0]).getByText('Question 2?')).toBeVisible();
-    expect(within(items[0]).getByText('You guessed +10% · It changed +12.5% · Off by 2.5 points')).toBeVisible();
+    expect(within(items[0]).getByText('You guessed +10% · It changed +12.5% · 2.5 points away')).toBeVisible();
     expect(within(items[1]).getByText('Question 1?')).toBeVisible();
   });
 
@@ -298,7 +307,7 @@ describe('calibration card', () => {
     defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 11, 1)], average_off_by_points: 1, trend: null, example: null } };
     await openHistory();
     expect(await screen.findByText("Finish another experiment to see whether you're getting closer.")).toBeVisible();
-    expect(screen.getByText('You guessed +10% · It changed +11% · Off by 1 point')).toBeVisible();
+    expect(screen.getByText('You guessed +10% · It changed +11% · 1 point away')).toBeVisible();
   });
 
   test('labels the sample as an example, keeps it out of real guesses, and shows it before anything has finished', async () => {
@@ -309,7 +318,7 @@ describe('calibration card', () => {
     expect(example.props.accessibilityLabel).toBe('Example, not your results');
     expect(within(example).getByText('Example')).toBeVisible();
     expect(within(example).getByText("Built from invented check-ins and an invented guess. It isn't part of your results.")).toBeVisible();
-    expect(within(example).getByText('Guessed +5% · It changed +10.9% · Off by 5.9 points')).toBeVisible();
+    expect(within(example).getByText('Guessed +5% · It changed +10.9% · 5.9 points away')).toBeVisible();
     expect(screen.queryAllByTestId('calibration-point')).toHaveLength(0);
     expect(screen.queryByText(/on average/)).toBeNull();
   });
@@ -329,7 +338,8 @@ describe('calibration card', () => {
   test('a failure explains itself, retries on a tap and leaves the history in place', async () => {
     queue(`GET ${CALIBRATION}`, { status: 503, body: { detail: 'Database unavailable' } });
     await openHistory();
-    expect(await screen.findByText(/Couldn't compare your guesses\. Database unavailable/)).toBeVisible();
+    expect(await screen.findByText("Couldn't compare your guesses. Try again.")).toBeVisible();
+    expect(screen.queryByText(/Database unavailable/)).toBeNull();
     expect(rows()).toHaveLength(2);
     await press('Try again for your guesses');
     expect(await screen.findByText(/Your next experiment asks for your own guess/)).toBeVisible();

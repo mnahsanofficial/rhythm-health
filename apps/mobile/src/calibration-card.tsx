@@ -41,7 +41,7 @@ export function CalibrationCard({ token, offline, onExpired }: { token: string; 
   return <View style={ui.divider}>
     <Copy accessibilityRole="header" style={ui.sectionTitle}>How close your guesses were</Copy>
     {error ? <>
-      <Alert>{`Couldn't compare your guesses. ${error}`}</Alert>
+      <Alert>{error}</Alert>
       <Action label="Try again" name="Try again for your guesses" secondary disabled={offline} onPress={() => { setError(null); setAttempt(n => n + 1); }} />
     </> : !calibration ? <Status style={ui.muted}>Checking your guesses…</Status>
       : guesses.length === 0 ? <>
@@ -50,17 +50,17 @@ export function CalibrationCard({ token, offline, onExpired }: { token: string; 
           <Copy style={ui.sectionTitle}>Example</Copy>
           <Copy style={ui.muted}>Built from invented check-ins and an invented guess. It isn&apos;t part of your results.</Copy>
           <Copy>{calibration.example.question}</Copy>
-          <Copy style={ui.muted}>{`Guessed ${signedPercent(calibration.example.guessed_change_percent)} · It changed ${signedPercent(calibration.example.observed_change_percent)} · Off by ${points(calibration.example.off_by_points)}`}</Copy>
+          <Copy style={ui.muted}>{`Guessed ${signedPercent(calibration.example.guessed_change_percent)} · It changed ${signedPercent(calibration.example.observed_change_percent)} · ${points(calibration.example.off_by_points)} away`}</Copy>
         </View>}
       </>
         : <>
           <Copy>{calibration.trend ? TREND[calibration.trend] : "Finish another experiment to see whether you're getting closer."}</Copy>
           {calibration.trend && calibration.average_off_by_points !== null && <Copy style={ui.muted}>
-            {`Off by ${points(calibration.average_off_by_points)} on average across ${guesses.length} experiments. A few short experiments show a pattern, not proof.`}
+            {`${points(calibration.average_off_by_points)} away on average across ${guesses.length} experiments. A few short experiments show a pattern, not proof.`}
           </Copy>}
           {[...guesses].reverse().map(guess => <View key={guess.experiment_id} testID="calibration-point" style={ui.stack}>
             <Copy>{guess.question}</Copy>
-            <Copy style={ui.muted}>{`You guessed ${signedPercent(guess.guessed_change_percent)} · It changed ${signedPercent(guess.observed_change_percent)} · Off by ${points(guess.off_by_points)}`}</Copy>
+            <Copy style={ui.muted}>{`You guessed ${signedPercent(guess.guessed_change_percent)} · It changed ${signedPercent(guess.observed_change_percent)} · ${points(guess.off_by_points)} away`}</Copy>
           </View>)}
         </>}
   </View>;

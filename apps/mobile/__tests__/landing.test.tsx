@@ -81,6 +81,16 @@ test('Pause stops the slides and Play starts them again', async () => {
   expect(currentDot()).toBe(1);
 });
 
+test('each dot is a full tap target', async () => {
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  for (const dot of screen.getAllByRole('button', { name: /^Go to slide/ })) {
+    const { minWidth, minHeight } = StyleSheet.flatten(dot.props.style);
+    expect(minWidth).toBeGreaterThanOrEqual(LAYOUT.tapTarget);
+    expect(minHeight).toBeGreaterThanOrEqual(LAYOUT.tapTarget);
+  }
+});
+
 test('a dot goes to its slide', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: FIRST });

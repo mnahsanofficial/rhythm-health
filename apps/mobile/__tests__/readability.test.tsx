@@ -95,6 +95,31 @@ describe('the tab bar', () => {
     expect(screen.getByText('Nothing running yet.')).toBeVisible();
   });
 
+  test('empty Progress offers the next step', async () => {
+    await signedIn();
+    await pressTab('Progress');
+    await screen.findByText('Nothing running yet.');
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask a question' })); });
+    expect(await screen.findByLabelText('Your question or goal')).toBeVisible();
+  });
+
+  test('a new person sees the example and still gets the next step', async () => {
+    routes['GET /api/experiments/progress-summary'] = { body: { metrics: [], kept: [], example: { question: 'Sample question?', metrics: [] } } };
+    await signedIn();
+    await pressTab('Progress');
+    await screen.findByTestId('progress-example');
+    expect(screen.getByText('Nothing running yet.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ask a question' })).toBeVisible();
+  });
+
+  test('someone with finished experiments is not told it is their first time', async () => {
+    routes['GET /api/experiments/progress-summary'] = { body: { metrics: [{ key: 'energy', label: 'Energy', type: 'scale', runs: [], normal_change: null }], kept: [], example: null } };
+    await signedIn();
+    await pressTab('Progress');
+    expect(await screen.findByText('Nothing running right now.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Ask a question' })).toBeVisible();
+  });
+
   test('is hidden in a flow, and hidden while the keyboard is up', async () => {
     await signedIn();
     expect(tab('Today')).toBeVisible();
