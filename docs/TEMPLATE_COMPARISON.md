@@ -59,7 +59,7 @@ We didn't start from either template. The first commit here is a README, and the
 
 ## What we'd adopt after the demo
 
-Nothing here happens before the freeze. In order, smallest and safest first:
+**Updated 4 Nov:** items 1, 2 (`--max-warnings=0` only) and 4 are being adopted in CI ahead of the demos, and item 3 stays after the demo, as [ADR 12](adr/0012-ci-discipline-no-prettier.md) explains. The rest happens after the freeze. In order, smallest and safest first:
 
 1. **Secret scan and commit-message hooks, plus their CI job.** This repo's logs are public, and a scan is the safety net for the rule that matters most.
 2. **`--max-warnings=0` and `no-explicit-any` as errors.** Expect some cleanup first.
