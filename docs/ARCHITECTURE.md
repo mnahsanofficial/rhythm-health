@@ -1,149 +1,88 @@
-# Architecture as implemented
+# Architecture
 
-Checked **30 Oct 2026** against `origin/main` at `02b97d0`, on `docs/architecture-v1-v2`. Native type styles, review notes and test evidence updated **31 Oct 2026** on `chore/brand-native-tokens`, based on `origin/main` at `891d1aa`. Progress API and web consumers updated **31 Oct 2026** on `feat/progress-endpoint`, based on `origin/main` at `65bc328`. This describes the checked-in implementation, not a deployed service or the PRD/TRD's planned architecture. Product decisions are recorded in [DECISIONS.md](DECISIONS.md); known gaps and live-check limits are in [REMAINING_WORK.md](REMAINING_WORK.md) and [F2_F4_VERIFICATION.md](F2_F4_VERIFICATION.md).
+How Rhythm Health Lab is built, checked against `main` on **4 Nov 2026**. This describes the code in the repo, not a hosted service: the C2 demo runs on localhost with a shared Supabase project ([DECISIONS Q11](DECISIONS.md#questions-for-shakeb)). The reasons behind each choice are in the [ADRs](adr/README.md).
 
-## 1. System overview and trust boundaries
+## 1. Requirements that shaped the design
+
+| Requirement | What it means for the design |
+|---|---|
+| A person checks in daily for 10 days | Mobile first, with local reminders |
+| Results must be honest | Python measures; the AI only proposes and explains |
+| Health data, and logs are public | Keys stay on the backend; row-level security on every table; no prompts in logs |
+| AI calls cost money | A per-person daily cap, checked before any paid work |
+| Two people, about 10 days | A monorepo with generated types, no custom infrastructure |
+
+**Scale today:** a handful of demo accounts. No load test has been run, so the [10x section](#7-scaling-and-failure-modes) is reasoning from the code, not measurement.
+
+## 2. System
 
 ```mermaid
 flowchart TB
-    WEB["Next.js app server<br/>UI routes, HTML and assets"]
-    UI["Browser: Next.js React components<br/>Public anon key and user session"]
-    API["FastAPI<br/>Auth, ownership, lifecycle and analysis"]
+    subgraph Clients["Clients: public keys and the user's own session only"]
+        M["Expo app: the product<br/>apps/mobile, session in SecureStore, local reminders"]
+        W["Next.js web app<br/>frontend, features frozen on 2 Nov"]
+    end
+    subgraph Shared["Shared packages"]
+        C["packages/contract<br/>types generated from FastAPI"]
+        B["packages/brand<br/>design tokens"]
+    end
+    API["FastAPI backend<br/>auth, ownership, day rules, analysis, paid-call cap<br/>holds the service-role and OpenRouter keys"]
     subgraph SB["Supabase"]
-        AUTH["Auth and public signing keys"]
-        REST["PostgREST database API"]
-        PG[("PostgreSQL")]
+        A["Auth and public signing keys"]
+        REST["PostgREST"]
+        PG[("Postgres with row-level security")]
         REST --> PG
     end
-    OR["OpenRouter<br/>Jev classification and reasoning model"]
-    WEB -->|"HTML and JavaScript"| UI
-    UI <-->|"Email/password sign-in and session refresh<br/>NEXT_PUBLIC_SUPABASE_ANON_KEY"| AUTH
-    UI <-->|"JSON API requests<br/>User access token as Bearer JWT"| API
-    API -->|"Public JWKS: verify JWT signature"| AUTH
-    API <-->|"SUPABASE_SERVICE_ROLE_KEY<br/>Queries scoped by authenticated ownership"| REST
-    API <-->|"OPENROUTER_API_KEY<br/>Classification, design and report requests"| OR
+    subgraph OR["OpenRouter"]
+        J["Jev safety model<br/>category, intent, risk"]
+        R["Reasoning model<br/>design, forecast, report wording"]
+    end
+    CI["GitHub Actions CI<br/>no secrets, no network to Supabase or OpenRouter"]
+    M -->|"email and password"| A
+    W -->|"email and password"| A
+    M -->|"JSON with Bearer token"| API
+    W -->|"JSON with Bearer token"| API
+    API -->|"verify token with public keys"| A
+    API -->|"service role, scoped to the verified owner"| REST
+    API -->|"typed classification"| J
+    API -->|"validated JSON"| R
+    C -.-> M
+    C -.-> W
+    B -.-> M
+    B -.-> W
+    CI -.->|"lint, types, tests, build, browser suite"| Shared
 ```
 
-**Sources for the diagram:** [frontend routes](../frontend/app/), [browser API client](../frontend/lib/api/client.ts), [Supabase browser client](../frontend/lib/auth/supabase.ts), [FastAPI composition and CORS](../backend/app/main.py), [JWT verification](../backend/app/auth/supabase.py), [PostgREST client](../backend/app/integrations/supabase.py) and [OpenRouter client](../backend/app/integrations/openrouter.py).
+Clients never talk to the database for product data, and never talk to OpenRouter. The web and mobile apps are peers: both call the same API and read the same day rules. Mobile is the product, as 8x asked; the [deliberate differences](#8-deliberate-web-and-mobile-differences) are listed below.
 
-- The frontend is Next.js 16 with React 19. App Router pages render the UI; browser components call FastAPI directly through `lib/data/*` and `lib/api/client.ts`. There is no Next.js product-API proxy in the current [route tree](../frontend/app/). Versions are in [package.json](../frontend/package.json); Cache Components and partial prefetching are enabled in [next.config.ts](../frontend/next.config.ts).
-- The browser's application key is `NEXT_PUBLIC_SUPABASE_ANON_KEY`. It also holds the signed-in user's access/refresh session, managed by the Supabase SDK; an access token is a user credential, not a backend service key. Public service locations use `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_API_URL`. No service-role or OpenRouter key is referenced by the [browser auth client](../frontend/lib/auth/supabase.ts) or [API client](../frontend/lib/api/client.ts).
-- `SUPABASE_SERVICE_ROLE_KEY` and `OPENROUTER_API_KEY` are backend settings. The service role bypasses RLS, so FastAPI must verify ownership before repository access. JWT verification checks an asymmetric signature, issuer, expiry and the authenticated audience; the user comes from `sub`. Profile IDs come from that user, not request bodies. Sources: [settings](../backend/app/config.py), [auth](../backend/app/auth/supabase.py), [ownership dependencies](../backend/app/api/deps.py), [profile repository](../backend/app/repositories/profiles.py) and [experiment repository](../backend/app/repositories/experiments.py).
-- Product routes depend on authenticated users. `/health` and `/health/supabase` are public operational checks; the latter calls PostgREST. CORS is configured by `CORS_ORIGINS`. Sources: [main.py](../backend/app/main.py), [API routers](../backend/app/api/) and [database integration](../backend/app/integrations/supabase.py).
+| Area | Code |
+|---|---|
+| Routes, thin | [`backend/app/api/`](../backend/app/api/) |
+| Logic | [`backend/app/services/`](../backend/app/services/), with [`analysis/`](../backend/app/services/analysis/) for the measurements |
+| Database access | [`backend/app/repositories/`](../backend/app/repositories/) |
+| External calls | [`backend/app/integrations/`](../backend/app/integrations/) |
+| Row and API shapes | [`backend/app/schemas/`](../backend/app/schemas/) |
+| Mobile | [`apps/mobile/src/`](../apps/mobile/src/), with data functions in [`lib/`](../apps/mobile/src/lib/) |
+| Web | [`frontend/`](../frontend/) |
 
-## 2. Core loop
+## 3. Data model
 
-This sequence follows a signed-in user with no active experiment and an allowed question. Onboarding may also happen before sign-up: answers stay on the device until the summary obtains a session and saves the profile. Sources: [onboarding flow](../frontend/components/onboarding/onboarding-flow.tsx), [local draft](../frontend/lib/onboarding/draft.ts), [summary/save](../frontend/components/onboarding/rhythm-summary.tsx) and [auth form](../frontend/components/auth/auth-form.tsx).
-
-```mermaid
-sequenceDiagram
-    actor Person
-    participant UI as Browser UI
-    participant Auth as Supabase Auth
-    participant API as FastAPI
-    participant DB as Supabase PostgREST / Postgres
-    participant AI as OpenRouter
-
-    Person->>UI: Sign in
-    UI->>Auth: Email/password authentication
-    Auth-->>UI: User session
-    Note over UI,API: Product requests carry the user's Bearer access token
-    Person->>UI: Answer onboarding and save
-    UI->>API: PUT /api/profile
-    API->>DB: Upsert profile for verified user
-    DB-->>API: Saved profile
-    API-->>UI: Profile
-
-    Person->>UI: Ask a habit question
-    UI->>API: POST /api/experiments/propose
-    API->>DB: Count this profile's active experiments
-    Note over API,DB: At the limit the API returns 409 before any paid AI work
-    API->>DB: Read profile
-    API->>DB: Owner-scoped zero-row probe for optional guess column
-    API->>AI: Jev category, intent and risk classification
-    AI-->>API: Typed classification
-    API->>API: Apply deterministic safety rules
-    Note over API,AI: Blocked questions return before design
-    API->>DB: Retrieve relevant completed experiment analyses
-    API->>AI: Combined experiment design and prediction
-    AI-->>API: Proposal and prediction JSON
-    API->>API: Validate JSON and recheck generated proposal safety
-    API-->>UI: Proposal, prediction, safety, classification and guess availability
-    opt Personal guess available
-        UI-->>Person: Primary metric and change (forecast hidden)
-        Person->>UI: Commit own guess before the AI forecast reveal
-    end
-    UI-->>Person: Preview the plan and original forecast
-
-    Person->>UI: Start this experiment
-    UI->>API: Recheck active list, then POST /api/experiments
-    API->>API: Revalidate schema and proposal safety
-    API->>DB: Insert proposed experiment with prediction and optional personal guess
-    API-->>UI: Saved experiment ID
-    UI->>API: POST /api/experiments/{id}/start
-    API->>DB: Conditional proposed-to-active update
-    Note over API,DB: A trigger with a per-profile lock holds the limit of three
-    API-->>UI: Active experiment and computed progress
-
-    loop Each rolling experiment day
-        Person->>UI: Record or edit today's check-in
-        UI->>API: POST /api/experiments/{id}/checkins
-        API->>API: Derive day/phase and validate metric values
-        API->>DB: Upsert this experiment/day's check-in
-        API-->>UI: Recorded check-in
-    end
-
-    Person->>UI: Finish experiment
-    UI->>API: POST /api/experiments/{id}/complete
-    API->>DB: Read owned experiment and check-ins
-    API->>API: Check minimum observations and calculate analysis
-    Note over API,AI: Completion makes zero model calls
-    API->>DB: Save analysis, then mark experiment completed
-    API-->>UI: LabReport with narrative null
-
-    Person->>UI: Write my report
-    UI->>API: POST /api/experiments/{id}/report
-    API->>DB: Read completed experiment and stored report
-    alt Narrative already stored
-        API-->>UI: Existing LabReport, zero model calls
-    else Narrative absent
-        API->>AI: Explain stored analysis, normally one reasoning call
-        AI-->>API: Narrative draft and echoed signal classification
-        API->>API: Pydantic and semantic validation
-        Note over API,AI: Invalid output gets at most one validation retry
-        API->>DB: Save narrative columns without changing analysis
-        API-->>UI: LabReport with narrative
-    end
-```
-
-**Sources for the sequence:** [profile endpoint](../backend/app/api/profile.py), [frontend experiment flow](../frontend/components/experiments/experiment-flow.tsx), [experiment endpoints](../backend/app/api/experiments.py), [proposal orchestration](../backend/app/services/proposal.py), [check-in endpoint](../backend/app/api/checkins.py), [report endpoints](../backend/app/api/reports.py) and [frontend report actions](../frontend/lib/data/reports.ts).
-
-Operational details visible in the implementation:
-
-- Proposal generation does not persist an experiment. Save and start are separate requests; the UI retains a saved ID so a failed start can be retried without another save. The active preflight protects the UI from unnecessary paid proposals; the backend `/propose` route itself does not enforce the active limit. Start enforces it through a precheck, conditional update and database index. Sources: [experiment flow](../frontend/components/experiments/experiment-flow.tsx), [proposal service](../backend/app/services/proposal.py), [experiment API](../backend/app/api/experiments.py), [repository](../backend/app/repositories/experiments.py), [active index migration](../supabase/migrations/20261028000300_one_active_experiment_per_profile.sql).
-- Check-in bodies contain metric values, an optional intervention answer and a note. The server derives day and phase, validates required/unknown metric keys and bounds, and permits writes only during the current active day. A missed past day cannot be backfilled through this API. Sources: [check-in schemas](../backend/app/schemas/checkin.py), [endpoint](../backend/app/api/checkins.py) and [metric validation](../backend/app/services/checkins.py).
-- Web home and detail read `GET /api/experiments/{id}/progress` for authoritative day states, counts and the next opening timestamp. It reuses rolling progress and adherence analysis; early-finished unobserved days never become missed. No migration, writes or model calls are needed. Sources: [timeline service](../backend/app/services/timeline.py), [web data layer](../frontend/lib/data/experiments.ts) and [progress contract](PROGRESS_API.md).
-- Completion needs `min(2, baseline_days)` baseline observations and `min(3, intervention_days)` test observations. It saves analysis and changes status in separate database requests, not one database transaction. A second completion returns 409. Sources: [analysis](../backend/app/services/analysis/), [completion endpoint](../backend/app/api/reports.py), [report repository](../backend/app/repositories/reports.py) and [experiment repository](../backend/app/repositories/experiments.py).
-- History lists completed experiments, then fetches each report independently. `/demo` calls authenticated `POST /api/demo/reset`, replacing only this profile's seeded rows with a stable experiment ID, ten check-ins, computed analysis and a fixed narrative. It makes no model call and preserves non-seeded experiments. Sources: [history UI](../frontend/components/experiments/experiment-history.tsx), [demo UI](../frontend/components/demo-entry.tsx), [demo endpoint](../backend/app/api/demo.py), [reset service](../backend/app/services/demo.py) and [seed definitions](../backend/app/demo/seed.py).
-- Normal experiments have no abandon/delete endpoint. The normal route transitions are save, start and complete; demo reset's deletion filter matches seeded rows only. Sources: [experiment API](../backend/app/api/experiments.py), [report API](../backend/app/api/reports.py) and [seed deletion](../backend/app/repositories/experiments.py).
-
-## 3. Data model and database-enforced rules
-
-Four application tables reference Supabase's existing `auth.users` table, shown as `AUTH_USERS`; the other diagram nodes map to the lowercase table names in `public`. The diagram lists their main persisted columns; computed `progress` and API `chart`/`narrative` objects are not additional tables. The migrations reference the auth identity but do not define the external auth table. Sources: [profile migration](../supabase/migrations/20261028000000_create_profiles.sql), [experiment migration](../supabase/migrations/20261028000200_create_experiments.sql), [check-in migration](../supabase/migrations/20261028000400_create_daily_checkins.sql), [report migration](../supabase/migrations/20261028000500_create_experiment_reports.sql), [progress builder](../backend/app/services/progress.py) and [Lab Report builder](../backend/app/services/lab_report.py).
+From [`supabase/migrations/`](../supabase/migrations/), not from inspecting the live project. Four records of what's applied: [#56](https://github.com/mnahsanofficial/rhythm-health/pull/56) (the first 8 files), [#71](https://github.com/mnahsanofficial/rhythm-health/pull/71) (2), [#80](https://github.com/mnahsanofficial/rhythm-health/pull/80) (1), and [DECISIONS](DECISIONS.md#new-supabase-project--4-nov-2026).
 
 ```mermaid
 erDiagram
-    AUTH_USERS ||--o| PROFILES : owns
-    PROFILES ||--o{ EXPERIMENTS : has
-    EXPERIMENTS ||--o{ DAILY_CHECKINS : records
-    EXPERIMENTS ||--o| EXPERIMENT_REPORTS : has
+    AUTH_USERS ||--o| PROFILES : "owns"
+    PROFILES ||--o{ EXPERIMENTS : "has"
+    PROFILES ||--o{ AI_CALLS : "spends"
+    EXPERIMENTS ||--o{ DAILY_CHECKINS : "records"
+    EXPERIMENTS ||--o| EXPERIMENT_REPORTS : "has"
 
     AUTH_USERS {
-        uuid id "Referenced auth identity"
+        uuid id PK "Managed by Supabase Auth"
     }
     PROFILES {
         uuid id PK
-        uuid user_id FK, UK
+        uuid user_id FK "unique"
         text age_range
         numeric usual_sleep_hours
         jsonb usual_sleep_schedule
@@ -157,7 +96,7 @@ erDiagram
     EXPERIMENTS {
         uuid id PK
         uuid profile_id FK
-        text status
+        text status "draft proposed active completed"
         text question
         text category
         text hypothesis
@@ -167,18 +106,19 @@ erDiagram
         jsonb metrics
         jsonb success_criteria
         jsonb prediction
-        float personal_guess_percent "Nullable, S6 migration pending user apply"
+        float personal_guess_percent "nullable, -100 to 200"
+        text outcome "nullable: keep, variation, new"
         timestamptz started_at
         timestamptz completed_at
-        boolean is_seeded
+        boolean is_seeded "samples, never counted as results"
         timestamptz created_at
         timestamptz updated_at
     }
     DAILY_CHECKINS {
         uuid id PK
         uuid experiment_id FK
-        integer day_number
-        text phase
+        text phase "baseline or intervention"
+        integer day_number "unique per experiment"
         boolean intervention_completed
         jsonb metric_values
         text note
@@ -187,233 +127,262 @@ erDiagram
     }
     EXPERIMENT_REPORTS {
         uuid id PK
-        uuid experiment_id FK, UK
-        jsonb analysis
-        jsonb interpretation
-        jsonb learnings
-        jsonb next_experiment
+        uuid experiment_id FK "unique"
+        jsonb analysis "written by Python, required"
+        jsonb interpretation "AI wording, nullable"
+        jsonb learnings "AI wording, nullable"
+        jsonb next_experiment "AI wording, nullable"
+        timestamptz created_at
+    }
+    AI_CALLS {
+        uuid id PK
+        uuid profile_id FK
+        text kind "propose report other"
+        text model
+        text status "ok retry invalid error"
+        integer latency_ms
         timestamptz created_at
     }
 ```
 
-| Enforced by migrations | Boundary / source |
-|---|---|
-| One profile per auth user; foreign keys cascade deletes through the ownership tree | [profiles](../supabase/migrations/20261028000000_create_profiles.sql), [experiments](../supabase/migrations/20261028000200_create_experiments.sql), [check-ins](../supabase/migrations/20261028000400_create_daily_checkins.sql), [reports](../supabase/migrations/20261028000500_create_experiment_reports.sql) |
-| Experiment status is one of `draft`, `proposed`, `active`, `completed`; phase lengths must be positive | [experiment migration](../supabase/migrations/20261028000200_create_experiments.sql). The save API currently inserts `proposed`, not `draft`: [endpoint](../backend/app/api/experiments.py) |
-| At most three active experiments per profile, even under concurrent starts | [Limit trigger](../supabase/migrations/20261104000000_active_experiment_limit.sql) with a per-profile lock |
-| One check-in per `(experiment_id, day_number)`; positive day number; phase is `baseline` or `intervention` | [check-in migration](../supabase/migrations/20261028000400_create_daily_checkins.sql). JSON metric semantics and the valid current day are enforced by [Python](../backend/app/api/checkins.py), not SQL |
-| At most one report per experiment; `analysis` is required; narrative columns may be null | [report migration](../supabase/migrations/20261028000500_create_experiment_reports.sql). [Narrative mapping](../backend/app/services/lab_report.py) stores summary/interpretation/confounders inside `interpretation`, personal learnings in `learnings`, and the suggestion in `next_experiment` |
-| RLS on all four application tables; authenticated users can read only their ownership tree | Policies in the four table migrations above. Authenticated users also have insert/update permission on their own profile via [profile grants](../supabase/migrations/20261028000100_grant_profiles_privileges.sql); experiment/check-in/report writes are service-role only |
-| Update timestamps on profiles, experiments and check-ins | `set_updated_at` in [profiles](../supabase/migrations/20261028000000_create_profiles.sql), reused by [experiments](../supabase/migrations/20261028000200_create_experiments.sql) and [check-ins](../supabase/migrations/20261028000400_create_daily_checkins.sql). Reports have only `created_at` |
+**Enforced by the database:**
+- All foreign keys cascade on delete, so removing a person removes everything of theirs.
+- At most three active experiments per profile, by a [trigger with a per-profile lock](../supabase/migrations/20261104000000_active_experiment_limit.sql), so two simultaneous starts can't both pass.
+- One check-in per experiment per day, and one report per experiment.
+- `ai_calls` never stores prompt or response text.
 
-Prediction immutability is an API/access-control boundary: the normal API has no plan/prediction editing endpoint, and authenticated database clients cannot update experiments. There is no SQL trigger that freezes prediction JSON against service-role writes. Sources: [experiment API](../backend/app/api/experiments.py) and [experiment migration](../supabase/migrations/20261028000200_create_experiments.sql).
+**Enforced in Python, not SQL:** what's inside the JSON columns, and which day is today.
 
-## 4. AI pipeline, cost and numerical authority
+**Computed, not stored:** progress and day states, chart data, and calibration.
 
-Jev uses `OPENROUTER_JEV_MODEL` through OpenRouter's typed Decisions API for category, intent and risk. Design/prediction and report writing use `OPENROUTER_REASONING_MODEL` through structured chat completions. All use backend `OPENROUTER_API_KEY`; the configured runtime model IDs are not asserted here. Sources: [settings](../backend/app/config.py), [Jev integration](../backend/app/integrations/jev.py), [OpenRouter transport](../backend/app/integrations/openrouter.py), [designer](../backend/app/services/experiment_designer.py) and [report writer](../backend/app/services/report_writer.py).
+**Rollbacks:** each migration has one in [`supabase/rollbacks/`](../supabase/rollbacks/). `20261028000000_initial_schema.sql` covers the first six files and refuses once any profile exists.
 
-### Paid requests per user action
+## 4. Key flows
 
-These are outbound request counts, not a guarantee about provider billing for failed requests. A validation retry is another paid-capable request. Transport failures return an error rather than receiving the same validation retry. Sources: [OpenRouter retry loop](../backend/app/integrations/openrouter.py) and [Jev fallback](../backend/app/integrations/jev.py).
+### Propose: safety check, then design and forecast, then guess, then start
 
-| Action | Normal outbound model requests | Extra paths in code | Source |
+```mermaid
+sequenceDiagram
+    actor P as Person
+    participant App as Mobile or web
+    participant API as FastAPI
+    participant DB as Supabase
+    participant Jev as Jev model
+    participant AI as Reasoning model
+
+    P->>App: Ask a habit question
+    App->>API: POST /api/experiments/propose
+    API->>DB: Read profile and active count
+    alt Three already active
+        API-->>App: 409 before any paid call
+    end
+    API->>DB: Read today's ai_calls
+    alt Daily cap used
+        API-->>App: 429 ai_daily_limit before any paid call
+    end
+    API->>Jev: Classify category, intent and risk
+    Jev-->>API: Typed labels
+    API->>API: Deterministic safety rules
+    alt Blocked
+        API-->>App: Reason and a safer suggestion, no plan
+    end
+    API->>DB: Read past results and running questions together
+    API->>AI: Design and forecast, one call
+    AI-->>API: JSON, with at most one retry if invalid
+    API->>API: Validate, then safety-check the generated plan
+    API-->>App: Plan and forecast, nothing saved
+    App-->>P: Plan, forecast hidden
+    P->>App: Lock in own guess
+    App-->>P: Reveal the forecast
+    P->>App: Start
+    App->>API: POST /api/experiments
+    API->>API: Revalidate and safety-check what the client sent
+    API->>DB: Save with the guess
+    App->>API: POST /api/experiments/{id}/start
+    API->>DB: Proposed to active, the trigger holds the limit
+    API-->>App: Active experiment and progress
+```
+
+A failed start retries with the saved id, so it never creates a second experiment.
+
+### Daily check-in
+
+```mermaid
+sequenceDiagram
+    actor P as Person
+    participant App as Mobile
+    participant API as FastAPI
+    participant DB as Supabase
+    participant OS as Phone notifications
+
+    OS-->>P: Day 5 is open, names the day only
+    P->>App: Tap the reminder or open Today
+    App->>API: GET /api/experiments/{id}/progress
+    API->>DB: Read experiment and check-ins
+    API->>API: Work out day, phase and states from started_at
+    API-->>App: Today's state and next_day_at
+    P->>App: Answer, about 30 seconds
+    App->>API: POST /api/experiments/{id}/checkins
+    API->>API: Derive day and phase, validate against the plan's metrics
+    API->>DB: Record or replace today's only
+    API-->>App: Saved
+    App->>API: GET progress again
+    App->>OS: Schedule the next reminder at next_day_at
+    App-->>P: Celebration, and on day 3 "your test starts tomorrow"
+```
+
+With two or more real experiments due, `GET` and `POST /api/checkins/today` make it one form. Questions combine only on an exact match of key, type, range and end words, and the save is all or nothing ([decision](DECISIONS.md#one-check-in-across-experiments--4-nov-2026)).
+
+### Finish: analysis, the Day 10 choice, and the report written once
+
+```mermaid
+sequenceDiagram
+    actor P as Person
+    participant App as Mobile
+    participant API as FastAPI
+    participant DB as Supabase
+    participant AI as Reasoning model
+
+    P->>App: See your results
+    App->>API: POST /api/experiments/{id}/complete
+    API->>DB: Read check-ins and other experiments together
+    API->>API: Check minimum check-ins, then analyse in Python
+    Note over API,AI: No AI call. Finishing works when the AI is down.
+    API->>DB: Save the report, then mark completed
+    API-->>App: LabReport with no written narrative
+    App-->>P: Day 10: guess, prediction, what happened, what next
+    opt Keep, try a variation, or test something new
+        P->>App: Choose
+        App->>API: POST /api/experiments/{id}/outcome
+        API->>DB: Save the choice
+    end
+    opt Write my report, from the Lab Report
+        P->>App: Write my report
+        App->>API: POST /api/experiments/{id}/report
+        alt Already written
+            API-->>App: The stored report, no AI call
+        else Not written yet
+            API->>DB: Check the daily cap
+            API->>AI: Explain the saved analysis
+            AI-->>API: Wording, with at most one retry if invalid
+            API->>API: Its verdict must match the analysis
+            API->>DB: Save wording only, analysis unchanged
+            API-->>App: LabReport with the narrative
+        end
+    end
+```
+
+The Day 10 screen comes straight after the analysis and is free. Writing the report is a separate, optional, paid step, so the numbers are never held up by the AI.
+
+## 5. Trust boundaries
+
+```mermaid
+flowchart LR
+    subgraph U["Untrusted: the phone and browser"]
+        Client["App<br/>anon key and the user's token"]
+    end
+    subgraph T["Trusted: FastAPI"]
+        Auth["1. Verify the token<br/>signature, issuer, expiry, audience"]
+        Own["2. Find the owner<br/>user id only from the token"]
+        Cap["3. Paid-call cap<br/>before any AI work"]
+        Svc["4. Service role<br/>queries scoped to the owner"]
+        Auth --> Own --> Cap --> Svc
+    end
+    subgraph D["Database"]
+        RLS["Row-level security on every table"]
+    end
+    Client -->|"Bearer token"| Auth
+    Svc -->|"bypasses row-level security"| RLS
+    Client -.->|"only if someone uses the public key directly"| RLS
+```
+
+| Boundary | Where it sits | What it protects |
+|---|---|---|
+| **Auth** | [`auth/supabase.py`](../backend/app/auth/supabase.py) checks each token against Supabase's public keys. The user id comes only from the token, never a request body | Acting as someone else |
+| **Ownership** | [`api/deps.py`](../backend/app/api/deps.py) and the repositories scope every query to the verified profile | Reading someone else's experiment |
+| **Service role** | Backend only. It bypasses row-level security, so the two checks above are what protect data on this path. CI and the apps never hold it | The whole database |
+| **Row-level security** | On all five tables. People can read only their own rows; `ai_calls` has no policy at all, so only the service role reads it | Direct use of the public anon key |
+| **Grants** | **Known gap:** Supabase's default grants leave `anon` and `authenticated` with wide table privileges (checked on `experiments`; `ai_calls` is already fixed), and row-level security is what blocks them. Tightening is [deferred](adr/0011-rls-and-deferred-grants.md) | Defence in depth |
+| **Paid-call cap** | [`services/ai_limit.py`](../backend/app/services/ai_limit.py), before `/propose` and `POST /report` do paid work | Spending |
+| **Safety** | [`services/safety.py`](../backend/app/services/safety.py) checks the question, the classification, the generated plan, and the plan again on save | Unsafe experiments |
+| **Session on the phone** | Encrypted in SecureStore ([`secure-session-storage.ts`](../apps/mobile/src/lib/secure-session-storage.ts)) | A lost phone's session |
+| **Notifications** | Name the day, never the habit question | The lock screen |
+| **Logs** | One JSON line per request with the route template only, never the real path, query, headers or body. Sentry events drop request details | Tokens and personal notes |
+
+## 6. AI: what it does, what it costs
+
+**AI proposes, Python measures** ([ADR 3](adr/0003-ai-proposes-python-measures.md)). Results, verdicts, day states and calibration come from Python. The AI writes plans, forecasts and wording; prose numbers never feed a chart or a result.
+
+| Action | Normal paid requests | Can reach | Counts against the cap |
 |---|---|---|---|
-| Propose an allowed question | 2: one Jev classification, one combined design/prediction | Invalid design output adds one retry. Failed/invalid Jev adds reasoning fallback (1–2 requests). Maximum through these branches: 5 requests including the original Jev attempt | [proposal](../backend/app/services/proposal.py), [Jev](../backend/app/integrations/jev.py), [designer](../backend/app/services/experiment_designer.py), [transport](../backend/app/integrations/openrouter.py) |
-| Block before design | 1 classification request; no design | A Jev failure can still invoke the 1–2-request fallback before the safety decision | [proposal order](../backend/app/services/proposal.py), [safety](../backend/app/services/safety.py) |
-| Save, start, check in, complete or read a report | 0 | Completion is deterministic; it does not automatically write the narrative | [experiment](../backend/app/api/experiments.py), [check-in](../backend/app/api/checkins.py), [report](../backend/app/api/reports.py) endpoints |
-| Write an absent narrative | 1 reasoning request | At most one retry for schema/semantic rejection: 2 requests maximum per generation attempt | [writer](../backend/app/services/report_writer.py), [transport](../backend/app/integrations/openrouter.py) |
-| Write a narrative already stored | 0 | Default cached behavior. `?regenerate=true` explicitly generates again, but the [frontend wrapper](../frontend/lib/data/reports.ts) never sends it | [report endpoint](../backend/app/api/reports.py) |
-| Prepare the seeded demo | 0 | Uses fixed narrative text plus freshly calculated analysis | [demo service](../backend/app/services/demo.py), [seed](../backend/app/demo/seed.py) |
+| Propose an allowed question | 2: Jev, then design and forecast | 5, through a design retry and the Jev fallback | Yes, 5 per day. Jev isn't capped because it runs on every question |
+| Question blocked by safety | 1: Jev | 3, through the Jev fallback | No |
+| Save, start, check in, finish, read, Day 10 choice, samples | 0 | 0 | No |
+| Write a report for the first time | 1 | 2, through one retry | Yes, 3 per day |
+| Write a report already written | 0 | 0 | No |
 
-Sequential narrative requests are idempotent because the endpoint returns a saved narrative. Fresh concurrent requests can both pass the read-before-generate check: there is no distributed generation lock or exactly-once guarantee. The UI guards double submissions in one component, which does not coordinate separate browser tabs. Sources: [report endpoint](../backend/app/api/reports.py) and [report UI](../frontend/components/report/lab-report.tsx).
+The cap counts finished attempts, per person per UTC day. Timeouts and retries are explained in [ADR 8](adr/0008-async-openrouter-client.md).
 
-### Guards and their limits
+## 7. Scaling and failure modes
 
-1. **Before and after design:** classify first, then apply deterministic safety rules to the question and classification. Blocked requests return no plan/forecast; review risk returns an allowed caution. The generated proposal is checked again, and the save endpoint revalidates the client-submitted schema and proposal safety. Sources: [proposal orchestration](../backend/app/services/proposal.py), [safety rules](../backend/app/services/safety.py), [combined schema](../backend/app/schemas/proposal.py) and [save endpoint](../backend/app/api/experiments.py).
-2. **Before storing a written report:** Pydantic rejects malformed/extra fields, oversized text/lists, enumerated over-claiming phrases and language attributing the forecast to the user. A semantic check requires the echoed signal classification to equal stored analysis and checks the proposed next experiment with the same safety rules. It then removes the echoed classification from the public narrative. Sources: [strict draft versus stored narrative schemas](../backend/app/schemas/lab_report.py), [writer/verification callback](../backend/app/services/report_writer.py) and [retry transport](../backend/app/integrations/openrouter.py).
-3. **Prompt instructions are broader than validation:** the prompt tells the model to explain only analysis numbers, avoid causation/medical advice and ground confounders in notes. Code checks the echoed classification but does not perform a full semantic comparison of every narrative sentence with analysis, verify every numeric quotation or catch every possible unsafe phrase. Existing stored narratives load through a deliberately permissive schema. Numeric prose verification is deferred in [DECISIONS Q17](DECISIONS.md#questions-for-shakeb). Sources: [writer prompt and checks](../backend/app/services/report_writer.py) and [narrative schemas](../backend/app/schemas/lab_report.py).
+### When something fails
 
-**Numerical rule:** measured results, signal, adherence and forecast accuracy are computed in [analysis.py](../backend/app/services/analysis/). It calculates phase means/medians/variation, change, effect size, consistency, outlier markers and prediction comparison. [The report builder](../backend/app/services/lab_report.py) supplies chart points from recorded check-ins, aggregates from stored analysis and a band from the original prediction. [The report screen](../frontend/components/report/lab-report.tsx), [comparison reveal](../frontend/components/report/prediction-vs-reality.tsx), [chart](../frontend/components/report/day-chart.tsx) and [history](../frontend/components/experiments/experiment-history.tsx) read structured values; they do not parse model prose to calculate any result.
+| Failure | What happens | Gap |
+|---|---|---|
+| OpenRouter down or slow | Propose and writing a report return 503 with a retry. Check-ins, finishing and reading results all still work | None for the daily loop |
+| Jev fails or returns nonsense | Falls back to the reasoning model for classification | Costs extra calls |
+| Model returns invalid JSON | One retry, then 502 | The retry is paid for |
+| Model call takes over 75 seconds | 503; not retried, since it was probably paid for | A real slow success now fails |
+| Supabase down | 503; `/api/health` reports `degraded` | The cap can't be read, so calls go ahead |
+| Finish fails between its two writes | The report is saved but the experiment stays active. Finishing again replaces the report | Not one transaction |
+| Two report requests at once | Both can pass the check and both pay | No lock; the buttons guard against double taps |
+| Two proposals at once at the cap | Both can pass | At most one extra call |
+| Phone offline | Today shows the last loaded data, marked as such. Answers stay in memory and saving is disabled | Lost if the app is closed |
+| App crashes on a phone | Nothing is reported | Mobile has no error reporting yet |
 
-This rule does not mean every displayed number originated in deterministic analysis: the original forecast range is model-generated and stored before starting, daily chart values come from check-ins, and narrative text is displayed verbatim and can itself contain numbers. Those prose numbers never become chart/statistic inputs. Formatting and visual coordinates remain frontend work. Sources: [forecast preview](../frontend/components/experiments/experiment-flow.tsx), [report builder](../backend/app/services/lab_report.py), [report UI](../frontend/components/report/lab-report.tsx) and [comparison component](../frontend/components/report/prediction-vs-reality.tsx).
+### What we'd change at 10x users
 
-## 5. Key decisions in effect
+Listed in the order we'd expect them to matter:
 
-| Decision and reason | Implementation / decision record |
+1. **Host it.** Everything runs on localhost today. FastAPI needs a real host with HTTPS, and the apps need a fixed API URL and a built app rather than Expo Go.
+2. **Mobile error reporting,** because crashes on people's phones are invisible today.
+3. **Stop blocking threads on the database.** The Supabase client is blocking HTTP on worker threads, so a slow database still uses up the pool. Move to an async client.
+4. **Share one HTTP client,** instead of one per AI call.
+5. **A project-wide spend limit and alerts.** The cap is per person, so many new accounts could still spend without limit, and nothing alerts on the cost. Queue report writing rather than holding a request open for 10 seconds.
+6. **Make the cap and report writing safe under races,** with a database lock or a unique attempt row.
+7. **Tighten grants** and add a check for it in CI.
+8. **Server-sent reminders.** Local notifications can't react to anything that happens after the app last ran.
+
+Indexes aren't the first worry: reads are per person, and each person has a few experiments and about 10 check-ins each.
+
+## 8. Deliberate web and mobile differences
+
+**8x said daily tracking doesn't belong on a website, so mobile is the product.** Web features were frozen on 2 Nov, with bug fixes only ([MOBILE_PLAN](MOBILE_PLAN.md#full-app)). Both apps use the same API, so this is about screens, not rules.
+
+| Mobile only | On web instead |
 |---|---|
-| Rolling 24-hour days from `started_at`, keeping one backend day/phase rule independent of browser timezone. Timestamps display in the viewer's timezone | [progress](../backend/app/services/progress.py), [local report date](../frontend/components/report/lab-report.tsx), [DECISIONS Q7](DECISIONS.md#questions-for-shakeb) |
-| Deterministic analysis before any **report** model call: completion stays available when AI is unavailable; the model explains saved outcomes | [analysis](../backend/app/services/analysis/), [report endpoints](../backend/app/api/reports.py), [DECISIONS Q4](DECISIONS.md#questions-for-shakeb) |
-| Up to three active experiments; enforced on proposal (before any paid call), on start and by the database | [experiment API](../backend/app/api/experiments.py), [limit trigger](../supabase/migrations/20261104000000_active_experiment_limit.sql), [limit service](../backend/app/services/experiment_limit.py), [TRD §2.5](../TRD.md#25-active-experiment-limit) |
-| Early completion with minimum observations. Only finished rolling days plus logged days enter coverage; future days do not become missed | [completion](../backend/app/api/reports.py), [analysis](../backend/app/services/analysis/), [DECISIONS Q6/Q8](DECISIONS.md#questions-for-shakeb) |
-| Small structured history retrieval instead of a separate learning service: consider 20 recent non-seeded completions, prioritize the same category, include at most 5 valid summaries; missing/unavailable history does not block proposing | [history service](../backend/app/services/history.py), [repositories](../backend/app/repositories/experiments.py), [designer prompt](../backend/app/services/experiment_designer.py), [DECISIONS Q5](DECISIONS.md#questions-for-shakeb). Q5's “not built yet” note is stale; this code is built |
-| Localhost for the C2 demo; no deployment implementation is claimed | [DECISIONS Q11](DECISIONS.md#questions-for-shakeb), [local run instructions](../README.md#getting-started), [CORS settings](../backend/app/config.py). TRD §39 remains a deployment plan, not proof of hosting |
+| Local reminders | A calendar file for the next day |
+| First-run guide and check-in celebration | Saved confirmation |
+| Day 3 "your test starts tomorrow" | Today shows the day and phase |
+| Day 10 choice and "Habits I kept" | Finish opens the Lab Report |
+| Lab Report opens with one plain sentence | Prediction versus reality comes first |
+| Verdicts worded against normal ups and downs | Earlier verdict wording |
+| "Where a question goes" trust line | None |
 
-### Where this differs from the TRD
+The web landing keeps its scrolling day story, and mobile has its own carousel. Bringing web level with mobile is [after the demo](REMAINING_WORK.md#after-the-demo).
 
-| Planned description | Implemented description / evidence |
-|---|---|
-| Separate experiment designer and predictive engine (TRD §§13, 16–17) | One `ProposalWithPrediction` response from one design/prediction request: [designer](../backend/app/services/experiment_designer.py), [schema](../backend/app/schemas/proposal.py) |
-| Standalone Jev settings and a possible fast-model role (TRD §§30–31, 36, 38) | Jev uses OpenRouter; settings expose `OPENROUTER_JEV_MODEL` and `OPENROUTER_REASONING_MODEL`, with no separate fast-model call: [settings](../backend/app/config.py), [Jev integration](../backend/app/integrations/jev.py) |
-| Completion/report generation shown as one flow, flat narrative example and chart array (TRD §§24–27) | `/complete` calculates; `POST /report` separately writes prose. `LabReport` embeds `experiment`, `analysis`, nullable `narrative`, chart object and `created_at`: [report API](../backend/app/api/reports.py), [schema](../backend/app/schemas/lab_report.py) |
-| Prediction may be regenerated before start (TRD §18) | No prediction-only endpoint or UI action. Asking again repeats the proposal pipeline: [experiment routes](../backend/app/api/experiments.py), [frontend wrappers](../frontend/lib/data/experiments.ts) |
-| Email/password plus magic link; deployment and general request logging (TRD §§6, 37, 39) | UI uses email/password; localhost is the agreed milestone scope. AI logging records metadata, while generic request logging is not implemented here: [auth UI](../frontend/components/auth/auth-form.tsx), [main](../backend/app/main.py), [AI transport](../backend/app/integrations/openrouter.py), [DECISIONS Q11–12](DECISIONS.md#questions-for-shakeb) |
+## 9. Tests
 
-The [PRD §8](../PRD.md#8-ai-experiment-designer) says a seven-day V1 default. The implemented designer prompt defaults to **3 baseline + 7 test days**; the schema allows other valid lengths, and progress uses the saved plan. Sources: [designer](../backend/app/services/experiment_designer.py), [experiment schema](../backend/app/schemas/experiment.py) and [progress](../backend/app/services/progress.py).
+CI runs on every PR and on `main` ([workflow](../.github/workflows/ci.yml)), with no secrets, so nothing in it can reach Supabase or OpenRouter. On `main` after #88: 466 backend, 244 web and 521 mobile unit tests all passed, plus the browser suite.
 
-## 6. Project structure
+| Suite | Tools | Mocked |
+|---|---|---|
+| Backend | pytest | Supabase, OpenRouter; external requests are blocked |
+| Web | Vitest, Testing Library, MSW | Auth, API |
+| Browser | Playwright with real Next.js | Auth, API |
+| Mobile | Jest, React Native Testing Library | Auth, API, storage, notifications |
+| Contract and brand | Node | Fails if generated files drift |
+| Logs | Node and Python | Fails on any drift from the guide's format |
+| Migrations | Disposable Postgres scripts in [`backend/tests/migrations/`](../backend/tests/migrations/) | Supabase's roles and defaults, as far as modelled |
 
-| Location | Current responsibility |
-|---|---|
-| [frontend/app/](../frontend/app/) | Next.js pages: landing/Your lab, sign-in, onboarding, new/detail/check-in/report experiment routes, demo and history |
-| [frontend/components/](../frontend/components/) | UI, forms, charts, shared experiment flow and motion; [home](../frontend/components/home-experience.tsx) switches between public content and private account state |
-| [frontend/lib/data/](../frontend/lib/data/) | Product data functions; [API client](../frontend/lib/api/client.ts) adds Bearer auth and normalizes errors; [types](../frontend/lib/types/api.ts) re-export the generated shared contract |
-| [frontend/lib/auth/](../frontend/lib/auth/) | Supabase browser client, session subscription and redirect-path handling |
-| [frontend/lib/calendar/](../frontend/lib/calendar/) | Builds the "next day opens" calendar event (`.ics`) in the browser, offered on Done for today. No backend or account integration; the event names the day, never the habit question |
-| [frontend/lib/mock/profile.ts](../frontend/lib/mock/profile.ts) | Remaining illustrative sample profile, exposed by [profile data module](../frontend/lib/data/profile.ts). The public landing currently uses [DayStory](../frontend/components/landing/day-story.tsx); signed-in home uses API data |
-| [packages/brand/](../packages/brand/) | Portable design tokens from DESIGN.md, generated web CSS, shared motion units and fixed native Text styles (`NATIVE_TYPOGRAPHY`). Web fonts/reduced-motion behavior remain app-owned; no native app is built in this PR |
-| [packages/contract/](../packages/contract/) | Generated FastAPI schema and TypeScript, shared request/response aliases, runtime form constants and drift checks |
-| [package.json](../package.json) and [package-lock.json](../package-lock.json) | npm workspaces (`frontend`, `apps/*`, `packages/*`); install once with root `npm ci`; mobile is now a workspace |
-| [apps/mobile/](../apps/mobile/README.md) | Expo sign-in/profile, Today, Check-in, local reminders and Progress are built. It uses the same FastAPI endpoints, `@rhythm-health/contract` types and `@rhythm-health/brand` tokens. Scope, screens, risks and build order: [MOBILE_PLAN.md](MOBILE_PLAN.md) |
-| [backend/app/api/](../backend/app/api/) | FastAPI endpoints and ownership dependencies; composed by [main.py](../backend/app/main.py) |
-| [backend/app/services/](../backend/app/services/) | Safety, proposal/history, progress, check-in validation, deterministic analysis, chart/report assembly, narrative generation and demo reset |
-| [backend/app/schemas/](../backend/app/schemas/) | Pydantic request, response and generation-validation models |
-| [backend/app/repositories/](../backend/app/repositories/) and [integrations/](../backend/app/integrations/) | Ownership-scoped persistence queries and PostgREST/Jev/OpenRouter transport. JWT verification and public signing-key retrieval are in [auth/](../backend/app/auth/) |
-| [supabase/migrations/](../supabase/migrations/) | Seven SQL migrations: four tables, profile grants, the one-active index and S6’s optional guess column (shared apply pending Nazmul) |
-| [frontend/tests/](../frontend/tests/) and [backend/tests/](../backend/tests/) | Browser/component/data/contract coverage and isolated Python/API tests |
-| [docs/](./), [scripts/](../scripts/) and [.claude-logs/](../.claude-logs/) | Decisions/rules/evidence, automatic logging scripts and committed agent session history; see [logging.md](logging.md) |
-
-V1 was split by layer: Nazmul on frontend/UI and Shakeb on backend/features. V2 is split by feature, with both working across frontend, backend and database: [pair rule](rules/pair-rule.md), [AGENTS.md](../AGENTS.md#pair-rule) and the [README team table](../README.md#team).
-
-## 7. Tests and current evidence
-
-Counts below are from B12/B11/F13 verification on **1 Nov 2026**, on `feat/scale-words-chart-days` after fetching and merging main at `4e8f170`. Root unit suites passed three consecutive runs. Commands are the existing suites; no real OpenRouter request or shared Supabase write is needed. Sources: [pytest configuration](../backend/pyproject.toml), [frontend scripts](../frontend/package.json), [Vitest config](../frontend/vitest.config.mts), [MSW lifecycle](../frontend/tests/setup.ts) and [Playwright config](../frontend/playwright.config.mts).
-
-| Suite / run directory | Command | Result | What it actually checks |
-|---|---|---|---|
-| Backend, `backend/` | `uv run pytest` | **289 passed**, one existing Starlette/httpx deprecation warning | Statistics, progress, safety, auth/ownership, profile/experiment/check-in/completion/report/demo endpoints and history. FastAPI TestClient uses dependency overrides, monkeypatched repositories/in-memory fakes, and fake AI transport: [auth](../backend/tests/test_auth.py), [proposal](../backend/tests/test_propose.py), [completion](../backend/tests/test_completion.py), [report](../backend/tests/test_report.py), [history](../backend/tests/test_history.py), [demo](../backend/tests/test_demo.py) |
-| Frontend, `frontend/` | `npm test` | **180 passed** in **28 files** | Vitest + Testing Library in jsdom, MSW HTTP mocks and mocked Supabase auth. Data/auth/onboarding/experiment/report/home behavior plus API fixture validation: [tests](../frontend/tests/), [MSW server](../frontend/tests/support/server.ts), [contract assertions](../frontend/tests/contracts/api-contract.test.ts) |
-| Mobile, `apps/mobile/` | `npm test` | **100 passed** in **8 files** | Expo/Jest and React Native Testing Library: sign-in, restoration, profile states, offline, sign-out, native fonts/storage, authoritative Today, Check-in/retry, reminder lifecycle and read-only Progress; [tests](../apps/mobile/__tests__/) |
-| Brand, `packages/brand/` | `npm test` | **11 passed** | CSS unit conversion/fluid type, token propagation and read-only freshness checks: [tests](../packages/brand/tests/). [Frontend checks](../frontend/tests/brand/tokens.test.ts) cover timing units, text contrast and numeric sizing |
-| Contract, `packages/contract/` | `npm test` | **6 passed** | Generation writes schema/types; the read-only freshness check rejects missing artifacts, schema drift and type drift without rewriting them: [tests](../packages/contract/tests/artifacts.test.mjs) |
-| Browser, `frontend/` | `npm run test:e2e` | **90 passed, 1 skipped** (91 scenarios) | Real Next.js in Chromium with intercepted auth/API calls. Onboarding → proposal → start, check-ins, reports, history/demo, errors, layout and reduced motion: [helpers](../frontend/tests/e2e/helpers.ts), [core flow](../frontend/tests/e2e/onboarding-experiment.spec.ts), [report writing](../frontend/tests/e2e/report-writing.spec.ts), [early finish/timezones](../frontend/tests/e2e/early-finish-days.spec.ts) |
-
-For the backend verification, pytest was invoked through the installed backend interpreter from an empty temporary working directory, with the backend on `PYTHONPATH`; this avoids loading the real `.env.local`. It runs the same tests as the usual `uv run pytest` command.
-
-The browser suite starts a separate dev server with fake public settings from the committed test environment file, as configured in [playwright.config.mts](../frontend/playwright.config.mts). The API contract test validates fixtures against the shared **generated** [OpenAPI schema](../packages/contract/openapi.json). Root `npm run contract:check` independently exports the current local FastAPI application with fake/empty settings and compares the schema and generated TypeScript without writing. The exporter blocks env-file reads and network connections; no running server or credentials are needed. Root `npm test` runs this gate and `brand:check` before workspace suites; the [brand generator](../packages/brand/scripts/generate.mjs) checks CSS against the canonical numeric tokens. The [package notes](../packages/contract/README.md) explain response defaults and OpenAPI gaps. Refresh instructions: [API contract rules](rules/api-contracts.md#the-contract-test).
-
-The keyboard-only onboarding scenario is explicitly skipped because Chromium keyboard entry leaves its time inputs empty. The skip does not establish that the entire keyboard flow works. Sources: [skipped scenario](../frontend/tests/e2e/onboarding-experiment.spec.ts) and [remaining-work risk R8](REMAINING_WORK.md#bugs-and-risks). Automated suites do not prove shared-database deployment or live AI quality; [F2/F4 evidence](F2_F4_VERIFICATION.md) separates real demo checks from isolated early-completion checks.
-
-## Backend review before the docs PR is merged
-
-Shakeb should confirm these implementation descriptions and accepted V1 limits; this documentation does not change them:
-
-- **Live schema/grants:** the ER diagram documents [migrations](../supabase/migrations/), not a fresh introspection of the shared project. [DECISIONS Q1](DECISIONS.md#questions-for-shakeb) records earlier application of the migrations; this docs pass makes no database deployment claim.
-- **Report request budget/concurrency:** cached sequential requests use no model call, but fresh concurrent requests have no generation lock, and validation retry can make a second request. Sources: [report endpoint](../backend/app/api/reports.py), [OpenRouter loop](../backend/app/integrations/openrouter.py).
-- **Completion persistence:** report upsert and status transition are separate PostgREST writes, with no cross-table transaction in this path. Sources: [completion endpoint](../backend/app/api/reports.py), [report repository](../backend/app/repositories/reports.py), [experiment repository](../backend/app/repositories/experiments.py).
-- **Narrative/chart follow-ups:** numerical prose verification is deferred; `ChartPoint.missed` now comes from stored `analysis.adherence.missing_days`, and the frontend chart reads point flags only. Old analysis is not backfilled here. [B11/F13](SCALE_WORDS_CHART_DAYS.md). Sources: [schema](../backend/app/schemas/lab_report.py), [report chart](../frontend/components/report/lab-report.tsx), [report chart](../frontend/components/report/day-chart.tsx), [DECISIONS Q14/Q17](DECISIONS.md#questions-for-shakeb) and [verification limits](F2_F4_VERIFICATION.md).
-
-## Mobile daily loop (31 Oct 2026)
-
-[`apps/mobile`](../apps/mobile/README.md) is an Expo SDK 58 / Expo Router npm workspace. Its [entry](../apps/mobile/app/index.tsx) gates private profile content behind restored Supabase auth, packaged brand fonts and validated public configuration. [Auth](../apps/mobile/src/lib/supabase.ts) uses encrypted [SecureStore chunks](../apps/mobile/src/lib/secure-session-storage.ts), serialized storage, SDK refresh coordination, foreground refresh and local-device sign-out; no backend key is shipped. [Profile data](../apps/mobile/src/lib/profile.ts) uses generated `Profile` and the user's Bearer token; it is read-only. Shared [native tokens](../packages/brand/src/index.ts) supply styles and fonts. Web preview is memory-only and does not prove native persistence.
-
-The mobile app makes Supabase sign-in/refresh/sign-out requests and `GET /api/profile`, then [Today](../apps/mobile/src/today.tsx) lists active experiments and reads authoritative progress. [Check-in](../apps/mobile/src/checkin.tsx) reads existing answers, supports all four generated metric types, and POSTs shared `CheckinInput`. It rechecks the server day before writing and rereads progress after success; only the backend calculates day boundaries. Foreground refresh and an in-memory offline cache keep Today current. Failed/offline form answers remain in memory, not persistent draft storage. It links setup and the lab to the existing web app on the API host's port 3000. [Progress](../apps/mobile/src/progress.tsx) renders only endpoint-owned counts and day states and reads recorded answers from the check-in list. [Reminders](../apps/mobile/src/lib/reminders.ts) schedule one local notification at `next_day_at`, serialize native updates with fixed IDs, and retain account preferences in SecureStore. Cold/warm taps wait for auth and fresh progress before opening the current Check-in. Opt-out/sign-out/end/no-next-day cancel scheduling; a closed app learns about web completion on its next refresh. [Settings](../apps/mobile/src/settings.tsx) controls opt-in, denied-permission guidance, sign-out and a development-only ten-second test. No remote push or backend change is introduced; [MOBILE_PLAN.md](MOBILE_PLAN.md) remains their spec. No backend or migration changes are needed. Native tests use Jest/Expo + React Native Testing Library with fake transport/storage, while web keeps Vitest/MSW and Playwright; root `npm test` runs both workspace suites.
-
-## Live baseline context (S8)
-
-The existing progress endpoint also returns nullable `baseline_summary` during active test days. [Timeline assembly](../backend/app/services/timeline.py) delegates phase timing to the existing progress calculation and summary statistics to [analysis](../backend/app/services/analysis/). It reuses the check-ins already read for the timeline, with no new query, model call or migration. Per-metric observed ranges/counts and deterministic English descriptions are rendered by [web](../frontend/components/experiments/baseline-context.tsx) and [mobile](../apps/mobile/src/baseline-context.tsx); neither client computes a baseline. Missing/partial observations are explicit. [Contract and isolated test evidence](PROGRESS_API.md#normal-day-context-s8).
-
-## Personal guess (S6)
-
-Web collects a primary-metric percentage guess before mounting the AI forecast. The optional `experiments.personal_guess_percent` column is nullable; API readiness probing and omission of absent guesses keep the pre-migration database working. Completion adds a deterministic guess/actual comparison to analysis; the report shows guess, AI range and observed result. Existing analysis/experiments default to no guess. No additional model call. [Contract, migration status, local validation and user-only apply instructions](PERSONAL_GUESS.md); [API](../backend/app/api/experiments.py), [analysis](../backend/app/services/analysis/), [migration](../supabase/migrations/20261031000000_personal_guess.sql).
-
-## Scale words and chart day flags (B12/B11/F13)
-
-Design can add optional nullable `Metric.min_label` / `max_label`, stored in existing metric JSON and rendered by web/mobile Check-in with Low / High for missing ends. Every chart point carries `missed` from stored deterministic analysis; the web chart no longer receives a missing-days list or calculates a day rule. No migration, paid call or shared write was needed. [Contract, code sources, tests and evidence](SCALE_WORDS_CHART_DAYS.md).
-
-## Code standards (4 Nov 2026)
-
-**What:**
-- `complete_experiment`'s logic moved from the route into `services/completion.py`. The route only turns its errors into HTTP answers.
-- `analysis.py` became a package, `services/analysis/`, with one small module per concern. Imports from `app.services.analysis` still work.
-- `schemas/rows.py` names the row and decision shapes that were plain `dict`s, as TypedDicts.
-- `experiment-flow.tsx` and `checkin-form.tsx` were split into `forecast-card`, `proposal-preview`, `proposal-skeleton`, `starters`, `checkin-chrome`, `checkin-saved`, `answer-progress` and `change-question`.
-- The test-day question was written twice, in the single and combined check-ins. Both now use `ChangeQuestion`. The landing story's repeated fading layers now use `FadeLayer`.
-
-**Why:** files this size are hard to review, and two copies of one question can drift apart.
-
-**Trade-offs:**
-- TypedDicts document shapes but don't validate them, and nothing here runs a type checker on the backend. Pydantic would validate, but it would change how every row is handled the day before the demo.
-- The red alert box (`rounded-card bg-clay-tint`) still appears in 10 files. Sharing it would touch almost every screen for little gain, so it can wait until after the demo.
-- `scene-art.tsx` stays at 363 lines. It's one illustration, with no copying between it, `day-story` and `experiment-flow`.
-
-## Async AI client and concurrent reads (4 Nov 2026)
-
-**What:** the OpenRouter client uses `httpx.AsyncClient`, and `/propose`, `/complete` and both `/report` routes are async. Connecting times out after 5s. Reading times out after 75s (`OPENROUTER_TIMEOUT_SECONDS`), or 30s for Jev. One retry follows a connection failure, 429 or 5xx. Independent reads run together through `read_together`:
-
-| Route | Reads that now run together |
-|---|---|
-| `POST /propose` | history, running questions |
-| `POST /complete` | check-ins, other experiments |
-| `GET /report` | report, check-ins |
-| `POST /report` | report, check-ins, profile |
-
-**Why:** each AI call held a worker thread for up to 90s, so a few slow calls could use up the pool and stall everyone else. Sequential reads also added their waits together.
-
-**Where reads can't run together:**
-- The Supabase client is plain blocking HTTP over PostgREST, with no async version here. Its reads overlap on worker threads, so each one still holds a thread while it waits.
-- History (`services/history.py`) stays sequential: reports are looked up by the experiment ids the first read returns.
-- `owned_experiment` stays sequential: it needs the profile before it can read the experiment.
-- Writes in `/complete` stay in order: the report is saved before the status changes.
-
-**Trade-offs:**
-- A read timeout isn't retried. The model probably ran and was paid for, and a retry would double a long wait, so the person sees the existing error and can choose to retry.
-- A new client per call is slower to connect than a shared one, but that's small next to a model call, and it avoids lifecycle problems across event loops.
-- A call that took 75–90s used to succeed and now fails with the 503 screen. If `ai_calls` shows real latencies near 75s, raise the setting.
-- In `GET` and `POST /report`, check-ins are now read even when there's no report. A database failure on that second read answers 503 rather than 404.
-
-## Monitoring and error reporting (4 Nov 2026)
-
-**What:** each request writes one JSON log line (`request_id`, `method`, route template, `status`, `latency_ms`) and returns the id as `X-Request-ID`. `GET /api/health` also checks the database, and answers 503 when it can't be reached. Sentry runs on the backend (`SENTRY_DSN`) and web (`NEXT_PUBLIC_SENTRY_DSN`) only when a DSN is set.
-
-**Why:** when something failed there was no record of it, and no way to match what a person saw to a log line.
-
-**Trade-offs:**
-- Logs hold the route template, never the real path, query string, headers or body. That protects tokens and personal notes, but you can't tell from a log line which experiment was involved.
-- Sentry events drop request details, local variables and breadcrumbs, so a report has less context. Prompts and check-in notes must never leave the app this way.
-- Web uses `@sentry/browser`, downloaded only when a DSN is set, rather than `@sentry/nextjs`. That leaves the build config alone the day before the demo, but gives no source maps or server-side capture.
-- `/health` stays as a plain liveness check, because the web app's status badge uses it.
-
-## Paid AI limit and usage tracking (4 Nov 2026)
-
-**What:** every OpenRouter call writes one row to `ai_calls` (profile, kind, model, status, latency, time; never prompt or response text). Before paid work, `/propose` and `POST /report` check a per-person daily limit (`AI_DAILY_LIMIT_PROPOSE`, default 5; `AI_DAILY_LIMIT_REPORT`, default 3) and answer 429 with `code: ai_daily_limit`. Web and mobile show the message and offer no retry.
-
-**Why:** nothing capped what one account could spend, and nothing showed what was being spent.
-
-**What counts:** the limit counts finished attempts, so a validation retry uses one, not two. `ok` and `invalid` count. `retry` is the first half of an attempt, and `error` never reached a model. A report that's already written comes back free, even at the limit. Days run on UTC.
-
-**Trade-offs:**
-- If usage can't be read, the call goes ahead. A tracking problem doesn't stop anyone using the app, and the app keeps working until the migration is applied. The cost is that the cap is off during a database problem.
-- Classification (`kind: other`) is tracked but not limited, because it runs on every question, including ones the safety rules stop. Someone could keep sending blocked questions and pay only for that cheap call.
-- Two requests at the same moment can both pass the check. A person double-tapping costs one extra call at most, so this doesn't take a database lock.
-
-## Continuous integration (4 Nov 2026)
-
-**What:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull request and on `main`. The `checks` job runs lint, typecheck, root `npm test` (with `logs:check`), `contract:check`, `brand:check`, the web build and backend `pytest`. The `browser` job runs the Playwright suite.
-
-**Why:** until now these ran only if someone remembered to run them on their own machine.
-
-**Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.
-
-## Calibration card (4 Nov 2026)
-
-**What:** `GET /api/experiments/calibration` compares each person's own guess with the measured result, across their 20 newest finished experiments, and says whether the guesses are getting closer. History shows it on web and mobile. It's computed in `services/calibration.py` from saved reports, with no AI call and no new table.
-
-**Why:** it answers 8x's question "what does a user learn after ten days?": how well they can predict their own habits.
-
-**How the trend works:** it compares the average gap of the earlier half of the guesses with the later half. A change of 2 points or less counts as steady, and two guesses are needed before it says anything.
-
-**Trade-offs:**
-- The trend can read a lot into two guesses, so the card says it's a pattern, not proof.
-- Experiments without a guess, or whose baseline was zero, are left out rather than estimated.
-- The demo sample is never one of the guesses. While someone has no real guess, it comes back in a separate `example` field, labelled "Example" on screen, and is never in `points`, the average or the trend. The completed sample stores an invented guess of +5% (`seed.COMPLETED_EXPERIMENT`), so its Lab Report compares prediction, reality and guess, and the card shows the same numbers. It stays `is_seeded`, and real results are read with `is_seeded=false`. The card works it out from the seed, so it shows without anyone creating the sample and writes nothing.
-- The card loads separately from the list, so its failure leaves the rest of History working, at the cost of one extra read.
+**CI can't cover:** real sign-in, real AI output, VoiceOver, real large text, reminders, and the installed app's splash. Those are checked by hand on an iPhone; each PR says what was checked. Rules: [testing](rules/testing.md).
