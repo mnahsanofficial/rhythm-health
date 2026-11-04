@@ -136,3 +136,9 @@ Decided by Nazmul: with several experiments running, answering the same question
 - **Samples stay separate,** because their answers are invented.
 - **New proposals are shown the questions already running,** so the AI can reuse them. Without this, AI-written keys would rarely match and little would combine. No extra AI call.
 - **The per-experiment check-in stays:** it's used when only one is due, and from each experiment's card.
+
+## One-time agent merges — 4 Nov 2026
+
+Nazmul authorized agent merges for #85–#88 on 4 Nov to meet the demo freeze.
+
+This is one exception, not a change to the rule: agents still never merge PRs. It covered merge commits only, with every check green first, and it doesn't extend to any other PR. Nazmul had already merged #85 himself.
