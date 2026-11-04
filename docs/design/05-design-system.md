@@ -269,8 +269,10 @@ Full screen, after saving a check-in. It's the third signature moment, after the
 | Picture | The rhythm ring, drawn large. The sun (light) or moon (dark) rises along it to the share of days recorded. In light mode the sun has a `text` outline |
 | Words | "Day 4 recorded", then "6 days left". Counts come from the server's refreshed progress: if it isn't back yet, show only the day |
 | Background | Solid, from our own tokens. No confetti, no thumbs, nothing borrowed |
+| Several experiments | One check-in for several says "2 check-ins recorded" and each one's day. The marker follows the first listed, as decoration; the words carry the facts |
+| Updating | The same celebration as saving |
 | Sample | Says "Example" |
-| Haptic | `expo-haptics` success, once, when the screen appears. Ignores failure |
+| Haptic | `expo-haptics` light impact, once, when the screen appears. Ignores failure |
 | Time | `reveal` 480 for the rise, held to 2 seconds in total, then Today. Needs **one new token, `celebration: 2000`**, which reverses "no new duration tokens" and adds one unused variable to the generated web CSS, with no visible web change |
 | Tap | Anywhere skips |
 | Reduce Motion | Still ring at its final position, words at once, same 2 seconds |

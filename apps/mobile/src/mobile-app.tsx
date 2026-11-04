@@ -18,6 +18,7 @@ import { Today } from './today';
 import { AuthForm } from './auth-form';
 import { Landing } from './landing';
 import { Onboarding } from './onboarding';
+import { FirstRunGuide, firstRunSeen } from './first-run-guide';
 import { clearDraft } from './lib/onboarding';
 import { readConfig } from './lib/config';
 import { createAuthClient } from './lib/supabase';
@@ -64,12 +65,14 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   /** A cold start with no session opens on the public page; signing out or expiring goes to the form. */
   const [visitor, setVisitor] = useState<'landing' | 'signIn' | 'signUp'>('landing');
   const [navigation, setNavigation] = useState(0);
+  /** After a first setup: check the device, then show the guide once. */
+  const [guide, setGuide] = useState<'no' | 'checking' | 'show'>('no');
   const pendingDraftRemoval = useRef<string | null>(null);
   const lastOwner = useRef<string | null>(null);
 
   const signOut = useCallback(async (reason: string | null = null) => {
     if (!reason && session) pendingDraftRemoval.current = session.user.id;
-    setVisitor('signIn'); setSection('lab'); setEditingProfile(false); setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
+    setVisitor('signIn'); setSection('lab'); setEditingProfile(false); setGuide('no'); setSession(null); setProfile({ kind: 'loading' }); setMessage(reason); setAuthFailure(null);
     try {
       if (pendingDraftRemoval.current) { await clearDraft(pendingDraftRemoval.current); pendingDraftRemoval.current = null; }
       await reminders.signOut();
@@ -130,7 +133,7 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
   };
   const choose = (next: Section) => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); };
   const header = <AppHeader signedIn={Boolean(session)} onHome={ready && !authFailure ? goHome : undefined} account={session && !hasProfile ? { email: session.user.email ?? 'your account', onSignOut: () => void signOut() } : undefined} />;
-  const tabs = session && hasProfile && !editingProfile && !authFailure ? <TabBar section={section} onSection={choose} /> : undefined;
+  const tabs = session && hasProfile && !editingProfile && !authFailure && guide === 'no' ? <TabBar section={section} onSection={choose} /> : undefined;
   return <NavProvider>
     <Frame header={onLanding ? undefined : header} tabs={tabs} bare={onLanding}>
       {authFailure ? <>
@@ -150,9 +153,11 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       /> : <>
         {profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && editingProfile ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline} initial={profile.profile}
             onSaved={value => { setProfile({ kind: 'ready', profile: value, owner: session.user.id }); setEditingProfile(false); }} onExpired={expire} onCancel={() => setEditingProfile(false)} />
+          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && guide === 'show' ? <FirstRunGuide onDone={() => setGuide('no')} />
+          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && guide === 'checking' ? <Loading message="Opening your rhythm…" />
           : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} onExpired={expire} section={section} navigation={navigation} onSection={setSection} editProfile={() => setEditingProfile(true)} email={session.user.email ?? 'your account'} onSignOut={() => void signOut()} />
           : profile.kind === 'ready' && profile.owner === owner && profile.profile === null ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline}
-            onSaved={value => setProfile({ kind: 'ready', profile: value, owner: session.user.id })} onExpired={expire} />
+            onSaved={value => { setProfile({ kind: 'ready', profile: value, owner: session.user.id }); setGuide('checking'); void firstRunSeen().then(seen => setGuide(seen ? 'no' : 'show')); }} onExpired={expire} />
           : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>
           : profile.kind === 'loading' || (profile.kind === 'ready' && profile.owner !== owner) ? <Loading message="Loading your profile…" />
           : profile.kind === 'error' ? <><Alert>{profile.message}</Alert><Action label="Try again" onPress={() => { setProfile({ kind: 'loading' }); setProfileAttempt(n => n + 1); }} /></>

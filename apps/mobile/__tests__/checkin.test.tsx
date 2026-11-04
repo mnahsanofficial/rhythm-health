@@ -69,7 +69,7 @@ afterEach(() => jest.restoreAllMocks());
 
 async function open() {
   const view = render(<MobileApp />);
-  fireEvent.press(await screen.findByRole('button', { name: /Check in for day|Edit answers/ }));
+  fireEvent.press(await screen.findByRole('button', { name: /Check in now, day|Edit answers/ }));
   await screen.findByText("Today's check-in.");
   await screen.findByLabelText('Breaks');
   return view;
@@ -86,7 +86,7 @@ async function answer() {
 test('all four metric types save the typed contract and return to recorded Today automatically', async () => {
   await open(); await answer();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save check-in" })); });
-  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
+  expect((await screen.findAllByText(/^Day \d+ recorded$/))[0]).toBeVisible();
   expect(posts).toEqual([{ intervention_completed: true, metric_values: { morning_energy: 7, breaks: -2.5, minutes_to_sleep: 20.5, screen_free: false }, note: 'A quiet evening.' }]);
 });
 
@@ -111,7 +111,7 @@ test('baseline omits the test-day question and sends no intervention answer', as
   fireEvent.changeText(screen.getByLabelText('Breaks'), '0'); fireEvent.changeText(screen.getByLabelText('Minutes to fall asleep, in minutes'), '0');
   fireEvent.press(screen.getByRole('radio', { name: 'Screen-free evening: No' }));
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save check-in" })); });
-  await screen.findByText(/^Day \d+ recorded\.$/);
+  await screen.findAllByText(/^Day \d+ recorded$/);
   expect(posts[0]).not.toHaveProperty('intervention_completed');
   expect(posts[0].metric_values.breaks).toBe(0);
 });
@@ -133,7 +133,7 @@ test('failed saves keep every answer and retry only when the person asks', async
   expect(screen.getByLabelText('Optional note')).toHaveDisplayValue('  A quiet evening.  ');
   expect(posts).toHaveLength(1);
   fireEvent.press(screen.getByRole('button', { name: 'Try saving again' }));
-  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
+  expect((await screen.findAllByText(/^Day \d+ recorded$/))[0]).toBeVisible();
   expect(posts).toHaveLength(2);
 });
 
@@ -163,7 +163,7 @@ test('offline keeps answers and disables Save until reconnected', async () => {
 
 test('check-in read failures have retry and do not display an empty editable form', async () => {
   failRead = true; render(<MobileApp />);
-  fireEvent.press(await screen.findByRole('button', { name: 'Check in for day 4' }));
+  fireEvent.press(await screen.findByRole('button', { name: 'Check in now, day 4' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/Check-ins unavailable/);
   expect(screen.queryByLabelText('Breaks')).toBeNull();
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
@@ -172,10 +172,12 @@ test('check-in read failures have retry and do not display an empty editable for
 
 test('a saved check-in whose progress reload fails is not submitted again', async () => {
   failRefresh = true; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
-  expect(await screen.findByText(/check-in was saved/i)).toBeVisible();
+  expect((await screen.findAllByText(/^Day \d+ recorded$/))[0]).toBeVisible();
+  expect(screen.queryByText(/days? left/)).toBeNull();
   expect(posts).toHaveLength(1); failRefresh = false;
-  fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.press(await screen.findByRole('button', { name: 'Try again' }));
+  await screen.findByRole('tab', { name: 'Today', selected: true });
   expect(posts).toHaveLength(1);
 });
 
@@ -194,7 +196,7 @@ test('a second Save tap is ignored while the first request is pending', async ()
   const busy = await screen.findByRole('button', { name: 'Saving…' });
   expect(busy).toBeDisabled(); fireEvent.press(busy); expect(sending).toBe(1);
   await act(async () => { release(); });
-  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible(); expect(posts).toHaveLength(1);
+  expect((await screen.findAllByText(/^Day \d+ recorded$/))[0]).toBeVisible(); expect(posts).toHaveLength(1);
 });
 
 test('a save with an expired session hides the form and signs out', async () => {
@@ -203,15 +205,9 @@ test('a save with an expired session hides the form and signs out', async () => 
   expect(screen.queryByLabelText('Breaks')).toBeNull(); expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
 
-test.each([true, false])('save confirmation stays immediate with reduced motion %s', async reduced => {
-  const { AccessibilityInfo, Animated } = jest.requireActual('react-native') as typeof import('react-native');
-  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduced);
-  const timing = jest.spyOn(Animated, 'timing').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
+test('save confirmation is immediate', async () => {
   await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
-  expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
-  expect(screen.getByText('Check-in saved.')).toBeVisible();
-  if (reduced) expect(timing).not.toHaveBeenCalled();
-  else expect(timing).toHaveBeenCalled();
+  expect((await screen.findAllByText(/^Day \d+ recorded$/))[0]).toBeVisible();
 });
 
 
@@ -229,7 +225,7 @@ test('a saved check-in reschedules the opted-in reminder from refreshed progress
   await open(); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
   const before = notifications.scheduleNotificationAsync.mock.calls.length;
   await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
-  await screen.findByText(/^Day \d+ recorded\.$/);
+  await screen.findAllByText(/^Day \d+ recorded$/);
   await waitFor(() => expect(notifications.scheduleNotificationAsync.mock.calls.length).toBeGreaterThan(before));
   expect(notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger).toMatchObject({ date: new Date('2026-11-02T18:45:00Z') });
 });

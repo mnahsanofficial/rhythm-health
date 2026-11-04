@@ -8,7 +8,8 @@ export default defineConfig({
   reporter: "list",
   timeout: 180_000,
   use: { actionTimeout: 10_000 },
-  webServer: {
+  // MOBILE_URL points at a Metro that's already running; otherwise serve an export from MOBILE_BUILD.
+  webServer: process.env.MOBILE_URL ? undefined : {
     command: `node static-server.mjs "${process.env.MOBILE_BUILD}" 8092`,
     cwd: new URL(".", import.meta.url).pathname,
     url: "http://127.0.0.1:8092",

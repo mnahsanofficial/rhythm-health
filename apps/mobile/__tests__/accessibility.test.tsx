@@ -117,7 +117,7 @@ describe('controls have names and 48pt targets', () => {
   test('check-in and progress', async () => {
     setActive(running, [1, 2, 3]);
     render(<MobileApp />);
-    const start = await screen.findByRole('button', { name: 'Check in for day 4' });
+    const start = await screen.findByRole('button', { name: 'Check in now, day 4' });
     await act(async () => { fireEvent.press(start); });
     await screen.findByLabelText('Optional note');
     auditControls();

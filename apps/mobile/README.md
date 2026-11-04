@@ -216,3 +216,11 @@ Check-in matches the web: the phase line and lead, the main measure first, a liv
 ## Web parity: signed-out landing (4 Nov 2026)
 
 A cold start with no session opens on [the landing carousel](src/landing.tsx): four slides that move by themselves, each with one line and an example of the app over the web's sky and hills, then Start an experiment and Sign in. It waits for Reduce Motion, a screen reader, a finger on a slide or Pause. Signing out or an expired session goes to the form instead. The web's scrolling day story stays web-only. Start an experiment opens account creation, because on the phone you sign up before the seven questions, not after them. [Web and mobile at 390px, side by side](../../docs/screenshots/mobile-web-parity/compare/README.md).
+
+## Troubleshooting
+
+**The phone looks exactly like before, even after a merge and `--clear`.**
+Cause: Metro serves the folder it was started in, and merging on GitHub doesn't change that folder. On 4 Nov `~/Health` was still on `e5e0247`, before #78, so a fresh Metro correctly served old code; no cache was involved.
+Fix: stop Metro, run `git pull` in that checkout, run `npm ci` from the repo root if `package-lock.json` changed, then start `npx expo start --go --clear --host lan`. To try an unmerged PR, start Metro from a worktree on its branch, with the `EXPO_PUBLIC_*` settings in that shell or a local `.env.local`.
+On the phone: fully close Expo Go, reopen it and scan the new QR code rather than a recent entry.
+Check first: `git log -1` and `ls src/tab-bar.tsx` in the served folder, and make sure only one Metro is running with `lsof -nP -iTCP:8081 -sTCP:LISTEN`.

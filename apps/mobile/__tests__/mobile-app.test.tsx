@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, Animated, Platform } from 'react-native';
 import { MOTION_DURATION_MS } from '@rhythm-health/brand';
+import { FIRST_RUN_KEY } from '../src/first-run-guide';
 import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
 import { goTo, renderToForm } from './support/nav';
@@ -39,6 +40,7 @@ beforeEach(() => {
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
   mockFonts.ready = true; mockFonts.error = null;
+  jest.requireActual('./support/notifications').preferences.set(FIRST_RUN_KEY, 'seen');
   process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://supabase.test.invalid';
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'fake-public-anon-key';
   process.env.EXPO_PUBLIC_API_URL = 'http://api.test.invalid:8001';
@@ -192,6 +194,7 @@ test('font errors offer retry and keep content hidden until resources are ready'
   await renderToForm();
   expect(screen.getByRole('alert')).toHaveTextContent("Couldn't open Rhythm.");
   mockFonts.ready = true; mockFonts.error = null;
+  jest.requireActual('./support/notifications').preferences.set(FIRST_RUN_KEY, 'seen');
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByRole('header', { name: 'Stop guessing. Test one habit.' })).toBeVisible();
 });
