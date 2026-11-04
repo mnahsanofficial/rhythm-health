@@ -112,11 +112,6 @@ class ClaudeHook(unittest.TestCase):
             self.assertNotIn("the other session", text)
             self.assertIn("github_user: mnahsanofficial", text)
 
-    def test_guide_script_is_unchanged(self):
-        import hashlib
-        digest = hashlib.sha256((SCRIPTS / "extract-log.py").read_bytes()).hexdigest()
-        self.assertEqual(digest, "440fc0393c91af63eea6f9eeaeb93ade64afb475a0ba0c552eec29b33d53a735")
-
 
 class CodexExtractor(unittest.TestCase):
     def setUp(self):

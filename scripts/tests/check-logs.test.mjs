@@ -23,7 +23,8 @@ function log({ front = {}, prompts = ["LOG CHECK — Claude Code, Nazmul"], drop
   return `---\n${head}\n---\n\n# Claude Session Log - 2026-11-01\n\n---\n\n${body}`;
 }
 
-const check = (text, options = {}) => checkLog(NAME, text, { authors: AUTHORS, waivers: {}, ...options });
+// Attribution and prompt rules, on a short fixture. The guide's exact format is tested in test_log_format.py.
+const check = (text, options = {}) => checkLog(NAME, text, { authors: AUTHORS, waivers: {}, format: () => [], ...options });
 
 test("a log in the guide's format passes", () => {
   assert.deepEqual(check(log()), []);
@@ -62,4 +63,16 @@ test("a listed old log is excused only from the checks it's listed for", () => {
   const problems = check(text, { waivers: { [NAME]: { checks: ["github_user"], reason: "written before the fix" } } });
   assert.ok(!problems.some(p => /github_user/.test(p)));
   assert.ok(problems.some(p => /empty prompt/i.test(p)));
+});
+
+test("reports format drift from the Python format check, and a waiver excuses only what it lists", () => {
+  const format = () => [["entries", "prompt #1 has the wrong word count"], ["frontmatter_keys", "unexpected frontmatter key x"]];
+  assert.equal(check(log(), { format }).length, 2);
+  const problems = check(log(), { format, waivers: { [NAME]: { checks: ["frontmatter_keys"], reason: "approved backfill" } } });
+  assert.deepEqual(problems, [`${NAME}: prompt #1 has the wrong word count`]);
+});
+
+test("the real format check runs by default and rejects a log that isn't in the guide's format", () => {
+  const problems = checkLog(NAME, log(), { authors: AUTHORS, waivers: {} });
+  assert.ok(problems.some(p => /header|Session Log/i.test(p)));
 });
