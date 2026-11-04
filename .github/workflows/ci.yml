@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, types, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18"
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      # Root contract checks import FastAPI, so the backend goes first.
+      - name: Install backend
+        run: uv sync
+        working-directory: backend
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Root tests, including logs:check
+        run: npm test
+      - run: npm run contract:check
+      - run: npm run brand:check
+      - name: Web build, with the fake public values tests use
+        run: |
+          set -a
+          . frontend/.env.test
+          set +a
+          npm run build
+      - name: Backend tests
+        run: uv run pytest
+        working-directory: backend
+
+  browser:
+    name: Browser suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18"
+          cache: npm
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      # Supabase and the API are mocked, using the fake values in frontend/.env.test.
+      - run: npm run test:e2e
+      - name: Keep the traces when a test fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: frontend/test-results
+          retention-days: 7
