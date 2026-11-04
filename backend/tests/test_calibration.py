@@ -162,3 +162,15 @@ def test_the_example_writes_nothing_and_calls_no_ai(stored, monkeypatch):
     monkeypatch.setattr(experiments, "create", forbidden)
     monkeypatch.setattr(reports, "upsert", forbidden)
     assert get()["example"] is not None
+
+
+def test_real_results_are_read_with_samples_filtered_out(monkeypatch):
+    """list_completed asks the database for is_seeded=false, so a sample's guess can't count."""
+    seen = {}
+    def rest(method, table, **kwargs):
+        seen.update(kwargs["params"])
+        return []
+    monkeypatch.setattr(experiments, "rest_request", rest)
+    experiments.list_completed("profile-1", 20)
+    assert seen["is_seeded"] == "eq.false"
+

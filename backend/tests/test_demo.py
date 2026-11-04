@@ -223,3 +223,32 @@ def test_dates_stay_recent_and_whole_days(db):
     exp = report.experiment
     assert (now - exp.completed_at).days == seed.FINISHED_DAYS_AGO
     assert (exp.completed_at - exp.started_at).days == 10
+
+
+def test_the_completed_sample_stores_the_invented_guess_and_its_report_compares_it(db):
+    report = client.post(RESET).json()
+    row = db.experiments[0]
+    assert row["is_seeded"] is True
+    assert row["personal_guess_percent"] == seed.EXAMPLE_GUESS_PERCENT
+    guess = report["analysis"]["personal_guess"]
+    assert guess["guessed_change_percent"] == seed.EXAMPLE_GUESS_PERCENT
+    assert guess["observed_change_percent"] == 10.92
+    assert guess["error_points"] == 5.92
+    # Prediction vs reality is still there alongside it.
+    assert report["analysis"]["prediction"]["observed_change_percent"] == 10.92
+
+
+def test_the_card_and_the_sample_report_agree(db):
+    from app.services import calibration
+    report = client.post(RESET).json()
+    example = calibration._example()
+    guess = report["analysis"]["personal_guess"]
+    assert example.guessed_change_percent == guess["guessed_change_percent"]
+    assert example.observed_change_percent == round(guess["observed_change_percent"], 1)
+    assert example.off_by_points == round(abs(guess["error_points"]), 1)
+
+
+def test_the_active_sample_has_no_invented_guess(db):
+    assert "personal_guess_percent" not in seed.EXPERIMENT
+    assert seed.COMPLETED_EXPERIMENT["personal_guess_percent"] == seed.EXAMPLE_GUESS_PERCENT
+

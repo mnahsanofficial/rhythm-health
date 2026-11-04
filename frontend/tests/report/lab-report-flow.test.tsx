@@ -147,6 +147,20 @@ describe("Lab Report flow", () => {
     expect(posts).toBe(2);
   });
 
+  it("says a sample's guess is invented too", async () => {
+    server.use(
+      http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json({
+        ...writtenLabReport,
+        experiment: { ...completedExperiment, is_seeded: true },
+        analysis: { ...writtenLabReport.analysis, personal_guess: { guessed_change_percent: 5, observed_change_percent: 10.92, error_points: 5.92 } },
+      })),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
+    );
+    render(<LabReport id={id} />);
+    const notice = await screen.findByRole("note", { name: "Sample experiment" });
+    expect(notice).toHaveTextContent("This report is based on seeded example check-ins and an invented guess.");
+  });
+
   it("shows the daily limit from POST /report without offering a retry", async () => {
     const user = userEvent.setup();
     const message = "You've used all of today's written reports. You can write this one tomorrow.";
