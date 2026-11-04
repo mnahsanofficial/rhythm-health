@@ -16,7 +16,7 @@ Install npm dependencies from the root with `npm ci`. Root `npm test` first runs
 
 - `python3 backend/tests/migrations/check_active_limit.py`, `check_personal_guess.py` and `check_ai_calls.py` run migrations on a disposable local PostgreSQL cluster, with real concurrent sessions for the limit. Run them when you change a migration. They never read env files or connect to an existing database.
 - Install the Playwright browser once before the first E2E run: `npx playwright install chromium`.
-- Run all of these before opening a PR. The repo has no CI yet, so nothing else runs them.
+- Run all of these before opening a PR. [CI](../../.github/workflows/ci.yml) runs them again on every pull request and on `main`, with no secrets and no paid calls, except the two migration scripts above and the iPhone check.
 
 ## Testing by hand
 

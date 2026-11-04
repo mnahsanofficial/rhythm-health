@@ -342,3 +342,11 @@ Design can add optional nullable `Metric.min_label` / `max_label`, stored in exi
 - If usage can't be read, the call goes ahead. A tracking problem doesn't stop anyone using the app, and the app keeps working until the migration is applied. The cost is that the cap is off during a database problem.
 - Classification (`kind: other`) is tracked but not limited, because it runs on every question, including ones the safety rules stop. Someone could keep sending blocked questions and pay only for that cheap call.
 - Two requests at the same moment can both pass the check. A person double-tapping costs one extra call at most, so this doesn't take a database lock.
+
+## Continuous integration (4 Nov 2026)
+
+**What:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull request and on `main`. The `checks` job runs lint, typecheck, root `npm test` (with `logs:check`), `contract:check`, `brand:check`, the web build and backend `pytest`. The `browser` job runs the Playwright suite.
+
+**Why:** until now these ran only if someone remembered to run them on their own machine.
+
+**Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.
