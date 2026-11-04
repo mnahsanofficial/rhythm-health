@@ -78,7 +78,7 @@ describe("the calibration card", () => {
 
     const example = await screen.findByRole("group", { name: "Example, not your results" });
     expect(within(example).getByText("Example")).toBeVisible();
-    expect(example).toHaveTextContent("built from invented check-ins");
+    expect(example).toHaveTextContent("Built from invented check-ins");
     expect(example).toHaveTextContent("Question 1?");
     expect(example).toHaveTextContent("Guessed +5%");
     expect(example).toHaveTextContent("It changed +10.9%");

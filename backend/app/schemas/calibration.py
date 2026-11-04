@@ -20,3 +20,6 @@ class Calibration(BaseModel):
     average_off_by_points: float | None = None
     # None until there are two guesses to compare.
     trend: Literal["closer", "further", "steady"] | None = None
+    # The demo sample, kept apart so it can't reach the real numbers above. Only sent while
+    # there are no real guesses, and always shown labelled as an example.
+    example: CalibrationPoint | None = None

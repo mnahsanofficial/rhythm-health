@@ -457,6 +457,7 @@ export interface components {
             average_off_by_points?: number | null;
             /** Trend */
             trend?: ("closer" | "further" | "steady") | null;
+            example?: components["schemas"]["CalibrationPoint"] | null;
         };
         /** CalibrationPoint */
         CalibrationPoint: {

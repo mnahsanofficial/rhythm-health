@@ -1218,6 +1218,16 @@
               }
             ],
             "title": "Trend"
+          },
+          "example": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalibrationPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",

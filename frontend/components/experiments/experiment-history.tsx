@@ -98,6 +98,8 @@ export function ExperimentHistory() {
         </p>
       </div>
 
+      <CalibrationCard />
+
       {load.experiments.length === 0 ? (
         <section className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
           <h2 className="font-display text-title">Your finished experiments land here.</h2>
@@ -106,7 +108,6 @@ export function ExperimentHistory() {
         </section>
       ) : (
         <>
-          <CalibrationCard />
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
             <p role="status" className="font-mono text-caption text-muted tabular-nums">
               {ordered.length} completed {ordered.length === 1 ? "experiment" : "experiments"} · {order} first

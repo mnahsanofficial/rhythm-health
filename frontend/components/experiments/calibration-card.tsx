@@ -67,12 +67,15 @@ export function CalibrationCard() {
 }
 
 function CalibrationResult({ calibration }: { calibration: Calibration }) {
-  const { points: guesses, average_off_by_points: average, trend } = calibration;
+  const { points: guesses, average_off_by_points: average, trend, example } = calibration;
   if (guesses.length === 0) {
     return (
-      <p className="mt-3 text-body text-muted">
-        Your next experiment asks for your own guess before the forecast, so you can see how close you get.
-      </p>
+      <>
+        <p className="mt-3 text-body text-muted">
+          Your next experiment asks for your own guess before the forecast, so you can see how close you get.
+        </p>
+        {example && <ExampleGuess example={example} />}
+      </>
     );
   }
   const newestFirst = [...guesses].reverse();
@@ -99,5 +102,21 @@ function CalibrationResult({ calibration }: { calibration: Calibration }) {
         ))}
       </ol>
     </>
+  );
+}
+
+/** The demo sample. Never one of the person's guesses, so it says so and sits apart from them. */
+function ExampleGuess({ example }: { example: NonNullable<Calibration["example"]> }) {
+  return (
+    <div role="group" aria-label="Example, not your results" className="mt-5 border-t border-line pt-4">
+      <span className="inline-block rounded-pill bg-line px-3 py-1 text-caption text-ink">Example</span>
+      <p className="mt-2 text-caption text-muted">Built from invented check-ins. It isn&apos;t part of your results.</p>
+      <p className="mt-3 font-medium">{example.question}</p>
+      <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-mono text-caption text-muted tabular-nums">
+        <span>Guessed {signedPercent(example.guessed_change_percent, 2)}</span>
+        <span>It changed {signedPercent(example.observed_change_percent, 2)}</span>
+        <span className="text-ink">Off by {points(example.off_by_points)}</span>
+      </p>
+    </div>
   );
 }

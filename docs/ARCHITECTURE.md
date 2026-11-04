@@ -374,5 +374,5 @@ Design can add optional nullable `Metric.min_label` / `max_label`, stored in exi
 **Trade-offs:**
 - The trend can read a lot into two guesses, so the card says it's a pattern, not proof.
 - Experiments without a guess, or whose baseline was zero, are left out rather than estimated.
-- Sample experiments are left out, so a new account sees the empty state until it finishes a real experiment with a guess.
+- The demo sample is never one of the guesses. While someone has no real guess, it comes back in a separate `example` field, labelled "Example" on screen, and is never in `points`, the average or the trend. It's the sample's computed result against an invented guess of +5% (`seed.EXAMPLE_GUESS_PERCENT`), worked out from the seed, so it shows without anyone creating the sample and writes nothing. The sample's own Lab Report has no guess in it, so the two differ on that one point.
 - The card loads separately from the list, so its failure leaves the rest of History working, at the cost of one extra read.

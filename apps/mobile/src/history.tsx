@@ -56,13 +56,13 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
       <Alert>We couldn&apos;t load your history. {error}</Alert>
       <Action label="Try again" secondary onPress={() => { setError(null); setAttempt(n => n + 1); }} />
     </View>}
+    {list !== null && <CalibrationCard token={token} offline={offline} onExpired={onExpired} />}
     {list === null ? (!offline && !error && <Loading message="Loading your history…" />)
       : list.length === 0 ? <View style={local.empty}>
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Nothing finished yet.</Copy>
         <Copy style={ui.muted}>Completed experiments will appear here.</Copy>
         <Action label="Test a new question" onPress={onAsk} />
       </View> : <View style={ui.stack}>
-        <CalibrationCard token={token} offline={offline} onExpired={onExpired} />
         <Status style={local.count}>{`${ordered.length} completed ${ordered.length === 1 ? 'experiment' : 'experiments'} · ${order} first`}</Status>
         <View style={local.sort}>
           <Action label="Newest first" secondary={order !== 'newest'} selected={order === 'newest'} onPress={() => setOrder('newest')} />

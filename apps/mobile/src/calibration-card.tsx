@@ -44,7 +44,15 @@ export function CalibrationCard({ token, offline, onExpired }: { token: string; 
       <Alert>{`Couldn't compare your guesses. ${error}`}</Alert>
       <Action label="Try again" name="Try again for your guesses" secondary disabled={offline} onPress={() => { setError(null); setAttempt(n => n + 1); }} />
     </> : !calibration ? <Status style={ui.muted}>Checking your guesses…</Status>
-      : guesses.length === 0 ? <Copy style={ui.muted}>Your next experiment asks for your own guess before the forecast, so you can see how close you get.</Copy>
+      : guesses.length === 0 ? <>
+        <Copy style={ui.muted}>Your next experiment asks for your own guess before the forecast, so you can see how close you get.</Copy>
+        {calibration.example && <View testID="calibration-example" accessible={false} accessibilityLabel="Example, not your results" style={ui.stack}>
+          <Copy style={ui.sectionTitle}>Example</Copy>
+          <Copy style={ui.muted}>Built from invented check-ins. It isn&apos;t part of your results.</Copy>
+          <Copy>{calibration.example.question}</Copy>
+          <Copy style={ui.muted}>{`Guessed ${signedPercent(calibration.example.guessed_change_percent)} · It changed ${signedPercent(calibration.example.observed_change_percent)} · Off by ${points(calibration.example.off_by_points)}`}</Copy>
+        </View>}
+      </>
         : <>
           <Copy>{calibration.trend ? TREND[calibration.trend] : "Finish another experiment to see whether you're getting closer."}</Copy>
           {calibration.trend && calibration.average_off_by_points !== null && <Copy style={ui.muted}>
