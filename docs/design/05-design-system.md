@@ -240,12 +240,12 @@ Variants share the layout. `TimeRow` opens the native picker in a sheet and foll
 | Rule | Detail |
 |---|---|
 | Structure | `Frame` is header, scroller, then footer, all inside one `KeyboardAvoidingView`. A screen fills the footer through context; it doesn't lay itself out |
-| Keyboard | `behavior="padding"` on iOS, `height` on Android. `keyboardShouldPersistTaps="handled"`, so the first tap on the action works. The focused input scrolls into view above the bar |
+| Keyboard | `behavior="padding"` on iOS; Android resizes the window itself. `keyboardShouldPersistTaps="handled"`, so the first tap on the action works. The tab bar and bottom inset step aside while the keyboard is open |
 | Safe area | Footer pads to the bottom inset, and drops it while the keyboard is open |
 | Look | `background` fill, `border` top edge, full-width button |
 | Secondary | "Previous" and the like go beside it, or as a quiet link above it. Never two filled buttons |
 | Disabled | `accent-tint` fill, `muted` text, and a caption above saying what unlocks it |
-| Not used on | Tab screens. There, the action sits in a card and the tab bar owns the bottom |
+| On tab screens | Ask only, above the tab bar, because typing there is the start of a flow. Elsewhere the action sits in a card and the tab bar owns the bottom |
 
 ### Tab bar
 

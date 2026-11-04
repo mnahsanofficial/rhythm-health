@@ -8,7 +8,7 @@ import { themedStyles } from './theme-core';
  * What the screen on show does when you leave it, from the header or Android's back button.
  * - flow: entered and left. The header shows a ×.
  * - detail: has its own back link at the top.
- * - section: a main section with no control on screen. Android's back button returns to your lab.
+ * - section: a main section with no control on screen. Android's back button returns to Today.
  */
 export type NavScreen = {
   kind: 'flow' | 'detail' | 'section';
@@ -89,7 +89,7 @@ export function NavProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (askingRef.current) { setAsking(null); return true; }
-      if (!stack.current.length) return false; // Your lab: let the system decide.
+      if (!stack.current.length) return false; // Today: let the system decide.
       close();
       return true;
     });

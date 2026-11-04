@@ -220,3 +220,19 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, before the mobile readabi
 2. **M3, M4, M10:** what to read and what to tap, which is what Nazmul asked about.
 3. **M2 dark time picker:** one line, in the first setup step.
 4. **The rest** come along with `FormRow`, `Stepper` and the tab bar.
+
+## Re-audit: mobile PR 1, readability and navigation
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `accessibility.test.tsx` and `readability.test.tsx`, plus Expo web at 390 and 320 in both modes (`docs/screenshots/mobile-readability/`).
+
+**Fixed:** M2 (picker follows the theme), M3 (disabled shape, with a hint), M4 on setup, Ask, guess, plan and check-in, M5, M6, M7, M8, M9, M10, M11. M1's likely cause is removed, and the iPhone has to confirm it.
+
+**Found and fixed in this pass:**
+- Removing the text shrink let long suggestion chips run off the right edge. They now wrap.
+- The theme button stayed in the header after sign-in, next to the new control on You. It's now only shown before sign-in.
+- "Test day: did you make the change?" sat directly above the same question, so a screen reader heard it twice.
+- Switching tabs remounted the question flow, which would have lost a typed question and a paid plan. A test caught it.
+
+**Still open:** M4 on Today's card and the Lab Report (PR 2 and PR 4). The sticky action comes after the content in reading order, which is intended but needs hearing on a device.
+
+**Not checked, and on the PR's iPhone list:** the keyboard with the sticky action; the native time row and picker in dark, because Expo web draws a browser input there; VoiceOver on tabs and the stepper; Dynamic Type at the largest sizes; heading position under the header (R12), which we haven't reproduced.

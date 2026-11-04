@@ -31,7 +31,7 @@ beforeEach(() => {
     return { ok: true, status: 200, json: async () => path === '/api/profile' ? profile : path.endsWith('/progress') ? timeline : path.endsWith('/checkins') ? answers : [active] } as Response;
   });
 });
-async function open() { const view = render(<MobileApp />); await screen.findByText('Your observations, day by day.'); return view; }
+async function open() { const view = render(<MobileApp />); const tab = await screen.findByRole('tab', { name: 'Progress' }); await act(async () => { fireEvent.press(tab); }); await screen.findByText('Day by day'); return view; }
 
 test('shows endpoint counts and labelled day states despite the cached experiment summary', async () => {
   await open(); expect(screen.getByText('2 of 10 days recorded')).toBeVisible();
@@ -59,7 +59,7 @@ test('answers have loading and error/retry states without hiding the authoritati
 });
 
 test('an expired answers session hides private progress and returns to sign-in', async () => {
-  readStatus = 401; render(<MobileApp />); expect(await screen.findByLabelText('Email')).toBeVisible(); expect(screen.queryByText('2 of 10 days recorded')).toBeNull();
+  readStatus = 401; render(<MobileApp />); const tab = await screen.findByRole('tab', { name: 'Progress' }); await act(async () => { fireEvent.press(tab); }); expect(await screen.findByLabelText('Email')).toBeVisible(); expect(screen.queryByText('2 of 10 days recorded')).toBeNull();
 });
 
 test('offline keeps cached progress and answers labelled without another read', async () => {

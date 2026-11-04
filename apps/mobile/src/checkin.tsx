@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
-import { Action, Alert, Copy, Loading, useStyles, Title, Status, useStepFocus, Notice } from './ui';
+import { Action, Alert, Copy, Loading, StickyAction, useStyles, Title, Status, useStepFocus, Notice } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
@@ -99,7 +99,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     <Copy style={local.phase}>{`Day ${day} of ${timeline.progress.total_days} · ${test ? 'Test' : 'Baseline'} day ${timeline.progress.phase_day} of ${timeline.progress.phase_days}`}</Copy>
     {experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample experiment · Sample check-in</Copy>}
     <Title>Today&apos;s check-in.</Title>
-    <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{test ? 'A test day. Tell us whether you made the change, then how it went.' : "A normal day. Don't change anything yet, just notice how it went."}</Copy>
+    <Copy>{test ? 'Test day: tell us how it went.' : 'Normal day: change nothing, just notice.'}</Copy>
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {!ready ? readError ? <><Alert>{readError}</Alert><Action label="Try again" disabled={offline} onPress={() => { setReadError(undefined); setAttempt(value => value + 1); }} /></>
       : offline ? <Copy>Reconnect to load your previous answers.</Copy> : <Loading message="Loading your answers…" />
@@ -107,7 +107,6 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
         <View style={local.meter}>
           <View style={local.meterRow}>
             <Status style={local.count}>{`${answered} of ${total} answered`}</Status>
-            <Copy style={local.small}>{answered === total ? 'Ready to record' : 'Note optional'}</Copy>
           </View>
           <View accessible accessibilityRole="progressbar" accessibilityLabel="Check-in answers" accessibilityValue={{ min: 0, max: total, now: answered }} style={local.track}>
             <View style={[local.fill, { width: `${total ? (answered / total) * 100 : 0}%` }]} />
@@ -131,15 +130,15 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
           <MetricInput metric={metric} value={values[metric.key]} onChange={value => setValues(current => ({ ...current, [metric.key]: value }))} disabled={busy} error={fields[metric.key]} />
         </View>)}
         <View style={styles.divider}>
-          <Copy style={NATIVE_TYPOGRAPHY.lead}>Anything unusual yesterday? (optional)</Copy>
+          <Copy style={NATIVE_TYPOGRAPHY.lead}>Anything unusual? (optional)</Copy>
           <TextInput accessibilityLabel="Optional note" multiline value={note} onChangeText={setNote} maxLength={MAX_NOTE_LENGTH} editable={!busy}
             placeholder="Late night, a stressful day, a long run…" placeholderTextColor={COLORS.muted}
             onFocus={() => setNoteFocused(true)} onBlur={() => setNoteFocused(false)}
             style={[styles.input, noteFocused && styles.focus, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
           {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
         </View>
-        <View style={{ paddingTop: SPACING.md }}><Action label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update check-in" : "Save check-in"}
-          disabled={busy || offline} onPress={() => void save()} /></View>
+        <StickyAction><Action wide label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update check-in" : "Save check-in"}
+          disabled={busy || offline} onPress={() => void save()} /></StickyAction>
       </>}
   </View>;
 }
@@ -168,7 +167,7 @@ export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder,
       </View>
     </>}
     {failed && <Action label="Try again" secondary disabled={refreshing} onPress={onRetry} />}
-    <Action label="Go to your lab" onPress={onBack} />
+    <Action label="Go to Today" onPress={onBack} />
     <Action label="Edit answers" secondary onPress={onChange} />
   </View>;
 }
@@ -188,7 +187,7 @@ const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMo
   dots: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs + 2 },
   dot: { minWidth: LAYOUT.tapTarget, minHeight: LAYOUT.tapTarget, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill, borderWidth: LAYOUT.focusWidth / 2 },
   dotLogged: { borderColor: COLORS.moss, backgroundColor: COLORS.moss },
-  dotPast: { borderColor: COLORS.line, backgroundColor: COLORS.paper },
-  dotFuture: { borderColor: COLORS.line, borderStyle: 'dashed' },
+  dotPast: { borderColor: COLORS.control, backgroundColor: COLORS.paper },
+  dotFuture: { borderColor: COLORS.control, borderStyle: 'dashed' },
   dotText: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption, color: COLORS.ink },
 }); });

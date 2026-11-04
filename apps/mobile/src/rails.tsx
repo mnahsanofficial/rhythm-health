@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { LAYOUT, RADII, SPACING } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { Copy, useStyles } from './ui';
 import { themedStyles } from './theme-core';
 
@@ -7,16 +7,13 @@ export const STEP_NAMES = ['Age', 'Sleep', 'Hours', 'Move', 'Goals', 'Habits', '
 
 /** Where you are in setup. Each part of your rhythm has a name, so the end is never a surprise. */
 export function StepRail({ current }: { current: number }) {
-  const local = useLocal(); const styles = useStyles();
+  const local = useLocal();
   const total = STEP_NAMES.length;
   return <View style={{ gap: SPACING.sm }}>
     <View accessible accessibilityRole="progressbar" accessibilityLabel="Setup progress" accessibilityValue={{ min: 1, max: total, now: current, text: `Question ${current} of ${total}` }} style={local.segments}>
       {STEP_NAMES.map((name, index) => <View key={name} style={[local.segment, index < current && local.done]} />)}
     </View>
-    <View style={local.label}>
-      <Copy style={styles.number}>{`${String(current).padStart(2, '0')} / ${String(total).padStart(2, '0')}`}</Copy>
-      <Copy style={styles.muted}>{STEP_NAMES[current - 1]}</Copy>
-    </View>
+    <Copy style={local.label}>{`Question ${current} of ${total} · ${STEP_NAMES[current - 1]}`}</Copy>
   </View>;
 }
 
@@ -36,7 +33,7 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   segments: { flexDirection: 'row', gap: SPACING.xs + 2 },
   segment: { flex: 1, height: SPACING.xs + 2, borderRadius: RADII.pill, backgroundColor: COLORS.border },
   done: { backgroundColor: COLORS.accent },
-  label: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md },
+  label: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   days: { flexDirection: 'row', gap: SPACING.xs + 2 },
   day: { flex: 1, aspectRatio: 1, maxWidth: LAYOUT.tapTarget, borderRadius: RADII.pill },
   normal: { backgroundColor: COLORS['chart-1'] },

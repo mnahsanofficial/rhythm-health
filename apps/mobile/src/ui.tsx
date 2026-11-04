@@ -1,13 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
-import { AccessibilityInfo, findNodeHandle, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaInsetsContext, SafeAreaView } from 'react-native-safe-area-context';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { useColors, themedStyles } from './theme-core';
 
 const PRESSED_SCALE = 0.98;
 const FontAvailability = createContext(true);
 const ScrollToTop = createContext<() => void>(() => undefined);
+const FooterSlot = createContext<((node: ReactNode) => void) | null>(null);
 export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { const styles = useStyles();
   const available = useContext(FontAvailability);
   return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
@@ -92,7 +93,7 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
     </Pressable></Animated.View>
   );
 }
-/** The one way back from a detail screen: "‹ Your lab". The mark is visual; the spoken name says where it goes. */
+/** The one way back from a detail screen: "‹ Today". The mark is visual; the spoken name says where it goes. */
 export function BackLink({ to, name, onPress, disabled = false }: { to: string; name?: string; onPress: () => void; disabled?: boolean }) { const COLORS = useColors(); const styles = useStyles();
   return <Pressable accessibilityRole="button" accessibilityLabel={name ?? `Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }, disabled && styles.disabled]}>
@@ -104,8 +105,30 @@ export function ForwardLink({ label, onPress }: { label: string; onPress: () => 
     <Copy style={{ color: COLORS.moss, fontFamily: FONT_FAMILIES.sansMedium }}>{label}  →</Copy>
   </Pressable>;
 }
+/**
+ * The screen's one primary action, held at the bottom outside the scroller so content and the keyboard can't hide it.
+ * With no Frame around it (a screen rendered on its own), it stays in place.
+ */
+export function StickyAction({ children }: { children: ReactNode }) {
+  const fill = useContext(FooterSlot);
+  useEffect(() => { fill?.(children); }, [fill, children]);
+  useEffect(() => () => fill?.(null), [fill]);
+  return fill ? null : <>{children}</>;
+}
+function useKeyboardOpen() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
+    const listeners = [Keyboard.addListener(show, () => setOpen(true)), Keyboard.addListener(hide, () => setOpen(false))];
+    return () => listeners.forEach(listener => listener.remove());
+  }, []);
+  return open;
+}
 /** `bare` hands the whole screen, up under the status bar, to one that lays itself out and doesn't scroll. */
-export function Frame({ children, header, fontsReady = true, bare = false }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean; bare?: boolean }) { const styles = useStyles();
+export function Frame({ children, header, tabs, fontsReady = true, bare = false }: { children: ReactNode; header?: ReactNode; tabs?: ReactNode; fontsReady?: boolean; bare?: boolean }) { const styles = useStyles();
+  const [footer, setFooter] = useState<ReactNode>(null);
+  const keyboardOpen = useKeyboardOpen();
+  const bottomInset = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const opacity = useSharedValue(1);
   const rise = useSharedValue(0);
@@ -118,14 +141,19 @@ export function Frame({ children, header, fontsReady = true, bare = false }: { c
   }, [opacity, rise]);
   const enter = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ translateY: rise.get() }] }));
   return (
-    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={bare ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
+    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><FooterSlot.Provider value={setFooter}><SafeAreaView style={styles.safe} edges={bare ? ['left', 'right'] : ['top', 'left', 'right']}>
       {header}
-      {bare ? <View style={styles.bare}>{children}</View> : <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <View style={styles.column}>
-          <Animated.View style={[styles.content, enter]}>{children}</Animated.View>
-        </View>
-      </ScrollView>}
-    </SafeAreaView></ScrollToTop.Provider></FontAvailability.Provider>
+      {bare ? <View style={[styles.bare, { paddingBottom: bottomInset }]}>{children}</View> : <KeyboardAvoidingView style={styles.bare} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView ref={scroller} style={styles.bare} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
+          <View style={styles.column}>
+            <Animated.View style={[styles.content, enter]}>{children}</Animated.View>
+          </View>
+        </ScrollView>
+        {footer && <View style={styles.footer}><View style={[styles.column, styles.stack]}>{footer}</View></View>}
+        {!keyboardOpen && tabs}
+        {!keyboardOpen && <View style={{ height: bottomInset }} />}
+      </KeyboardAvoidingView>}
+    </SafeAreaView></FooterSlot.Provider></ScrollToTop.Provider></FontAvailability.Provider>
   );
 }
 export function Loading({ message }: { message: string }) { const styles = useStyles();
@@ -141,13 +169,15 @@ export function Loading({ message }: { message: string }) { const styles = useSt
 export const useStyles = themedStyles(COLORS => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.oat },
   bare: { flex: 1 },
+  footer: { paddingHorizontal: LAYOUT.gutter.min, paddingVertical: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border, backgroundColor: COLORS.background },
+  hint: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   scroll: { flexGrow: 1, padding: LAYOUT.gutter.min },
   column: { width: '100%', maxWidth: LAYOUT.contentWidth / 3, alignSelf: 'center' },
   backLink: { minHeight: LAYOUT.primaryAction, alignSelf: 'flex-start', justifyContent: 'center' },
-  content: { paddingTop: SPACING.lg, paddingBottom: SPACING.xxl, gap: SPACING.lg },
-  body: { fontFamily: FONT_FAMILIES.sans, ...NATIVE_TYPOGRAPHY.body, color: COLORS.ink, flexShrink: 1 },
-  title: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY['display-sm'], color: COLORS.ink },
-  number: { fontFamily: FONT_FAMILIES.mono, ...NATIVE_TYPOGRAPHY.body, color: COLORS.moss },
+  content: { paddingTop: SPACING.lg, paddingBottom: SPACING.lg, gap: SPACING.lg },
+  body: { fontFamily: FONT_FAMILIES.sans, ...NATIVE_TYPOGRAPHY.body, color: COLORS.ink },
+  title: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.headline, color: COLORS.ink },
+  number: { fontFamily: FONT_FAMILIES.mono, ...NATIVE_TYPOGRAPHY.body, color: COLORS.text },
   sectionTitle: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title },
   decision: { padding: SPACING.lg, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'], gap: SPACING.md },
   muted: { color: COLORS.muted },
@@ -156,14 +186,14 @@ export const useStyles = themedStyles(COLORS => StyleSheet.create({
     minHeight: LAYOUT.primaryAction, backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2,
     borderColor: COLORS.control, borderRadius: RADII.control, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   focus: { borderColor: COLORS.moss, borderWidth: LAYOUT.focusWidth },
-  stack: { gap: SPACING.md },
+  stack: { gap: SPACING.sm + SPACING.xs },
   action: { minHeight: LAYOUT.primaryAction, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.moss, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.body, color: COLORS['on-accent'], textAlign: 'center' },
   fit: { alignSelf: 'flex-start', maxWidth: LAYOUT.buttonMaxWidth },
   wide: { alignSelf: 'stretch' },
   secondary: { backgroundColor: 'transparent', borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
-  disabled: { backgroundColor: COLORS.surface, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border },
+  disabled: { backgroundColor: COLORS['accent-tint'], borderWidth: 0 },
   notice: { color: COLORS.text, backgroundColor: COLORS['warning-tint'], padding: SPACING.md, borderRadius: RADII.card },
   alert: { color: COLORS.clay, backgroundColor: COLORS['clay-tint'], padding: SPACING.md, borderRadius: RADII.card },
   divider: { borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, paddingTop: SPACING.lg, gap: SPACING.md },

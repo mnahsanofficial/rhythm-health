@@ -4,19 +4,17 @@ import { LAYOUT, SPACING } from '@rhythm-health/brand';
 import { onlySamples } from './lib/reminders';
 import { useReminders } from './reminder-context';
 import { Action, Alert, Copy, useStyles, Title, Status } from './ui';
+import { FormRow, FormRows } from './form-rows';
 import { useColors } from './theme-core';
 export function Settings() { const COLORS = useColors(); const styles = useStyles();
   const { service, state } = useReminders();
   const [error, setError] = useState(false);
   return <View style={styles.stack}>
-    <Title>Daily reminders.</Title><Copy style={styles.muted}>A reminder when the next day opens, not another thing to remember.</Copy>
+    <Title>Daily reminders.</Title><Copy>When the next day opens. The lock screen never shows your question.</Copy>
     {Platform.OS === 'web' && <Copy>Reminders are available in the phone app.</Copy>}
-    <View style={styles.divider}><Copy>Daily reminders</Copy>
-      <Switch style={{ minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction }} hitSlop={SPACING.sm} accessibilityLabel="Daily reminders" value={!onlySamples(state.data) && state.choice === 'on' && state.permission} disabled={onlySamples(state.data) || !state.ready || state.busy || Platform.OS === 'web'}
-        trackColor={{ false: COLORS.line, true: COLORS.moss }} thumbColor={COLORS['on-accent']} onValueChange={value => void service.choose(value)} />
-      {onlySamples(state.data) && <Copy>Reminders are off for this sample. Your reminder preference is kept for real experiments.</Copy>}
-      <Copy style={styles.muted}>At the next opening returned by your experiment. The lock screen shows the day, never your habit question.</Copy>
-    </View>
+    <FormRows><FormRow icon="bell" label="Daily reminders" trailing={<Switch style={{ minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction }} hitSlop={SPACING.sm} accessibilityLabel="Daily reminders" value={!onlySamples(state.data) && state.choice === 'on' && state.permission} disabled={onlySamples(state.data) || !state.ready || state.busy || Platform.OS === 'web'}
+      trackColor={{ false: COLORS.line, true: COLORS.moss }} thumbColor={COLORS['on-accent']} onValueChange={value => void service.choose(value)} />} /></FormRows>
+    {onlySamples(state.data) && <Copy>Reminders are off for this sample. Your reminder preference is kept for real experiments.</Copy>}
     {state.choice === 'on' && !state.permission && <><Copy>Reminders are off. Allow notifications for Expo Go in your phone Settings.</Copy>
       <Action label="Open phone Settings" secondary onPress={() => { void Linking.openSettings().catch(() => setError(true)); }} /></>}
     {state.choice === 'off' && <Copy>Reminders are off.</Copy>}

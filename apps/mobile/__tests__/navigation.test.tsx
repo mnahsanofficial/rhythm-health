@@ -103,7 +103,7 @@ describe('the logo in the app', () => {
   test('is a home link with a name, going to your lab when signed in', async () => {
     await signedIn();
     await goTo('History');
-    await screen.findByRole('header', { name: 'Your experiment history' });
+    await screen.findByRole('header', { name: 'Your history' });
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
     expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   });
@@ -117,7 +117,7 @@ describe('the logo in the app', () => {
 });
 
 describe('main sections and detail screens', () => {
-  test.each([['History', 'Your experiment history'], ['Demo', 'Explore a sample experiment.']])('%s has no back control, and Android back returns to your lab', async (section, heading) => {
+  test.each([['History', 'Your history'], ['Demo', 'See a finished example.']])('%s has no back control, and Android back returns to your lab', async (section, heading) => {
     await signedIn();
     await goTo(section);
     await screen.findByRole('header', { name: heading });
@@ -142,8 +142,8 @@ describe('main sections and detail screens', () => {
   test('an experiment has one link naming where it goes, and Android back does the same', async () => {
     await withRunning();
     await press(/See your experiment/);
-    const link = await screen.findByRole('button', { name: 'Back to your lab' });
-    expect(within(link).getByText('‹ Your lab')).toBeVisible();
+    const link = await screen.findByRole('button', { name: 'Back to today' });
+    expect(within(link).getByText('‹ Today')).toBeVisible();
     await hardwareBack();
     expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
   });
@@ -167,7 +167,7 @@ describe('flows close with one ×', () => {
   test('the first time through onboarding has nowhere to close to', async () => {
     routes['GET /api/profile'] = { status: 404, body: { detail: 'Profile not found' } };
     render(<MobileApp />);
-    await screen.findByRole('button', { name: 'Sign out' });
+    await screen.findByRole('button', { name: /^Account menu/ });
     expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
   });
 
@@ -177,34 +177,20 @@ describe('flows close with one ×', () => {
     await screen.findByText("Here's your rhythm.");
     expect(screen.queryByRole('button', { name: 'Cancel setup changes' })).toBeNull();
     await press('Close');
-    expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    expect(await screen.findByRole('tab', { name: 'You' })).toBeVisible();
     expect(screen.queryByText('Leave without saving?')).toBeNull();
   });
 
-  test('a question opened from your lab: empty closes at once, and typed words ask first', async () => {
+  test('Ask is a tab: a typed question stays while you look elsewhere, and needs no ×', async () => {
     await withRunning();
-    await press('Test another habit');
+    await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
     await screen.findByRole('header', { name: 'Ask a question.' });
-    await press('Close');
-    expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
-    await press('Test another habit');
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), QUESTION);
-    await press('Close');
-    expect(screen.getByText('Leave without saving?')).toBeVisible();
-    expect(screen.getByText("Your question won't be kept.")).toBeVisible();
-    await press('Stay');
-    expect(screen.queryByText('Leave without saving?')).toBeNull();
-    expect(screen.getByLabelText('Your question or goal').props.value).toBe(QUESTION);
-    await hardwareBack();
-    expect(screen.getByText('Leave without saving?')).toBeVisible();
-    // With the sheet open, Android back is the same as Stay.
-    await hardwareBack();
-    expect(screen.queryByText('Leave without saving?')).toBeNull();
-    expect(screen.getByLabelText('Your question or goal').props.value).toBe(QUESTION);
-    await press('Close');
-    await press('Leave');
+    await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Today' })); });
     expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
-    expect(proposals()).toBe(0);
+    await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
+    expect(screen.getByLabelText('Your question or goal').props.value).toBe(QUESTION);
   });
 
   test('a proposal that cost a call asks before going, and closing never sends another', async () => {

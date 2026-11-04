@@ -4,8 +4,7 @@ import { LAYOUT, NATIVE_TYPOGRAPHY, THEMES } from '@rhythm-health/brand';
 import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
 import { ThemeProvider } from '../src/theme';
-import { StickyAction, useStyles } from '../src/ui';
-import { Copy } from '../src/ui';
+import { Copy, StickyAction, useStyles } from '../src/ui';
 import { profile, proposeResponse } from '../../../frontend/tests/support/fixtures';
 
 const mockAuth = { getSession: jest.fn(), signInWithPassword: jest.fn(), signUp: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -82,6 +81,7 @@ describe('the tab bar', () => {
   test('You holds the account, the theme and sign out; the header no longer does', async () => {
     await signedIn();
     expect(screen.queryByRole('button', { name: /^Account menu/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Theme:/ })).toBeNull();
     await pressTab('You');
     for (const name of ['Update your rhythm', 'Daily reminders', 'See an example', 'Sign out']) expect(screen.getByRole('button', { name })).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeVisible();
@@ -232,9 +232,10 @@ describe('reading order', () => {
     await signedIn();
     expect(screen.getByText('What do you want to test?')).toBeVisible();
     expect(screen.queryByText('A little curiosity, a little evidence')).toBeNull();
-    const starter = screen.getByRole('button', { name: /^What could/ });
+    const starter = screen.getByRole('button', { name: /could help/ });
     expect(flat(starter).backgroundColor).not.toBe(THEMES.light['accent-tint']);
     expect(flat(starter).borderColor).toBe(THEMES.light.control);
+    expect(flat(starter).maxWidth).toBe('100%');
   });
 
   test('waiting is one status and one complete line', async () => {

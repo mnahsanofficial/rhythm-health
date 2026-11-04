@@ -78,7 +78,7 @@ const paid = () => calls.filter(call => call.endsWith('/propose') || (call.start
 describe('history', () => {
   test('lists completed experiments with the prediction, the outcome and the signal', async () => {
     await openHistory();
-    expect(await screen.findByRole('header', { name: 'Your experiment history' })).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Your history' })).toBeVisible();
     const row = within((await screen.findAllByTestId('history-row'))[0]);
     expect(row.getByText(newer.question)).toBeVisible();
     expect(await row.findByText('+21%')).toBeVisible();
@@ -107,7 +107,7 @@ describe('history', () => {
     expect(await screen.findByRole('header', { name: 'Prediction vs reality' })).toBeVisible();
     expect(screen.getByRole('header', { name: older.question })).toBeVisible();
     await press('Back to history');
-    expect(await screen.findByRole('header', { name: 'Your experiment history' })).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Your history' })).toBeVisible();
     expect(paid()).toEqual([]);
   });
 
@@ -184,7 +184,7 @@ describe('history', () => {
 
   test('offline before any load sends nothing and says so', async () => {
     render(<MobileApp />);
-    await screen.findByRole('button', { name: /^Account menu/ });
+    await screen.findByRole('tab', { name: 'You' });
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);
     await goTo('History');
@@ -219,8 +219,7 @@ describe('completed demo', () => {
 
   test('explains itself before anything is written', async () => {
     await openDemoScreen();
-    expect(await screen.findByText('See a completed example')).toBeVisible();
-    expect(screen.getByText("A sample experiment and its Lab Report, built from invented check-ins. It's never added to your own results and makes no AI calls. Opening it again resets the sample.")).toBeVisible();
+    expect(await screen.findByText('Invented check-ins, never added to your results.')).toBeVisible();
     expect(count(RESET)).toBe(0);
   });
 
@@ -247,7 +246,7 @@ describe('completed demo', () => {
     defaults[`GET ${ACTIVE}`] = { body: [running] };
     await openDemo();
     await screen.findByText('Sample experiment');
-    await press('Back to demo');
+    await press('Back to example');
     await goTo('Your lab');
     expect(await screen.findByText('Day 2 of 10')).toBeVisible();
     expect(calls.filter(call => call.includes('/remove') || call === 'POST /api/demo/active')).toEqual([]);

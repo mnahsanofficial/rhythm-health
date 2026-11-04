@@ -5,7 +5,7 @@ import { AccessibilityInfo, AppState, StyleSheet, TextInput } from 'react-native
 import { COLORS, LAYOUT } from '@rhythm-health/brand';
 import type { Experiment } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
-import { goTo, openMenu } from './support/nav';
+import { goTo } from './support/nav';
 import { completedExperiment, experiment, labReport, profile, proposeResponse, writtenLabReport } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 
@@ -122,7 +122,8 @@ describe('controls have names and 48pt targets', () => {
     await screen.findByLabelText('Optional note');
     auditControls();
     await press('Close');
-    await screen.findByText('Your observations, day by day.');
+    await act(async () => { fireEvent.press(await screen.findByRole('tab', { name: 'Progress' })); });
+    await screen.findByText('Day by day');
     auditControls();
   });
 
@@ -194,9 +195,8 @@ describe('screen readers hear what changes', () => {
 
   test('the current section is marked as selected', async () => {
     render(<MobileApp />);
-    await openMenu();
-    expect(await screen.findByRole('button', { name: 'Your lab', selected: true })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'History', selected: false })).toBeVisible();
+    expect(await screen.findByRole('tab', { name: 'Today', selected: true })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'History', selected: false })).toBeVisible();
   });
 });
 

@@ -158,7 +158,7 @@ test('signing out goes to the form rather than the landing', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'Ask a question.' });
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: /^Account menu/ })); });
+  await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'You' })); });
   await press('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
   expect(screen.queryByRole('header', { name: FIRST })).toBeNull();

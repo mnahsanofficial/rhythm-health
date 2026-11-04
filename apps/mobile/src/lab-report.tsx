@@ -16,7 +16,7 @@ type Props = {
 };
 
 /** Reads only. Opening this screen never finishes an experiment or writes the paid narrative. */
-export function LabReportScreen({ id, token, offline, initial, backTo = 'Your lab', onExpired, onBack, onToday, onAsk }: Props) { const pill = usePill(); const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+export function LabReportScreen({ id, token, offline, initial, backTo = 'Today', onExpired, onBack, onToday, onAsk }: Props) { const pill = usePill(); const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [load, setLoad] = useState<Load>(initial ? { kind: 'ready', report: initial } : { kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -276,7 +276,7 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday, 
       <Copy style={ui.muted}>{narrative.next_experiment.reason}</Copy>
       {typeof check === 'object' ? <>
         <Copy>You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.</Copy>
-        <Action label="Go to your lab" secondary onPress={onToday} />
+        <Action label="Go to Today" secondary onPress={onToday} />
       </> : check === 'checking' && !offline ? <Status style={local.small}>Checking whether you can start another…</Status>
         : <Action label="Run this experiment" secondary={!nextStep} onPress={() => onAsk(narrative.next_experiment.question)} />}
     </> : <>
