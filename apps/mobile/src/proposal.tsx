@@ -53,6 +53,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const blocked = limit !== null;
   const inFlight = useRef(false);
   const savedId = useRef<string | null>(null);
+  const continuing = useRef(false); // The person chose Continue anyway for this question, so a retry mustn't ask again.
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
   const step = !planReady ? (result ? 'refused' : 'ask') : result.personal_guess_available && guess === null ? 'guess' : 'plan';
   const heading = useStepFocus(step);
@@ -73,19 +74,19 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     return false;
   };
   function reset(next: string) {
-    savedId.current = null;
+    savedId.current = null; continuing.current = false;
     setQuestion(next); setResult(null); setGuess(null); setFailure(null);
     setStartError(null); setGuessUnavailable(false); setLimit(null); setStartAtLimit(false);
   }
 
-  async function submit() {
+  async function submit(continueAnyway = false) {
     const text = question.trim();
     if (inFlight.current || offline || blocked || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
-    inFlight.current = true;
+    inFlight.current = true; continuing.current = continueAnyway;
     setBusy('proposing'); setFailure(null); setResult(null); setGuess(null);
     try {
-      const response = await proposeExperiment(token, text);
-      if (response.safety.allowed && (!response.proposal || !response.prediction)) throw new ApiError(502, 'The plan came back incomplete. Please retry.');
+      const response = await proposeExperiment(token, text, continueAnyway);
+      if (response.safety.allowed && !response.habit_check && (!response.proposal || !response.prediction)) throw new ApiError(502, 'The plan came back incomplete. Please retry.');
       setResult(response);
     } catch (cause) {
       if (cause instanceof ApiError && detailCode(cause) === 'active_limit_reached') setLimit(cause.message);
@@ -172,7 +173,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     <Copy>What do you want to test?</Copy>
     <View>
       <TextInput accessibilityLabel="Your question or goal" accessibilityHint="5 to 500 characters. One small change at a time." multiline value={question}
-        onChangeText={value => { setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} editable={!working} maxLength={QUESTION_MAX + 1}
+        onChangeText={value => { continuing.current = false; setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} editable={!working} maxLength={QUESTION_MAX + 1}
         placeholder="Does walking after dinner improve my sleep?" placeholderTextColor={COLORS.muted} style={[ui.input, local.question]} />
       <View style={local.help}>
         <Copy style={local.helpText}>One small change at a time.</Copy>
@@ -196,9 +197,15 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       {failure.status === 409
         ? <Action label="Go to your rhythm" secondary onPress={() => onEditProfile?.()} />
         : failure.status === 429 ? null
-        : <Action label="Retry" secondary disabled={offline} onPress={() => void submit()} />}
+        : <Action label="Retry" secondary disabled={offline} onPress={() => void submit(continuing.current)} />}
     </View>}
     {blockedNotice}
+    {result?.habit_check && <View style={local.fixed}>
+      <Copy accessibilityRole="header" style={ui.sectionTitle}>{result.habit_check.message}</Copy>
+      <Copy>{result.habit_check.suggested_question}</Copy>
+      <Action label="Use this instead" onPress={() => reset(result.habit_check!.suggested_question)} />
+      <Action label="Continue anyway" secondary onPress={() => void submit(true)} />
+    </View>}
     {result && !result.safety.allowed && <View style={local.fixed}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Let&apos;s find a gentler experiment.</Copy>
       <Copy>{result.safety.reason || "This question isn't suitable for a small habit experiment."}</Copy>
@@ -207,7 +214,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
       </>}
     </View>}
-    {shown && <StickyAction><Action wide label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design experiment'}
+    {shown && !result?.habit_check && <StickyAction><Action wide label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design experiment'}
       disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} /></StickyAction>}
   </View>;
 }

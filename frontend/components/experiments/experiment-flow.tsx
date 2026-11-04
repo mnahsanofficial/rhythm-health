@@ -56,6 +56,7 @@ export function ExperimentFlow({
   const [guessUnavailable, setGuessUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
+  const continuing = useRef(false); // The person chose Continue anyway for this question, so a retry mustn't ask again.
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [error, setError] = useState<{
     status: number;
@@ -83,10 +84,11 @@ export function ExperimentFlow({
     hasShownResult.current = Boolean(result);
   }, [result, personalGuess]);
 
-  async function submit() {
+  async function submit(continueAnyway = false) {
     const text = question.trim();
     if (inFlight.current || limitMessage || text.length < 5 || text.length > 500) return;
     inFlight.current = true;
+    continuing.current = continueAnyway;
     setBusy(true);
     setError(null);
     setStartError(null);
@@ -95,8 +97,8 @@ export function ExperimentFlow({
     setPersonalGuess(null);
     setGuessUnavailable(false);
     try {
-      const response = await proposeExperiment(text);
-      if (response.safety.allowed && (!response.proposal || !response.prediction)) {
+      const response = await proposeExperiment(text, continueAnyway);
+      if (response.safety.allowed && !response.habit_check && (!response.proposal || !response.prediction)) {
         throw new ApiError(502, "The plan came back incomplete. Please retry.");
       }
       setResult(response);
@@ -118,6 +120,7 @@ export function ExperimentFlow({
   }
 
   function chooseQuestion(value: string) {
+    continuing.current = false;
     setQuestion(value);
     setPersonalGuess(null);
     setGuessUnavailable(false);
@@ -188,11 +191,12 @@ export function ExperimentFlow({
       )}
       <div className="mt-5 grid gap-10">
         <div className="min-w-0">
-          {!result?.safety.allowed && <>
+          {(!result?.safety.allowed || result.habit_check) && <>
           <QuestionForm
             inputRef={input}
             question={question}
             onChange={(value) => {
+              continuing.current = false;
               setQuestion(value);
               setError(null);
               setResult(null);
@@ -212,7 +216,7 @@ export function ExperimentFlow({
           {error && <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
             <p className="font-medium">{error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : error.status === 429 ? "You’ve reached today’s limit." : "Your question hasn’t been submitted successfully."}</p>
             <p className="mt-2">{error.message}</p>
-            {error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : error.status === 429 ? null : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
+            {error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : error.status === 429 ? null : <button type="button" onClick={() => void submit(continuing.current)} className={`${secondary} mt-4 text-ink`}>Retry</button>}
           </div>}
 
           {limitMessage && !result && (
@@ -223,6 +227,14 @@ export function ExperimentFlow({
           )}
 
           {busy && <ProposalSkeleton />}
+      {result?.habit_check && <section ref={output} tabIndex={-1} aria-label="Question result" className="mt-8 rounded-card border border-line p-5">
+        <p className="font-display text-title">{result.habit_check.message}</p>
+        <p className="mt-3">{result.habit_check.suggested_question}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" className={secondary} onClick={() => chooseQuestion(result.habit_check!.suggested_question)}>Use this instead</button>
+          <button type="button" className={secondary} onClick={() => void submit(true)}>Continue anyway</button>
+        </div>
+      </section>}
       {result && !result.safety.allowed && <section ref={output} tabIndex={-1} aria-label="Question result" className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
             <>
               <p className="font-display text-title">Let&apos;s find a gentler experiment.</p>

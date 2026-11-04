@@ -8,8 +8,8 @@ from app.schemas.classification import Classification
 from app.schemas.experiment import ExperimentProposal
 from app.schemas.prediction import Prediction
 from app.schemas.profile import ProfileOut
-from app.schemas.safety import SafetyDecision
-from app.services import experiment_designer, history, safety
+from app.schemas.safety import HabitCheck, SafetyDecision
+from app.services import experiment_designer, habit_check, history, safety
 
 
 class ProposeResponse(BaseModel):
@@ -17,6 +17,8 @@ class ProposeResponse(BaseModel):
     proposal: ExperimentProposal | None = None
     prediction: Prediction | None = None
     safety: SafetyDecision
+    # Set instead of a plan when the question isn't about a habit, and the person can still continue.
+    habit_check: HabitCheck | None = None
     # Returned so the later "save experiment" step can store the category.
     classification: Classification
 
@@ -39,13 +41,18 @@ def running_questions(profile_id: str) -> list[dict]:
     return list(seen.values())
 
 
-async def propose(question: str, profile: ProfileOut) -> ProposeResponse:
+async def propose(question: str, profile: ProfileOut, continue_anyway: bool = False) -> ProposeResponse:
     """Classify, safety-check, then design and predict in one call. Nothing is persisted."""
     classification = await jev.classify(question)
 
     decision = safety.evaluate(question, classification)
     if not decision.allowed:
         return ProposeResponse(safety=decision, classification=classification)
+
+    if not continue_anyway:
+        check = habit_check.check(classification)
+        if check:
+            return ProposeResponse(safety=decision, classification=classification, habit_check=check)
 
     profile_id = str(profile.id)
     past, running = await read_together(

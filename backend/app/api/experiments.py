@@ -41,7 +41,7 @@ async def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_cu
         await asyncio.to_thread(ai_limit.ensure_within_daily_limit, str(row["id"]), "propose")
         available = await asyncio.to_thread(experiments.supports_personal_guess, str(row["id"]))
         with ai_usage.for_profile(str(row["id"])):
-            result = await propose(body.question, ProfileOut.model_validate(row))
+            result = await propose(body.question, ProfileOut.model_validate(row), body.continue_anyway)
         return result.model_copy(update={"personal_guess_available": available})
     except SupabaseUnavailable:
         raise db_error()
