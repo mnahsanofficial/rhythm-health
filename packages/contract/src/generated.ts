@@ -1172,6 +1172,8 @@ export interface components {
             reason?: string | null;
             /** Suggested Alternative */
             suggested_alternative?: string | null;
+            /** Suggested Question */
+            suggested_question?: string | null;
         };
         /** SampleRemovalRequest */
         SampleRemovalRequest: {

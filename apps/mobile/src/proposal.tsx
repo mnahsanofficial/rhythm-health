@@ -8,6 +8,7 @@ import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment, TRUST_LINE } from './lib/proposals';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
+import { PlanningMoment } from './planning-moment';
 import { Action, Alert, Copy, StickyAction, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
@@ -43,7 +44,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
-  const [busy, setBusy] = useState<'proposing' | null>(null);
+  const [busy, setBusy] = useState<'proposing' | 'left' | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -53,20 +54,25 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const blocked = limit !== null;
   const inFlight = useRef(false);
   const savedId = useRef<string | null>(null);
+  const asking = useRef(0); // Leaving mid-request moves this on, so the late answer is dropped.
   const continuing = useRef(false); // The person chose Continue anyway for this question, so a retry mustn't ask again.
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
-  const step = !planReady ? (result ? 'refused' : 'ask') : result.personal_guess_available && guess === null ? 'guess' : 'plan';
+  const proposing = busy === 'proposing';
+  const step = proposing ? 'planning' : !planReady ? (result ? 'refused' : 'ask') : result.personal_guess_available && guess === null ? 'guess' : 'plan';
   const heading = useStepFocus(step);
-  const planOpen = step === 'guess' || step === 'plan';
+  const planOpen = proposing || step === 'guess' || step === 'plan';
   useEffect(() => { onPlanOpen?.(planOpen); }, [planOpen, onPlanOpen]);
   const initial = initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '';
   const typed = question.trim() !== '' && question !== initial;
   // With nothing running the question is Today itself, so a × only appears once there's a plan to clear.
-  const close = onBack ?? (result ? () => reset('') : undefined);
+  const close = onBack || result || proposing ? () => {
+    if (inFlight.current) { asking.current += 1; setBusy('left'); } // The lock holds until the answer lands, so nothing is paid for twice.
+    if (onBack) onBack(); else reset('');
+  } : undefined;
   // eslint-disable-next-line react-hooks/refs -- `close` is stored for a later press; it doesn't run during render.
   useNavScreen(shown && close ? {
-    kind: 'flow', onBack: close, busy: busy !== null || starting, safeAtHome: true,
-    unsaved: result?.proposal ? WONT_BE_KEPT.proposal : typed ? WONT_BE_KEPT.question : null,
+    kind: 'flow', onBack: close, busy: starting, safeAtHome: true,
+    unsaved: result?.proposal ? WONT_BE_KEPT.proposal : typed || proposing ? WONT_BE_KEPT.question : null,
   } : null);
 
   const expired = (cause: unknown) => {
@@ -84,11 +90,15 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     if (inFlight.current || offline || blocked || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
     inFlight.current = true; continuing.current = continueAnyway;
     setBusy('proposing'); setFailure(null); setResult(null); setGuess(null);
+    const mine = ++asking.current;
     try {
       const response = await proposeExperiment(token, text, continueAnyway);
+      if (mine !== asking.current) return;
       if (response.safety.allowed && !response.habit_check && (!response.proposal || !response.prediction)) throw new ApiError(502, 'The plan came back incomplete. Please retry.');
+      if (!response.safety.allowed && !response.safety.suggested_question) setQuestion('');
       setResult(response);
     } catch (cause) {
+      if (mine !== asking.current) return;
       if (cause instanceof ApiError && detailCode(cause) === 'active_limit_reached') setLimit(cause.message);
       else if (!expired(cause)) setFailure({ status: cause instanceof ApiError ? cause.status : 0, message: message(cause, 'Something went wrong. Please try again.') });
     } finally { inFlight.current = false; setBusy(null); }
@@ -166,6 +176,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     {shown && !startError && <StickyAction><Action wide label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} /></StickyAction>}
   </View>;
 
+  if (proposing) return <PlanningMoment heading={heading} question={question.trim()} />;
+
   const length = question.trim().length;
   const working = busy !== null;
   return <View style={ui.stack}>
@@ -173,7 +185,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     <Copy>What do you want to test?</Copy>
     <View>
       <TextInput accessibilityLabel="Your question or goal" accessibilityHint="5 to 500 characters. One small change at a time." multiline value={question}
-        onChangeText={value => { continuing.current = false; setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} editable={!working} maxLength={QUESTION_MAX + 1}
+        onChangeText={value => { continuing.current = false; setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} maxLength={QUESTION_MAX + 1}
         placeholder="Does walking after dinner improve my sleep?" placeholderTextColor={COLORS.muted} style={[ui.input, local.question]} />
       <View style={local.help}>
         <Copy style={local.helpText}>One small change at a time.</Copy>
@@ -182,15 +194,11 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     </View>
     <Copy style={local.helpText}>{TRUST_LINE}</Copy>
     {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
-    {!hideStarters && !result?.habit_check && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
+    {!hideStarters && !result && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
         onPress={() => reset(starter)} style={({ pressed }) => [local.chip, pressed && { backgroundColor: COLORS['accent-tint'] }]}>
         <Copy>{starter}</Copy>
       </Pressable>)}
-    </View>}
-    {busy === 'proposing' && <View style={ui.stack}>
-      <Status>Finding a small change you can test…</Status>
-      <Copy>This can take a little while.</Copy>
     </View>}
     {failure && <View style={ui.stack}>
       <Alert>{failureTitle(failure)} {failure.message}</Alert>
@@ -209,12 +217,12 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     {result && !result.safety.allowed && <View style={local.fixed}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Let&apos;s find a gentler experiment.</Copy>
       <Copy>{result.safety.reason || "This question isn't suitable for a small habit experiment."}</Copy>
-      {result.safety.suggested_alternative && <>
-        <Copy>{result.safety.suggested_alternative}</Copy>
-        <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
-      </>}
+      {result.safety.suggested_question ? <>
+        <Copy>{result.safety.suggested_question}</Copy>
+        <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_question!)} />
+      </> : result.safety.suggested_alternative && <Copy>{result.safety.suggested_alternative}</Copy>}
     </View>}
-    {shown && !result?.habit_check && <StickyAction><Action wide label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design experiment'}
+    {shown && !result?.habit_check && <StickyAction><Action wide label="Design experiment"
       disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} /></StickyAction>}
   </View>;
 }

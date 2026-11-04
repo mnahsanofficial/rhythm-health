@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo, Animated, AppState, type AppStateStatus } from 'react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { AccessibilityInfo, Animated, AppState, StyleSheet, type AppStateStatus } from 'react-native';
 import type { Experiment, ProposeResponse } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile, proposeResponse } from '../../../frontend/tests/support/fixtures';
@@ -139,8 +139,7 @@ test('double taps send one proposal, with no second request while it is in fligh
   typeQuestion();
   const button = design();
   await act(async () => { fireEvent.press(button); fireEvent.press(button); });
-  expect(await screen.findByText('Finding a small change you can test…')).toBeVisible();
-  await act(async () => { fireEvent.press(button); });
+  expect(await screen.findByRole('header', { name: 'Planning your experiment.' })).toBeVisible();
   expect(count(PROPOSE)).toBe(1);
   await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
   await screen.findByRole('header', { name: 'What do you think will happen?' });
@@ -167,7 +166,7 @@ test('a token refresh whose profile read fails does not lose the paid proposal',
 test('a safety block shows the reason and a safer alternative that only fills the field', async () => {
   await openAsk();
   queue(PROPOSE, { body: { ...proposeResponse, proposal: null, prediction: null,
-    safety: { allowed: false, reason: 'This would cut sleep too far.', suggested_alternative: 'Does an earlier bedtime help my mornings?' } } });
+    safety: { allowed: false, reason: 'This would cut sleep too far.', suggested_alternative: 'Try a small change, and ask a clinician about anything medical.', suggested_question: 'Does an earlier bedtime help my mornings?' } } });
   await submit();
   expect(await screen.findByText("Let's find a gentler experiment.")).toBeVisible();
   expect(screen.getByText('This would cut sleep too far.')).toBeVisible();
@@ -529,5 +528,111 @@ describe('a question that is not about a habit', () => {
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: /Ask something else|Back/ })); });
     await submit(QUESTION);
     expect(calls.filter(call => call.key === PROPOSE).at(-1)?.body).toEqual({ question: QUESTION });
+  });
+});
+
+test('a safety block with only advice shows it as text, offers nothing to fill, and leaves the box empty', async () => {
+  await openAsk();
+  const advice = 'Try a small, low-risk habit change, such as a consistent bedtime, and ask a clinician about anything medical.';
+  queue(PROPOSE, { body: { ...proposeResponse, proposal: null, prediction: null,
+    safety: { allowed: false, reason: "This request isn't suitable.", suggested_alternative: advice, suggested_question: null } } });
+  await submit();
+  expect(await screen.findByText(advice)).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Use this instead' })).toBeNull();
+  expect(screen.getByLabelText('Your question or goal').props.value).toBe('');
+  expect(screen.queryByLabelText('Suggestions')).toBeNull(); // The advice stays on screen, without scrolling.
+  expect(count(PROPOSE)).toBe(1);
+});
+
+test('advice is never what fills the box, even with a testable question on offer', async () => {
+  await openAsk();
+  const advice = 'Try a small change, and ask a clinician about anything medical.';
+  queue(PROPOSE, { body: { ...proposeResponse, proposal: null, prediction: null,
+    safety: { allowed: false, reason: 'Not this one.', suggested_alternative: advice, suggested_question: 'Does a consistent bedtime help me feel rested?' } } });
+  await submit();
+  expect(await screen.findByText('Does a consistent bedtime help me feel rested?')).toBeVisible();
+  expect(screen.queryByText(advice)).toBeNull();
+  fireEvent.press(screen.getByRole('button', { name: 'Use this instead' }));
+  expect(screen.getByLabelText('Your question or goal').props.value).toBe('Does a consistent bedtime help me feel rested?');
+});
+
+describe('the planning moment', () => {
+  let release: (reply: Response) => void;
+  const hold = () => {
+    const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
+    fake.mockImplementation((url, options) => {
+      if (!String(url).endsWith('/propose')) return original(url, options);
+      calls.push({ key: PROPOSE, body: JSON.parse(String(options?.body)) });
+      return new Promise<Response>(resolve => { release = resolve; });
+    });
+  };
+  const STEPS = ["Checking it's a safe, small change", 'Designing your experiment', 'Forecasting what might happen'];
+  async function waiting() {
+    await openAsk(); hold();
+    typeQuestion();
+    await act(async () => { fireEvent.press(design()); });
+    await screen.findByRole('header', { name: 'Planning your experiment.' });
+  }
+
+  test('shows the scene, the three steps and one honest line, instead of the form', async () => {
+    await waiting();
+    expect(screen.getByTestId('planning-scene', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByText('Usually 10–20 seconds.')).toBeVisible();
+    for (const step of STEPS) expect(screen.getByText(step)).toBeVisible();
+    expect(screen.queryByLabelText('Your question or goal')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Design experiment' })).toBeNull();
+  });
+
+  test('draws the 10 days: 3 baseline, then 7 test', async () => {
+    await waiting();
+    expect(screen.getAllByTestId('planning-day-baseline', { includeHiddenElements: true })).toHaveLength(3);
+    expect(screen.getAllByTestId('planning-day-test', { includeHiddenElements: true })).toHaveLength(7);
+  });
+
+  test('the API has no stages, so no step ever claims to be done', async () => {
+    await waiting();
+    for (const step of STEPS) expect(screen.getByLabelText(`${step}, in progress`)).toBeTruthy();
+    expect(screen.queryAllByTestId('planning-step-done')).toHaveLength(0);
+  });
+
+  test('with Reduce Motion the scene is static: every day drawn, nothing pulsing', async () => {
+    await waiting(); // The test double reports Reduce Motion on.
+    for (const day of screen.getAllByTestId(/^planning-day-/, { includeHiddenElements: true })) expect(StyleSheet.flatten(day.props.style).opacity).toBe(1);
+    expect(screen.getByLabelText(`${STEPS[0]}, in progress`)).toBeTruthy();
+  });
+
+  test('is display only: rerendering, returning to the foreground and time never ask again', async () => {
+    await waiting();
+    await act(async () => { listeners.forEach(listener => listener('background')); listeners.forEach(listener => listener('active')); });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    expect(count(PROPOSE)).toBe(1);
+    await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
+    await screen.findByRole('header', { name: 'What do you think will happen?' });
+    expect(count(PROPOSE)).toBe(1);
+  });
+
+  test('leaving shows the leave sheet; Stay keeps waiting', async () => {
+    await waiting();
+    await act(async () => { fireEvent.press(within(screen.getByTestId('app-header')).getByRole('button', { name: 'Close' })); });
+    expect(await screen.findByText('Leave without saving?')).toBeVisible();
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Stay' })); });
+    expect(screen.getByRole('header', { name: 'Planning your experiment.' })).toBeVisible();
+    await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
+    await screen.findByRole('header', { name: 'What do you think will happen?' });
+  });
+
+  test('Leave drops the late answer, and the lock holds until it arrives, so nothing is paid for twice', async () => {
+    await waiting();
+    await act(async () => { fireEvent.press(within(screen.getByTestId('app-header')).getByRole('button', { name: 'Close' })); });
+    await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Leave' })); });
+    expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    typeQuestion('Does tea after lunch change my focus?');
+    expect(design()).toBeDisabled();
+    await act(async () => { fireEvent.press(design()); });
+    expect(count(PROPOSE)).toBe(1);
+    await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
+    expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    expect(screen.queryByRole('header', { name: 'What do you think will happen?' })).toBeNull();
+    await waitFor(() => expect(design()).toBeEnabled());
   });
 });
