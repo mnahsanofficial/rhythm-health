@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     # Jev classifier, served through OpenRouter.
     openrouter_jev_model: str = "typesafe/jev-router"
 
+    # Optional. Blank means no error reporting.
+    sentry_dsn: str = ""
+
     @field_validator("openrouter_reasoning_model", "openrouter_jev_model", mode="before")
     @classmethod
     def _blank_means_default(cls, v, info):

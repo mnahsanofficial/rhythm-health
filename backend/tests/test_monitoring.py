@@ -111,6 +111,8 @@ def test_sentry_starts_with_a_dsn_and_sends_no_personal_data(monkeypatch):
     assert seen["send_default_pii"] is False
     assert seen["traces_sample_rate"] == 0
     assert seen["max_request_body_size"] == "never"
+    assert seen["include_local_variables"] is False
+    assert seen["max_breadcrumbs"] == 0
 
 
 def test_sentry_strips_headers_query_and_cookies_before_sending():
@@ -118,3 +120,8 @@ def test_sentry_strips_headers_query_and_cookies_before_sending():
     cleaned = monitoring.scrub_event(event, {})
     assert SECRET not in json.dumps(cleaned)
     assert cleaned["request"]["url"] == "http://x/a"
+
+
+def test_uvicorns_access_log_is_off_because_it_prints_query_strings():
+    monitoring.configure_logging()
+    assert logging.getLogger("uvicorn.access").disabled is True

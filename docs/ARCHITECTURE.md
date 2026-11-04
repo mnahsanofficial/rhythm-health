@@ -329,3 +329,15 @@ Web collects a primary-metric percentage guess before mounting the AI forecast. 
 ## Scale words and chart day flags (B12/B11/F13)
 
 Design can add optional nullable `Metric.min_label` / `max_label`, stored in existing metric JSON and rendered by web/mobile Check-in with Low / High for missing ends. Every chart point carries `missed` from stored deterministic analysis; the web chart no longer receives a missing-days list or calculates a day rule. No migration, paid call or shared write was needed. [Contract, code sources, tests and evidence](SCALE_WORDS_CHART_DAYS.md).
+
+## Monitoring and error reporting (4 Nov 2026)
+
+**What:** each request writes one JSON log line (`request_id`, `method`, route template, `status`, `latency_ms`) and returns the id as `X-Request-ID`. `GET /api/health` also checks the database, and answers 503 when it can't be reached. Sentry runs on the backend (`SENTRY_DSN`) and web (`NEXT_PUBLIC_SENTRY_DSN`) only when a DSN is set.
+
+**Why:** when something failed there was no record of it, and no way to match what a person saw to a log line.
+
+**Trade-offs:**
+- Logs hold the route template, never the real path, query string, headers or body. That protects tokens and personal notes, but you can't tell from a log line which experiment was involved.
+- Sentry events drop request details, local variables and breadcrumbs, so a report has less context. Prompts and check-in notes must never leave the app this way.
+- Web uses `@sentry/browser`, downloaded only when a DSN is set, rather than `@sentry/nextjs`. That leaves the build config alone the day before the demo, but gives no source maps or server-side capture.
+- `/health` stays as a plain liveness check, because the web app's status badge uses it.
