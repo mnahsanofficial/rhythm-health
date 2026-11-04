@@ -7,6 +7,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from app.config import settings
+from app.integrations import ai_usage
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,11 @@ def complete(
     ]
     for attempt in (0, 1):
         started = time.monotonic()
-        content = _call(task, model, schema, messages, timeout)
+        try:
+            content = _call(task, model, schema, messages, timeout)
+        except AIUnavailable:
+            ai_usage.record(task, model, "error", started)
+            raise
         try:
             result = schema.model_validate_json(content)
             if check is not None:
@@ -63,6 +68,7 @@ def complete(
                 "ai_invalid_output task=%s model=%s validation_retry=%s",
                 task, model, attempt,
             )
+            ai_usage.record(task, model, "invalid" if attempt == 1 else "retry", started)
             if attempt == 1:
                 raise AIInvalidOutput(task) from exc
             messages += [
@@ -75,6 +81,7 @@ def complete(
                 },
             ]
             continue
+        ai_usage.record(task, model, "ok", started)
         logger.info(
             "ai_complete task=%s model=%s latency_ms=%d validation_retry=%s",
             task, model, (time.monotonic() - started) * 1000, attempt,
@@ -93,11 +100,19 @@ def decide(
     """Typed decisions (Jev) via OpenRouter's Decisions API. Returns the `answers` map."""
     if not settings.openrouter_api_key:
         raise AIUnavailable("OpenRouter is not configured")
-    data = _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
+    started = time.monotonic()
     try:
-        return data["answers"]
+        data = _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
+    except AIUnavailable:
+        ai_usage.record(task, model, "error", started)
+        raise
+    try:
+        answers = data["answers"]
     except (KeyError, TypeError) as exc:
+        ai_usage.record(task, model, "invalid", started)
         raise AIInvalidOutput(task) from exc
+    ai_usage.record(task, model, "ok", started)
+    return answers
 
 
 def _call(task: str, model: str, schema: type[BaseModel], messages: list[dict], timeout: float) -> str:

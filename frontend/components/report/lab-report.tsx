@@ -364,7 +364,7 @@ function LearningSection({
               <p>
                 {writeErrorText(writing.status, writing.message)} Your results above are saved.
               </p>
-              {writing.status !== 409 && writing.status !== 404 && (
+              {writing.status !== 409 && writing.status !== 404 && writing.status !== 429 && (
                 <button type="button" onClick={() => void write()} className={`${button("secondary")} mt-3`}>
                   Try again
                 </button>

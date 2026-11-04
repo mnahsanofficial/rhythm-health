@@ -22,6 +22,7 @@ const message = (cause: unknown, fallback: string) => cause instanceof Error && 
 function failureTitle({ status }: Failure) {
   if (status === 503) return 'The service is unavailable right now.';
   if (status === 502) return "We couldn't put together a complete plan.";
+  if (status === 429) return "You've reached today's limit.";
   if (status === 409) return 'Your profile needs to be saved first.';
   if (status === 422) return "Let's adjust that question.";
   return "Your question hasn't been submitted successfully.";
@@ -193,6 +194,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       <Alert>{failureTitle(failure)} {failure.message}</Alert>
       {failure.status === 409
         ? <Action label="Go to your rhythm" secondary onPress={() => onEditProfile?.()} />
+        : failure.status === 429 ? null
         : <Action label="Retry" secondary disabled={offline} onPress={() => void submit()} />}
     </View>}
     {blockedNotice}

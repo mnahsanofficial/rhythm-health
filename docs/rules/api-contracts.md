@@ -29,7 +29,7 @@ The backend sends `detail` in four shapes, and `frontend/lib/api/client.ts` hand
 | A string | `"Experiment not found"` |
 | FastAPI validation | `[{ "msg": "…", "loc": [...] }]` |
 | Check-in field errors | `[{ "field": "morning_energy", "message": "Must be between 1 and 10" }]` |
-| An object with data | `{ "message": "Not enough check-ins…", "baseline_checkins": 1, … }` (409 from `/complete`) |
+| An object with data | `{ "message": "Not enough check-ins…", "baseline_checkins": 1, … }` (409 from `/complete`), `{ "code": "ai_daily_limit", "message": "…", "limit": 5 }` (429 from `/propose` and `POST /report`) |
 
 - Every failure becomes an `ApiError(status, message, fieldErrors, detail)`. Status `0` means the server couldn't be reached.
 - Screens show the message; nothing fails silently (see [UI quality](ui-quality.md)).
