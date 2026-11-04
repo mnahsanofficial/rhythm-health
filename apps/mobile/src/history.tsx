@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, LabReport } from '@rhythm-health/contract';
+import { CalibrationCard } from './calibration-card';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
 import { getReport, reportPercent, SIGNAL_COPY } from './lib/reports';
@@ -61,6 +62,7 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
         <Copy style={ui.muted}>Completed experiments will appear here.</Copy>
         <Action label="Test a new question" onPress={onAsk} />
       </View> : <View style={ui.stack}>
+        <CalibrationCard token={token} offline={offline} onExpired={onExpired} />
         <Status style={local.count}>{`${ordered.length} completed ${ordered.length === 1 ? 'experiment' : 'experiments'} · ${order} first`}</Status>
         <View style={local.sort}>
           <Action label="Newest first" secondary={order !== 'newest'} selected={order === 'newest'} onPress={() => setOrder('newest')} />

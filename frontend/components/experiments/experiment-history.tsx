@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CalibrationCard } from "@/components/experiments/calibration-card";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listExperiments } from "@/lib/data/experiments";
@@ -105,6 +106,7 @@ export function ExperimentHistory() {
         </section>
       ) : (
         <>
+          <CalibrationCard />
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
             <p role="status" className="font-mono text-caption text-muted tabular-nums">
               {ordered.length} completed {ordered.length === 1 ? "experiment" : "experiments"} · {order} first

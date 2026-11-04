@@ -362,3 +362,17 @@ Design can add optional nullable `Metric.min_label` / `max_label`, stored in exi
 **Why:** until now these ran only if someone remembered to run them on their own machine.
 
 **Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.
+
+## Calibration card (4 Nov 2026)
+
+**What:** `GET /api/experiments/calibration` compares each person's own guess with the measured result, across their 20 newest finished experiments, and says whether the guesses are getting closer. History shows it on web and mobile. It's computed in `services/calibration.py` from saved reports, with no AI call and no new table.
+
+**Why:** it answers 8x's question "what does a user learn after ten days?": how well they can predict their own habits.
+
+**How the trend works:** it compares the average gap of the earlier half of the guesses with the later half. A change of 2 points or less counts as steady, and two guesses are needed before it says anything.
+
+**Trade-offs:**
+- The trend can read a lot into two guesses, so the card says it's a pattern, not proof.
+- Experiments without a guess, or whose baseline was zero, are left out rather than estimated.
+- Sample experiments are left out, so a new account sees the empty state until it finishes a real experiment with a guess.
+- The card loads separately from the list, so its failure leaves the rest of History working, at the cost of one extra read.

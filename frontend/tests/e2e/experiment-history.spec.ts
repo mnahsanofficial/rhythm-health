@@ -122,6 +122,45 @@ for (const width of [390, 1440]) {
   });
 }
 
+for (const width of [390, 1440]) {
+  test(`shows how close the person's guesses were at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await openHistoryFromHome(page);
+    await page.route(completedListRoute, async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("status") === "completed") {
+        await route.fulfill({ status: 200, json: [completedExperiment] });
+        return;
+      }
+      await route.fallback();
+    });
+    await page.route(`${API}/api/experiments/${experiment.id}/report`, (route) =>
+      route.fulfill({ status: 200, json: report }),
+    );
+    await page.route(`${API}/api/experiments/calibration`, (route) => route.fulfill({
+      status: 200,
+      json: {
+        points: [
+          { experiment_id: "a", question: "Does tea after lunch help me focus?", completed_at: "2026-10-01T10:00:00Z", guessed_change_percent: 10, observed_change_percent: 30, off_by_points: 20 },
+          { experiment_id: "b", question: experiment.question, completed_at: "2026-10-28T10:00:00Z", guessed_change_percent: 8, observed_change_percent: 11, off_by_points: 3 },
+        ],
+        average_off_by_points: 11.5,
+        trend: "closer",
+      },
+    }));
+
+    await openSection(page, "History");
+    const card = page.getByRole("region", { name: "How close your guesses were" });
+    await expect(card).toContainText("Your guesses are getting closer.");
+    await expect(card).toContainText("Off by 11.5 points on average across 2 experiments.");
+    const guesses = card.getByRole("list", { name: "Your guesses" }).getByRole("listitem");
+    await expect(guesses.first()).toContainText("You guessed +8%");
+    await expect(guesses.first()).toContainText("It changed +11%");
+    await expect(guesses.first()).toContainText("Off by 3 points");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+}
+
 test("shows a useful empty state when there are no completed experiments", async ({ page }) => {
   await openHistoryFromHome(page);
   await page.route(completedListRoute, async (route) => {

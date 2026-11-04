@@ -9,11 +9,12 @@ from app.integrations import ai_usage
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
 from app.integrations.supabase import PersonalGuessUnavailable, SupabaseConflict, SupabaseUnavailable
 from app.repositories import checkins, experiments, profiles
+from app.schemas.calibration import Calibration
 from app.schemas.experiment import ActiveCapacity, ExperimentOut, ExperimentStatus, ProposeRequest
 from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
 from app.schemas.progress import ExperimentTimeline
-from app.services import ai_limit, experiment_limit, safety
+from app.services import ai_limit, calibration, experiment_limit, safety
 from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
 from app.services.timeline import experiment_timeline
@@ -101,6 +102,16 @@ def get_capacity(user_id: str = Depends(get_current_user)):
     profile_id = profile_id_for(user_id)
     try:
         return experiment_limit.capacity(profile_id)
+    except SupabaseUnavailable:
+        raise db_error()
+
+
+@router.get("/calibration", response_model=Calibration)
+def get_calibration(user_id: str = Depends(get_current_user)):
+    """How close this person's own guesses were to what happened. Never calls AI."""
+    profile_id = profile_id_for(user_id)
+    try:
+        return calibration.load(profile_id)
     except SupabaseUnavailable:
         raise db_error()
 

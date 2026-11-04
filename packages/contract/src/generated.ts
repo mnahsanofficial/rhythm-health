@@ -90,6 +90,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/experiments/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Calibration
+         * @description How close this person's own guesses were to what happened. Never calls AI.
+         */
+        get: operations["get_calibration_api_experiments_calibration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/experiments/{experiment_id}": {
         parameters: {
             query?: never;
@@ -425,6 +445,33 @@ export interface components {
             days_planned: number;
             /** Metrics */
             metrics: components["schemas"]["BaselineMetric"][];
+        };
+        /**
+         * Calibration
+         * @description How close this person's own guesses were to what happened, oldest first.
+         */
+        Calibration: {
+            /** Points */
+            points: components["schemas"]["CalibrationPoint"][];
+            /** Average Off By Points */
+            average_off_by_points?: number | null;
+            /** Trend */
+            trend?: ("closer" | "further" | "steady") | null;
+        };
+        /** CalibrationPoint */
+        CalibrationPoint: {
+            /** Experiment Id */
+            experiment_id: string;
+            /** Question */
+            question: string;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Guessed Change Percent */
+            guessed_change_percent: number;
+            /** Observed Change Percent */
+            observed_change_percent: number;
+            /** Off By Points */
+            off_by_points: number;
         };
         /** ChartData */
         ChartData: {
@@ -1330,6 +1377,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActiveCapacity"];
+                };
+            };
+        };
+    };
+    get_calibration_api_experiments_calibration_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Calibration"];
                 };
             };
         };
