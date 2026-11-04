@@ -16,6 +16,7 @@ jest.mock('react-native-safe-area-context', () => jest.requireActual('react-nati
 const session = { access_token: 'fake-token', user: { id: 'fake-user', email: 'learner@example.invalid' } };
 const ACTIVE = '/api/experiments?status=active';
 const COMPLETED = '/api/experiments?status=completed';
+const CALIBRATION = '/api/experiments/calibration';
 const RESET = 'POST /api/demo/reset';
 const older: Experiment = { ...completedExperiment, id: 'older-id', question: 'Does tea after lunch change my focus?', completed_at: '2026-09-01T09:00:00Z' };
 const newer: Experiment = completedExperiment;
@@ -41,6 +42,7 @@ beforeEach(() => {
     'GET /api/profile': { body: profile },
     [`GET ${ACTIVE}`]: { body: [] },
     [`GET ${COMPLETED}`]: { body: [older, newer] },
+    [`GET ${CALIBRATION}`]: { body: { points: [], average_off_by_points: null, trend: null } },
     [`GET /api/experiments/${newer.id}/report`]: { body: reportFor(newer) },
     [`GET /api/experiments/${older.id}/report`]: { body: reportFor(older) },
     [RESET]: { body: seededReport },
@@ -273,5 +275,45 @@ describe('completed demo', () => {
     mockNetwork.isConnected = false;
     screen.rerender(<MobileApp />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Explore a completed example' })).toBeDisabled());
+  });
+});
+
+describe('calibration card', () => {
+  const point = (number: number, guess: number, observed: number, off: number) => ({
+    experiment_id: `exp-${number}`, question: `Question ${number}?`, completed_at: `2026-10-0${number}T10:00:00Z`,
+    guessed_change_percent: guess, observed_change_percent: observed, off_by_points: off,
+  });
+
+  test('shows each guess against what happened, newest first, and the trend', async () => {
+    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 30, 20), point(2, 10, 12.5, 2.5)], average_off_by_points: 11.3, trend: 'closer' } };
+    await openHistory();
+    expect(await screen.findByText('Your guesses are getting closer.')).toBeVisible();
+    expect(screen.getByText('Off by 11.3 points on average across 2 experiments. A few short experiments show a pattern, not proof.')).toBeVisible();
+    const items = screen.getAllByTestId('calibration-point');
+    expect(within(items[0]).getByText('Question 2?')).toBeVisible();
+    expect(within(items[0]).getByText('You guessed +10% · It changed +12.5% · Off by 2.5 points')).toBeVisible();
+    expect(within(items[1]).getByText('Question 1?')).toBeVisible();
+  });
+
+  test('explains what one guess cannot show yet', async () => {
+    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 11, 1)], average_off_by_points: 1, trend: null } };
+    await openHistory();
+    expect(await screen.findByText("Finish another experiment to see whether you're getting closer.")).toBeVisible();
+    expect(screen.getByText('You guessed +10% · It changed +11% · Off by 1 point')).toBeVisible();
+  });
+
+  test('has an empty state that says how to start', async () => {
+    await openHistory();
+    expect(await screen.findByText(/Your next experiment asks for your own guess/)).toBeVisible();
+  });
+
+  test('a failure explains itself, retries on a tap and leaves the history in place', async () => {
+    queue(`GET ${CALIBRATION}`, { status: 503, body: { detail: 'Database unavailable' } });
+    await openHistory();
+    expect(await screen.findByText(/Couldn't compare your guesses\. Database unavailable/)).toBeVisible();
+    expect(rows()).toHaveLength(2);
+    await press('Try again for your guesses');
+    expect(await screen.findByText(/Your next experiment asks for your own guess/)).toBeVisible();
+    expect(count(`GET ${CALIBRATION}`)).toBe(2);
   });
 });
