@@ -434,3 +434,23 @@ test('the forecast range animates once without reduced motion', async () => {
   await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
 });
 
+const TRUST = 'Your question goes to an AI to design the experiment. Your result is calculated from your own check-ins, not by the AI.';
+
+test('Ask says where the question goes and that the AI does not calculate the result', async () => {
+  await openAsk();
+  expect(screen.getByText(TRUST)).toBeVisible();
+});
+
+test('You has an About section with the same line', async () => {
+  render(<MobileApp />);
+  await act(async () => { fireEvent.press(await screen.findByRole('tab', { name: 'You' })); });
+  expect(screen.getByRole('header', { name: 'About' })).toBeVisible();
+  expect(screen.getByText(TRUST)).toBeVisible();
+});
+
+test('starter chips are always plain questions, even for a goal without one written', async () => {
+  queue('GET /api/profile', { body: { ...profile, goals: ['More energy in the morning', 'better morning energy'] } });
+  await openAsk();
+  expect(screen.getByRole('button', { name: 'What could give me more energy in the morning?' })).toBeVisible();
+  expect(screen.queryByText(/What small change could help with/)).toBeNull();
+});
