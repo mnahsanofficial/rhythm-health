@@ -354,3 +354,11 @@ Design can add optional nullable `Metric.min_label` / `max_label`, stored in exi
 - A new client per call is slower to connect than a shared one, but that's small next to a model call, and it avoids lifecycle problems across event loops.
 - A call that took 75–90s used to succeed and now fails with the 503 screen. If `ai_calls` shows real latencies near 75s, raise the setting.
 - In `GET` and `POST /report`, check-ins are now read even when there's no report. A database failure on that second read answers 503 rather than 404.
+
+## Continuous integration (4 Nov 2026)
+
+**What:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull request and on `main`. The `checks` job runs lint, typecheck, root `npm test` (with `logs:check`), `contract:check`, `brand:check`, the web build and backend `pytest`. The `browser` job runs the Playwright suite.
+
+**Why:** until now these ran only if someone remembered to run them on their own machine.
+
+**Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.

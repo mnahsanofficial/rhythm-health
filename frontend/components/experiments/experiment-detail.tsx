@@ -176,7 +176,7 @@ export function ExperimentDetail({ id }: { id: string }) {
               <dd>{experiment.intervention.frequency}</dd>
             </div>
           </dl>
-          <p className="mt-5 text-caption text-muted">
+          <p className="mt-5 max-w-[46ch] text-caption text-muted">
             Baseline days come first: keep your routine as it is. The change starts on day {experiment.baseline_days + 1}.
           </p>
         </section>
