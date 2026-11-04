@@ -388,3 +388,53 @@ it("keeps a committed guess on save failure and requires explicit consent to omi
   await waitFor(() => expect(saves).toHaveLength(2));
   expect(saves[1]).not.toHaveProperty("personal_guess_percent");
 });
+
+describe("a question that is not about a habit", () => {
+  const suggested = "Does a 20-minute walk after dinner improve my morning energy?";
+  const softCheck: ProposeResponse = {
+    ...proposeResponse,
+    proposal: null,
+    prediction: null,
+    habit_check: { message: "This doesn't look like a habit question.", suggested_question: suggested },
+  };
+
+  async function askOffTopic(bodies: unknown[]) {
+    server.use(
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([])),
+      http.post(`${api}/api/experiments/propose`, async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json(bodies.length === 1 ? softCheck : { ...proposeResponse, personal_guess_available: false });
+      }),
+    );
+    const user = userEvent.setup();
+    render(<NewExperiment />);
+    await user.type(await screen.findByLabelText(/your question/i), "What is the capital of France?");
+    await user.click(screen.getByRole("button", { name: /design experiment/i }));
+    await screen.findByText("This doesn't look like a habit question.");
+    return user;
+  }
+
+  it("shows the rewording and both choices, without an error", async () => {
+    await askOffTopic([]);
+    expect(screen.getByText(suggested)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Use this instead" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue anyway" })).toBeInTheDocument();
+    expect(screen.queryByText(/came back incomplete/)).toBeNull();
+  });
+
+  it("Use this instead fills in the rewording and sends nothing", async () => {
+    const bodies: unknown[] = [];
+    const user = await askOffTopic(bodies);
+    await user.click(screen.getByRole("button", { name: "Use this instead" }));
+    expect(screen.getByLabelText(/your question/i)).toHaveValue(suggested);
+    expect(bodies).toHaveLength(1);
+  });
+
+  it("Continue anyway carries on to the plan, saying so to the server", async () => {
+    const bodies: unknown[] = [];
+    const user = await askOffTopic(bodies);
+    await user.click(screen.getByRole("button", { name: "Continue anyway" }));
+    await screen.findByRole("button", { name: /start this experiment/i });
+    expect(bodies[1]).toEqual({ question: "What is the capital of France?", continue_anyway: true });
+  });
+});
