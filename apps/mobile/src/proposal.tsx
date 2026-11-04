@@ -55,6 +55,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const inFlight = useRef(false);
   const savedId = useRef<string | null>(null);
   const asking = useRef(0); // Leaving mid-request moves this on, so the late answer is dropped.
+  const [continued, setContinued] = useState(false);
   const continuing = useRef(false); // The person chose Continue anyway for this question, so a retry mustn't ask again.
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
   const proposing = busy === 'proposing';
@@ -80,15 +81,15 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     return false;
   };
   function reset(next: string) {
-    savedId.current = null; continuing.current = false;
+    savedId.current = null; continuing.current = false; setContinued(false);
     setQuestion(next); setResult(null); setGuess(null); setFailure(null);
     setStartError(null); setGuessUnavailable(false); setLimit(null); setStartAtLimit(false);
   }
 
   async function submit(continueAnyway = false) {
     const text = question.trim();
-    if (inFlight.current || offline || blocked || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
-    inFlight.current = true; continuing.current = continueAnyway;
+    if (inFlight.current || offline || blocked || result?.safety.allowed === false || text.length < QUESTION_MIN || text.length > QUESTION_MAX) return;
+    inFlight.current = true; continuing.current = continueAnyway; setContinued(continueAnyway);
     setBusy('proposing'); setFailure(null); setResult(null); setGuess(null);
     const mine = ++asking.current;
     try {
@@ -149,9 +150,13 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     {onHome && <Action label="Go to Today" secondary onPress={onHome} />}
   </View>;
 
-  if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} shown={shown} onReveal={setGuess} onBack={() => reset('')} />;
+  if (step === 'guess' && result?.proposal) return <View style={ui.stack}>
+    {continued && <Copy style={local.note}>Your question wasn&apos;t about a habit, so Rhythm suggested a related habit experiment instead.</Copy>}
+    <GuessStep heading={heading} proposal={result.proposal} shown={shown} onReveal={setGuess} onBack={() => reset('')} />
+  </View>;
 
   if (step === 'plan' && result?.proposal && result.prediction) return <View style={ui.stack}>
+    {continued && <Copy style={local.note}>Your question wasn&apos;t about a habit, so Rhythm suggested a related habit experiment instead.</Copy>}
     {!result.personal_guess_available && <Copy accessibilityRole="text" style={local.note}>Your own guess is unavailable right now. You can still start without one.</Copy>}
     {guess !== null && <Copy style={local.locked}>Your guess: {signedPercent(guess)} change from normal days. Locked before the AI reveal.</Copy>}
     {result.classification.risk === 'review' && <View style={local.review}>
@@ -185,7 +190,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     <Copy>What do you want to test?</Copy>
     <View>
       <TextInput accessibilityLabel="Your question or goal" accessibilityHint="5 to 500 characters. One small change at a time." multiline value={question}
-        onChangeText={value => { continuing.current = false; setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} maxLength={QUESTION_MAX + 1}
+        onChangeText={value => { continuing.current = false; setContinued(false); setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} maxLength={QUESTION_MAX + 1}
         placeholder="Does walking after dinner improve my sleep?" placeholderTextColor={COLORS.muted} style={[ui.input, local.question]} />
       <View style={local.help}>
         <Copy style={local.helpText}>One small change at a time.</Copy>
@@ -223,7 +228,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       </> : result.safety.suggested_alternative && <Copy>{result.safety.suggested_alternative}</Copy>}
     </View>}
     {shown && !result?.habit_check && <StickyAction><Action wide label="Design experiment"
-      disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} /></StickyAction>}
+      disabled={working || offline || blocked || result?.safety.allowed === false || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} /></StickyAction>}
   </View>;
 }
 

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
 import { signedPercent } from "@/lib/report/copy";
-import type { Profile, ProposeResponse } from "@/lib/types/api";
+import type { Profile, ProposeResponse } from "@rhythm-health/contract";
 import { closeButton, CloseIcon } from "@/components/nav/close-icon";
 import { useLeaveGuard, useNav } from "@/components/nav/navigation";
 import { PersonalGuess } from "@/components/experiments/personal-guess";
@@ -56,6 +56,7 @@ export function ExperimentFlow({
   const [guessUnavailable, setGuessUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
+  const [continued, setContinued] = useState(false);
   const continuing = useRef(false); // The person chose Continue anyway for this question, so a retry mustn't ask again.
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [error, setError] = useState<{
@@ -86,9 +87,10 @@ export function ExperimentFlow({
 
   async function submit(continueAnyway = false) {
     const text = question.trim();
-    if (inFlight.current || limitMessage || text.length < 5 || text.length > 500) return;
+    if (inFlight.current || limitMessage || result?.safety.allowed === false || text.length < 5 || text.length > 500) return;
     inFlight.current = true;
     continuing.current = continueAnyway;
+    setContinued(continueAnyway);
     setBusy(true);
     setError(null);
     setStartError(null);
@@ -122,6 +124,7 @@ export function ExperimentFlow({
 
   function chooseQuestion(value: string) {
     continuing.current = false;
+    setContinued(false);
     setQuestion(value);
     setPersonalGuess(null);
     setGuessUnavailable(false);
@@ -198,6 +201,7 @@ export function ExperimentFlow({
             question={question}
             onChange={(value) => {
               continuing.current = false;
+              setContinued(false);
               setQuestion(value);
               setError(null);
               setResult(null);
@@ -207,7 +211,7 @@ export function ExperimentFlow({
             }}
             onSubmit={() => void submit()}
             busy={busy}
-            blocked={Boolean(limitMessage)}
+            blocked={Boolean(limitMessage) || result?.safety.allowed === false}
             headingLevel={headingLevel}
             suggestions={showStarters ? starters(profile) : []}
             onSuggestion={chooseQuestion}
@@ -245,6 +249,7 @@ export function ExperimentFlow({
       </section>}
       {result?.safety.allowed && result.proposal && result.prediction && (
         <div ref={output as React.RefObject<HTMLDivElement>} tabIndex={-1}>
+          {continued && <p role="note" className="mb-4 border-l-2 border-line pl-4 text-caption text-muted">Your question wasn&apos;t about a habit, so Rhythm suggested a related habit experiment instead.</p>}
           {result.personal_guess_available && personalGuess === null ? (
             <PersonalGuess
               headingLevel={headingLevel}

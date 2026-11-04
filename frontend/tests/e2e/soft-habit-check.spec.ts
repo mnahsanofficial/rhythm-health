@@ -42,6 +42,25 @@ for (const width of [390, 1440]) {
     await page.getByRole("button", { name: "Design experiment" }).click();
     await page.getByRole("button", { name: "Continue anyway" }).click();
     await expect(page.getByRole("button", { name: /start this experiment/i })).toBeVisible();
+    await expect(page.getByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeVisible();
+    await page.screenshot({ path: `/tmp/proposal-continued-${width}.png`, fullPage: true });
     expect(bodies.at(-1)).toEqual({ question: "What's the capital of France?", continue_anyway: true });
+    await page.getByRole("button", { name: "Ask something else" }).click();
+    await page.route(`${API}/api/experiments/propose`, async route => {
+      bodies.push(route.request().postDataJSON());
+      await route.fulfill({ json: { ...proposeResponse, proposal: null, prediction: null,
+        safety: { allowed: false, reason: "This is not a safe experiment.", suggested_question: SUGGESTED, suggested_alternative: null } } });
+    });
+    await field.fill("A question that the server blocks");
+    await page.getByRole("button", { name: "Design experiment" }).click();
+    await expect(page.getByText("This is not a safe experiment.")).toBeVisible();
+    const design = page.getByRole("button", { name: "Design experiment" });
+    await expect(design).toBeDisabled();
+    const requests = bodies.length;
+    await field.press("Control+Enter");
+    expect(bodies).toHaveLength(requests);
+    await page.screenshot({ path: `/tmp/proposal-blocked-${width}.png`, fullPage: true });
+    await field.fill("A different habit question");
+    await expect(design).toBeEnabled();
   });
 }

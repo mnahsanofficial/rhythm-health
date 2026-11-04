@@ -83,6 +83,7 @@ describe("new experiment flow", () => {
     await submitQuestion(user);
 
     expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
+    expect(screen.queryByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeNull();
     expect(proposalCalls).toBe(1);
     expect(listCalls).toBe(0);
   });

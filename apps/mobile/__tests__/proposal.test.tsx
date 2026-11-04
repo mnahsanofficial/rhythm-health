@@ -148,6 +148,7 @@ test('double taps send one proposal, with no second request while it is in fligh
 
 test('returning to the foreground keeps the proposal and never sends it again', async () => {
   await toPlan();
+  expect(screen.queryByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeNull();
   await act(async () => { for (const listener of listeners) listener('active'); });
   expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeVisible();
   expect(screen.getByText('Your guess: +12% change from normal days. Locked before the AI reveal.')).toBeVisible();
@@ -176,6 +177,17 @@ test('a safety block shows the reason and a safer alternative that only fills th
   expect(count(PROPOSE)).toBe(1);
   fireEvent.press(screen.getByRole('button', { name: 'Use this instead' }));
   expect(screen.getByLabelText('Your question or goal').props.value).toBe('Does an earlier bedtime help my mornings?');
+  expect(design()).toBeEnabled();
+  expect(count(PROPOSE)).toBe(1);
+});
+
+test('editing a safety-blocked question unlocks design without making a request', async () => {
+  await openAsk();
+  queue(PROPOSE, { body: { ...proposeResponse, proposal: null, prediction: null,
+    safety: { allowed: false, reason: 'Choose a safer experiment.', suggested_question: QUESTION, suggested_alternative: null } } });
+  await submit();
+  expect(design()).toBeDisabled();
+  typeQuestion(QUESTION + '?');
   expect(design()).toBeEnabled();
   expect(count(PROPOSE)).toBe(1);
 });
@@ -534,6 +546,8 @@ describe('a question that is not about a habit', () => {
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: /Ask something else|Back/ })); });
     await submit(QUESTION);
     expect(calls.filter(call => call.key === PROPOSE).at(-1)?.body).toEqual({ question: QUESTION });
+    await reveal();
+    expect(screen.queryByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeNull();
   });
 });
 
