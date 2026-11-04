@@ -69,6 +69,25 @@ def get_project_session_dir(cwd: Path) -> Path:
     return claude_dir / project_hash
 
 
+def text_parts(content: list) -> str:
+    """The text of a list-shaped message. Image data is never kept."""
+    texts = [c.get('text', '').strip() for c in content if c.get('type') == 'text']
+    return '\n\n'.join(t for t in texts if t)
+
+
+def queued_human_prompt(entry: dict) -> Optional[str]:
+    """The text of a prompt a person queued while the agent was working, if this is one."""
+    attachment = entry.get('attachment') or {}
+    if entry.get('type') != 'attachment' or entry.get('isSidechain'):
+        return None
+    if attachment.get('type') != 'queued_command':
+        return None
+    if (attachment.get('origin') or {}).get('kind') != 'human':
+        return None
+    prompt = attachment.get('prompt', '')
+    return text_parts(prompt) if isinstance(prompt, list) else prompt
+
+
 def is_user_prompt(entry: dict) -> bool:
     """Check if entry is a real user prompt (not meta/command/tool result)."""
     if entry.get('type') != 'user':
@@ -81,7 +100,7 @@ def is_user_prompt(entry: dict) -> bool:
     if isinstance(content, list):
         if any(c.get('type') == 'tool_result' for c in content):
             return False
-        return False
+        return (entry.get('origin') or {}).get('kind') == 'human' and bool(text_parts(content))
 
     if isinstance(content, str):
         if content.startswith('<command-name>'):
@@ -137,8 +156,13 @@ def extract_clean_log(jsonl_path: Path) -> List[Tuple[str, str, str]]:
 
         if is_user_prompt(entry):
             content = entry.get('message', {}).get('content', '')
+            if isinstance(content, list):
+                content = text_parts(content)
             if isinstance(content, str) and content.strip():
                 entries.append((timestamp, 'user', content.strip()))
+
+        elif queued_human_prompt(entry) and queued_human_prompt(entry).strip():
+            entries.append((timestamp, 'user', queued_human_prompt(entry).strip()))
 
         elif entry.get('type') == 'assistant':
             text = extract_assistant_text(entry)

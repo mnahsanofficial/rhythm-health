@@ -32,7 +32,7 @@ Claude Code, Codex and Cursor may commit, push their own branches and open PRs d
 `.claude-logs/` is committed with the work it records. Hooks write it, so:
 
 - never gitignore it, edit it, or delete files from it;
-- never change `scripts/extract-log.py` (the 8x guide's script, byte for byte).
+- never change `scripts/extract-log.py` (the 8x guide's script plus one reviewed reading change, pinned by `npm test`).
 
 If a session's log changes after your last commit, add a `chore(logs): …` commit to the same branch before merging. Setup and per-agent details are in [`docs/logging.md`](../logging.md).
 
