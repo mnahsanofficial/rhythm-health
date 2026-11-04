@@ -104,6 +104,25 @@ describe("new experiment flow", () => {
     expect(screen.queryByRole("region", { name: "Experiment and prediction preview" })).not.toBeInTheDocument();
   });
 
+  it("explains the daily AI limit, keeps the question and offers no retry", async () => {
+    const user = userEvent.setup();
+    const message = "You've made 5 experiment plans today, which is the daily limit. Please come back tomorrow.";
+    installProfileHandler();
+    server.use(
+      http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(
+        { detail: { code: "ai_daily_limit", message, limit: 5 } }, { status: 429 },
+      )),
+    );
+    render(<NewExperiment />);
+    await submitQuestion(user);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("You’ve reached today’s limit.");
+    expect(alert).toHaveTextContent(message);
+    expect(within(alert).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue(question);
+  });
+
   it("shows proposal loading and retry states, then the review preview and lets the user ask again", async () => {
     const user = userEvent.setup();
     let releaseFirstResponse!: () => void;

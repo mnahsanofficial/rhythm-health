@@ -213,6 +213,18 @@ test.each([
   expect(count(PROPOSE)).toBe(1);
 });
 
+test('the daily limit explains itself, keeps the question and offers no retry', async () => {
+  await openAsk();
+  const text = "You've made 5 experiment plans today, which is the daily limit. Please come back tomorrow.";
+  queue(PROPOSE, { status: 429, body: { detail: { code: 'ai_daily_limit', message: text, limit: 5 } } });
+  await submit();
+  expect(await screen.findByText(new RegExp(text))).toBeVisible();
+  expect(screen.getByText(/You've reached today's limit\./)).toBeVisible();
+  expect(screen.getByLabelText('Your question or goal').props.value).toBe(QUESTION);
+  expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+  expect(count(PROPOSE)).toBe(1);
+});
+
 test('a missing profile routes to the rhythm instead of retrying', async () => {
   await openAsk();
   queue(PROPOSE, { status: 409, body: { detail: 'Create your profile first' } });
