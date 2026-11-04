@@ -20,8 +20,8 @@ const point = (number: number, guess: number, observed: number, off: number) => 
   off_by_points: off,
 });
 
-function reply(body: Calibration) {
-  server.use(http.get(URL, () => HttpResponse.json(body)));
+function reply(body: Omit<Calibration, "example"> & Partial<Pick<Calibration, "example">>) {
+  server.use(http.get(URL, () => HttpResponse.json({ example: null, ...body })));
 }
 
 beforeEach(() => {
@@ -72,6 +72,30 @@ describe("the calibration card", () => {
     expect(screen.queryByRole("list", { name: "Your guesses" })).toBeNull();
   });
 
+  it("labels the sample as an example and keeps it out of the real guesses", async () => {
+    reply({ points: [], average_off_by_points: null, trend: null, example: point(1, 5, 10.9, 5.9) });
+    render(<CalibrationCard />);
+
+    const example = await screen.findByRole("group", { name: "Example, not your results" });
+    expect(within(example).getByText("Example")).toBeVisible();
+    expect(example).toHaveTextContent("built from invented check-ins");
+    expect(example).toHaveTextContent("Question 1?");
+    expect(example).toHaveTextContent("Guessed +5%");
+    expect(example).toHaveTextContent("It changed +10.9%");
+    expect(example).toHaveTextContent("Off by 5.9 points");
+    expect(example).not.toHaveTextContent("You guessed");
+    expect(screen.queryByRole("list", { name: "Your guesses" })).toBeNull();
+    expect(screen.queryByText(/on average/)).toBeNull();
+    expect(screen.getByText(/Your next experiment asks for your own guess/)).toBeVisible();
+  });
+
+  it("shows no example beside real guesses", async () => {
+    reply({ points: [point(1, 10, 14, 4)], average_off_by_points: 4, trend: null });
+    render(<CalibrationCard />);
+    await screen.findByRole("list", { name: "Your guesses" });
+    expect(screen.queryByText("Example")).toBeNull();
+  });
+
   it("shows a loading state, then the result", async () => {
     reply({ points: [], average_off_by_points: null, trend: null });
     render(<CalibrationCard />);
@@ -87,7 +111,7 @@ describe("the calibration card", () => {
       reads += 1;
       return reads === 1
         ? HttpResponse.json({ detail: "Database unavailable" }, { status: 503 })
-        : HttpResponse.json({ points: [], average_off_by_points: null, trend: null });
+        : HttpResponse.json({ points: [], average_off_by_points: null, trend: null, example: null });
     }));
     render(<CalibrationCard />);
 

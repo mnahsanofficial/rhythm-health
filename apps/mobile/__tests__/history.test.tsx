@@ -42,7 +42,7 @@ beforeEach(() => {
     'GET /api/profile': { body: profile },
     [`GET ${ACTIVE}`]: { body: [] },
     [`GET ${COMPLETED}`]: { body: [older, newer] },
-    [`GET ${CALIBRATION}`]: { body: { points: [], average_off_by_points: null, trend: null } },
+    [`GET ${CALIBRATION}`]: { body: { points: [], average_off_by_points: null, trend: null, example: null } },
     [`GET /api/experiments/${newer.id}/report`]: { body: reportFor(newer) },
     [`GET /api/experiments/${older.id}/report`]: { body: reportFor(older) },
     [RESET]: { body: seededReport },
@@ -285,7 +285,7 @@ describe('calibration card', () => {
   });
 
   test('shows each guess against what happened, newest first, and the trend', async () => {
-    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 30, 20), point(2, 10, 12.5, 2.5)], average_off_by_points: 11.3, trend: 'closer' } };
+    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 30, 20), point(2, 10, 12.5, 2.5)], average_off_by_points: 11.3, trend: 'closer', example: null } };
     await openHistory();
     expect(await screen.findByText('Your guesses are getting closer.')).toBeVisible();
     expect(screen.getByText('Off by 11.3 points on average across 2 experiments. A few short experiments show a pattern, not proof.')).toBeVisible();
@@ -296,10 +296,30 @@ describe('calibration card', () => {
   });
 
   test('explains what one guess cannot show yet', async () => {
-    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 11, 1)], average_off_by_points: 1, trend: null } };
+    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 11, 1)], average_off_by_points: 1, trend: null, example: null } };
     await openHistory();
     expect(await screen.findByText("Finish another experiment to see whether you're getting closer.")).toBeVisible();
     expect(screen.getByText('You guessed +10% · It changed +11% · Off by 1 point')).toBeVisible();
+  });
+
+  test('labels the sample as an example, keeps it out of real guesses, and shows it before anything has finished', async () => {
+    defaults[`GET ${COMPLETED}`] = { body: [] };
+    defaults[`GET ${CALIBRATION}`] = { body: { points: [], average_off_by_points: null, trend: null, example: point(1, 5, 10.9, 5.9) } };
+    await openHistory();
+    const example = await screen.findByTestId('calibration-example');
+    expect(example.props.accessibilityLabel).toBe('Example, not your results');
+    expect(within(example).getByText('Example')).toBeVisible();
+    expect(within(example).getByText(/built from invented check-ins/)).toBeVisible();
+    expect(within(example).getByText('Guessed +5% · It changed +10.9% · Off by 5.9 points')).toBeVisible();
+    expect(screen.queryAllByTestId('calibration-point')).toHaveLength(0);
+    expect(screen.queryByText(/on average/)).toBeNull();
+  });
+
+  test('shows no example beside real guesses', async () => {
+    defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 14, 4)], average_off_by_points: 4, trend: null, example: null } };
+    await openHistory();
+    await screen.findAllByTestId('calibration-point');
+    expect(screen.queryByTestId('calibration-example')).toBeNull();
   });
 
   test('has an empty state that says how to start', async () => {

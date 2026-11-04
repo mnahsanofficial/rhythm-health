@@ -146,6 +146,7 @@ for (const width of [390, 1440]) {
         ],
         average_off_by_points: 11.5,
         trend: "closer",
+        example: null,
       },
     }));
 
@@ -160,6 +161,24 @@ for (const width of [390, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
 }
+
+test("shows the labelled example on history before any experiment has finished", async ({ page }) => {
+  await openHistoryFromHome(page);
+  await page.route(`${API}/api/experiments/calibration`, (route) => route.fulfill({
+    status: 200,
+    json: {
+      points: [],
+      average_off_by_points: null,
+      trend: null,
+      example: { experiment_id: "example", question: "Does a 20-minute walk after dinner improve my morning energy?", completed_at: null, guessed_change_percent: 5, observed_change_percent: 10.9, off_by_points: 5.9 },
+    },
+  }));
+  await openSection(page, "History");
+  const example = page.getByRole("group", { name: "Example, not your results" });
+  await expect(example).toContainText("Example");
+  await expect(example).toContainText("Off by 5.9 points");
+  await expect(page.getByText("Your finished experiments land here.")).toBeVisible();
+});
 
 test("shows a useful empty state when there are no completed experiments", async ({ page }) => {
   await openHistoryFromHome(page);

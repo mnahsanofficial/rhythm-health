@@ -79,7 +79,7 @@ export async function installApiMocks(page: Page) {
     }
 
     if (url.pathname === "/api/experiments/calibration" && method === "GET") {
-      await route.fulfill({ status: 200, json: { points: [], average_off_by_points: null, trend: null } });
+      await route.fulfill({ status: 200, json: { points: [], average_off_by_points: null, trend: null, example: null } });
       return;
     }
 

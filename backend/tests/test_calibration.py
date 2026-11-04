@@ -3,6 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.auth.supabase import get_current_user
+from app.demo import seed
 from app.integrations import openrouter
 from app.integrations.supabase import SupabaseUnavailable
 from app.main import app
@@ -53,8 +54,9 @@ def get():
     return response.json()
 
 
-def test_nothing_finished_means_no_points_and_no_trend(stored):
-    assert get() == {"points": [], "average_off_by_points": None, "trend": None}
+def test_nothing_finished_means_no_real_points_and_no_trend(stored):
+    body = get()
+    assert (body["points"], body["average_off_by_points"], body["trend"]) == ([], None, None)
 
 
 def test_experiments_without_a_guess_are_left_out(stored):
@@ -131,3 +133,32 @@ def test_the_database_being_down_is_503(stored, monkeypatch):
 
 def test_it_needs_a_signed_in_person():
     assert client.get(URL).status_code == 401
+
+
+def test_with_no_real_guess_the_demo_sample_comes_back_only_as_a_separate_example(stored):
+    body = get()
+    assert body["points"] == [] and body["average_off_by_points"] is None and body["trend"] is None
+    example = body["example"]
+    assert example["question"] == seed.QUESTION
+    assert example["guessed_change_percent"] == seed.EXAMPLE_GUESS_PERCENT
+    # The sample's real computed result, the same number its Lab Report is built from.
+    assert example["observed_change_percent"] == 10.9
+    assert example["off_by_points"] == 5.9
+
+
+def test_a_real_guess_replaces_the_example_and_it_is_never_counted(stored):
+    install, _ = stored
+    install(finished(1, 10, 14))
+    body = get()
+    assert body["example"] is None
+    assert [point["experiment_id"] for point in body["points"]] == ["exp-1"]
+    assert body["average_off_by_points"] == 4
+    assert body["trend"] is None
+
+
+def test_the_example_writes_nothing_and_calls_no_ai(stored, monkeypatch):
+    def forbidden(*_a, **_k):
+        pytest.fail("Showing the example must not write anything")
+    monkeypatch.setattr(experiments, "create", forbidden)
+    monkeypatch.setattr(reports, "upsert", forbidden)
+    assert get()["example"] is not None
