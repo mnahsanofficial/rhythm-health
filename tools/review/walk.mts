@@ -365,15 +365,11 @@ const SCENARIOS: Record<string, (theme: 'light' | 'dark') => Promise<void>> = {
       exp = ended();
       await page.getByText('‹ Today').first().click();
       await shot('05-today-ended');
-      await page.getByRole('button', { name: 'See results' }).or(page.getByRole('link', { name: 'See results' })).first().click();
-      await shot('06-detail-ended');
-      await page.getByRole('button', { name: 'See results', exact: true }).first().click();
-      await shot('07-finish-confirm', { full: false });
-      await btn(page, 'Yes, finish').click();
+      await btn(page, 'See your results').click();
       await shot('08-day10-choice');
       await page.getByRole('button', { name: /See full Lab Report/ }).or(page.getByRole('link', { name: /See full Lab Report/ })).first().click();
       await shot('09-report-first-look');
-      await btn(page, 'Reveal my result').click();
+      await btn(page, 'Compare with the prediction').click();
       await shot('10-report-revealed');
       await btn(page, 'Write my report').click();
       await shot('11-report-writing', { settle: 200, full: false });
@@ -413,9 +409,7 @@ const SCENARIOS: Record<string, (theme: 'light' | 'dark') => Promise<void>> = {
     const shot = shooter(theme, 'mei-keep', page);
     await signIn(page);
     await safely('keep', async () => {
-      await page.getByRole('button', { name: 'See results' }).or(page.getByRole('link', { name: 'See results' })).first().click();
-      await page.getByRole('button', { name: 'See results', exact: true }).first().click();
-      await btn(page, 'Yes, finish').click();
+      await btn(page, 'See your results').click();
       await page.getByRole('button', { name: /Keep this habit/ }).click();
       await shot('01-progress-kept');
       await tab(page, 'Today');
@@ -503,9 +497,7 @@ const SCENARIOS: Record<string, (theme: 'light' | 'dark') => Promise<void>> = {
       const { browser, page } = await open(theme, { ...base, ...active([ended]), [`GET /api/experiments/${ID}/progress`]: { body: timelineFixture(ended, { recorded: seq(10) }) }, [`GET /api/experiments/${ID}/checkins`]: { body: seq(10).map(checkin) }, [`POST /api/experiments/${ID}/complete`]: down, [`GET /api/experiments/${ID}/report`]: { status: 404, body: { detail: 'none' } } });
       const shot = shooter(theme, 'state', page); await signIn(page);
       await safely('finish error', async () => {
-        await page.getByRole('button', { name: 'See results' }).or(page.getByRole('link', { name: 'See results' })).first().click();
-        await page.getByRole('button', { name: 'See results', exact: true }).first().click();
-        await btn(page, 'Yes, finish').click();
+        await btn(page, 'See your results').click();
         await page.waitForTimeout(600);
         await shot('finish-error', { full: false });
       });

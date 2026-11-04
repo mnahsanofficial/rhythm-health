@@ -232,7 +232,7 @@ describe('reading order', () => {
     await signedIn();
     expect(screen.getByText('What do you want to test?')).toBeVisible();
     expect(screen.queryByText('A little curiosity, a little evidence')).toBeNull();
-    const starter = screen.getByRole('button', { name: /could help/ });
+    const starter = screen.getByRole('button', { name: 'Does less caffeine improve my focus?' });
     expect(flat(starter).backgroundColor).not.toBe(THEMES.light['accent-tint']);
     expect(flat(starter).borderColor).toBe(THEMES.light.control);
     expect(flat(starter).maxWidth).toBe('100%');

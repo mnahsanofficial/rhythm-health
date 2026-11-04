@@ -443,7 +443,8 @@ test('Ask says where the question goes and that the AI does not calculate the re
 
 test('You has an About section with the same line', async () => {
   render(<MobileApp />);
-  await act(async () => { fireEvent.press(await screen.findByRole('tab', { name: 'You' })); });
+  const you = await screen.findByRole('tab', { name: 'You' });
+  await act(async () => { fireEvent.press(you); });
   expect(screen.getByRole('header', { name: 'About' })).toBeVisible();
   expect(screen.getByText(TRUST)).toBeVisible();
 });
