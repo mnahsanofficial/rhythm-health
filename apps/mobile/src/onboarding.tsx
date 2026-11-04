@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, findNodeHandle, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import ReanimatedDefault, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { StepRail } from './rails';
 import { LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type Profile, type ProfileInput } from '@rhythm-health/contract';
 import { TimeField } from './time-field';
-import { Action, Alert, Copy, Loading, useStyles, Status } from './ui';
+import { Action, Alert, Copy, Loading, useStyles, Status, useScreenEnter } from './ui';
 import { ApiError, saveProfile } from './lib/profile';
 import { ACTIVITY_OPTIONS, AGE_OPTIONS, clearDraft, CONSTRAINTS, duration, GOALS, HABITS, habitTime, maxSleep, minutes, nightMinutes, plausible, QUESTIONS, readDraft, suggestedSleep, toProfileInput, writeDraft, type Draft, type StoredDraft } from './lib/onboarding';
 import { useColors, themedStyles } from './theme-core';
@@ -39,6 +41,7 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
     if (Platform.OS === 'web') node.focus();
     else { const tag = findNodeHandle(node); if (tag) AccessibilityInfo.setAccessibilityFocus(tag); }
   }, [step]);
+  useScreenEnter(step);
   function persist(next: StoredDraft) {
     current.current = next; setData(next); setSaveError(null);
     void writeDraft(owner, next).then(() => { if (current.current === next) setStorageError(false); })
@@ -91,12 +94,9 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
   return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}><View style={styles.stack}>
     {offline && <Alert>No connection. Your answers stay on this device; reconnect to save your rhythm.</Alert>}
     {storageError && <><Alert>Couldn&apos;t keep your setup on this device. Your answers are still here while this screen is open.</Alert>
-      <Action label="Retry keeping my answers" secondary onPress={() => persist(data)} /></>}
+      <Action label="Try again" secondary onPress={() => persist(data)} /></>}
     {step !== 0 && step !== 8 && <>
-      <View accessible accessibilityRole="progressbar" accessibilityLabel="Setup progress" accessibilityValue={{ min: 1, max: 7, now: step, text: `Question ${step} of 7` }} style={local.segments}>
-        {[1, 2, 3, 4, 5, 6, 7].map(n => <View key={n} style={[local.segment, n <= step! && local.segmentDone]} />)}
-      </View>
-      <Copy style={styles.number}>{String(step).padStart(2, '0')} / 07</Copy>
+      <StepRail current={step!} />
     </>}
     <Text ref={heading} accessibilityRole="header" accessible {...(Platform.OS === 'web' ? { tabIndex: -1 } : {})} style={styles.title}>
       {step === 0 ? 'First, your rhythm.' : step === 8 ? "Here's your rhythm." : QUESTIONS[step! - 1][0]}
@@ -133,7 +133,6 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
           <Action label="Half an hour more" secondary disabled={hours >= maxSleep(draft)} onPress={() => update({ usual_sleep_hours: Math.min(maxSleep(draft), hours + 0.5) })} /></View>
         <Copy style={styles.muted}>{hours === suggestedSleep(draft) ? `Our guess from ${duration(nightMinutes(draft) ?? 0)} in bed. Change it if it's off.` : `Out of ${duration(nightMinutes(draft) ?? 0)} in bed.`}</Copy>
       </>}
-      {(step === 2 || step === 3) && plausible(draft) && <RhythmRing draft={draft} />}
       {step === 4 && ACTIVITY_OPTIONS.map(o => <Choice key={o.value} label={o.label} hint={o.hint} picked={draft.activity_level === o.value} onPress={() => update({ activity_level: o.value })} />)}
       {step === 5 && <MultiChoice key="goals" options={GOALS} values={draft.goals ?? []} max={3} addLabel="Something else?" placeholder="e.g. Feel less groggy on Mondays" onChange={goals => update({ goals })} />}
       {step === 6 && <>
@@ -145,8 +144,9 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
         <Copy style={styles.muted}>Your experiment should fit your life. These help us choose a manageable change.</Copy>
         <MultiChoice key="constraints" options={CONSTRAINTS} values={draft.constraints ?? []} max={MAX_LIST_ITEMS} addLabel="Anything else?" placeholder="e.g. Dog walks at 7am" onChange={constraints => update({ constraints })} />
       </>}
-      <View style={styles.divider}><Action label="Back" secondary onPress={() => go(step! - 1)} />
+      <View style={local.buttons}><Action label="Back" secondary onPress={() => go(step! - 1)} />
         <Action label={editing ? 'Done' : !answered && step! >= 6 ? 'Skip' : 'Continue'} disabled={!answered && step! < 6} onPress={next} /></View>
+      {step! >= 2 && plausible(draft) && <RhythmSoFar draft={draft} />}
     </>}
     {saveError && <Alert>{saveError}</Alert>}
     {onCancel && <Action label="Cancel setup changes" secondary disabled={busy} onPress={() => { setBusy(true); void clearDraft(owner).then(() => { if (mounted.current) onCancel(); }).catch(() => { setSaveError("Couldn't discard your setup changes. Try again."); }).finally(() => setBusy(false)); }} />}
@@ -189,6 +189,21 @@ function MultiChoice({ options, values, onChange, max, addLabel, placeholder }: 
   </View>;
 }
 
+/** Takes shape under the questions as answers arrive, so it never pushes a question off the screen. */
+function RhythmSoFar({ draft }: { draft: Draft }) { const styles = useStyles();
+  const facts: [string, string | undefined][] = [
+    ['Activity', ACTIVITY_OPTIONS.find(o => o.value === draft.activity_level)?.label],
+    ['Goals', draft.goals?.join(', ') || undefined],
+  ];
+  return <View style={styles.divider}>
+    <Copy accessibilityRole="header" style={styles.sectionTitle}>Your rhythm so far</Copy>
+    <RhythmRing draft={draft} />
+    {facts.filter(([, value]) => value).map(([label, value]) => <ReanimatedView key={label} entering={FadeInDown.duration(MOTION_DURATION_MS.response).reduceMotion(ReduceMotion.System)} style={{ gap: SPACING.xs }}>
+      <Copy style={styles.muted}>{label}</Copy><Copy>{value}</Copy>
+    </ReanimatedView>)}
+  </View>;
+}
+
 function RhythmRing({ draft, description = true }: { draft: Draft; description?: boolean }) { const COLORS = useColors(); const styles = useStyles();
   const [opacity] = useState(() => new Animated.Value(1));
   useEffect(() => {
@@ -221,12 +236,11 @@ function RhythmRing({ draft, description = true }: { draft: Draft; description?:
     {placed.map(h => <Copy key={h.label}>{h.time ? `${h.label} · ${h.time}` : `No set time, so not on the ring: ${h.label}.`}</Copy>)}
   </View>;
 }
+const ReanimatedView = ReanimatedDefault.View;
 const useLocal = themedStyles(COLORS => StyleSheet.create({
-  segments: { flexDirection: 'row', gap: SPACING.xs + 2 },
-  segment: { flex: 1, height: SPACING.xs + 2, borderRadius: RADII.pill, backgroundColor: COLORS.line },
-  segmentDone: { backgroundColor: COLORS.moss },
+  buttons: { flexDirection: 'row', justifyContent: 'space-between', gap: SPACING.sm, paddingTop: SPACING.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   choice: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', padding: SPACING.md, gap: SPACING.xs, backgroundColor: COLORS.paper,
-    borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, borderRadius: SPACING.lg },
+    borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control, borderRadius: RADII.control },
   picked: { backgroundColor: COLORS.moss, borderColor: COLORS.moss }, pickedText: { color: COLORS['on-accent'] },
 }));

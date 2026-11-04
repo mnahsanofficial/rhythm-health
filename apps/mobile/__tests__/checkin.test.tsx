@@ -69,7 +69,7 @@ afterEach(() => jest.restoreAllMocks());
 
 async function open() {
   const view = render(<MobileApp />);
-  fireEvent.press(await screen.findByRole('button', { name: /Check in for day|Change today's answers/ }));
+  fireEvent.press(await screen.findByRole('button', { name: /Check in for day|Edit answers/ }));
   await screen.findByText("Today's check-in.");
   await screen.findByLabelText('Breaks');
   return view;
@@ -85,7 +85,7 @@ async function answer() {
 
 test('all four metric types save the typed contract and return to recorded Today automatically', async () => {
   await open(); await answer();
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save check-in" })); });
   expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
   expect(posts).toEqual([{ intervention_completed: true, metric_values: { morning_energy: 7, breaks: -2.5, minutes_to_sleep: 20.5, screen_free: false }, note: 'A quiet evening.' }]);
 });
@@ -110,7 +110,7 @@ test('baseline omits the test-day question and sends no intervention answer', as
   fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
   fireEvent.changeText(screen.getByLabelText('Breaks'), '0'); fireEvent.changeText(screen.getByLabelText('Minutes to fall asleep, in minutes'), '0');
   fireEvent.press(screen.getByRole('radio', { name: 'Screen-free evening: No' }));
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save check-in" })); });
   await screen.findByText(/^Day \d+ recorded\.$/);
   expect(posts[0]).not.toHaveProperty('intervention_completed');
   expect(posts[0].metric_values.breaks).toBe(0);
@@ -127,7 +127,7 @@ test('existing answers prefill from check-ins, including false and zero', async 
 
 test('failed saves keep every answer and retry only when the person asks', async () => {
   failSave = 503; await open(); await answer();
-  fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/Save unavailable/);
   expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('-2.5');
   expect(screen.getByLabelText('Optional note')).toHaveDisplayValue('  A quiet evening.  ');
@@ -138,18 +138,18 @@ test('failed saves keep every answer and retry only when the person asks', async
 });
 
 test('422 messages are placed beside the named field and preserve the answer', async () => {
-  failSave = 422; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  failSave = 422; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByText('Check this answer')).toBeVisible();
   expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('-2.5');
 });
 
 test('missing and invalid answers cannot be submitted', async () => {
   await open();
-  fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByText(/answer.*missing/i)).toBeVisible();
   expect(posts).toHaveLength(0);
   await answer(); fireEvent.changeText(screen.getByLabelText('Breaks'), 'not a number');
-  fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(posts).toHaveLength(0);
 });
 
@@ -157,7 +157,7 @@ test('offline keeps answers and disables Save until reconnected', async () => {
   const view = await open(); await answer(); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
   expect(await screen.findByText("You're offline; your answers are kept")).toBeVisible();
   expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('-2.5');
-  expect(screen.getByRole('button', { name: "Save today's check-in" })).toBeDisabled();
+  expect(screen.getByRole('button', { name: "Save check-in" })).toBeDisabled();
   expect(posts).toHaveLength(0);
 });
 
@@ -171,7 +171,7 @@ test('check-in read failures have retry and do not display an empty editable for
 });
 
 test('a saved check-in whose progress reload fails is not submitted again', async () => {
-  failRefresh = true; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  failRefresh = true; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByText(/check-in was saved/i)).toBeVisible();
   expect(posts).toHaveLength(1); failRefresh = false;
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
@@ -181,7 +181,7 @@ test('a saved check-in whose progress reload fails is not submitted again', asyn
 
 test('a changed server day blocks a stale form before a POST', async () => {
   await open(); await answer(); serverDay = 5;
-  fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByText(/Today has changed/)).toBeVisible();
   expect(posts).toHaveLength(0);
 });
@@ -190,7 +190,7 @@ test('a second Save tap is ignored while the first request is pending', async ()
   const fetch = global.fetch; let release!: () => void; let sending = 0;
   const gate = new Promise<void>(resolve => { release = resolve; });
   global.fetch = jest.fn(async (...args) => { if (args[1]?.method === 'POST') { sending++; await gate; } return fetch(...args); });
-  await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   const busy = await screen.findByRole('button', { name: 'Saving…' });
   expect(busy).toBeDisabled(); fireEvent.press(busy); expect(sending).toBe(1);
   await act(async () => { release(); });
@@ -198,7 +198,7 @@ test('a second Save tap is ignored while the first request is pending', async ()
 });
 
 test('a save with an expired session hides the form and signs out', async () => {
-  failSave = 401; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  failSave = 401; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByLabelText('Email')).toBeVisible();
   expect(screen.queryByLabelText('Breaks')).toBeNull(); expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
@@ -207,7 +207,7 @@ test.each([true, false])('save confirmation stays immediate with reduced motion 
   const { AccessibilityInfo, Animated } = jest.requireActual('react-native') as typeof import('react-native');
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(reduced);
   const timing = jest.spyOn(Animated, 'timing').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
-  await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByText(/^Day \d+ recorded\.$/)).toBeVisible();
   expect(screen.getByText('Check-in saved.')).toBeVisible();
   if (reduced) expect(timing).not.toHaveBeenCalled();
@@ -218,7 +218,7 @@ test.each([true, false])('save confirmation stays immediate with reduced motion 
 test('the first saved check-in offers reminders without prompting the OS automatically', async () => {
   await open(); expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: 'Enable daily reminders' })).toBeNull();
-  await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByRole('button', { name: 'Enable daily reminders' })).toBeVisible();
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
 });
@@ -228,7 +228,7 @@ test('a saved check-in reschedules the opted-in reminder from refreshed progress
   preferences.set('rhythm.reminders.fake-user', 'on'); notificationState.granted = true;
   await open(); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());
   const before = notifications.scheduleNotificationAsync.mock.calls.length;
-  await answer(); fireEvent.press(screen.getByRole('button', { name: "Save today's check-in" }));
+  await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   await screen.findByText(/^Day \d+ recorded\.$/);
   await waitFor(() => expect(notifications.scheduleNotificationAsync.mock.calls.length).toBeGreaterThan(before));
   expect(notifications.scheduleNotificationAsync.mock.calls.at(-1)?.[0].trigger).toMatchObject({ date: new Date('2026-11-02T18:45:00Z') });

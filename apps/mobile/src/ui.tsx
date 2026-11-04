@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useRef, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { AccessibilityInfo, findNodeHandle, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { useColors, themedStyles } from './theme-core';
 
+const PRESSED_SCALE = 0.98;
 const FontAvailability = createContext(true);
 const ScrollToTop = createContext<() => void>(() => undefined);
 export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { const styles = useStyles();
@@ -25,6 +27,11 @@ export function useStepFocus(step: string) {
   }, [step, scrollToTop]);
   return heading;
 }
+/** For a flow that moves focus itself: settle in and go to the top when `step` changes. */
+export function useScreenEnter(step: unknown) {
+  const scrollToTop = useContext(ScrollToTop);
+  useEffect(() => { scrollToTop(); }, [step, scrollToTop]);
+}
 const spoken = (node: ReactNode): string => Array.isArray(node) ? node.map(spoken).join('') : typeof node === 'string' || typeof node === 'number' ? String(node) : '';
 /** Android reads live regions; iOS ignores them, so VoiceOver needs an explicit announcement. */
 function useAnnounce(text: string) {
@@ -38,21 +45,27 @@ export function Alert({ children }: { children: ReactNode }) { const styles = us
   useAnnounce(spoken(children));
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
-export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, inline = false }: {
-  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean; inline?: boolean;
+const PRESS_TIMING = { duration: MOTION_DURATION_MS.press, reduceMotion: ReduceMotion.System };
+/** Fits its words. One per screen without `secondary`; that one is the screen's primary action. */
+export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected }: {
+  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean;
 }) { const COLORS = useColors(); const styles = useStyles();
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   return (
-    <Pressable
+    <Animated.View style={[styles.fit, pressStyle]}><Pressable
       accessibilityRole={link ? 'link' : 'button'}
       accessibilityLabel={name ?? label}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.action, inline && styles.inline, secondary && styles.secondary,
-        pressed && { backgroundColor: secondary ? COLORS['moss-tint'] : COLORS['moss-deep'] }, disabled && styles.disabled]}
+      onPressIn={() => { scale.set(withTiming(PRESSED_SCALE, PRESS_TIMING)); }}
+      onPressOut={() => { scale.set(withTiming(1, PRESS_TIMING)); }}
+      style={({ pressed }) => [styles.action, secondary && styles.secondary,
+        pressed && { backgroundColor: secondary ? COLORS['accent-tint'] : COLORS['accent-press'] }, disabled && styles.disabled]}
     >
-      <Copy style={[styles.actionText, secondary && { color: COLORS.ink }]}>{label}</Copy>
-    </Pressable>
+      <Copy style={[styles.actionText, secondary && { color: COLORS.text }, disabled && { color: COLORS.muted }]}>{label}</Copy>
+    </Pressable></Animated.View>
   );
 }
 /** The web's "← Your lab" link. The arrow is visual; the spoken name says where it goes. */
@@ -69,13 +82,22 @@ export function ForwardLink({ label, onPress }: { label: string; onPress: () => 
 }
 export function Frame({ children, header, fontsReady = true }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean }) { const styles = useStyles();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
-  const scrollToTop = useCallback(() => { scroller.current?.scrollTo?.({ y: 0, animated: false }); }, []);
+  const opacity = useSharedValue(1);
+  const rise = useSharedValue(0);
+  // Called when a flow moves to a new screen: back to the top, then a short settle that keeps your place.
+  const scrollToTop = useCallback(() => {
+    scroller.current?.scrollTo?.({ y: 0, animated: false });
+    const timing = { duration: MOTION_DURATION_MS.panel, easing: Easing.bezier(...MOTION_EASE.settle), reduceMotion: ReduceMotion.System };
+    opacity.set(0); rise.set(SPACING.xs + 2);
+    opacity.set(withTiming(1, timing)); rise.set(withTiming(0, timing));
+  }, [opacity, rise]);
+  const enter = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ translateY: rise.get() }] }));
   return (
     <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       {header}
       <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.column}>
-          <View style={styles.content}>{children}</View>
+          <Animated.View style={[styles.content, enter]}>{children}</Animated.View>
         </View>
       </ScrollView>
     </SafeAreaView></ScrollToTop.Provider></FontAvailability.Provider>
@@ -106,15 +128,15 @@ export const useStyles = themedStyles(COLORS => StyleSheet.create({
   label: { marginBottom: SPACING.sm },
   input: { fontFamily: FONT_FAMILIES.sans, ...NATIVE_TYPOGRAPHY.body, color: COLORS.ink,
     minHeight: LAYOUT.primaryAction, backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2,
-    borderColor: COLORS.line, borderRadius: RADII.card, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+    borderColor: COLORS.control, borderRadius: RADII.control, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
   focus: { borderColor: COLORS.moss, borderWidth: LAYOUT.focusWidth },
   stack: { gap: SPACING.md },
   action: { minHeight: LAYOUT.primaryAction, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
     backgroundColor: COLORS.moss, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center' },
-  actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.lead, color: COLORS['on-accent'], textAlign: 'center' },
-  inline: { alignSelf: 'flex-start' },
-  secondary: { backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
-  disabled: { opacity: 0.5 },
+  actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.body, color: COLORS['on-accent'], textAlign: 'center' },
+  fit: { alignSelf: 'flex-start', maxWidth: LAYOUT.buttonMaxWidth },
+  secondary: { backgroundColor: 'transparent', borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
+  disabled: { backgroundColor: COLORS.surface, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border },
   alert: { color: COLORS.clay, backgroundColor: COLORS['clay-tint'], padding: SPACING.md, borderRadius: RADII.card },
   divider: { borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, paddingTop: SPACING.lg, gap: SPACING.md },
   skeletonTitle: { height: LAYOUT.primaryAction, width: '80%', backgroundColor: COLORS.line, borderRadius: RADII.pill },

@@ -53,7 +53,7 @@ export function FinishCard({ experiment, timeline, token, offline, onExpired, on
       ? `You have enough days recorded to try.${left > 0 ? ` Finishing now skips ${left} test ${left === 1 ? 'day' : 'days'}, so there's less evidence to go on.` : ''}`
       : 'Finishing runs the analysis and compares it with the prediction.'}</Copy>
     {error && <Alert>{error}</Alert>}
-    {!confirming ? <Action label="Finish and see results" secondary={early} disabled={offline} onPress={() => setConfirming(true)} /> : <>
+    {!confirming ? <Action label="See results" secondary={early} disabled={offline} onPress={() => setConfirming(true)} /> : <>
       <Copy>Finish this experiment now? You can&apos;t add check-ins after.</Copy>
       <Action label={busy ? 'Analysing…' : 'Yes, finish'} disabled={busy || offline} onPress={() => void finish()} />
       <Action label="Keep going" secondary disabled={busy} onPress={() => setConfirming(false)} />

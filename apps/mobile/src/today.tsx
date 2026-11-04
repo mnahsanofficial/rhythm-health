@@ -154,11 +154,11 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
           {sampleControls}
           <Title>{entries.length} experiments running</Title>
           {loaded.capacity?.can_start
-            ? <Action label="Test another habit" inline onPress={() => ask('')} />
+            ? <Action label="Test another habit" secondary onPress={() => ask('')} />
             : <Copy style={styles.muted}>You&apos;re running {loaded.capacity?.limit} experiments, the most at once. Finish one to start another.</Copy>}
           {loaded.today && loaded.today.experiments.length > 1 && <View style={styles.decision}>
             <Copy>{loaded.today.all_recorded ? `Done for today: all ${loaded.today.experiments.length} check-ins are recorded.` : `One check-in for all ${loaded.today.experiments.length} experiments.`}</Copy>
-            <Action label={loaded.today.all_recorded ? "Change today's answers" : 'Check in for today'} secondary={loaded.today.all_recorded} disabled={disabled} onPress={() => setCombined(loaded.today)} />
+            <Action label={loaded.today.all_recorded ? "Edit answers" : 'Check in for today'} secondary={loaded.today.all_recorded} disabled={disabled} onPress={() => setCombined(loaded.today)} />
           </View>}
           {entries.map(entry => <View key={entry.experiment.id} style={styles.divider}>
             <Copy style={labStyles.day}>{dayLabel(entry.timeline)}</Copy>
@@ -181,7 +181,7 @@ function ActiveLab({ data, onAsk, onDetail }: { data: DayData; onAsk: () => void
   return <>
     <View style={labStyles.top}>
       <Copy style={labStyles.day}>{dayLabel(data.timeline)}</Copy>
-      <Action label="Test another habit" inline onPress={onAsk} />
+      <Action label="Test another habit" secondary onPress={onAsk} />
     </View>
     <ExperimentSummary data={data} baseline onDetail={onDetail} />
   </>;
@@ -198,7 +198,7 @@ function ExperimentSummary({ data: { experiment, timeline }, baseline: showBasel
       <Copy style={labStyles.action}>{experiment.intervention.action}</Copy>
       <Copy style={styles.muted}>{baseline ? `Your change starts on day ${experiment.baseline_days + 1}.` : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}</Copy>
     </View>
-    <ForwardLink label={progress.state === 'ended' && !experiment.is_seeded ? 'Finish and see results' : 'See your experiment'} onPress={onDetail} />
+    <ForwardLink label={progress.state === 'ended' && !experiment.is_seeded ? 'See results' : 'See your experiment'} onPress={onDetail} />
   </>;
 }
 const useLabStyles = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({

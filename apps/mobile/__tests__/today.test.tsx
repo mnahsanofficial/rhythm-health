@@ -61,13 +61,13 @@ test('a recorded current day shows Done for today and uses the returned next ope
   expect(await screen.findByText('Done for today')).toBeVisible();
   const time = new Date(nextDayAt).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' });
   expect(screen.getByText(`Day 5 opens ${time}.`)).toBeVisible();
-  expect(screen.getByRole('button', { name: "Change today's answers" })).toBeEnabled();
+  expect(screen.getByRole('button', { name: "Edit answers" })).toBeEnabled();
 });
 
 test('no active experiment offers the native question without fetching progress', async () => {
   list = []; render(<MobileApp />);
   expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Design my experiment' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Design experiment' })).toBeVisible();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active']);
 });
 
@@ -127,7 +127,7 @@ test.each(['not_started', 'ended', 'completed'] as const)('handles %s without of
   expect(await screen.findByText(active.question)).toBeVisible();
   expect(screen.queryByRole('button', { name: /Check in for day/ })).toBeNull();
   expect(screen.queryByRole('link')).toBeNull();
-  if (state !== 'not_started') expect(screen.getByRole('button', { name: state === 'completed' ? 'See your Lab Report' : 'Finish and see results' })).toBeVisible();
+  if (state !== 'not_started') expect(screen.getByRole('button', { name: state === 'completed' ? 'See your Lab Report' : 'See results' })).toBeVisible();
 });
 
 

@@ -18,6 +18,7 @@ type Props = {
 export function LabReportScreen({ id, token, offline, initial, backTo = 'Your lab', onExpired, onBack, onToday, onAsk }: Props) { const pill = usePill(); const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [load, setLoad] = useState<Load>(initial ? { kind: 'ready', report: initial } : { kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const [revealed, setRevealed] = useState(false);
   const heading = useStepFocus(load.kind);
   const needsRead = !initial;
   useEffect(() => {
@@ -62,6 +63,8 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
   const others = analysis.metrics.filter(metric => metric.key !== primary?.key);
   const signal = SIGNAL_COPY[analysis.signal.classification];
   const a = analysis.adherence;
+  // Revealing comes first, so the later steps take the primary look only once they're next.
+  const nextStep = revealed || !analysis.prediction || !primary;
   const finishedOn = experiment.completed_at ? new Date(experiment.completed_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long' }) : null;
   const pair = (from: number | null, to: number | null) => from !== null && to !== null ? `${from.toFixed(1)} → ${to.toFixed(1)}` : 'Not enough data';
 
@@ -78,7 +81,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
     {offline && <Status style={ui.muted}>You&apos;re offline. These results are the last ones loaded.</Status>}
 
     {analysis.prediction && primary
-      ? <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} guess={analysis.personal_guess} />
+      ? <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} guess={analysis.personal_guess} onRevealed={() => setRevealed(true)} />
       : <View style={local.card}>
         {analysis.personal_guess && <Copy>{`Your guess: ${reportPercent(analysis.personal_guess.guessed_change_percent, 2)}. A percentage comparison is unavailable because a baseline or test average is missing, or the baseline is zero.`}</Copy>}
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Prediction vs reality</Copy>
@@ -120,16 +123,16 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
       <Copy style={local.small}>Baseline average → test average. Only the main measure decides the result.</Copy>
     </View>}
 
-    <Learning id={experiment.id} token={token} offline={offline} seeded={experiment.is_seeded} narrative={narrative} onExpired={onExpired}
+    <Learning nextStep={nextStep} id={experiment.id} token={token} offline={offline} seeded={experiment.is_seeded} narrative={narrative} onExpired={onExpired}
       onWritten={written => setLoad({ kind: 'ready', report: written })} />
-    <NextExperiment token={token} offline={offline} narrative={narrative} onExpired={onExpired} onAsk={onAsk} onToday={onToday} />
+    <NextExperiment nextStep={nextStep} token={token} offline={offline} narrative={narrative} onExpired={onExpired} onAsk={onAsk} onToday={onToday} />
   </View>;
 }
 
 const [x1, y1, x2, y2] = MOTION_EASE.settle;
 
 /** The forecast stays fixed; a tap reveals the measured change. Reduced motion shows it at once. */
-function PredictionVsReality({ comparison, metricLabel, guess }: { comparison: PredictionComparison; metricLabel: string; guess: PersonalGuessComparison | null }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+function PredictionVsReality({ comparison, metricLabel, guess, onRevealed }: { onRevealed: () => void; comparison: PredictionComparison; metricLabel: string; guess: PersonalGuessComparison | null }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [replay, setReplay] = useState(0);
   const [landing] = useState(() => new Animated.Value(1));
   const revealed = replay > 0;
@@ -176,7 +179,7 @@ function PredictionVsReality({ comparison, metricLabel, guess }: { comparison: P
       {revealed ? <Animated.View style={entering}><Copy style={local.big}>{reportPercent(observed)}</Copy></Animated.View> : <Copy style={ui.muted}>Your observations are ready.</Copy>}
       <Copy style={local.small}>Measured from your recorded days.</Copy>
     </View>
-    <Action label={revealed ? 'Replay comparison' : 'Reveal my result'} onPress={() => { setReplay(n => n + 1); }} />
+    <Action label={revealed ? 'Replay comparison' : 'Reveal my result'} secondary={revealed} onPress={() => { setReplay(n => n + 1); onRevealed(); }} />
     <Status>{status}</Status>
     <View accessible accessibilityRole="image" accessibilityLabel={`${guess ? `Your guess ${reportPercent(guess.guessed_change_percent, 2)}; ` : ''}Predicted range ${reportPercent(min)} to ${reportPercent(max)}${revealed ? `; observed ${reportPercent(observed)}` : '; reveal to compare your result'}.`} style={local.scale}>
       <View style={local.scaleTrack} />
@@ -202,7 +205,8 @@ function PredictionVsReality({ comparison, metricLabel, guess }: { comparison: P
 type Writing = { kind: 'idle' } | { kind: 'writing' } | { kind: 'error'; status: number; message: string };
 
 /** One paid call on an explicit tap, guarded against double taps. A failure keeps the results. */
-function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten }: {
+function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten, nextStep }: {
+  nextStep: boolean;
   id: string; token: string; offline: boolean; seeded: boolean; narrative: ReportNarrative | null; onExpired: () => void; onWritten: (report: LabReport) => void;
 }) { const local = useLocal(); const ui = useStyles();
   const [writing, setWriting] = useState<Writing>({ kind: 'idle' });
@@ -235,7 +239,7 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten 
       {writing.kind === 'error' ? <>
         <Alert>{writeErrorText(writing.status, writing.message)} Your results above are saved.</Alert>
         {writing.status !== 409 && writing.status !== 404 && <Action label="Try again" secondary disabled={offline} onPress={() => void write()} />}
-      </> : <Action label={busy ? 'Writing your report…' : 'Write my report'} disabled={busy || offline} onPress={() => void write()} />}
+      </> : <Action label={busy ? 'Writing your report…' : 'Write my report'} secondary={!nextStep} disabled={busy || offline} onPress={() => void write()} />}
       {busy && <Status style={local.small}>Writing your report from your results. This can take a little while; you can stay on this page.</Status>}
     </>}
   </View>;
@@ -244,7 +248,8 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten 
 type ActiveCheck = 'checking' | 'free' | { limit: number };
 
 /** The check only chooses the wording: the backend refuses before its paid call, so a failed read doesn't block. */
-function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }: {
+function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday, nextStep }: {
+  nextStep: boolean;
   token: string; offline: boolean; narrative: ReportNarrative | null; onExpired: () => void; onAsk: (question: string) => void; onToday: () => void;
 }) { const local = useLocal(); const ui = useStyles();
   const [check, setCheck] = useState<ActiveCheck>('checking');
@@ -271,7 +276,7 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday }
         <Copy>You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.</Copy>
         <Action label="Go to Your lab" secondary onPress={onToday} />
       </> : check === 'checking' && !offline ? <Status style={local.small}>Checking whether you can start another…</Status>
-        : <Action label="Run this experiment" onPress={() => onAsk(narrative.next_experiment.question)} />}
+        : <Action label="Run this experiment" secondary={!nextStep} onPress={() => onAsk(narrative.next_experiment.question)} />}
     </> : <>
       <Copy style={ui.muted}>A suggested next question appears once your report is written.</Copy>
       <Action label="Ask your own question" secondary onPress={() => onAsk('')} />

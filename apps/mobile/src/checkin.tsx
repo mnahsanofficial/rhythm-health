@@ -132,7 +132,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
             style={[styles.input, noteFocused && styles.focus, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
           {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
         </View>
-        <View style={{ paddingTop: SPACING.md }}><Action label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update today's check-in" : "Save today's check-in"}
+        <View style={{ paddingTop: SPACING.md }}><Action label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update check-in" : "Save check-in"}
           disabled={busy || offline} onPress={() => void save()} /></View>
       </>}
   </View>;
@@ -162,7 +162,7 @@ export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder,
     </>}
     {failed && <Action label="Try again" secondary disabled={refreshing} onPress={onRetry} />}
     <Action label="Back to your experiment" onPress={onBack} />
-    <Action label="Change today's answers" secondary onPress={onChange} />
+    <Action label="Edit answers" secondary onPress={onChange} />
   </View>;
 }
 

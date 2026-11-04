@@ -131,11 +131,11 @@ describe('controls have names and 48pt targets', () => {
     await screen.findByRole('header', { name: 'Ask a question.' });
     auditControls();
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
-    await press('Design my experiment');
+    await press('Design experiment');
     const guess = await screen.findByLabelText('Your guess for Morning energy');
     auditControls();
     fireEvent.changeText(guess, '10');
-    await press('Reveal the AI prediction');
+    await press('Show prediction');
     await screen.findByRole('button', { name: 'Start this experiment' });
     auditControls();
   });
@@ -143,9 +143,9 @@ describe('controls have names and 48pt targets', () => {
   test('Lab Report, with the chart columns left out of the accessibility tree', async () => {
     setActive(ended);
     render(<MobileApp />);
-    const link = await screen.findByRole('button', { name: 'Finish and see results' });
+    const link = await screen.findByRole('button', { name: 'See results' });
     await act(async () => { fireEvent.press(link); });
-    await press('Finish and see results');
+    await press('See results');
     await press('Yes, finish');
     await screen.findByRole('button', { name: 'Reveal my result' });
     await press('Reveal my result');
@@ -160,7 +160,7 @@ describe('screen readers hear what changes', () => {
     render(<MobileApp />);
     await screen.findByRole('header', { name: 'Ask a question.' });
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
-    await press('Design my experiment');
+    await press('Design experiment');
     await screen.findByText(/The service is unavailable right now\./);
     expect(announce).toHaveBeenCalledWith('The service is unavailable right now. AI service unavailable');
   });
@@ -174,7 +174,7 @@ describe('screen readers hear what changes', () => {
     fake.mockImplementation((url, options) => String(url).endsWith('/propose')
       ? new Promise<Response>(resolve => { release = resolve; }) : original(url, options));
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
-    await press('Design my experiment');
+    await press('Design experiment');
     await screen.findByText('Finding a small change you can test…');
     expect(announce).toHaveBeenCalledWith('Finding a small change you can test…');
     await act(async () => { release({ ok: true, status: 200, json: async () => routes['POST /api/experiments/propose'].body } as Response); });
@@ -184,9 +184,9 @@ describe('screen readers hear what changes', () => {
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
     setActive(ended);
     render(<MobileApp />);
-    const link = await screen.findByRole('button', { name: 'Finish and see results' });
+    const link = await screen.findByRole('button', { name: 'See results' });
     await act(async () => { fireEvent.press(link); });
-    await press('Finish and see results');
+    await press('See results');
     await press('Yes, finish');
     await press('Reveal my result');
     expect(announce).toHaveBeenCalledWith('Your result, +21%, landed outside the predicted range.');
