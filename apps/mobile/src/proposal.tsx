@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { ExperimentProposal, Profile, ProposeResponse } from '@rhythm-health/contract';
@@ -20,6 +20,8 @@ type Props = {
   /** Where "Go to Today" leads when the experiment limit stops this flow. */
   onHome?: () => void;
   onStarted: () => void; onEditProfile?: () => void;
+  /** Tells Today a plan is open, so nothing unrelated sits under it. */
+  onPlanOpen?: (open: boolean) => void;
 };
 const message = (cause: unknown, fallback: string) => cause instanceof Error && cause.message ? cause.message : fallback;
 
@@ -37,7 +39,7 @@ function failureTitle({ status }: Failure) {
  * tap, guarded by one synchronous lock; the result stays in this component's state, so returning
  * to the foreground or a refreshed token never asks again.
  */
-export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, shown = true, onExpired, onBack, onHome, onStarted, onEditProfile }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, shown = true, onExpired, onBack, onHome, onStarted, onEditProfile, onPlanOpen }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
@@ -54,6 +56,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
   const step = !planReady ? (result ? 'refused' : 'ask') : result.personal_guess_available && guess === null ? 'guess' : 'plan';
   const heading = useStepFocus(step);
+  const planOpen = step === 'guess' || step === 'plan';
+  useEffect(() => { onPlanOpen?.(planOpen); }, [planOpen, onPlanOpen]);
   const initial = initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '';
   const typed = question.trim() !== '' && question !== initial;
   // With nothing running the question is Today itself, so a × only appears once there's a plan to clear.

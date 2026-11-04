@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Linking, Platform, Switch, View } from 'react-native';
 import { LAYOUT, SPACING } from '@rhythm-health/brand';
+import { devToolsOn } from './lib/config';
 import { onlySamples } from './lib/reminders';
 import { useReminders } from './reminder-context';
 import { Action, Alert, Copy, useStyles, Title, Status } from './ui';
@@ -19,7 +20,7 @@ export function Settings() { const COLORS = useColors(); const styles = useStyle
       <Action label="Open phone Settings" secondary onPress={() => { void Linking.openSettings().catch(() => setError(true)); }} /></>}
     {state.choice === 'off' && <Copy>Reminders are off.</Copy>}
     {error && <Alert>Couldn&apos;t open Settings. Open your phone Settings and choose Notifications → Expo Go.</Alert>}
-    {__DEV__ && <Action label="Send test reminder" secondary disabled={onlySamples(state.data) || state.busy || !state.permission || state.choice !== 'on' || !state.data?.some(item => !item.experiment.is_seeded && item.timeline.progress.state === 'in_progress')} onPress={() => void service.test()} />}
+    {devToolsOn() && <Action label="Send test reminder" secondary disabled={onlySamples(state.data) || state.busy || !state.permission || state.choice !== 'on' || !state.data?.some(item => !item.experiment.is_seeded && item.timeline.progress.state === 'in_progress')} onPress={() => void service.test()} />}
     {state.notice && <Status>{state.notice}</Status>}
   </View>;
 }

@@ -33,6 +33,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const { service: reminders, state: reminderState } = useReminders();
   const [detail, setDetail] = useState(false);
   const [askKey, setAskKey] = useState(0);
+  const [planOpen, setPlanOpen] = useState(false);
   const [loaded, setLoaded] = useState<{ value: DayData[]; capacity: ActiveCapacity | null; today: TodayCheckin | null; at: Date } | null>(null);
   const [combined, setCombined] = useState<TodayCheckin | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const flowOpen = asking !== null || inline;
   const flowShown = flowOpen && (section === 'ask' || (section === 'lab' && inline)) && !combined && !editing && savedDay === null && !report && !detail && !finishing;
   const flow = flowOpen && <View style={flowShown ? undefined : hidden}>
-    <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile} shown={flowShown}
+    <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile} shown={flowShown} onPlanOpen={setPlanOpen}
       onHome={toLab}
       onStarted={() => { setAsking(null); onSection('lab'); setLoaded(null); setStarted(true); void load(); }} />
   </View>;
@@ -156,7 +157,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
         : 'No connection'}</Status>}
       {!offline && error && <><Alert>{error}</Alert><Action label="Try again" onPress={() => void load()} /></>}
       {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
-        : entries.length === 0 ? sampleControls : entries.length === 1 ? <>
+        : entries.length === 0 ? (planOpen ? null : sampleControls) : entries.length === 1 ? <>
           {sampleControls}
           <TodayCard data={entries[0]} disabled={disabled} token={token} offline={offline} onExpired={onExpired} onCompleted={result => finished(entries[0], result)} onCheckin={() => checkin(entries[0])} onOpenReport={() => setReport({ id: entries[0].experiment.id })} />
           <ActiveLab data={entries[0]} onDetail={() => openDetail(entries[0])} />
@@ -201,9 +202,14 @@ function ExperimentSummary({ data: { experiment, timeline }, baseline: showBasel
     <Title small>{experiment.question}</Title>
     {showBaseline && <BaselineContext timeline={timeline} />}
     <View style={labStyles.change}>
-      <Copy style={labStyles.caption}>{baseline ? 'Keep your usual routine' : 'Your small change'}</Copy>
-      <Copy style={labStyles.action}>{experiment.intervention.action}</Copy>
-      <Copy>{baseline ? `Your change starts on day ${experiment.baseline_days + 1}.` : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}</Copy>
+      {baseline ? <>
+        <Copy style={labStyles.action}>Keep your usual routine</Copy>
+        <Copy style={labStyles.caption}>{`Starts on day ${experiment.baseline_days + 1}: ${experiment.intervention.action}`}</Copy>
+      </> : <>
+        <Copy style={labStyles.caption}>Your small change</Copy>
+        <Copy style={labStyles.action}>{experiment.intervention.action}</Copy>
+        <Copy>{`${experiment.intervention.timing} · ${experiment.intervention.frequency}`}</Copy>
+      </>}
     </View>
     <ForwardLink label="See your experiment" onPress={onDetail} />
   </>;
