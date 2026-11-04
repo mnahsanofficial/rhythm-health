@@ -1,8 +1,8 @@
 # Mobile app plan
 
-The plan for `apps/mobile/`, an Expo app for the daily loop. Written **31 Oct 2026** against `main` at `082a878` (after #33). Step 1 shipped in #35 and Today/Check-in in #36. Reminders and Progress (steps 4 and 5) are built together on `feat/mobile-reminders-progress`, as requested by Nazmul, with separate red/green commits and an iPhone check before PR creation. Setup and verification: [`apps/mobile/`](../apps/mobile/README.md). Status and dates: [REMAINING_WORK.md](REMAINING_WORK.md#plan-to-thursday-5-nov).
+The plan for `apps/mobile/`, the Expo app that's now the product. Setup and verification: [`apps/mobile/`](../apps/mobile/README.md). What's left: [REMAINING_WORK.md](REMAINING_WORK.md).
 
-> **Sprint update, 2 Nov:** the [Full app](#full-app) section supersedes the web-only limits below. The original daily-loop plan is retained as implementation history.
+> **Status, 4 Nov:** all of this is built: the daily loop (#35–37), [Full app](#full-app) M1–M5 (#45–49), [web parity](#web-parity) P1–P4 (#51–54) and [several active experiments](#several-active-experiments) (#55, #58). What's still unchecked is in the [tracker](FEEDBACK_TRACKER.md#m0-full-app-plan). The Full app section replaced the web-only limits below, and the original daily-loop plan is kept as history.
 
 ## Why mobile
 

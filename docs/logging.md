@@ -50,6 +50,38 @@ This recovered 7 prompts across 4 logs (`94c5e335`, `758cdbea`, `3f4138de`, `f67
 - **Codex.** Hooks are on by default, but project hooks run only after the project is trusted and the hook is approved in `/hooks`. Approval is tied to the hook's hash, so any edit to `.codex/hooks.json` turns it off silently until it's re-approved. The script reads the rollout transcript from the hook payload, and fills in from the payload if the transcript lags. It logs only sessions a person drives: it skips Codex Desktop's background suggestions job (which fires the hooks with a generated "Generate 0 to 3 hyperpersonalized suggestions…" prompt and has no rollout) and approval-reviewer sub-agents (`source: subagent`). It never logs the AGENTS.md or environment text Codex injects.
 - **Cursor.** Cursor gives the prompt and final response text directly in the hook payloads. The script keeps a per-conversation state file at `.git/agent-log-state/` (never committed) and re-renders the log on each event.
 
+## Sessions in a worktree
+
+**The problem.** The guide's script takes `project:` from the current folder's name, and finds its transcript in the Claude Code folder derived from that path. A session in `.claude/worktrees/<name>/` has its transcript under that worktree's folder, so the hook either logs another session, or writes `project: <name>`, or logs nothing for this one. The script mustn't change, so the session's log needs a little help.
+
+**The workaround.** Run the unmodified script through a folder alias named `Health`, from a scratch folder, and regenerate before each commit:
+
+```bash
+WT="$PWD"                                 # the worktree's root
+SESSION=<session id>                      # the transcript's file name, without .jsonl
+SD="$HOME/.claude/projects/$(printf '%s' "$WT" | tr '/.' '--')"
+ALIAS="$(mktemp -d)/Health"
+ln -sfn "$WT" "$ALIAS"
+ln -sfn "$SD" "$HOME/.claude/projects/$(printf '%s' "$ALIAS" | tr '/' '-')"
+echo "{\"transcript_path\":\"$SD/$SESSION.jsonl\"}" | CLAUDE_PROJECT_DIR="$WT" CLAUDE_CWD="$ALIAS" python3 scripts/claude-log-hook.py
+```
+
+This adds one symlink in `~/.claude/projects/`, and nothing in the repo except the log. Keep the same alias for the whole session.
+
+**How to check it's right:**
+
+```bash
+head -8 .claude-logs/*<session id>*.md
+```
+
+```bash
+npm run logs:check
+```
+
+The first must show `project: Health`, your `author`, `github_user` and `git_email`, and there must be exactly one file for the session. The second must pass. If the hook did write `project: <worktree name>` first, regenerating through the alias corrects the same file, because the script reuses a session's existing log.
+
+**One last thing.** A log can't contain the turn that commits it, so end each session with the [End of session](../AGENTS.md#end-of-session) step.
+
 ## Teammate setup
 
 Pulling the repo brings the hooks, but each person's machine decides whether logs get written, and whose name is on them. Do this once per clone (Mac or Linux; the hook commands are shell commands).
