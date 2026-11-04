@@ -85,7 +85,7 @@ Use `button("primary" | "secondary" | "quiet")` from `components/ui/button.ts`, 
 
 - At least 48px high, and each fits its words, up to `--button-max` (320px).
 - One primary per screen. When the next step changes, the primary moves: on the Lab Report it goes from Reveal my result to Write my report.
-- On phones, only the single primary pinned to the bottom may be full width.
+- On phones, a primary may be full width in three places: pinned to the bottom, a form's submit (it lines up with the fields), and the bottom of the phone's landing carousel. Anywhere else it fits its words.
 - Choices (Yes / Not today, scale numbers, answer rows) aren't buttons, so they may fill their row. Their edge and any input's edge use `control`.
 
 ## Layout

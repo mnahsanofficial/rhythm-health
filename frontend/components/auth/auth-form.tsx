@@ -158,7 +158,7 @@ export function AuthForm({ mode, onModeChange, onSignedIn }: Props) {
         type="submit"
         disabled={busy}
         aria-busy={busy}
-        className={`${button("primary")} text-lead`}
+        className={`${button("primary")} w-full max-w-none text-lead sm:w-fit sm:max-w-(--button-max)`}
       >
         {busy ? copy.busy : copy.submit}
       </button>

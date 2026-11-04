@@ -9,3 +9,8 @@ Read [DESIGN.md](../../DESIGN.md) for tokens and screen patterns.
 - Keep the two signature moments: the completed onboarding rhythm and the Lab Report's prediction-versus-reality comparison. Supporting feedback should not compete with them. Numeric values must remain honest; do not animate through intermediate health estimates. Plain counts, such as days recorded, may count up.
 - Follow the repo's red-before-green workflow for new behavior. Test normal and reduced motion, loading/error/empty states and keyboard use. Use fake services; never call paid proposal/report-generation APIs or write invented health data to shared accounts.
 - Inspect the real browser at 390px and 1440px, critique the result, and remove something that adds no value. Save before/during/after animation frames under `docs/screenshots/ui-motion/` and link them in the PR. Screenshots are evidence, not snapshot tests. Report any remaining skips or limitations.
+
+## The phone landing carousel
+
+The one place something moves without being asked. It waits `dwell` on each slide and loops forward. It stops for Reduce Motion, a screen reader, a finger on the slide, or Pause, which stays on screen whenever the slides can move. Every slide can also be reached by swiping or by its dot.
+

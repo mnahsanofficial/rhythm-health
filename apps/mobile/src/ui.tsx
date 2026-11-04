@@ -67,14 +67,17 @@ export function Alert({ children }: { children: ReactNode }) { const styles = us
   return <Copy accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.alert}>{children}</Copy>;
 }
 const PRESS_TIMING = { duration: MOTION_DURATION_MS.press, reduceMotion: ReduceMotion.System };
-/** Fits its words. One per screen without `secondary`; that one is the screen's primary action. */
-export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected }: {
-  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean;
+/**
+ * Fits its words. One per screen without `secondary`; that one is the screen's primary action.
+ * `wide` lines it up with what it belongs to: a form's fields, or the bottom of the phone's landing.
+ */
+export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, wide = false, testID }: {
+  label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean; wide?: boolean; testID?: string;
 }) { const COLORS = useColors(); const styles = useStyles();
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   return (
-    <Animated.View style={[styles.fit, pressStyle]}><Pressable
+    <Animated.View testID={testID} style={[wide ? styles.wide : styles.fit, pressStyle]}><Pressable
       accessibilityRole={link ? 'link' : 'button'}
       accessibilityLabel={name ?? label}
       accessibilityState={{ disabled, selected }}
@@ -101,7 +104,8 @@ export function ForwardLink({ label, onPress }: { label: string; onPress: () => 
     <Copy style={{ color: COLORS.moss, fontFamily: FONT_FAMILIES.sansMedium }}>{label}  →</Copy>
   </Pressable>;
 }
-export function Frame({ children, header, fontsReady = true }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean }) { const styles = useStyles();
+/** `bare` hands the whole space under the header to one screen that lays itself out and doesn't scroll. */
+export function Frame({ children, header, fontsReady = true, bare = false }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean; bare?: boolean }) { const styles = useStyles();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const opacity = useSharedValue(1);
   const rise = useSharedValue(0);
@@ -116,11 +120,11 @@ export function Frame({ children, header, fontsReady = true }: { children: React
   return (
     <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       {header}
-      <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
+      {bare ? <View style={styles.bare}>{children}</View> : <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.column}>
           <Animated.View style={[styles.content, enter]}>{children}</Animated.View>
         </View>
-      </ScrollView>
+      </ScrollView>}
     </SafeAreaView></ScrollToTop.Provider></FontAvailability.Provider>
   );
 }
@@ -136,6 +140,7 @@ export function Loading({ message }: { message: string }) { const styles = useSt
 }
 export const useStyles = themedStyles(COLORS => StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.oat },
+  bare: { flex: 1 },
   scroll: { flexGrow: 1, padding: LAYOUT.gutter.min },
   column: { width: '100%', maxWidth: LAYOUT.contentWidth / 3, alignSelf: 'center' },
   backLink: { minHeight: LAYOUT.primaryAction, alignSelf: 'flex-start', justifyContent: 'center' },
@@ -156,6 +161,7 @@ export const useStyles = themedStyles(COLORS => StyleSheet.create({
     backgroundColor: COLORS.moss, borderRadius: RADII.pill, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontFamily: FONT_FAMILIES.sansMedium, ...NATIVE_TYPOGRAPHY.body, color: COLORS['on-accent'], textAlign: 'center' },
   fit: { alignSelf: 'flex-start', maxWidth: LAYOUT.buttonMaxWidth },
+  wide: { alignSelf: 'stretch' },
   secondary: { backgroundColor: 'transparent', borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
   disabled: { backgroundColor: COLORS.surface, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border },
   notice: { color: COLORS.text, backgroundColor: COLORS['warning-tint'], padding: SPACING.md, borderRadius: RADII.card },

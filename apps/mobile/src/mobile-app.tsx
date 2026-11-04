@@ -122,18 +122,18 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
 
   const hasProfile = profile.kind === 'ready' && profile.owner === owner && profile.profile !== null;
   const onLanding = ready && !session && !authFailure && visitor === 'landing';
-  const header = <AppHeader onSignIn={onLanding ? () => setVisitor('signIn') : undefined} account={session ? {
+  const header = <AppHeader account={session ? {
     email: session.user.email ?? 'your account', section, hasProfile,
     onSection: next => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); },
     onEditProfile: () => setEditingProfile(true),
     onSignOut: () => void signOut(),
   } : undefined} />;
   return (
-    <Frame header={header}>
+    <Frame header={header} bare={onLanding}>
       {authFailure ? <>
         <Alert>{authFailure === 'restore' ? "Couldn't restore your saved session." : "Couldn't remove your saved session."} Try again.</Alert>
         <Action label="Try again" onPress={authFailure === 'signout' ? () => void signOut(message) : retry} />
-      </> : !ready ? <Loading message="Opening your rhythm…" /> : !session ? visitor === 'landing' ? <Landing onStart={() => setVisitor('signUp')} /> : <AuthForm key={visitor}
+      </> : !ready ? <Loading message="Opening your rhythm…" /> : !session ? visitor === 'landing' ? <Landing onStart={() => setVisitor('signUp')} onSignIn={() => setVisitor('signIn')} /> : <AuthForm key={visitor}
         offline={offline} message={message} initialMode={visitor} onBack={message ? undefined : () => setVisitor('landing')}
         authenticate={async (mode, email, password) => {
           const { data, error } = mode === 'signIn'

@@ -24,7 +24,7 @@ describe('the rules in docs/design/05-design-system.md', () => {
   test.each(MODES)('a form or carousel action can match the width of what it sits with, in %s', mode => {
     const { wide } = useStyles.forMode(mode);
     expect(wide.alignSelf).toBe('stretch');
-    expect(wide.maxWidth).toBeUndefined();
+    expect(wide).not.toHaveProperty('maxWidth');
   });
 
   test('a disabled action says so without fading its words away', () => {

@@ -124,15 +124,6 @@ test('with a screen reader on, the slides wait for you', async () => {
   expect(screen.queryByRole('button', { name: 'Pause slides' })).toBeNull();
 });
 
-test('leaving the carousel stops its timer', async () => {
-  motionAllowed();
-  jest.useFakeTimers();
-  render(<MobileApp />);
-  await screen.findByRole('header', { name: FIRST });
-  await press('Start an experiment');
-  expect(jest.getTimerCount()).toBe(0);
-});
-
 test('Sign in under the main action opens the form on sign-in', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: FIRST });

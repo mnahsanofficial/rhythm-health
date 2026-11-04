@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { MobileApp } from '../../src/mobile-app';
 
 export async function openMenu() {
@@ -16,8 +16,7 @@ export async function goTo(name: string) {
 export async function renderToForm() {
   const view = render(createElement(MobileApp));
   await act(async () => { await Promise.resolve(); });
-  const header = screen.queryByTestId('app-header');
-  const signIn = header && within(header).queryByRole('button', { name: 'Sign in' });
+  const signIn = screen.queryByTestId('landing-slides') && screen.queryByRole('button', { name: 'Sign in' });
   if (signIn) await act(async () => { fireEvent.press(signIn); });
   return view;
 }
