@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { Experiment } from '@rhythm-health/contract';
+import { Disclosure } from './form-rows';
 import { Action, Alert, Copy, useStyles } from './ui';
 import { ApiError, apiPost } from './lib/api';
 
@@ -25,9 +26,9 @@ export function SampleControls({ experiment, token, disabled, onChanged, onExpir
   }
   if (experiment && !experiment.is_seeded) return null;
   return <View style={styles.divider}>
-    <Copy style={styles.sectionTitle}>{experiment ? 'Sample experiment' : 'Try the daily loop with a sample'}</Copy>
-    <Copy style={styles.muted}>Sample answers never become your real experiment data. Fixed design and prediction, with no AI calls. Reminders are off for this sample.</Copy>
-    {experiment && <Copy style={styles.muted}>Remove the sample to free up a slot for a real experiment.</Copy>}
+    <Copy style={styles.sectionTitle}>{experiment ? 'Sample experiment' : 'Try a sample'}</Copy>
+    <Copy>It never counts as your data.</Copy>
+    <Disclosure label="More"><Copy>Fixed plan, no AI calls, no reminders. Removing it frees a slot.</Copy></Disclosure>
     {error && <Alert>{error}</Alert>}
     {confirm ? <View style={styles.stack}>
       <Copy accessibilityRole="header">Remove this sample experiment?</Copy>

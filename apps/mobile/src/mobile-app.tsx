@@ -11,6 +11,7 @@ import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono/400Regular';
 import { AppHeader, type Section } from './app-header';
 import { NavProvider } from './nav';
+import { TabBar } from './tab-bar';
 import { ReminderProvider, useReminders } from './reminder-context';
 import { ReminderNotice } from './settings';
 import { Today } from './today';
@@ -127,14 +128,11 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
     if (!session) { setVisitor('landing'); setMessage(null); return; }
     setEditingProfile(false); setSection('lab'); setNavigation(n => n + 1);
   };
-  const header = <AppHeader onHome={ready && !authFailure ? goHome : undefined} account={session ? {
-    email: session.user.email ?? 'your account', section, hasProfile,
-    onSection: next => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); },
-    onEditProfile: () => setEditingProfile(true),
-    onSignOut: () => void signOut(),
-  } : undefined} />;
+  const choose = (next: Section) => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); };
+  const header = <AppHeader signedIn={Boolean(session)} onHome={ready && !authFailure ? goHome : undefined} account={session && !hasProfile ? { email: session.user.email ?? 'your account', onSignOut: () => void signOut() } : undefined} />;
+  const tabs = session && hasProfile && !editingProfile && !authFailure ? <TabBar section={section} onSection={choose} /> : undefined;
   return <NavProvider>
-    <Frame header={onLanding ? undefined : header} bare={onLanding}>
+    <Frame header={onLanding ? undefined : header} tabs={tabs} bare={onLanding}>
       {authFailure ? <>
         <Alert>{authFailure === 'restore' ? "Couldn't restore your saved session." : "Couldn't remove your saved session."} Try again.</Alert>
         <Action label="Try again" onPress={authFailure === 'signout' ? () => void signOut(message) : retry} />
@@ -152,15 +150,13 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       /> : <>
         {profile.kind === 'ready' && profile.owner === owner && profile.profile !== null && editingProfile ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline} initial={profile.profile}
             onSaved={value => { setProfile({ kind: 'ready', profile: value, owner: session.user.id }); setEditingProfile(false); }} onExpired={expire} onCancel={() => setEditingProfile(false)} />
-          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} onExpired={expire} section={section} navigation={navigation} onSection={setSection} editProfile={() => setEditingProfile(true)} />
+          : profile.kind === 'ready' && profile.owner === owner && profile.profile !== null ? <Today key={session.user.id} token={session.access_token} offline={offline} profile={profile.profile} onExpired={expire} section={section} navigation={navigation} onSection={setSection} editProfile={() => setEditingProfile(true)} email={session.user.email ?? 'your account'} onSignOut={() => void signOut()} />
           : profile.kind === 'ready' && profile.owner === owner && profile.profile === null ? <Onboarding key={session.user.id} owner={session.user.id} token={session.access_token} offline={offline}
             onSaved={value => setProfile({ kind: 'ready', profile: value, owner: session.user.id })} onExpired={expire} />
           : offline ? <><Title>No connection</Title><Copy>Your saved session is here. Reconnect to load your profile.</Copy></>
           : profile.kind === 'loading' || (profile.kind === 'ready' && profile.owner !== owner) ? <Loading message="Loading your profile…" />
           : profile.kind === 'error' ? <><Alert>{profile.message}</Alert><Action label="Try again" onPress={() => { setProfile({ kind: 'loading' }); setProfileAttempt(n => n + 1); }} /></>
           : null}
-
-        {!(profile.kind === 'ready' && profile.profile !== null) && <Action label="Sign out" secondary onPress={() => void signOut()} />}
       </>}
       {ready && !session && <ReminderNotice feedbackOnly />}
     </Frame>

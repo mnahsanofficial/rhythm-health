@@ -50,7 +50,6 @@ test('loads the real question, intervention, day and phase from authoritative pr
   expect(await screen.findByText(active.question)).toBeVisible();
   expect(screen.getByText(active.intervention.action)).toBeVisible();
   expect(screen.getByText('Day 4 of 10')).toBeVisible();
-  expect(screen.getByText(/^Test day 1 of 7 ·/)).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in for day 4' })).toBeEnabled();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active', `/api/experiments/${active.id}/progress`]);
 });
@@ -158,13 +157,12 @@ test('offline retains the labelled last-loaded baseline and disables Check-in', 
 test('an empty account offers an explicitly labelled active sample', async () => {
   list = []; render(<MobileApp />);
   expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
-  expect(screen.getByText(/Sample answers never become your real experiment data/)).toBeVisible();
+  expect(screen.getByText('It never counts as your data.')).toBeVisible();
 });
 
 test('sample Today is labelled and removal asks before making any request', async () => {
   list = [{ ...active, is_seeded: true }]; render(<MobileApp />);
   expect(await screen.findByText('Sample experiment')).toBeVisible();
-  expect(screen.getByText(/Reminders are off for this sample/)).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
   expect(screen.getByText('Remove this sample experiment?')).toBeVisible();
   expect(requests.every(path => !path.includes('/remove'))).toBe(true);

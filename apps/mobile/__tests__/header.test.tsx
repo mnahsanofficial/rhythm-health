@@ -1,6 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { AppState, ScrollView, StyleSheet } from 'react-native';
-import { LAYOUT } from '@rhythm-health/brand';
+import { AppState, ScrollView } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
 import { profile, proposeResponse, writtenLabReport } from '../../../frontend/tests/support/fixtures';
 import { goTo, openMenu } from './support/nav';
@@ -65,57 +64,21 @@ test('the header is pinned outside the scrolling content', async () => {
   expect(screen.getByTestId('app-header')).toBeVisible();
 });
 
-test('signed in, the bar holds the name and one account button with the initial, not tabs', async () => {
+test('signed in, the bar holds the name and the sections are tabs', async () => {
   await signedIn();
-  const header = within(screen.getByTestId('app-header'));
-  expect(header.getByRole('button', { name: 'Account menu for learner@example.invalid' })).toBeVisible();
-  expect(header.getByText('l')).toBeVisible();
-  for (const name of ['Today', 'Your lab', 'Progress', 'History', 'Demo', 'Settings']) expect(screen.queryByRole('button', { name })).toBeNull();
+  expect(screen.queryByRole('button', { name: /^Account menu/ })).toBeNull();
+  for (const name of ['Today', 'Progress', 'Ask', 'History', 'You']) expect(screen.getByRole('tab', { name })).toBeVisible();
+  await goTo('History');
+  expect(await screen.findByRole('header', { name: 'Your history' })).toBeVisible();
+  expect(screen.getByRole('tab', { name: 'History', selected: true })).toBeVisible();
 });
 
-test('the panel matches the web: sections, the email, Update your rhythm and Sign out', async () => {
-  await signedIn();
-  await openMenu();
-  expect(screen.getByRole('button', { name: /^Account menu/ }).props.accessibilityState).toMatchObject({ expanded: true });
-  for (const name of ['Your lab', 'History', 'Demo', 'Update your rhythm', 'Daily reminders', 'Sign out']) expect(screen.getByRole('button', { name })).toBeVisible();
-  expect(screen.getByText('Signed in as')).toBeVisible();
-  expect(screen.getByText('learner@example.invalid')).toBeVisible();
-});
-
-test('the current section is marked and choosing one closes the panel', async () => {
-  await signedIn();
-  await openMenu();
-  expect(screen.getByRole('button', { name: 'Your lab', selected: true })).toBeVisible();
-  expect(screen.getByRole('button', { name: 'History', selected: false })).toBeVisible();
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'History' })); });
-  expect(await screen.findByRole('header', { name: 'Your experiment history' })).toBeVisible();
-  expect(screen.queryByText('Signed in as')).toBeNull();
-  await openMenu();
-  expect(screen.getByRole('button', { name: 'History', selected: true })).toBeVisible();
-});
-
-test('tapping outside closes the panel without going anywhere', async () => {
-  await signedIn();
-  await openMenu();
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Close menu' })); });
-  expect(screen.queryByText('Signed in as')).toBeNull();
-  expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible();
-});
-
-test('the panel controls have 48pt targets', async () => {
-  await signedIn();
-  await openMenu();
-  for (const name of ['Your lab', 'History', 'Demo', 'Update your rhythm', 'Daily reminders', 'Sign out']) {
-    expect((StyleSheet.flatten(screen.getByRole('button', { name }).props.style) as { minHeight: number }).minHeight).toBeGreaterThanOrEqual(LAYOUT.primaryAction);
-  }
-});
-
-test('Demo is its own section, as on the web, and opens the labelled report', async () => {
+test('the example opens from You, and opens the labelled report', async () => {
   await signedIn();
   expect(screen.queryByRole('button', { name: 'Explore a completed example' })).toBeNull();
   await goTo('Demo');
-  expect(await screen.findByRole('header', { name: 'Explore a sample experiment.' })).toBeVisible();
-  expect(screen.getByText('See how a completed experiment becomes a Lab Report. The demo uses labelled sample data.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'See a finished example.' })).toBeVisible();
+  expect(screen.getByText('Invented check-ins, never added to your results.')).toBeVisible();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Explore a completed example' })); });
   expect(await screen.findByText('Sample experiment')).toBeVisible();
   expect(calls.filter(call => call.endsWith('/propose') || (call.startsWith('POST') && call.endsWith('/report')))).toEqual([]);
@@ -129,7 +92,7 @@ test('Daily reminders has its own screen, without repeating the panel', async ()
   expect(screen.queryByRole('button', { name: 'Update your rhythm' })).toBeNull();
 });
 
-test('the panel opens the saved rhythm and signs out', async () => {
+test('You opens the saved rhythm and signs out', async () => {
   await signedIn();
   await goTo('Update your rhythm');
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
@@ -174,8 +137,8 @@ test('before a profile exists the panel offers only signing out', async () => {
 test('sections have no back link: the menu moves between them', async () => {
   await signedIn();
   await goTo('History');
-  await screen.findByRole('header', { name: 'Your experiment history' });
-  expect(screen.queryByRole('button', { name: 'Back to your lab' })).toBeNull();
+  await screen.findByRole('header', { name: 'Your history' });
+  expect(screen.queryByRole('button', { name: 'Back to today' })).toBeNull();
   await goTo('Your lab');
   await waitFor(() => expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible());
 });

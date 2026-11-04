@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 import type { Experiment } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
@@ -63,10 +63,10 @@ describe('check-in', () => {
   test('a test day uses the web heading, phase line and lead', async () => {
     await openCheckin();
     expect(screen.getByText(/Test day 1 of 7$/)).toBeVisible();
-    expect(screen.getByText('A test day. Tell us whether you made the change, then how it went.')).toBeVisible();
+    expect(screen.getByText('Test day: tell us how it went.')).toBeVisible();
     expect(screen.getByText(`When: ${experiment.intervention.timing}`)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Close' })).toBeVisible();
-    expect(screen.getByText('Anything unusual yesterday? (optional)')).toBeVisible();
+    expect(screen.getByText('Anything unusual? (optional)')).toBeVisible();
   });
 
   test('a normal day says not to change anything', async () => {
@@ -74,19 +74,17 @@ describe('check-in', () => {
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(baselineDay, {}) };
     await openCheckin(2);
     expect(screen.getByText(/Baseline day 2 of 3$/)).toBeVisible();
-    expect(screen.getByText("A normal day. Don't change anything yet, just notice how it went.")).toBeVisible();
+    expect(screen.getByText('Normal day: change nothing, just notice.')).toBeVisible();
   });
 
   test('counts answers as they are given, including the test-day question', async () => {
     await openCheckin();
     expect(screen.getByText('0 of 3 answered')).toBeVisible();
-    expect(screen.getByText('Note optional')).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Check-in answers' }).props.accessibilityValue).toMatchObject({ now: 0, max: 3 });
     fireEvent.press(screen.getByRole('radio', { name: 'Not today' }));
     expect(screen.getByText('1 of 3 answered')).toBeVisible();
     answerAll();
     expect(screen.getByText('3 of 3 answered')).toBeVisible();
-    expect(screen.getByText('Ready to record')).toBeVisible();
     expect(screen.getByRole('progressbar', { name: 'Check-in answers' }).props.accessibilityValue).toMatchObject({ now: 3, max: 3 });
   });
 
@@ -115,7 +113,7 @@ describe('check-in', () => {
     expect(await screen.findByText('4 of 10 days logged. 6 to go.')).toBeVisible();
     expect(screen.getAllByLabelText(/^Day \d+, logged$/)).toHaveLength(4);
     expect(screen.getByLabelText('Day 5')).toBeVisible();
-    await press('Go to your lab');
+    await press('Go to Today');
     expect(await screen.findByText('Done for today')).toBeVisible();
   });
 
@@ -154,7 +152,7 @@ describe('onboarding', () => {
     await act(async () => { fireEvent.press(start); });
     const bar = await screen.findByRole('progressbar', { name: 'Setup progress' });
     expect(bar.props.accessibilityValue).toMatchObject({ now: 1, max: 7, text: 'Question 1 of 7' });
-    expect(screen.getByText('01 / 07')).toBeVisible();
+    expect(screen.getByText('Question 1 of 7 · Age')).toBeVisible();
   });
 });
 
@@ -164,13 +162,12 @@ describe('question flow', () => {
     routes['POST /api/experiments/propose'] = { body: { ...proposeResponse, personal_guess_available: true } };
   });
 
-  test('explains the hunch list and what happens next', async () => {
+  test('says what to do in one line', async () => {
     render(<MobileApp />);
-    expect(await screen.findByText('First a plan. Then a prediction. You decide whether to begin.')).toBeVisible();
-    expect(screen.getByText('A little curiosity, a little evidence')).toBeVisible();
+    expect(await screen.findByText('What do you want to test?')).toBeVisible();
   });
 
-  test('waiting lists what goes into the experiment, without claiming live stages', async () => {
+  test('waiting says it may take a while, without claiming live stages', async () => {
     render(<MobileApp />);
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
     let release!: (reply: Response) => void;
@@ -179,24 +176,24 @@ describe('question flow', () => {
     await press('Design experiment');
     const panel = await screen.findByText('Finding a small change you can test…');
     expect(panel).toBeVisible();
-    for (const text of ['A suitable question', 'A plan for your day', 'An honest forecast', 'Check that this fits a small habit experiment.']) expect(screen.getByText(text)).toBeVisible();
+    expect(screen.getByText('This can take a little while.')).toBeVisible();
     await act(async () => { release({ ok: true, status: 200, json: async () => routes['POST /api/experiments/propose'].body } as Response); });
   });
 
-  test('the plan labels each day as baseline or test', async () => {
+  test('the plan draws its days, and says them in words', async () => {
     routes['POST /api/experiments/propose'] = { body: proposeResponse };
     render(<MobileApp />);
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
     await press('Design experiment');
-    const days = within(await screen.findByTestId('plan-days'));
-    expect(days.getAllByText('Baseline')).toHaveLength(3);
-    expect(days.getAllByText('Test')).toHaveLength(7);
+    expect(await screen.findByTestId('plan-days')).toBeVisible();
+    expect(screen.getByText('3 normal days, then 7 test days')).toBeVisible();
+    expect(screen.getByLabelText('Days 1 to 3 are baseline. Days 4 to 10 are test days.')).toBeVisible();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeVisible());
   });
 
   test('the sample section uses the web wording', async () => {
     render(<MobileApp />);
-    expect(await screen.findByText('Try the daily loop with a sample')).toBeVisible();
-    expect(screen.getByText(/Fixed design and prediction, with no AI calls\./)).toBeVisible();
+    expect(await screen.findByText('Try a sample')).toBeVisible();
+    expect(screen.getByText('It never counts as your data.')).toBeVisible();
   });
 });

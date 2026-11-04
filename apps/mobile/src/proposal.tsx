@@ -2,12 +2,13 @@ import { useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { ExperimentProposal, Profile, ProposeResponse } from '@rhythm-health/contract';
-import { Forecast } from './forecast';
+import { Disclosure } from './form-rows';
+import { Forecast, ForecastReasons } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
-import { Action, Alert, Copy, useStyles, Title, useStepFocus, Status, Notice } from './ui';
+import { Action, Alert, Copy, StickyAction, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 type Failure = { status: number; message: string };
@@ -15,7 +16,10 @@ type Props = {
   token: string; offline: boolean; profile: Profile; initialQuestion?: string; hideStarters?: boolean; onExpired: () => void;
   /** False while another section is on show: this stays mounted, with its plan safe, but isn't what's being left. */
   shown?: boolean;
-  onBack?: () => void; onStarted: () => void; onEditProfile?: () => void;
+  onBack?: () => void;
+  /** Where "Go to Today" leads when the experiment limit stops this flow. */
+  onHome?: () => void;
+  onStarted: () => void; onEditProfile?: () => void;
 };
 const message = (cause: unknown, fallback: string) => cause instanceof Error && cause.message ? cause.message : fallback;
 
@@ -33,7 +37,7 @@ function failureTitle({ status }: Failure) {
  * tap, guarded by one synchronous lock; the result stays in this component's state, so returning
  * to the foreground or a refreshed token never asks again.
  */
-export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, shown = true, onExpired, onBack, onStarted, onEditProfile }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, shown = true, onExpired, onBack, onHome, onStarted, onEditProfile }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
@@ -52,7 +56,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const heading = useStepFocus(step);
   const initial = initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '';
   const typed = question.trim() !== '' && question !== initial;
-  // With nothing running the question is your lab itself, so a × only appears once there's a plan to clear.
+  // With nothing running the question is Today itself, so a × only appears once there's a plan to clear.
   const close = onBack ?? (result ? () => reset('') : undefined);
   // eslint-disable-next-line react-hooks/refs -- `close` is stored for a later press; it doesn't run during render.
   useNavScreen(shown && close ? {
@@ -127,10 +131,10 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
 
   const blockedNotice = limit !== null && <View style={ui.stack}>
     <Alert>{limit}</Alert>
-    {onBack && <Action label="Go to your lab" secondary onPress={onBack} />}
+    {onHome && <Action label="Go to Today" secondary onPress={onHome} />}
   </View>;
 
-  if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} onReveal={setGuess} onBack={() => reset('')} />;
+  if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} shown={shown} onReveal={setGuess} onBack={() => reset('')} />;
 
   if (step === 'plan' && result?.proposal && result.prediction) return <View style={ui.stack}>
     {!result.personal_guess_available && <Copy accessibilityRole="text" style={local.note}>Your own guess is unavailable right now. You can still start without one.</Copy>}
@@ -139,56 +143,48 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       <Copy style={local.reviewText}>A note before you begin</Copy>
       <Copy style={local.reviewText}>{result.safety.reason}</Copy>
     </View>}
-    <Copy style={local.eyebrow}>Your question</Copy>
     <Title textRef={heading}>{result.proposal.question}</Title>
-    <PlanDetails proposal={result.proposal} />
+    <PlanSummary proposal={result.proposal} />
     <Forecast prediction={result.prediction} metrics={result.proposal.metrics} />
-    <View style={local.fixed}>
-      <Copy>This plan and prediction become fixed once you start.</Copy>
-      <Copy style={ui.muted}>Your original forecast stays in place so you can compare it with what happens.</Copy>
-    </View>
+    <Copy>Fixed once you start.</Copy>
+    <Disclosure>
+      <Copy>{result.proposal.hypothesis}</Copy>
+      <ForecastReasons prediction={result.prediction} />
+      <PlanReasons proposal={result.proposal} />
+    </Disclosure>
     {offline && <Notice>You&apos;re offline. Your plan is kept; reconnect to start.</Notice>}
     {startError && <Alert>{startError}</Alert>}
     {guessUnavailable && <Action label="Skip my guess" secondary disabled={starting || offline} onPress={() => void begin(true)} />}
-    {startAtLimit && onBack && <Action label="Go to your lab" secondary onPress={onBack} />}
+    {startAtLimit && onHome && <Action label="Go to Today" secondary onPress={onHome} />}
     {startError && <Action label="Try again" secondary disabled={starting || offline} onPress={() => void begin()} />}
-    {!startError && <Action label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} />}
     <Action label="Ask something else" secondary disabled={starting} onPress={() => reset('')} />
+    {shown && !startError && <StickyAction><Action wide label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} /></StickyAction>}
   </View>;
 
   const length = question.trim().length;
   const working = busy !== null;
   return <View style={ui.stack}>
-    <Copy style={local.curiosity}>A little curiosity, a little evidence</Copy>
     <Title textRef={heading}>Ask a question.</Title>
-    <Copy style={ui.muted}>What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.</Copy>
+    <Copy>What do you want to test?</Copy>
     <View>
-      <Copy style={ui.label}>Your question or goal</Copy>
       <TextInput accessibilityLabel="Your question or goal" accessibilityHint="5 to 500 characters. One small change at a time." multiline value={question}
         onChangeText={value => { setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} editable={!working} maxLength={QUESTION_MAX + 1}
         placeholder="Does walking after dinner improve my sleep?" placeholderTextColor={COLORS.muted} style={[ui.input, local.question]} />
       <View style={local.help}>
-        <Copy style={[ui.muted, local.helpText]}>5–500 characters. One small change at a time.</Copy>
-        <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>
+        <Copy style={local.helpText}>One small change at a time.</Copy>
+        {question.length > QUESTION_MAX - 50 && <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>}
       </View>
     </View>
     {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
     {!hideStarters && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
-        onPress={() => reset(starter)} style={({ pressed }) => [local.chip, pressed && { backgroundColor: COLORS.border }]}>
+        onPress={() => reset(starter)} style={({ pressed }) => [local.chip, pressed && { backgroundColor: COLORS['accent-tint'] }]}>
         <Copy>{starter}</Copy>
       </Pressable>)}
     </View>}
-    <Action label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design experiment'}
-      disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} />
     {busy === 'proposing' && <View style={ui.stack}>
       <Status>Finding a small change you can test…</Status>
-      <Copy style={ui.muted}>Your plan and forecast will arrive together. This can take a little while.</Copy>
-      {[['01', 'A suitable question', 'Check that this fits a small habit experiment.'], ['02', 'A plan for your day', 'Shape one change around your routine.'], ['03', 'An honest forecast', 'Estimate a range, including what is uncertain.']].map(([number, title, text]) => <View key={number} style={local.ingredient}>
-        <Copy accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={local.curiosity}>{number}</Copy>
-        <Copy>{title}</Copy>
-        <Copy style={local.helpText}>{text}</Copy>
-      </View>)}
+      <Copy>This can take a little while.</Copy>
     </View>}
     {failure && <View style={ui.stack}>
       <Alert>{failureTitle(failure)} {failure.message}</Alert>
@@ -200,18 +196,19 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     {blockedNotice}
     {result && !result.safety.allowed && <View style={local.fixed}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Let&apos;s find a gentler experiment.</Copy>
-      <Copy style={ui.muted}>{result.safety.reason || "This question isn't suitable for a small habit experiment."}</Copy>
+      <Copy>{result.safety.reason || "This question isn't suitable for a small habit experiment."}</Copy>
       {result.safety.suggested_alternative && <>
         <Copy>{result.safety.suggested_alternative}</Copy>
         <Action label="Use this instead" secondary onPress={() => reset(result.safety.suggested_alternative!)} />
       </>}
     </View>}
-    {!hideStarters && <Copy style={local.helpText}>First a plan. Then a prediction. You decide whether to begin.</Copy>}
+    {shown && <StickyAction><Action wide label={busy === 'proposing' ? 'Shaping your experiment…' : 'Design experiment'}
+      disabled={working || offline || blocked || length < QUESTION_MIN || length > QUESTION_MAX} onPress={() => void submit()} /></StickyAction>}
   </View>;
 }
 
-function GuessStep({ heading, proposal, onReveal, onBack }: {
-  heading: ReturnType<typeof useStepFocus>; proposal: ExperimentProposal; onReveal: (guess: number) => void; onBack: () => void;
+function GuessStep({ heading, proposal, shown, onReveal, onBack }: {
+  heading: ReturnType<typeof useStepFocus>; proposal: ExperimentProposal; shown: boolean; onReveal: (guess: number) => void; onBack: () => void;
 }) { const local = useLocal(); const ui = useStyles();
   const [answer, setAnswer] = useState('');
   const [focused, setFocused] = useState(false);
@@ -219,73 +216,57 @@ function GuessStep({ heading, proposal, onReveal, onBack }: {
   const value = parseGuess(answer);
   const reveal = () => { if (value !== null) onReveal(value); };
   return <View style={ui.stack}>
-    <Copy style={local.eyebrow}>Before the AI has its say</Copy>
     <Title textRef={heading}>What do you think will happen?</Title>
-    <Copy style={local.lead}>{proposal.question}</Copy>
-    <Copy style={ui.muted}>The small change: {proposal.intervention.action}</Copy>
+    <Copy>{proposal.intervention.action}</Copy>
+    <Copy>Change from your normal days. +10 means 10% higher.</Copy>
     <View>
       <Copy style={ui.label}>Your guess for {metric?.label}</Copy>
-      <Copy style={[ui.muted, ui.label]}>Percent change from your normal days. Negative means down, 0 means no change, positive means up. For example, +10 means 10% higher. Choose between -100 and +200.</Copy>
       <View style={local.guessRow}>
         <TextInput accessibilityLabel={`Your guess for ${metric?.label}`} accessibilityHint="Percent change from your normal days, between -100 and +200." value={answer} onChangeText={setAnswer}
           keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} autoComplete="off" autoCorrect={false} returnKeyType="done" onSubmitEditing={reveal}
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={[ui.input, local.guessInput, focused && ui.focus]} />
         <Copy accessible={false} style={ui.number}>%</Copy>
       </View>
+      {answer.trim() !== '' && value === null && <Status style={local.helpText}>Choose between -100 and +200.</Status>}
     </View>
-    <Copy style={ui.muted}>Your guess locks when you reveal the AI prediction. It is saved if you start the experiment, so your report can compare both with what happens.</Copy>
-    <Action label="Show prediction" disabled={value === null} onPress={reveal} />
+    <Disclosure><Copy>It locks when you see the prediction, so your report can compare both with what happens.</Copy></Disclosure>
     <Action label="Ask something else" secondary onPress={onBack} />
+    {shown && <StickyAction><Action wide label="Show prediction" disabled={value === null} onPress={reveal} /></StickyAction>}
   </View>;
 }
 
-function PlanDetails({ proposal }: { proposal: ExperimentProposal }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+/** What you'd do and for how long, first. The hypothesis says the same thing again, so it waits behind "Why?". */
+function PlanSummary({ proposal }: { proposal: ExperimentProposal }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const total = proposal.baseline_days + proposal.intervention_days;
-  const primary = proposal.metrics.find(metric => metric.key === proposal.success_criteria.primary_metric)?.label ?? proposal.success_criteria.primary_metric;
   return <>
-    <View style={ui.divider}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>The hypothesis</Copy>
-      <Copy style={ui.muted}>{proposal.hypothesis}</Copy>
-    </View>
     <View style={local.change}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>The small change</Copy>
-      <Copy>{proposal.intervention.action}</Copy>
-      <Copy style={ui.muted}>When: {proposal.intervention.timing}</Copy>
-      <Copy style={ui.muted}>How often: {proposal.intervention.frequency}</Copy>
+      <Copy style={local.caption}>The change</Copy>
+      <Copy style={local.lead}>{proposal.intervention.action}</Copy>
+      <Copy>{`${proposal.intervention.timing} · ${proposal.intervention.frequency}`}</Copy>
     </View>
-    <View style={ui.divider}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>{`A ${total}-day timeline`}</Copy>
-      <Copy style={ui.muted}>{`${proposal.baseline_days} baseline · ${proposal.intervention_days} test`}</Copy>
+    <View style={ui.stack}>
+      <Copy>{`${proposal.baseline_days} normal days, then ${proposal.intervention_days} test days`}</Copy>
       <View testID="plan-days" accessible accessibilityLabel={`Days 1 to ${proposal.baseline_days} are baseline. Days ${proposal.baseline_days + 1} to ${total} are test days.`} style={local.days}>
-        {Array.from({ length: total }, (_, index) => {
-          const baseline = index < proposal.baseline_days;
-          return <View key={index} style={local.dayCell}>
-            <View style={[local.day, { backgroundColor: COLORS[baseline ? 'night-tint' : 'moss-tint'] }]}>
-              <Copy style={[ui.number, local.dayNumber, { color: COLORS[baseline ? 'night' : 'moss'] }]}>{index + 1}</Copy>
-            </View>
-            <Copy maxFontSizeMultiplier={1.2} style={local.dayLabel}>{baseline ? 'Baseline' : 'Test'}</Copy>
-          </View>;
-        })}
+        {Array.from({ length: total }, (_, index) => <View key={index} style={[local.day, { backgroundColor: COLORS[index < proposal.baseline_days ? 'chart-1' : 'chart-2'] }]} />)}
       </View>
-    </View>
-    <View style={ui.divider}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>What we&apos;ll notice</Copy>
-      {proposal.metrics.map(metric => <View key={metric.key} style={local.metric}>
-        <Copy>{metric.label}</Copy>
-        {metric.primary && <Copy style={ui.muted}>Primary</Copy>}
-      </View>)}
-      <Copy style={ui.muted}>{`We look for a change of at least ${proposal.success_criteria.minimum_change_percent}% in ${primary}.`}</Copy>
     </View>
   </>;
 }
 
-const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
-  curiosity: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption },
+function PlanReasons({ proposal }: { proposal: ExperimentProposal }) {
+  const primary = proposal.metrics.find(metric => metric.key === proposal.success_criteria.primary_metric)?.label ?? proposal.success_criteria.primary_metric;
+  return <>
+    <Copy>{`We track: ${proposal.metrics.map(metric => metric.label).join(', ')}.`}</Copy>
+    <Copy>{`We look for a change of at least ${proposal.success_criteria.minimum_change_percent}% in ${primary}.`}</Copy>
+  </>;
+}
+
+const useLocal = themedStyles(COLORS => StyleSheet.create({
   question: { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' },
   help: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm, marginTop: SPACING.sm },
-  helpText: { ...NATIVE_TYPOGRAPHY.caption },
+  helpText: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
+  caption: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   count: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
-  eyebrow: { color: COLORS.moss },
   lead: { ...NATIVE_TYPOGRAPHY.lead },
   note: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted, borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.line, paddingLeft: SPACING.md },
   locked: { borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.moss, paddingLeft: SPACING.md },
@@ -293,15 +274,10 @@ const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(m
   reviewText: { color: COLORS.clay },
   fixed: { padding: SPACING.md, gap: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   change: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
-  days: { flexDirection: 'row', flexWrap: 'wrap', rowGap: SPACING.sm },
-  dayCell: { width: '20%', alignItems: 'center', gap: SPACING.xs },
-  dayLabel: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
-  ingredient: { gap: SPACING.xs, paddingTop: SPACING.sm, borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
+  days: { flexDirection: 'row', gap: SPACING.xs },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  chip: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS['accent-tint'] },
-  day: { minWidth: LAYOUT.tapTarget, minHeight: LAYOUT.tapTarget, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill },
-  dayNumber: { ...NATIVE_TYPOGRAPHY.caption },
-  metric: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
+  chip: { maxWidth: '100%', minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADII.control, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control, backgroundColor: COLORS.surface },
+  day: { flex: 1, height: SPACING.sm, borderRadius: RADII.pill },
   guessRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   guessInput: { flex: 1, ...NATIVE_TYPOGRAPHY.lead },
-}); });
+}));

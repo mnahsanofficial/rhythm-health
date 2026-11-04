@@ -147,3 +147,92 @@ Run on 4 Nov 2026 with `/design:accessibility-review`. Web: the same browser mea
 **Found while building:** on the mobile Lab Report and proposal, renaming a button to "Back to your lab" gave it the same name as the back link above it, so a screen reader couldn't tell them apart. It stays "Go to your lab" there.
 
 **Still not checked:** screen readers and real devices.
+
+## Mobile audit: round 1 (light and dark)
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, before the mobile readability work. Standard: WCAG 2.1 AA, plus our own 48pt target rule.
+
+| Checked | How | Evidence level |
+|---|---|---|
+| Token contrast, both modes | Computed from `packages/brand/src/tokens.json` | **Measured** |
+| Roles, names, targets | `accessibility.test.tsx` and `design-rules.test.tsx`: 45 tests pass on the current screens | **Measured, in tests** |
+| Clipping, hierarchy, broken controls | Nazmul's iPhone, round 1 | **Seen on a device, by one person** |
+| Layout causes, dark mode behaviour | Reading `apps/mobile/src` | **Source review** |
+| Screens rendered in dark | Not done for this audit; Expo web screenshots come with each PR | **Not done** |
+| VoiceOver, Dynamic Type, Reduce Motion, keyboard on a device | No simulator: this Mac has Command Line Tools only | **Not done. Goes on each PR's iPhone list** |
+
+**Critical: 0. Major: 6. Minor: 5.** Colour tokens pass. What's failing is how they're used, and text that gets cut off.
+
+### Perceivable
+
+| # | Issue | WCAG | Severity | Where | Fix |
+|---|---|---|---|---|---|
+| M1 | Text is clipped: "This can take…" and the step label. Likely cause, unconfirmed: `body` sets `flexShrink: 1` on every `Text`, so text can shrink inside a limited parent instead of growing | 1.4.4 | 🟡 Major | `ui.tsx`, `proposal.tsx`, `rails.tsx` | Remove the shrink from `Copy`, and allow it only in rows that wrap. Confirm on the iPhone |
+| M2 | The time picker hard-codes `themeVariant="light"` but takes its text colour from the theme. In dark mode that asks for light text on a light spinner, and the picker doesn't match the screen | 1.4.3 | 🟡 Major | `time-field.tsx` | Pass the current mode |
+| M3 | The disabled primary is `surface` on `background` with a `border` edge of 1.31:1 (1.55:1 in dark), so it nearly vanishes. WCAG exempts disabled controls, but people can't find the next step | Exempt; R5 | 🟡 Major | `ui.tsx` | `accent-tint` fill, `muted` text (4.93:1 light, 6.15:1 dark), no edge, and a line saying what unlocks it. Not `muted` on `border`, which is only 4.11:1 in light |
+| M4 | Main content in `muted`. It passes (5.37:1 and 8.26:1), but when everything is secondary nothing leads | Passes; R1 | 🟡 Major | Proposal, guess, Today, report | `text` for anything you need to act. `muted` only for captions and metadata |
+| M5 | Selected day uses `sun` as its only ring: 1.51:1 on light. Still open from A5 | 1.4.11 | 🟢 Minor | `progress.tsx` | `text` ring, with the sun inside it |
+| M6 | Past and upcoming days differ by a `line` edge at 1.31:1, with solid or dashed as the only other cue | 1.4.11 | 🟢 Minor | `checkin.tsx`, saved screen | Use `control` for the edge. The spoken name already says logged or not |
+
+### Operable
+
+| # | Issue | WCAG | Severity | Where | Fix |
+|---|---|---|---|---|---|
+| M7 | Nothing keeps the action on screen: on long steps it's below the fold, and only onboarding has `KeyboardAvoidingView` | 2.4.3 | 🟡 Major | All flows | `StickyAction` in `Frame`, with the keyboard handled once, for every flow |
+| M8 | Hours asleep uses two long buttons, and nothing tells a screen reader it's one adjustable value | 4.1.2 | 🟢 Minor | `onboarding.tsx` | `Stepper`: role `adjustable`, increment and decrement actions, 48pt buttons that keep today's spoken names |
+| M9 | Sections are only reachable through a menu | 2.4.5 advisory | 🟢 Minor | `app-header.tsx` | Tab bar with role `tablist`, each `tab` with selected state. Five tabs at 390 wide leave 78pt each, so labels may cap at 1.3× with the icon and the spoken name as the equivalent; everything else keeps scaling |
+
+### Understandable
+
+| # | Issue | WCAG | Severity | Where | Fix |
+|---|---|---|---|---|---|
+| M10 | "Enter both times." is shown and announced before anyone has touched the screen | 3.3.1 | 🟡 Major | `onboarding.tsx` | Say nothing until both are set; the disabled action carries a hint |
+| M11 | Six "Change …" buttons announce the same action, and the value is separate from its button | 2.4.6 | 🟢 Minor | `onboarding.tsx` | `FormRow`: one button per row, spoken as "Sleep, 23:00 to 07:00" with the hint "Change" |
+
+### Rules for what's new
+
+| New thing | Must do |
+|---|---|
+| Celebration | Tap to skip. Nothing shown only there: Today has the same facts afterwards. Reduce Motion gets a still version. With VoiceOver on, it announces, moves focus and **waits for a tap instead of closing by itself** (2.2.1). The haptic is extra, never the only signal |
+| Coach marks | Skippable from every step, focus moves to the mark, works with large text, never blocks Skip |
+| "Why?" and "More" | Role `button`, `expanded` state, 48pt, opens in place |
+| Sticky action | Never covers an input with the keyboard open. At large text the label wraps |
+
+### Colour contrast: pairs this work relies on
+
+| Pair | Needs | Light | Dark |
+|---|---:|---:|---:|
+| text on background | 4.5 | 14.35 | 15.81 |
+| muted on background | 4.5 | 5.37 | 8.26 |
+| muted on surface | 4.5 | 5.85 | 7.46 |
+| text on accent-tint | 4.5 | 13.17 | 11.76 |
+| accent on background | 4.5 | 5.68 | 8.87 |
+| control on background (row and stepper edges) | 3 | 3.59 | 4.68 |
+| control on surface | 3 | 3.92 | 4.23 |
+| border on background (dividers only) | none | 1.31 | 1.55 |
+| marker on background (never alone) | 3 | 1.51 ❌ | 10.82 |
+
+`marker` is the sun in the celebration. In light mode it needs a `text` outline, as `05-design-system.md` already requires.
+
+### Priority fixes
+
+1. **M1 clipped text and M7 the sticky action:** the two that make screens look broken on the demo path.
+2. **M3, M4, M10:** what to read and what to tap, which is what Nazmul asked about.
+3. **M2 dark time picker:** one line, in the first setup step.
+4. **The rest** come along with `FormRow`, `Stepper` and the tab bar.
+
+## Re-audit: mobile PR 1, readability and navigation
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `accessibility.test.tsx` and `readability.test.tsx`, plus Expo web at 390 and 320 in both modes (`docs/screenshots/mobile-readability/`).
+
+**Fixed:** M2 (picker follows the theme), M3 (disabled shape, with a hint), M4 on setup, Ask, guess, plan and check-in, M5, M6, M7, M8, M9, M10, M11. M1's likely cause is removed, and the iPhone has to confirm it.
+
+**Found and fixed in this pass:**
+- Removing the text shrink let long suggestion chips run off the right edge. They now wrap.
+- The theme button stayed in the header after sign-in, next to the new control on You. It's now only shown before sign-in.
+- "Test day: did you make the change?" sat directly above the same question, so a screen reader heard it twice.
+- Switching tabs remounted the question flow, which would have lost a typed question and a paid plan. A test caught it.
+
+**Still open:** M4 on Today's card and the Lab Report (PR 2 and PR 4). The sticky action comes after the content in reading order, which is intended but needs hearing on a device.
+
+**Not checked, and on the PR's iPhone list:** the keyboard with the sticky action; the native time row and picker in dark, because Expo web draws a browser input there; VoiceOver on tabs and the stepper; Dynamic Type at the largest sizes; heading position under the header (R12), which we haven't reproduced.

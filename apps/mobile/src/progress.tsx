@@ -88,7 +88,7 @@ function DayCell({ item, isToday, open, onPress }: { item: ExperimentDay; isToda
   const missed = item.state === 'missed';
   const label = `Day ${item.day_number}, ${baseline ? 'baseline' : 'test'}, ${STATE_WORDS[item.state]}`;
   const ink = recorded ? COLORS['on-accent'] : missed ? COLORS.muted : COLORS[baseline ? 'night' : 'moss'];
-  const circle = <View style={[local.ring, open && recorded ? { borderColor: COLORS.sun } : isToday && { borderColor: COLORS.ink }]}>
+  const circle = <View style={[local.ring, open && recorded ? { borderColor: COLORS.text } : isToday && { borderColor: COLORS.ink }]}>
     <View style={[local.circle, missed ? local.missed : { backgroundColor: recorded ? COLORS[baseline ? 'night' : 'moss'] : COLORS[baseline ? 'night-tint' : 'moss-tint'] }]}>
       <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.mark, { color: ink }]}>{recorded ? '✓' : missed ? '–' : item.day_number}</Copy>
     </View>

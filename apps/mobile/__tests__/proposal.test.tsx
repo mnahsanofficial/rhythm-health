@@ -237,10 +237,10 @@ test('a missing profile routes to the rhythm instead of retrying', async () => {
 test('the forecast stays hidden until the guess is locked', async () => {
   await toGuess();
   expect(screen.queryByText(/\+8% to \+15%/)).toBeNull();
-  expect(screen.queryByText('The original forecast')).toBeNull();
-  expect(screen.getByText(withGuess.proposal!.question)).toBeVisible();
+  expect(screen.queryByText('We predict')).toBeNull();
+  expect(screen.getByText(withGuess.proposal!.intervention.action)).toBeVisible();
   await reveal();
-  expect(await screen.findByText('The original forecast')).toBeVisible();
+  expect(await screen.findByText('We predict')).toBeVisible();
   expect(screen.getByText('+8% to +15%')).toBeVisible();
   expect(screen.getByText('Your guess: +12% change from normal days. Locked before the AI reveal.')).toBeVisible();
   expect(screen.queryByLabelText('Your guess for Morning energy')).toBeNull();
@@ -256,7 +256,7 @@ test.each(['', 'abc', '-101', '201', '1e2', '--2', '1,2,3'])('rejects the guess 
   await toGuess();
   fireEvent.changeText(screen.getByLabelText('Your guess for Morning energy'), value);
   expect(screen.getByRole('button', { name: 'Show prediction' })).toBeDisabled();
-  expect(screen.queryByText('The original forecast')).toBeNull();
+  expect(screen.queryByText('We predict')).toBeNull();
 });
 
 test('when the guess column is missing there is no field, and starting saves no guess', async () => {
@@ -265,7 +265,7 @@ test('when the guess column is missing there is no field, and starting saves no 
   await submit();
   expect(await screen.findByText('Your own guess is unavailable right now. You can still start without one.')).toBeVisible();
   expect(screen.queryByLabelText('Your guess for Morning energy')).toBeNull();
-  expect(screen.getByText('The original forecast')).toBeVisible();
+  expect(screen.getByText('We predict')).toBeVisible();
   await startNow();
   await waitFor(() => expect(count(START)).toBe(1));
   expect(calls.find(call => call.key === SAVE)?.body).not.toHaveProperty('personal_guess_percent');
@@ -274,14 +274,14 @@ test('when the guess column is missing there is no field, and starting saves no 
 test('the plan explains the change, the days, the measures and the success rule', async () => {
   await toPlan();
   const { proposal } = withGuess;
-  expect(screen.getByText(proposal!.hypothesis)).toBeVisible();
   expect(screen.getByText(proposal!.intervention.action)).toBeVisible();
-  expect(screen.getByText('A 10-day timeline')).toBeVisible();
-  expect(screen.getByText('3 baseline · 7 test')).toBeVisible();
-  expect(screen.getByText('Morning energy')).toBeVisible();
-  expect(screen.getByText('Sleep quality')).toBeVisible();
+  expect(screen.getByText('3 normal days, then 7 test days')).toBeVisible();
+  expect(screen.getByText('Fixed once you start.')).toBeVisible();
+  expect(screen.queryByText(proposal!.hypothesis)).toBeNull();
+  fireEvent.press(screen.getByRole('button', { name: 'Why?' }));
+  expect(screen.getByText(proposal!.hypothesis)).toBeVisible();
+  expect(screen.getByText('We track: Morning energy, Sleep quality.')).toBeVisible();
   expect(screen.getByText('We look for a change of at least 10% in Morning energy.')).toBeVisible();
-  expect(screen.getByText('This plan and prediction become fixed once you start.')).toBeVisible();
 });
 
 test('Ask something else clears the proposal and guess', async () => {

@@ -3,7 +3,8 @@ import { NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { LabReport } from '@rhythm-health/contract';
 import { BaselineContext } from './baseline-context';
 import { FinishCard } from './finish';
-import { Forecast } from './forecast';
+import { Disclosure } from './form-rows';
+import { Forecast, ForecastReasons } from './forecast';
 import { Observations } from './progress';
 import { TodayCard } from './today-card';
 import type { DayData } from './today';
@@ -24,7 +25,7 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
     : progress.state === 'completed' ? 'Completed' : progress.state === 'ended' ? 'All days done' : 'Not started';
   return <View style={local.page}>
     <View style={styles.stack}>
-      <BackLink to="Your lab" onPress={onBack} />
+      <BackLink to="Today" onPress={onBack} />
       <Copy style={local.status}>{status}</Copy>
       <Title small textRef={heading}>{experiment.question}</Title>
     </View>
@@ -40,6 +41,7 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
       <Copy style={local.small}>{`Baseline days come first: keep your routine as it is. The change starts on day ${experiment.baseline_days + 1}.`}</Copy>
     </View>
     <Forecast prediction={experiment.prediction} metrics={experiment.metrics} />
+    <Disclosure><ForecastReasons prediction={experiment.prediction} /></Disclosure>
   </View>;
 }
 

@@ -73,7 +73,7 @@ describe('your lab with several experiments', () => {
   test('one experiment keeps today\'s screen and never reads the limit', async () => {
     install([first]);
     render(<MobileApp />);
-    expect(await screen.findByText('Your observations, day by day.')).toBeVisible();
+    expect(await screen.findByText(first.question)).toBeVisible();
     expect(screen.queryByText('1 experiments running')).toBeNull();
     expect(calls).not.toContain('GET /api/experiments/capacity');
   });
@@ -86,7 +86,6 @@ describe('your lab with several experiments', () => {
     expect(screen.getByText(second.question)).toBeVisible();
     expect(screen.getByText('Day 2 of 10')).toBeVisible();
     expect(screen.getByText('Day 5 of 10')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Test another habit' })).toBeVisible();
     await press('Check in for day 5');
     await waitFor(() => expect(calls).toContain('GET /api/experiments/second-id/checkins'));
     expect(calls).not.toContain('GET /api/experiments/first-id/checkins');
@@ -112,7 +111,6 @@ describe('your lab with several experiments', () => {
     await act(async () => { listeners.forEach(listener => listener('active')); });
     await waitFor(() => expect(screen.queryByText('Your timeline')).toBeNull());
     expect(screen.getByText(second.question)).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Test another habit' })).toBeVisible();
   });
 
   test('one check-in saves everything due today in one request', async () => {
@@ -213,7 +211,7 @@ describe('your lab with several experiments', () => {
     install([first, running('sample-id', 5, { is_seeded: true, question: 'Sample: a walk?' })]);
     render(<MobileApp />);
     expect(await screen.findByRole('button', { name: 'Remove sample' })).toBeVisible();
-    expect(screen.getByText('Remove the sample to free up a slot for a real experiment.')).toBeVisible();
+    expect(screen.getByText('It never counts as your data.')).toBeVisible();
   });
 
   test('a reminder tap opens the check-in of the experiment it belongs to', async () => {

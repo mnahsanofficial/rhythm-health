@@ -115,3 +115,71 @@ Someone opening the app wants to know what it does before committing. Four lines
 
 Keep lines under 44 characters in English so they hold two lines at 320 wide. "Signal" and "pattern" are the product's terms: translate them the same way as in the Lab Report.
 
+## Mobile: half the words
+
+Skill: `/design:ux-copy`. Added 4 Nov 2026 after round 1 (R1–R3 in `01-user-research.md`). Applies to `apps/mobile` only; the web is frozen. The table covers guidance only: buttons and answers aren't counted, and neither is text that comes from the AI or the backend.
+
+**The rule for each screen:** one heading, one line of guidance, one action. Anything else goes behind **Why?** (reasons) or **More** (details). Nothing a person must know to act goes behind a tap.
+
+**Stays visible, however short the screen gets:** the predicted range and its confidence; "Fixed once you start" before starting; "A short personal experiment shows a pattern, not proof." on results; the Example label on samples; signal labels, unchanged; what an error kept.
+
+### Recommended copy
+
+<!-- copy-table -->
+| Screen | Now | Proposed | Behind Why? or More |
+|---|---|---|---|
+| Setup, start | First, your rhythm. Seven quick questions. When you usually sleep and wake, and how much of that is sleep. How much you move, and what you'd like to change. The habits you already have, like coffee or late dinners. Nothing medical, and no weights or calories. Your answers stay on this device until you save your rhythm. | First, your rhythm. Seven quick questions, nothing medical. | More: sleep, movement, goals and habits. No weights or calories. Answers stay on this device until you save. |
+| Setup, age | How old are you? A range is enough. It helps us start with sensible predictions. | How old are you? A range is enough. | |
+| Setup, sleep | When do you usually sleep? On a normal workday. Rough times are fine. Pick your usual bedtime and wake time. Enter both times. | When do you usually sleep? On a normal workday. Rough is fine. | "That's 8 h in bed." appears only once both times are set |
+| Setup, hours | How much of that is actual sleep? Most people sleep a little less than they're in bed. A guess is fine. Our guess from 8 h in bed. Change it if it's off. | How much of that is sleep? Our guess, from 8 h in bed. | |
+| Setup, movement | How much do you move on a typical day? No need to be exact. This helps us suggest changes that fit. | How much do you move most days? Roughly is fine. | |
+| Setup, goals | What would you like to improve? Pick up to three. Your first experiment will start from one of these. | What would you like to improve? Pick up to three. | |
+| Setup, habits | What do you already do most days? Pick any that sound like you, or add your own. Pick what is already part of your day. | What do you already do most days? Pick any, or add your own. | |
+| Setup, limits | Anything that limits what you can change? So we don't suggest experiments that won't fit your life. Skip if nothing comes to mind. Your experiment should fit your life. These help us choose a manageable change. | Anything that limits what you can change? Skip if nothing comes to mind. | |
+| Setup, review | Here's your rhythm. Your experiments start from here. Your 24-hour rhythm, midnight at the top. A few answers are missing. Use Change to fill them in. | Here's your rhythm. Tap a row to change it. | |
+| Ask | A little curiosity, a little evidence. Ask a question. What have you been wondering about your daily habits? Let's turn it into something you can test. 5–500 characters. One small change at a time. First a plan. Then a prediction. You decide whether to begin. | Ask a question. What do you want to test? One small change at a time. | |
+| Ask, waiting | Finding a small change you can test… Your plan and forecast will arrive together. This can take a little while. A suitable question. Check that this fits a small habit experiment. A plan for your day. Shape one change around your routine. An honest forecast. Estimate a range, including what is uncertain. | Finding a small change you can test… This can take a little while. | |
+| Guess | Before the AI has its say. What do you think will happen? The small change. Your guess. Percent change from your normal days. Negative means down, 0 means no change, positive means up. For example, +10 means 10% higher. Choose between -100 and +200. Your guess locks when you reveal the AI prediction. It is saved if you start the experiment, so your report can compare both with what happens. | What do you think will happen? Change from your normal days. +10 means 10% higher. | Why?: it locks when you see the prediction, so your report can compare both. |
+| Plan | Your question. The hypothesis. The small change. When. How often. A 10-day timeline. 3 baseline, 7 test. What we'll notice. Primary. We look for a change of at least 10% in sleep. The original forecast. Confidence. Things that may affect the result. This plan and prediction become fixed once you start. Your original forecast stays in place so you can compare it with what happens. | Your plan. The change. 3 normal days, then 7 test days. We predict. Confidence. Fixed once you start. | Why?: hypothesis, reasoning, what may affect it, what we track, the change we look for. |
+| Today, check-in due | Today's check-in is waiting. A test day: tell us whether you made the change, then how it went. About 30 seconds. Day 4 closes Thursday 4:00 PM. Your small change. | Day 4 of 10. Closes Thursday 4:00 PM. About 30 seconds. | |
+| Today, done | Done for today. Day 4 is recorded. Day 5 opens Thursday 4:00 PM. | Day 4 recorded. Day 5 opens Thursday 4:00 PM. | |
+| Check-in | Today's check-in. A test day. Tell us whether you made the change, then how it went. Note optional. Ready to record. Anything unusual yesterday? (optional) In minutes. | Today's check-in. Test day: tell us how it went. Anything unusual? (optional) | Normal days: "Normal day: change nothing, just notice." |
+| Saved | Day 4 recorded. Check-in saved. 4 of 10 days logged. 6 to go. | Day 4 recorded. 6 days left. | |
+| History | What you've learned. Your experiment history. Look back at your predictions and the patterns your experiments found. | Your history. What your experiments found. | |
+| Sample | Try the daily loop with a sample. Sample answers never become your real experiment data. Fixed design and prediction, with no AI calls. Reminders are off for this sample. Remove the sample to free up a slot for a real experiment. | Try a sample. It never counts as your data. | More: fixed plan, no AI calls, no reminders. Removing it frees a slot. |
+| Demo | Explore a sample experiment. See how a completed experiment becomes a Lab Report. The demo uses labelled sample data. See a completed example. A sample experiment and its Lab Report, built from invented check-ins. It's never added to your own results and makes no AI calls. Opening it again resets the sample. | See a finished example. Invented check-ins, never added to your results. | |
+| Reminders | Daily reminders. A reminder when the next day opens, not another thing to remember. At the next opening returned by your experiment. The lock screen shows the day, never your habit question. | Daily reminders. When the next day opens. The lock screen never shows your question. | |
+| Lab Report | Your question, put to the test. Prediction vs reality. Change from baseline. Locked before you saw the AI forecast. Recorded before your experiment began. Measured from your recorded days. How close the forecast was to the measured change. This is not scientific confidence. A short personal experiment shows a pattern, not proof. | Prediction vs reality. Change from your normal days. A short personal experiment shows a pattern, not proof. | Why?: when each number was recorded, and what accuracy means. |
+<!-- /copy-table -->
+
+### New words
+
+| Element | Copy | Note |
+|---|---|---|
+| Tabs | Today, Progress, Ask, History, You | Replaces "Your lab" on the phone. The web keeps "Your lab" while it's frozen, so back links on mobile become "‹ Today" |
+| Disabled next step, with a hint | Pick one to continue. | Above the disabled button. Says what unlocks it. Shown instead of an error |
+| Time row, empty | Choose | Plain text, muted, with a chevron. No longer green monospace |
+| Today card | Day 4 of 10, then one action: Check in now | The line under it says when the day closes, from the server |
+| Today card, missed days | 3 logged, 1 missed | A plain count. No apology, no warning colour |
+| Celebration | Day 4 recorded / 6 days left | The last day: "That was the last day." |
+| First-run guide | Example · Step 1 of 3 / Skip | Three one-line marks, on an example that's never saved |
+| Finish flow | Keep this habit / Try a variation / Test something new | The result comes first, in one sentence from the existing signal copy |
+| Progress note | Changing several things over time means this shows trends, not proof. | Must stay visible |
+
+### Alternatives
+
+| Instead of | Alternative | Why not |
+|---|---|---|
+| Day 4 of 10. Closes Thursday 4:00 PM. | Day 4 of 10 · check in tonight | **"Tonight" can be false.** A day closes at a time set by when the experiment started, which might be 4 PM. It only works if we confirm when people should check in |
+| Day 4 recorded | Nice work! / Great job! | Praise for filling in a form is the fake praise the brief rules out, and it's Strava's line |
+| 3 logged, 1 missed | Don't break your streak! | Shame. A streak isn't what this app measures |
+| 6 days left | Almost there! | Not true on day 4 |
+
+### Rationale
+
+Someone opens this for 30 seconds a day. They need what's happening, then what to do. The reasons are still true and still there, but they don't compete with the action.
+
+### Localization notes
+
+Tab labels must fit 78pt at 390 wide, so keep them to one short word. Keep "normal days" and "test days" together as terms. "Tonight" doesn't translate safely across time zones anyway; the server's time does.
+

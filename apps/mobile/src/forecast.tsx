@@ -50,17 +50,23 @@ function PredictionRange({ min, max }: { min: number; max: number }) { const loc
 export function Forecast({ prediction, metrics }: { prediction: Prediction; metrics: Metric[] }) { const local = useLocal(); const ui = useStyles();
   const label = metrics.find(metric => metric.key === prediction.target_metric)?.label ?? prediction.target_metric;
   return <View style={local.card}>
-    <Copy style={local.eyebrow}>The original forecast</Copy>
+    <Copy style={local.eyebrow}>We predict</Copy>
     <Copy accessibilityRole="header" style={ui.sectionTitle}>{label} is {DIRECTION[prediction.direction]}</Copy>
     <Copy style={local.value}>{signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}</Copy>
     <PredictionRange min={prediction.expected_change_min} max={prediction.expected_change_max} />
-    <Copy style={ui.muted}>Confidence: {prediction.confidence.charAt(0).toUpperCase() + prediction.confidence.slice(1)}</Copy>
+    <Copy>Confidence: {prediction.confidence.charAt(0).toUpperCase() + prediction.confidence.slice(1)}</Copy>
+  </View>;
+}
+
+/** The reasons behind the range. They sit behind "Why?", beside the forecast. */
+export function ForecastReasons({ prediction }: { prediction: Prediction }) {
+  return <>
     <Copy>{prediction.reasoning}</Copy>
     {prediction.uncertainty_factors.length > 0 && <View>
       <Copy>Things that may affect the result</Copy>
-      {prediction.uncertainty_factors.map(factor => <Copy key={factor} style={ui.muted}>• {factor}</Copy>)}
+      {prediction.uncertainty_factors.map(factor => <Copy key={factor}>• {factor}</Copy>)}
     </View>}
-  </View>;
+  </>;
 }
 
 const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({

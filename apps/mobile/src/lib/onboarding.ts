@@ -20,13 +20,13 @@ export const HABITS = [
 ];
 export const CONSTRAINTS = ["Can't exercise before work", 'Shift work', 'Young kids at home', 'Long commute', 'Travel a lot for work', 'No gym nearby', 'Little free time in the evening'];
 export const QUESTIONS = [
-  ['How old are you?', 'A range is enough. It helps us start with sensible predictions.'],
-  ['When do you usually sleep?', 'On a normal workday. Rough times are fine.'],
-  ['How much of that is actual sleep?', "Most people sleep a little less than they're in bed. A guess is fine."],
-  ['How much do you move on a typical day?', 'No need to be exact. This helps us suggest changes that fit.'],
-  ['What would you like to improve?', 'Pick up to three. Your first experiment will start from one of these.'],
-  ['What do you already do most days?', 'Pick any that sound like you, or add your own.'],
-  ['Anything that limits what you can change?', "So we don't suggest experiments that won't fit your life. Skip if nothing comes to mind."],
+  ['How old are you?', 'A range is enough.'],
+  ['When do you usually sleep?', 'On a normal workday. Rough is fine.'],
+  ['How much of that is sleep?', ''],
+  ['How much do you move most days?', 'Roughly is fine.'],
+  ['What would you like to improve?', 'Pick up to three.'],
+  ['What do you already do most days?', 'Pick any, or add your own.'],
+  ['Anything that limits what you can change?', 'Skip if nothing comes to mind.'],
 ];
 export function minutes(time: string): number | null {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;

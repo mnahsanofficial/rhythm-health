@@ -11,8 +11,7 @@ import { useColors, themedStyles } from './theme-core';
 
 const fixedRow = { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs } as const;
 
-export type Section = 'lab' | 'history' | 'demo' | 'reminders';
-const SECTIONS: { key: Section; label: string }[] = [{ key: 'lab', label: 'Your lab' }, { key: 'history', label: 'History' }, { key: 'demo', label: 'Demo' }];
+export type Section = 'lab' | 'progress' | 'ask' | 'history' | 'you' | 'demo' | 'reminders';
 
 function CloseIcon() { const COLORS = useColors();
   return <Svg width={SPACING.lg - SPACING.xs} height={SPACING.lg - SPACING.xs} viewBox="0 0 20 20" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -25,13 +24,13 @@ function MenuIcon() { const COLORS = useColors();
   </Svg>;
 }
 
-type Account = {
-  email: string; section: Section; hasProfile: boolean;
-  onSection: (next: Section) => void; onEditProfile: () => void; onSignOut: () => void;
-};
+type Account = { email: string; onSignOut: () => void };
 
-/** Pinned above the scrolling page with a solid background and a border, as on the web at phone width. */
-export function AppHeader({ account, onHome }: { account?: Account; onHome?: () => void }) { const COLORS = useColors(); const local = useLocal();
+/**
+ * Pinned above the scrolling page with a solid background and a border. Once there's a profile the tab bar and You
+ * hold everything, so `account` is only passed before that: setup's way out, kept out of the flow itself.
+ */
+export function AppHeader({ account, onHome, signedIn = false }: { account?: Account; onHome?: () => void; signedIn?: boolean }) { const COLORS = useColors(); const local = useLocal();
   const nav = useNav();
   const brand = <><Mark size={SPACING.lg} /><Copy style={local.name}>Rhythm</Copy></>;
   return <View testID="app-header" style={local.bar}>
@@ -39,7 +38,7 @@ export function AppHeader({ account, onHome }: { account?: Account; onHome?: () 
       ? <Pressable accessibilityRole="link" accessibilityLabel="Rhythm, home" onPress={() => nav.goHome(onHome)} style={({ pressed }) => [local.brand, pressed && { opacity: 0.6 }]}>{brand}</Pressable>
       : <View style={local.brand}>{brand}</View>}
     <View style={fixedRow}>
-      {!account && <ThemeCycleButton />}
+      {!signedIn && <ThemeCycleButton />}
       {account && !nav.closable && <AccountMenu account={account} />}
       {nav.closable && <Pressable accessibilityRole="button" accessibilityLabel="Close" accessibilityState={{ disabled: nav.closeBusy }} disabled={nav.closeBusy} onPress={nav.close}
         style={({ pressed }) => [local.close, pressed && { backgroundColor: COLORS.line }, nav.closeBusy && { opacity: 0.4 }]}><CloseIcon /></Pressable>}
@@ -63,17 +62,10 @@ function AccountMenu({ account }: { account: Account }) { const COLORS = useColo
         <SafeAreaView edges={['top', 'left', 'right']} pointerEvents="box-none">
           <View style={local.panelRow} pointerEvents="box-none">
             <View style={local.panel}>
-              {account.hasProfile && <View style={local.sections}>
-                {SECTIONS.map(({ key, label }) => <Row key={key} label={label} selected={account.section === key} onPress={choose(() => account.onSection(key))} />)}
-              </View>}
               <View style={local.who}>
                 <Copy style={ui.muted}>Signed in as</Copy>
                 <Copy style={local.email}>{account.email}</Copy>
               </View>
-              {account.hasProfile && <>
-                <Row label="Update your rhythm" onPress={choose(account.onEditProfile)} />
-                <Row label="Daily reminders" selected={account.section === 'reminders'} onPress={choose(() => account.onSection('reminders'))} />
-              </>}
               <View style={local.who}><ThemeControl /></View>
               <Row label="Sign out" onPress={choose(account.onSignOut)} />
             </View>
@@ -84,15 +76,15 @@ function AccountMenu({ account }: { account: Account }) { const COLORS = useColo
   </>;
 }
 
-function Row({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) { const COLORS = useColors(); const local = useLocal();
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} onPress={onPress}
+function Row({ label, onPress }: { label: string; onPress: () => void }) { const COLORS = useColors(); const local = useLocal();
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
     style={({ pressed }) => [local.row, pressed && { backgroundColor: COLORS.oat }]}>
-    <Copy style={selected ? local.current : undefined}>{label}</Copy>
+    <Copy>{label}</Copy>
   </Pressable>;
 }
 
 const useLocal = themedStyles(COLORS => StyleSheet.create({
-  bar: { minHeight: LAYOUT.headerHeight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, paddingHorizontal: LAYOUT.gutter.min, backgroundColor: COLORS.oat, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
+  bar: { zIndex: 1, minHeight: LAYOUT.headerHeight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, paddingHorizontal: LAYOUT.gutter.min, backgroundColor: COLORS.oat, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   brand: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flexShrink: 1, minHeight: LAYOUT.primaryAction },
   close: { minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill },
   name: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title, color: COLORS.ink },
@@ -101,9 +93,7 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   initialText: { fontFamily: FONT_FAMILIES.sansMedium, color: COLORS['on-accent'], textTransform: 'uppercase' },
   panelRow: { alignItems: 'flex-end', paddingHorizontal: LAYOUT.gutter.min, paddingTop: LAYOUT.headerHeight },
   panel: { width: '100%', maxWidth: LAYOUT.headerHeight * 4.5, padding: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
-  sections: { paddingBottom: SPACING.sm, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   who: { paddingHorizontal: SPACING.sm + SPACING.xs, paddingTop: SPACING.sm + SPACING.xs, paddingBottom: SPACING.sm },
   email: { fontFamily: FONT_FAMILIES.sansMedium },
   row: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.sm + SPACING.xs, borderRadius: RADII.card },
-  current: { fontFamily: FONT_FAMILIES.sansMedium, color: COLORS.moss },
 }));

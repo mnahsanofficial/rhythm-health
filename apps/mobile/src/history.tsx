@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, LabReport } from '@rhythm-health/contract';
 import { CalibrationCard } from './calibration-card';
+import { Disclosure } from './form-rows';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
 import { getReport, reportPercent, SIGNAL_COPY } from './lib/reports';
@@ -45,9 +46,8 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
   const at = cache.value?.at;
   return <View style={local.page}>
     <View style={ui.stack}>
-      <Copy style={local.eyebrow}>What you&apos;ve learned</Copy>
-      <Title textRef={heading}>Your experiment history</Title>
-      <Copy style={ui.muted}>Look back at your predictions and the patterns your experiments found.</Copy>
+      <Title textRef={heading}>Your history</Title>
+      <Copy>What your experiments found.</Copy>
     </View>
     {offline && (at
       ? <Status style={ui.muted}>{`Offline, last updated ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>
@@ -77,8 +77,8 @@ export function DemoScreen({ token, offline, onExpired, onOpen }: { token: strin
   const heading = useStepFocus('demo');
   return <View style={local.page}>
     <View style={ui.stack}>
-      <Title textRef={heading}>Explore a sample experiment.</Title>
-      <Copy style={[ui.muted, NATIVE_TYPOGRAPHY.lead]}>See how a completed experiment becomes a Lab Report. The demo uses labelled sample data.</Copy>
+      <Title textRef={heading}>See a finished example.</Title>
+      <Copy>Invented check-ins, never added to your results.</Copy>
     </View>
     <DemoEntry token={token} offline={offline} onExpired={onExpired} onOpen={onOpen} />
   </View>;
@@ -145,7 +145,7 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
 }
 
 /** A write, so it only happens on a tap. Resets just the completed sample; no AI call, no active experiment touched. */
-function DemoEntry({ token, offline, onExpired, onOpen }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void }) { const local = useLocal(); const ui = useStyles();
+function DemoEntry({ token, offline, onExpired, onOpen }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void }) { const local = useLocal();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -160,21 +160,19 @@ function DemoEntry({ token, offline, onExpired, onOpen }: { token: string; offli
     } finally { inFlight.current = false; setBusy(false); }
   }
   return <View style={local.empty}>
-    <Copy accessibilityRole="header" style={ui.sectionTitle}>See a completed example</Copy>
-    <Copy style={ui.muted}>A sample experiment and its Lab Report, built from invented check-ins. It&apos;s never added to your own results and makes no AI calls. Opening it again resets the sample.</Copy>
+    <Disclosure label="More"><Copy>No AI calls. Opening it again resets the sample.</Copy></Disclosure>
     {error ? <>
       <Alert>{`Couldn't prepare the demo: ${error}`}</Alert>
       <Action label="Try again" secondary disabled={busy || offline} onPress={() => void open()} />
-    </> : <Action label={busy ? 'Preparing the demo…' : 'Explore a completed example'} secondary disabled={busy || offline} onPress={() => void open()} />}
+    </> : <Action label={busy ? 'Preparing the demo…' : 'Explore a completed example'} disabled={busy || offline} onPress={() => void open()} />}
   </View>;
 }
 
-const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
+const useLocal = themedStyles(COLORS => StyleSheet.create({
   page: { gap: SPACING.xl },
-  eyebrow: { ...ui.number, ...NATIVE_TYPOGRAPHY.caption },
   empty: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
   count: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   sort: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   sample: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.night },
   fact: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
-}); });
+}));

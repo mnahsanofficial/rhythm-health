@@ -7,7 +7,7 @@ import { MetricInput, Radio } from './metric-input';
 import { ApiError, detailCode } from './lib/api';
 import { getTodayCheckin, saveTodayCheckin } from './lib/checkins';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
-import { Action, Alert, Copy, useStyles, Title, useStepFocus, Notice } from './ui';
+import { Action, Alert, Copy, StickyAction, useStyles, Title, useStepFocus, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 const prefilled = (today: TodayCheckin) => Object.fromEntries(today.questions.filter(question => question.value !== null && question.value !== undefined)
@@ -79,13 +79,13 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
       <Copy style={local.day}>{`Day ${item.day_number} of ${item.total_days}`}</Copy>
       <Copy>{item.question}</Copy>
     </View>)}
-    <Action label="Go to your lab" onPress={onBack} />
+    <Action label="Go to Today" onPress={onBack} />
     <Action label="Edit answers" secondary onPress={() => setSaved(false)} />
   </View>;
 
   return <View style={styles.stack}>
     <Title textRef={heading}>Today&apos;s check-in.</Title>
-    <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{`One check-in for your ${today.experiments.length} experiments. Shared questions are asked once.`}</Copy>
+    <Copy>{`One check-in for your ${today.experiments.length} experiments.`}</Copy>
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {recorded && <Copy style={local.notice}>You&apos;ve already checked in for some of these today. Saving again replaces those answers.</Copy>}
     {error && <Alert>{error}</Alert>}
@@ -109,14 +109,14 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
       <MetricInput metric={question.metric} value={values[question.id]} onChange={value => setValues(current => ({ ...current, [question.id]: value }))} disabled={busy} error={fields[question.id]} />
     </View>)}
     <View style={styles.divider}>
-      <Copy style={NATIVE_TYPOGRAPHY.lead}>Anything unusual yesterday? (optional)</Copy>
+      <Copy style={NATIVE_TYPOGRAPHY.lead}>Anything unusual? (optional)</Copy>
       <Copy style={local.small}>Saved with every experiment here.</Copy>
       <TextInput accessibilityLabel="Optional note" multiline value={note} onChangeText={setNote} maxLength={MAX_NOTE_LENGTH} editable={!busy}
         placeholder="Late night, a stressful day, a long run…" placeholderTextColor={COLORS.muted}
         style={[styles.input, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
       {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
     </View>
-    <Action label={busy ? 'Saving…' : recorded ? "Update check-in" : "Save check-in"} disabled={busy || offline} onPress={() => void save()} />
+    <StickyAction><Action wide label={busy ? 'Saving…' : recorded ? "Update check-in" : "Save check-in"} disabled={busy || offline} onPress={() => void save()} /></StickyAction>
   </View>;
 }
 

@@ -284,7 +284,7 @@ test('onboarding saves the shared profile body with PUT then opens Today', async
 
 test('summary edits preserve answers and return directly to the summary', async () => {
   await openSetup(); await completeQuestions();
-  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  fireEvent.press(screen.getByRole('button', { name: /^Goals:/ }));
   expect(screen.getByRole('checkbox', { name: 'Better focus' })).toBeChecked();
   fireEvent.press(screen.getByRole('checkbox', { name: 'Calmer evenings' }));
   fireEvent.press(screen.getByRole('button', { name: 'Done' }));
@@ -357,7 +357,7 @@ test('setup restores the same account draft after a restart and never submits tw
 
 test('goal limits, case-insensitive custom choices and optional habits match web behavior', async () => {
   await openSetup(); await completeQuestions();
-  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  fireEvent.press(screen.getByRole('button', { name: /^Goals:/ }));
   fireEvent.changeText(screen.getByLabelText('Something else?'), '  better   focus  ');
   fireEvent.press(screen.getByRole('button', { name: 'Add' }));
   expect(screen.getAllByRole('checkbox', { name: 'Better focus' })).toHaveLength(1);
@@ -368,7 +368,7 @@ test('goal limits, case-insensitive custom choices and optional habits match web
   expect(screen.getByRole('checkbox', { name: 'Better focus' })).toBeEnabled();
   expect(screen.getByRole('checkbox', { name: 'Fall asleep faster' })).toBeDisabled();
   fireEvent.press(screen.getByRole('button', { name: 'Done' }));
-  fireEvent.press(screen.getByRole('button', { name: 'Change habits' }));
+  fireEvent.press(screen.getByRole('button', { name: /^Habits:/ }));
   fireEvent.press(screen.getByRole('checkbox', { name: 'Phone in bed' }));
   fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(screen.getByText('Phone in bed · 23:00')).toBeVisible();
@@ -399,11 +399,11 @@ test('The account panel can reopen the saved rhythm for editing without creating
   await renderToForm(); await signIn(); await screen.findByRole('header', { name: 'Ask a question.' });
   await goTo('Update your rhythm');
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
-  expect(screen.getByText('23:30 to 07:30, about 8 h asleep')).toBeVisible();
-  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  expect(screen.getByText('23:30 to 07:30')).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: /^Goals:/ }));
   expect(screen.getByRole('checkbox', { name: 'better morning energy' })).toBeChecked();
   fireEvent.press(screen.getByRole('button', { name: 'Close' }));
-  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+  expect(await screen.findByRole('tab', { name: 'You', selected: true })).toBeVisible();
 });
 
 test('cleanup retry after a successful save never repeats the profile write', async () => {
@@ -419,7 +419,7 @@ test('cleanup retry after a successful save never repeats the profile write', as
 
 test('explicit sign-out discards this account setup draft', async () => {
   await openSetup(); await completeQuestions();
-  fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+  await goTo('Sign out');
   await screen.findByLabelText('Email'); await signIn();
   expect(await screen.findByText('First, your rhythm.')).toBeVisible();
 });
@@ -429,7 +429,7 @@ test('onboarding remains editable offline and reconnects before saving', async (
   mockNetwork.isConnected = false; screen.rerender(<MobileApp />);
   expect(await screen.findByText(/No connection. Your answers stay/)).toBeVisible();
   expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeDisabled();
-  fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
+  fireEvent.press(screen.getByRole('button', { name: /^Goals:/ }));
   fireEvent.press(screen.getByRole('checkbox', { name: 'Calmer evenings' }));
   fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(screen.getByText('Better focus, Calmer evenings')).toBeVisible();
@@ -444,7 +444,7 @@ test.each([true, false])('rhythm reveal respects reduced motion=%s without delay
   try {
     await openSetup(); await completeQuestions(); await act(async () => {});
     expect(screen.getByRole('button', { name: 'Save my rhythm' })).toBeEnabled();
-    expect(screen.getByText('23:30 to 07:00, about 7 h asleep')).toBeVisible();
+    expect(screen.getByText('23:30 to 07:00')).toBeVisible();
     if (reduce) expect(timing).not.toHaveBeenCalled();
     else expect(timing).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ duration: MOTION_DURATION_MS.reveal, useNativeDriver: true }));
   } finally { timing.mockRestore(); }
