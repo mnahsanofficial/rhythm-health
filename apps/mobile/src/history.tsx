@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, LabReport } from '@rhythm-health/contract';
+import { CalibrationCard } from './calibration-card';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
 import { getReport, reportPercent, SIGNAL_COPY } from './lib/reports';
@@ -55,6 +56,7 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
       <Alert>We couldn&apos;t load your history. {error}</Alert>
       <Action label="Try again" secondary onPress={() => { setError(null); setAttempt(n => n + 1); }} />
     </View>}
+    {list !== null && <CalibrationCard token={token} offline={offline} onExpired={onExpired} />}
     {list === null ? (!offline && !error && <Loading message="Loading your history…" />)
       : list.length === 0 ? <View style={local.empty}>
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Nothing finished yet.</Copy>

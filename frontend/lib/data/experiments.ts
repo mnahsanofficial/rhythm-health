@@ -1,5 +1,5 @@
 import { ApiError, apiGet, apiSend } from "@/lib/api/client";
-import type { ActiveCapacity, Experiment, ExperimentTimeline, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
+import type { ActiveCapacity, Calibration, Experiment, ExperimentTimeline, ExperimentStatus, ProposeResponse, SaveExperimentRequest } from "@rhythm-health/contract";
 
 export function proposeExperiment(question: string): Promise<ProposeResponse> {
   return apiSend("POST", "/api/experiments/propose", { question });
@@ -24,6 +24,10 @@ export function listExperiments(status?: ExperimentStatus): Promise<Experiment[]
 /** The backend owns the limit; screens only show what it says. */
 export function getActiveCapacity(): Promise<ActiveCapacity> {
   return apiGet("/api/experiments/capacity", true);
+}
+
+export function getCalibration(): Promise<Calibration> {
+  return apiGet("/api/experiments/calibration", true);
 }
 
 export function isActiveLimitReached(error: unknown): error is ApiError {
