@@ -435,6 +435,7 @@ describe("a question that is not about a habit", () => {
     const user = await askOffTopic(bodies);
     await user.click(screen.getByRole("button", { name: "Continue anyway" }));
     await screen.findByRole("button", { name: /start this experiment/i });
+    expect(screen.getByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeVisible();
     expect(bodies[1]).toEqual({ question: "What is the capital of France?", continue_anyway: true });
   });
 });
@@ -461,6 +462,14 @@ describe("a safety block", () => {
     const user = await askBlocked("Does a consistent bedtime help me feel rested?");
     await user.click(screen.getByRole("button", { name: "Use this instead" }));
     expect(screen.getByLabelText(/your question/i)).toHaveValue("Does a consistent bedtime help me feel rested?");
+  });
+
+  it("disables another classification until the blocked question changes", async () => {
+    const user = await askBlocked("Does a consistent bedtime help me feel rested?");
+    const design = screen.getByRole("button", { name: "Design experiment" });
+    expect(design).toBeDisabled();
+    await user.type(screen.getByLabelText(/your question/i), "?");
+    expect(design).toBeEnabled();
   });
 
   it("with only advice, shows it as text and leaves the box empty", async () => {

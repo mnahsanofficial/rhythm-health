@@ -171,8 +171,12 @@ test('a safety block shows the reason and a safer alternative that only fills th
   expect(await screen.findByText("Let's find a gentler experiment.")).toBeVisible();
   expect(screen.getByText('This would cut sleep too far.')).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Start this experiment' })).toBeNull();
+  expect(design()).toBeDisabled();
+  await act(async () => { fireEvent.press(design()); });
+  expect(count(PROPOSE)).toBe(1);
   fireEvent.press(screen.getByRole('button', { name: 'Use this instead' }));
   expect(screen.getByLabelText('Your question or goal').props.value).toBe('Does an earlier bedtime help my mornings?');
+  expect(design()).toBeEnabled();
   expect(count(PROPOSE)).toBe(1);
 });
 
@@ -505,6 +509,8 @@ describe('a question that is not about a habit', () => {
     await submit(OFF_TOPIC);
     await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Continue anyway' })); });
     expect(await screen.findByRole('header', { name: 'What do you think will happen?' })).toBeVisible();
+    await reveal();
+    expect(screen.getByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeVisible();
     expect(calls.filter(call => call.key === PROPOSE).map(call => call.body)).toEqual([
       { question: OFF_TOPIC }, { question: OFF_TOPIC, continue_anyway: true },
     ]);
