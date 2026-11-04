@@ -15,7 +15,8 @@ CATEGORY = "energy"
 BASELINE_DAYS = 3
 INTERVENTION_DAYS = 7
 
-# An invented guess, used only to show the calibration card's labelled example.
+# An invented guess, stored only in the completed sample. Its report and the calibration
+# card's labelled example both compare it with the computed result.
 EXAMPLE_GUESS_PERCENT = 5
 
 # Each run is finished a day ago, so the dates in the demo always look recent.
@@ -53,6 +54,8 @@ EXPERIMENT = {
         ],
     },
 }
+
+COMPLETED_EXPERIMENT = {**EXPERIMENT, "personal_guess_percent": EXAMPLE_GUESS_PERCENT}
 
 # (morning_energy, sleep_quality, walked, note) for days 1-10. Day 7 is a skipped walk.
 _DAYS = [

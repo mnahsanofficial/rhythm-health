@@ -48,7 +48,7 @@ export function CalibrationCard({ token, offline, onExpired }: { token: string; 
         <Copy style={ui.muted}>Your next experiment asks for your own guess before the forecast, so you can see how close you get.</Copy>
         {calibration.example && <View testID="calibration-example" accessible={false} accessibilityLabel="Example, not your results" style={ui.stack}>
           <Copy style={ui.sectionTitle}>Example</Copy>
-          <Copy style={ui.muted}>Built from invented check-ins. It isn&apos;t part of your results.</Copy>
+          <Copy style={ui.muted}>Built from invented check-ins and an invented guess. It isn&apos;t part of your results.</Copy>
           <Copy>{calibration.example.question}</Copy>
           <Copy style={ui.muted}>{`Guessed ${signedPercent(calibration.example.guessed_change_percent)} · It changed ${signedPercent(calibration.example.observed_change_percent)} · Off by ${points(calibration.example.off_by_points)}`}</Copy>
         </View>}
