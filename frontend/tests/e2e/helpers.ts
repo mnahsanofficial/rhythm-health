@@ -159,6 +159,8 @@ export async function openSection(page: Page, name: "Your lab" | "History" | "De
 
 export async function answerOnboardingWithMouse(page: Page) {
   await page.goto("/onboarding");
+  // The dev-only Next badge can sit over the phone's pinned button. It isn't in production.
+  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
   await page.getByRole("button", { name: "Start" }).click();
   await page.getByRole("heading", { name: "How old are you?" }).waitFor();
   await page.getByText("25–34", { exact: true }).click();

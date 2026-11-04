@@ -4,9 +4,10 @@ import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
 
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
-import { ProgressBar } from "@/components/onboarding/progress-bar";
+import { StepRail } from "@/components/onboarding/step-rail";
+import { button } from "@/components/ui/button";
 import { RhythmSummary } from "@/components/onboarding/rhythm-summary";
-import { nightIsPlausible, QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
+import { ACTIVITY_OPTIONS, nightIsPlausible, QUESTION_COUNT, STEPS } from "@/components/onboarding/steps";
 import { RhythmRing } from "@/components/rhythm-ring";
 import { useSession } from "@/lib/auth/session";
 import { getProfile } from "@/lib/data/profile";
@@ -111,7 +112,7 @@ function Flow() {
       }`}
     >
       <div className="flex flex-col">
-        <div className="h-6 pt-2">{current && <ProgressBar current={step} total={QUESTION_COUNT} />}</div>
+        <div className="h-6 pt-2 sm:h-12">{current && <StepRail current={step} />}</div>
         {prefillFailed && step === 0 && (
           <p role="status" className="mt-4 rounded-card bg-clay-tint p-3 text-body text-clay">
             Couldn&apos;t load your saved answers, so this starts blank. Saving at the end still updates your rhythm.
@@ -167,13 +168,13 @@ function Flow() {
 
         <div
           hidden={isSummary}
-          className="sticky bottom-0 -mx-[var(--gutter)] flex items-center gap-3 border-t border-line bg-oat/95 px-[var(--gutter)] py-4 backdrop-blur sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0"
+          className="sticky bottom-0 -mx-[var(--gutter)] flex items-center gap-3 border-t border-line bg-oat px-[var(--gutter)] py-4 sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0"
         >
           {step > 0 && (
             <button
               type="button"
               onClick={() => go(step - 1)}
-              className="min-h-12 rounded-pill px-5 text-body font-medium text-ink hover:bg-line/60"
+              className={button("quiet")}
             >
               Back
             </button>
@@ -182,9 +183,9 @@ function Flow() {
             type="submit"
             form={formId}
             disabled={!canContinue}
-            className="ml-auto min-h-12 rounded-pill bg-moss px-7 text-lead font-medium text-on-accent transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-moss disabled:active:scale-100"
+            className={`${button("primary")} ml-auto max-sm:max-w-none max-sm:flex-1 text-lead`}
           >
-            {step === 0 ? "Start" : returnToSummary ? "Done" : answered ? "Continue" : "Skip"}
+            {step === 0 ? "Start" : returnToSummary ? "Done" : answered || !canContinue ? "Continue" : "Skip"}
           </button>
         </div>
       </div>
@@ -206,10 +207,45 @@ function RhythmPanel({ draft }: { draft: OnboardingDraft }) {
             habits={placeHabits(draft.regular_habits ?? [], draft.usual_sleep_schedule)}
           />
         </div>
+        <ShapeFacts draft={draft} />
         <p className="mt-4 text-caption text-muted">Built from your answers. Nothing is sent until you sign up.</p>
       </div>
     </aside>
   );
+}
+
+/** What you've told us so far, in the order it arrived. Each answer lands once; nothing is delayed. */
+function ShapeFacts({ draft }: { draft: OnboardingDraft }) {
+  const reduce = useReducedMotion();
+  const facts = shapeFacts(draft);
+  if (facts.length === 0) return null;
+  return (
+    <ul className="mt-5 divide-y divide-line border-t border-line">
+      {facts.map(([label, value]) => (
+        <motion.li
+          key={label}
+          layout={false}
+          initial={reduce ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduce ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
+          className="flex justify-between gap-4 py-2.5 text-body"
+        >
+          <span className="text-muted">{label}</span>
+          <span className="text-right">{value}</span>
+        </motion.li>
+      ))}
+    </ul>
+  );
+}
+
+function shapeFacts(draft: OnboardingDraft): [string, string][] {
+  const facts: [string, string | undefined][] = [
+    ["Sleep", nightIsPlausible(draft) && draft.usual_sleep_schedule ? `${draft.usual_sleep_schedule.bedtime} to ${draft.usual_sleep_schedule.wake_time}` : undefined],
+    ["Activity", ACTIVITY_OPTIONS.find((o) => o.value === draft.activity_level)?.label],
+    ["Goals", draft.goals?.length ? draft.goals.join(", ") : undefined],
+    ["Habits", draft.regular_habits?.length ? draft.regular_habits.join(", ") : undefined],
+  ];
+  return facts.filter((fact): fact is [string, string] => Boolean(fact[1]));
 }
 
 function Intro({ headingRef }: { headingRef: React.Ref<HTMLHeadingElement> }) {

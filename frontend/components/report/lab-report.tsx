@@ -11,6 +11,7 @@ import { getActiveCapacity, getExperiment } from "@/lib/data/experiments";
 import { getReport, writeReport } from "@/lib/data/reports";
 import { reasonText, SIGNAL_COPY, signedPercent } from "@/lib/report/copy";
 import type { Experiment, LabReport as LabReportData, ReportNarrative, SignalClass } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
 
 type Load =
   | { kind: "loading" }
@@ -25,17 +26,16 @@ const SIGNAL_TONE: Record<SignalClass, string> = {
   probably_noise: "bg-oat text-muted border border-line",
 };
 
-const secondaryLink =
-  "inline-flex min-h-12 items-center justify-center rounded-pill border border-line bg-paper px-6 text-body font-medium text-ink hover:border-moss hover:text-moss";
+const secondaryLink = button("secondary");
 
-const linkButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-[background-color,scale] hover:bg-moss-deep active:scale-[0.98]";
+const linkButton = `${button("primary")} text-lead`;
 
 export function LabReport({ id }: { id: string }) {
   const router = useRouter();
   const { session, loading: sessionLoading } = useSession();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [revealed, setRevealed] = useState(false);
   const path = `/experiments/${encodeURIComponent(id)}`;
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export function LabReport({ id }: { id: string }) {
                   setLoad({ kind: "loading" });
                   setAttempt((n) => n + 1);
                 }}
-                className="min-h-11 rounded-pill bg-paper px-5 text-ink"
+                className={button("secondary")}
               >
                 Try again
               </button>
@@ -140,7 +140,7 @@ export function LabReport({ id }: { id: string }) {
 
       <div className="mt-8">
         {analysis.prediction && primary ? (
-          <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} personalGuess={analysis.personal_guess} />
+          <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} personalGuess={analysis.personal_guess} onRevealed={() => setRevealed(true)} />
         ) : (
           <section className="rounded-card border border-line bg-paper p-6 sm:p-8">
             {analysis.personal_guess && (
@@ -196,7 +196,7 @@ export function LabReport({ id }: { id: string }) {
       </section>
 
       <div className="mt-6">
-        <section aria-labelledby="adherence-heading" className="rounded-card border border-line bg-paper p-6 sm:p-8">
+        <section aria-labelledby="adherence-heading" className="border-t border-line pt-7">
           <h2 id="adherence-heading" className="font-display text-title">
             How the days went
           </h2>
@@ -223,7 +223,7 @@ export function LabReport({ id }: { id: string }) {
       )}
 
       {others.length > 0 && (
-        <section aria-labelledby="others-heading" className="mt-6 rounded-card border border-line bg-paper p-6 sm:p-8">
+        <section aria-labelledby="others-heading" className="mt-8 border-t border-line pt-7">
           <h2 id="others-heading" className="font-display text-title">
             The other things you tracked
           </h2>
@@ -247,9 +247,10 @@ export function LabReport({ id }: { id: string }) {
       <LearningSection
         experimentId={experiment.id}
         narrative={narrative}
+        nextStep={revealed || !analysis.prediction || !primary}
         onWritten={(written) => setLoad({ kind: "ready", report: written })}
       />
-      <NextExperimentSection narrative={narrative} />
+      <NextExperimentSection narrative={narrative} nextStep={revealed || !analysis.prediction || !primary} />
     </Page>
   );
 }
@@ -273,10 +274,13 @@ function writeErrorText(status: number, message: string): string {
 function LearningSection({
   experimentId,
   narrative,
+  nextStep,
   onWritten,
 }: {
   experimentId: string;
   narrative: ReportNarrative | null;
+  /** Revealing the result comes first, so writing only takes the primary look once it's the next step. */
+  nextStep: boolean;
   onWritten: (report: LabReportData) => void;
 }) {
   const router = useRouter();
@@ -359,7 +363,7 @@ function LearningSection({
                 {writeErrorText(writing.status, writing.message)} Your results above are saved.
               </p>
               {writing.status !== 409 && writing.status !== 404 && (
-                <button type="button" onClick={() => void write()} className="mt-3 min-h-11 rounded-pill bg-paper px-5 font-medium text-ink">
+                <button type="button" onClick={() => void write()} className={`${button("secondary")} mt-3`}>
                   Try again
                 </button>
               )}
@@ -371,7 +375,7 @@ function LearningSection({
               onClick={() => void write()}
               disabled={busy}
               aria-busy={busy}
-              className={`${linkButton} mt-5 disabled:cursor-wait disabled:opacity-70`}
+              className={`${nextStep ? linkButton : secondaryLink} mt-5 disabled:cursor-wait`}
             >
               {busy ? "Writing your report…" : "Write my report"}
             </button>
@@ -388,7 +392,7 @@ function LearningSection({
 type ActiveCheck = { kind: "checking" } | { kind: "free" } | { kind: "full"; limit: number } | { kind: "unknown" };
 
 /** Section 9. "Run this experiment" prefills a new proposal, unless the limit of running experiments is reached. */
-function NextExperimentSection({ narrative }: { narrative: ReportNarrative | null }) {
+function NextExperimentSection({ narrative, nextStep }: { narrative: ReportNarrative | null; nextStep: boolean }) {
   const [check, setCheck] = useState<ActiveCheck>({ kind: "checking" });
   const hasNext = narrative !== null;
 
@@ -403,7 +407,7 @@ function NextExperimentSection({ narrative }: { narrative: ReportNarrative | nul
   }, [hasNext]);
 
   return (
-    <section aria-labelledby="next-experiment-heading" className="mt-6 rounded-card border border-line bg-paper p-6 sm:p-8">
+    <section aria-labelledby="next-experiment-heading" className="mt-8 border-t border-line pt-7">
       <h2 id="next-experiment-heading" className="font-display text-title">
         What to test next
       </h2>
@@ -425,7 +429,7 @@ function NextExperimentSection({ narrative }: { narrative: ReportNarrative | nul
           ) : (
             <Link
               href={`/experiments/new?question=${encodeURIComponent(narrative.next_experiment.question)}`}
-              className={`${linkButton} mt-5`}
+              className={`${nextStep ? linkButton : secondaryLink} mt-5`}
             >
               Run this experiment
             </Link>

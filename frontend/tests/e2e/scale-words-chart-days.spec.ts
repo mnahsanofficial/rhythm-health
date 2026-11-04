@@ -68,7 +68,7 @@ for (const width of [390, 1440]) for (const reducedMotion of ["reduce", "no-pref
       }
     });
     await capture("checkin-after");
-    await page.getByRole("button", { name: "Save today's check-in" }).click();
+    await page.getByRole("button", { name: "Save check-in" }).click();
     await expect(page.getByRole("heading", { name: "Day 4 recorded." })).toBeVisible();
     // Simulate pre-B12 JSON: both consumers must have a no-words path.
     active = { ...active, metrics: active.metrics.map(metric => ({ ...metric, min_label: null, max_label: null })) };

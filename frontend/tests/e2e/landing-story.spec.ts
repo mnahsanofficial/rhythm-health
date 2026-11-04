@@ -76,7 +76,7 @@ for (const width of [320, 390, 1440]) {
     }
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await page.waitForTimeout(250);
-    const cta = page.getByRole("link", { name: "Run your first experiment" }).last();
+    const cta = page.getByRole("link", { name: "Start an experiment" }).last();
     await expect(cta).toBeInViewport();
     await capture(page, width, "7-end");
 

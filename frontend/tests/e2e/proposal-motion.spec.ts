@@ -28,7 +28,7 @@ for (const width of [390, 1440]) {
       await page.goto("/experiments/new");
       await page.getByRole("textbox", { name: "Your question or goal" }).fill("Does walking after dinner help my energy?");
       await capture("question");
-      await page.getByRole("button", { name: "Design my experiment" }).click();
+      await page.getByRole("button", { name: "Design experiment" }).click();
       await expect(page.getByRole("region", { name: "Preparing your experiment" })).toBeVisible();
       await expect(page.getByRole("list", { name: "What goes into your experiment" })).toContainText("An honest forecast");
       await capture("before");

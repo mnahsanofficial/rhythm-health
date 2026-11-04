@@ -74,7 +74,7 @@ for (const width of [390, 1440]) {
     await page.goto("/experiments/new");
     await page.getByRole("heading", { name: "Ask a question." }).waitFor();
     await page.getByRole("button", { name: "What could give me more energy in the morning?" }).click();
-    await page.getByRole("button", { name: "Design my experiment" }).click();
+    await page.getByRole("button", { name: "Design experiment" }).click();
     const preview = page.getByRole("region", { name: "Experiment and prediction preview" });
     await expect(preview).toBeVisible();
     await expect(preview.getByRole("heading", { name: "What could give me more energy in the morning?" })).toBeVisible();

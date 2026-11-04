@@ -210,7 +210,7 @@ export function CombinedCheckin() {
                     <label
                       key={label}
                       className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] active:scale-[0.98] motion-reduce:transition-none ${
-                        selected ? "border-moss bg-moss text-on-accent" : "border-line bg-paper text-ink hover:border-muted"
+                        selected ? "border-moss bg-moss text-on-accent" : "border-control bg-paper text-ink hover:border-ink"
                       }`}
                     >
                       <input
@@ -259,7 +259,7 @@ export function CombinedCheckin() {
             rows={3}
             onChange={(event) => setAnswers((a) => ({ ...a, note: event.target.value }))}
             placeholder="Late night, a stressful day, a long run…"
-            className="mt-2 w-full rounded-card border border-line bg-paper p-3 text-body text-ink"
+            className="mt-2 w-full rounded-control border border-control bg-paper p-3 text-body text-ink"
           />
           {fieldErrors.note && <p className="mt-2 text-caption font-medium text-clay">{fieldErrors.note}</p>}
         </div>
@@ -272,7 +272,7 @@ export function CombinedCheckin() {
         )}
 
         <button type="submit" disabled={saving} aria-busy={saving} className={`${primaryButton} w-full sm:w-auto`}>
-          {saving ? "Saving…" : today.experiments.some((experiment) => experiment.recorded) ? "Update today's check-in" : "Save today's check-in"}
+          {saving ? "Saving…" : today.experiments.some((experiment) => experiment.recorded) ? "Update check-in" : "Save check-in"}
         </button>
       </form>
     </Shell>

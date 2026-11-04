@@ -94,11 +94,12 @@ export function DayStory() {
   const animate = isClient && !reduce;
 
   return (
-    <div ref={ref} data-theme="light" className="relative">
+    <div ref={ref} className="relative">
       {/* Not a scroll anchor: its layers stay put while the page moves and mount as scenes change,
           so the browser must not use them to adjust the reader's scroll position. */}
       <div
         data-story-stage
+        data-theme="light"
         aria-hidden="true"
         className="sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-night [overflow-anchor:none] motion-reduce:hidden"
       >
@@ -124,7 +125,7 @@ export function DayStory() {
         {SCENES.map(scene => (
           <StorySection key={scene.id} labelledBy={`scene-${scene.id}`}>
             {scene.still && (
-              <div className="mb-5 hidden overflow-hidden rounded-card motion-reduce:block">
+              <div data-theme="light" className="mb-5 hidden overflow-hidden rounded-card motion-reduce:block">
                 <SceneStill kind={scene.still} />
               </div>
             )}
@@ -149,7 +150,7 @@ function StorySection({ children, first = false, labelledBy }: { children: React
     >
       {/* The card sits in the page frame, so it lines up with the header at every width. */}
       <div className="page-frame">
-        <div className="w-full max-w-[34rem] rounded-card border border-line bg-paper/95 p-5 sm:p-7 motion-reduce:max-w-[40rem]">
+        <div className="w-full max-w-[38rem] rounded-card border border-line bg-paper p-6 sm:p-9 motion-reduce:max-w-[42rem]">
           {children}
         </div>
       </div>

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AuthForm, type AuthMode } from "@/components/auth/auth-form";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { useSession } from "@/lib/auth/session";
+import { button } from "@/components/ui/button";
 
 /** The /sign-in page body. New users are pointed at onboarding, where the account is created. */
 export function SignIn() {
@@ -22,7 +23,7 @@ export function SignIn() {
         <p className="mt-2 text-body text-muted">As {session.user.email}.</p>
         <Link
           href={next}
-          className="mt-6 inline-flex min-h-12 items-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent hover:bg-moss-deep"
+          className={`${button("primary")} mt-6 text-lead`}
         >
           Continue
         </Link>

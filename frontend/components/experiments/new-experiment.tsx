@@ -8,10 +8,11 @@ import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { getProfile } from "@/lib/data/profile";
 import type { Profile } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
 
 export { ForecastCard } from "@/components/experiments/experiment-flow";
 
-const secondary = "min-h-11 rounded-pill border border-line bg-paper px-5 py-2 font-medium hover:border-moss";
+const secondary = button("secondary");
 
 export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: string }) {
   const router = useRouter();

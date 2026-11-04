@@ -13,6 +13,8 @@ import { getTodayCheckin, listCheckins } from "@/lib/data/checkins";
 import { getActiveCapacity, getExperimentProgress, listExperiments } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
 import type { ActiveCapacity, Checkin, Experiment, ExperimentTimeline, Profile, TodayCheckin } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
+import { CountUp } from "@/components/ui/count-up";
 
 type State =
   | { kind: "loading" }
@@ -24,7 +26,7 @@ type State =
 
 type RunningExperiment = { experiment: Experiment; timeline: ExperimentTimeline };
 
-const primary = "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-transform hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none";
+const primary = `${button("primary")} text-lead`;
 const textLink = "inline-flex min-h-11 items-center text-body font-medium text-moss underline-offset-4 hover:underline";
 
 /** Resolve auth before showing either the public illustration or private experiment. */
@@ -199,7 +201,7 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
               aria-expanded={open}
               aria-controls={panelId}
               onClick={toggleQuestion}
-              className="ml-auto min-h-12 rounded-pill bg-moss px-6 font-medium text-on-accent transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+              className={`${button("secondary")} ml-auto`}
             >
               {open ? "Close question" : "Test another habit"}
             </button>
@@ -226,7 +228,7 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 id="lab-progress" className="font-display text-title">Your observations, day by day.</h2>
-            <p className="mt-2 font-mono text-body tabular-nums">{logged} of {progress.total_days} days recorded</p>
+            <p className="mt-2 font-mono text-body tabular-nums"><CountUp value={logged} suffix={` of ${progress.total_days} days recorded`} /></p>
           </div>
           <div className="text-caption text-muted sm:text-right">
             {progress.state === "in_progress" && (
@@ -303,7 +305,7 @@ function SeveralLab({ profile, items, capacity, today, onChanged }: {
               if (open) toggle.current?.focus();
               setOpen(!open);
             }}
-            className="min-h-12 rounded-pill bg-moss px-6 font-medium text-on-accent transition-transform duration-[var(--motion-press)] hover:bg-moss-deep active:scale-[0.98] motion-reduce:transition-none"
+            className={button("secondary")}
           >
             {open ? "Close question" : "Test another habit"}
           </button>

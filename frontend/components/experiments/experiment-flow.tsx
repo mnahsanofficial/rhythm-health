@@ -12,9 +12,10 @@ import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
 import { PersonalGuess } from "@/components/experiments/personal-guess";
 import { QuestionForm } from "@/components/experiments/question-form";
 import { GOAL_QUESTIONS } from "@/components/onboarding/steps";
+import { button } from "@/components/ui/button";
 
-const primary = "min-h-12 rounded-pill bg-moss px-6 py-3 font-medium text-on-accent hover:bg-moss-deep disabled:cursor-not-allowed disabled:opacity-50";
-const secondary = "min-h-11 rounded-pill border border-line bg-paper px-5 py-2 font-medium hover:border-moss";
+const primary = button("primary");
+const secondary = button("secondary");
 
 function signedPercent(value: number) {
   return `${value > 0 ? "+" : ""}${value}%`;
@@ -185,7 +186,7 @@ function ProposalPreview({ result, onStart, onAskSomethingElse, starting, headin
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" onClick={onStart} disabled={starting} className={`${primary} w-full sm:w-auto`}>
+        <button type="button" onClick={onStart} disabled={starting} className={primary}>
           {starting ? "Saving your experiment…" : "Start this experiment"}
         </button>
         <button type="button" onClick={onAskSomethingElse} disabled={starting} className={secondary}>
@@ -398,7 +399,7 @@ export function ExperimentFlow({
 
   return (
     <div>
-      <div className={`mt-5 grid gap-10 ${!showStarters || result?.safety.allowed ? "" : "lg:grid-cols-[1fr_280px] lg:gap-14"}`}>
+      <div className="mt-5 grid gap-10">
         <div className="min-w-0">
           {!result?.safety.allowed && <>
           <QuestionForm
@@ -416,6 +417,8 @@ export function ExperimentFlow({
             busy={busy}
             blocked={Boolean(limitMessage)}
             headingLevel={headingLevel}
+            suggestions={showStarters ? starters(profile) : []}
+            onSuggestion={chooseQuestion}
           />
           </>}
 
@@ -485,14 +488,6 @@ export function ExperimentFlow({
         </div>
       )}
         </div>
-        {showStarters && !result?.safety.allowed && <aside className="lg:pt-2">
-          <div className="rounded-card bg-moss-tint p-6">
-            <p className="font-display text-title">Start with a hunch</p>
-            <p className="mt-2 text-caption text-muted">Inspired by your goals and everyday questions. Pick one, then make it yours.</p>
-            <ul className="mt-5 divide-y divide-moss/20">{starters(profile).map((starter) => <li key={starter}><button disabled={busy} type="button" onClick={() => chooseQuestion(starter)} className="min-h-11 w-full py-4 text-left text-body text-ink hover:text-moss disabled:opacity-50">{starter}<span aria-hidden="true" className="ml-2 text-moss">↗</span></button></li>)}</ul>
-          </div>
-          <p className="mt-5 px-1 text-caption text-muted">First a plan. Then a prediction. You decide whether to begin.</p>
-        </aside>}
       </div>
     </div>
   );

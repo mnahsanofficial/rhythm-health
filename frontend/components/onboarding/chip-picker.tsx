@@ -104,7 +104,7 @@ export function ChipPicker({ legend, options, value, onChange, max, addLabel, ad
                 add();
               }
             }}
-            className="min-h-12 min-w-0 flex-1 rounded-card border border-line bg-paper px-4 text-lead text-ink placeholder:text-muted/70 focus-visible:border-moss"
+            className="min-h-12 min-w-0 flex-1 rounded-control border border-control bg-paper px-4 text-lead text-ink placeholder:text-muted/70 focus-visible:border-moss"
           />
           <button
             type="button"

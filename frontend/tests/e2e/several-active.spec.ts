@@ -73,7 +73,7 @@ for (const width of [390, 1440]) {
     await page.getByText("Yes", { exact: true }).click();
     await page.getByRole("group", { name: /Morning energy/ }).getByText("7", { exact: true }).click();
     await page.getByRole("group", { name: /Focus/ }).getByText("6", { exact: true }).click();
-    await page.getByRole("button", { name: "Save today's check-in" }).click();
+    await page.getByRole("button", { name: "Save check-in" }).click();
     await expect(page.getByRole("heading", { name: "Today's check-ins are recorded." })).toBeVisible();
     expect(saved).toEqual({
       revision: "rev-1", note: null, changes: { [all[2].id]: true },

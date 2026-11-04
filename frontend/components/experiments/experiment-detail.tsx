@@ -13,15 +13,14 @@ import { listCheckins } from "@/lib/data/checkins";
 import { getExperiment, getExperimentProgress } from "@/lib/data/experiments";
 import { completeExperiment, notEnoughCheckins } from "@/lib/data/reports";
 import type { Checkin, Experiment, ExperimentTimeline } from "@/lib/types/api";
+import { button } from "@/components/ui/button";
 
 // Mirrors backend/app/services/analysis.py: results need this many check-ins per phase.
 const MIN_BASELINE_CHECKINS = 2;
 const MIN_TEST_CHECKINS = 3;
 
-const primaryButton =
-  "inline-flex min-h-12 items-center justify-center rounded-pill bg-moss px-6 text-lead font-medium text-on-accent transition-[background-color,opacity,scale] hover:bg-moss-deep active:scale-[0.98] disabled:opacity-60";
-const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-pill border border-line bg-paper px-5 text-body font-medium text-ink hover:border-moss disabled:opacity-60";
+const primaryButton = `${button("primary")} text-lead`;
+const secondaryButton = button("secondary");
 
 type Load =
   | { kind: "loading" }
@@ -211,7 +210,7 @@ function FinishCard({
   if (!c.canFinish) {
     return (
       <section className="rounded-card border border-line bg-paper p-6 sm:p-7">
-        <h2 className="font-display text-title">Results unlock soon.</h2>
+        <h2 className="font-display text-title">Results after {Math.max(c.needBaseline - c.baseline, 0) + Math.max(c.needTest - c.test, 0)} more check-ins.</h2>
         <p className="mt-2 text-body text-muted">
           You need at least {c.needBaseline} baseline and {c.needTest} test-day check-ins.
         </p>

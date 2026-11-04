@@ -54,7 +54,7 @@ function installProfileHandler(goals = ["Better focus"]) {
 
 async function submitQuestion(user: ReturnType<typeof userEvent.setup>, value = question) {
   await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), value);
-  await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+  await user.click(screen.getByRole("button", { name: "Design experiment" }));
 }
 
 beforeEach(() => {
@@ -132,7 +132,7 @@ describe("new experiment flow", () => {
     expect(screen.queryByRole("button", { name: "Does less caffeine improve my focus?" })).not.toBeInTheDocument();
     await user.clear(screen.getByRole("textbox", { name: "Your question or goal" }));
     await user.type(screen.getByRole("textbox", { name: "Your question or goal" }), question);
-    await user.click(screen.getByRole("button", { name: "Design my experiment" }));
+    await user.click(screen.getByRole("button", { name: "Design experiment" }));
     await firstRequestStarted;
 
     expect(screen.getByRole("region", { name: "Preparing your experiment" })).toBeVisible();
@@ -316,7 +316,7 @@ it("keeps the AI forecast hidden until a valid personal guess is committed, then
   await submitQuestion(user);
   const guess = await screen.findByRole("textbox", { name: "Your guess for Morning energy" });
   expect(screen.queryByText("The original forecast")).not.toBeInTheDocument();
-  const reveal = screen.getByRole("button", { name: "Reveal the AI prediction" });
+  const reveal = screen.getByRole("button", { name: "Show prediction" });
   expect(reveal).toBeDisabled();
   await user.type(guess, "201");
   expect(reveal).toBeDisabled();
@@ -359,7 +359,7 @@ it("keeps a committed guess on save failure and requires explicit consent to omi
   render(<NewExperiment />);
   await submitQuestion(user);
   await user.type(await screen.findByRole("textbox", { name: "Your guess for Morning energy" }), "-12,5");
-  await user.click(screen.getByRole("button", { name: "Reveal the AI prediction" }));
+  await user.click(screen.getByRole("button", { name: "Show prediction" }));
   await user.click(screen.getByRole("button", { name: "Start this experiment" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("No experiment was saved");
   expect(screen.getByText("-12.5%", { exact: true })).toBeVisible();

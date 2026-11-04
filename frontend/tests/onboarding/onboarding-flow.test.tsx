@@ -58,7 +58,7 @@ describe("onboarding flow", () => {
       "Question 1 of 7",
     );
 
-    expect(screen.getByRole("button", { name: "Skip" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
     await user.click(screen.getByRole("radio", { name: "25–34" }));
     const continueButton = screen.getByRole("button", { name: "Continue" });
     expect(continueButton).toBeEnabled();
@@ -69,7 +69,7 @@ describe("onboarding flow", () => {
       "aria-valuetext",
       "Question 2 of 7",
     );
-    expect(screen.getByRole("button", { name: "Skip" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
     await user.type(screen.getByLabelText("Bedtime"), "22:30");
     await user.type(screen.getByLabelText("Wake time"), "06:30");
     const scheduleContinue = screen.getByRole("button", { name: "Continue" });
@@ -109,13 +109,13 @@ describe("onboarding flow", () => {
     await user.click(await screen.findByRole("button", { name: "Continue" }));
 
     expect(await screen.findByRole("heading", { name: "How much do you move on a typical day?" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Skip" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
     await user.click(screen.getByRole("radio", { name: /Lightly active/ }));
     const activityContinue = screen.getByRole("button", { name: "Continue" });
     await user.click(activityContinue);
 
     expect(await screen.findByRole("heading", { name: "What would you like to improve?" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Skip" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
     await user.click(screen.getByRole("checkbox", { name: "More energy in the morning" }));
     const goalsContinue = screen.getByRole("button", { name: "Continue" });
     await user.click(goalsContinue);
