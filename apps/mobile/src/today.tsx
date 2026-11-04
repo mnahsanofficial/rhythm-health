@@ -136,7 +136,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
       onAsk={ask} />;
     if (section === 'ask') return null;
     if (section === 'you') return <You email={email} onEditProfile={() => editProfile?.()} onReminders={() => onSection('reminders')} onExample={() => onSection('demo')} onSignOut={() => onSignOut?.()} />;
-    if (section === 'progress') return <ProgressScreen entries={loaded ? entries : null} updatedAt={loaded?.at} token={token} offline={offline} onExpired={onExpired} />;
+    if (section === 'progress') return <ProgressScreen entries={loaded ? entries : null} updatedAt={loaded?.at} token={token} offline={offline} onExpired={onExpired} onAsk={() => ask('')} />;
     if (section === 'reminders') return <View style={styles.stack}><ReminderNotice feedbackOnly /><Settings /></View>;
     if (section === 'demo') return <DemoScreen token={token} offline={offline} onExpired={onExpired} onOpen={openDemo} />;
     if (section === 'history') return <View style={styles.stack}><ReminderNotice feedbackOnly />

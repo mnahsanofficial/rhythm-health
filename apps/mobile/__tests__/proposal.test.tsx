@@ -339,7 +339,7 @@ test('a failed start retries only the start, never a second draft', async () => 
   await toPlan();
   queue(START, { status: 503, body: { detail: 'Database unavailable' } });
   await startNow();
-  expect(await screen.findByText(/Your experiment was saved, but it couldn't be started: Database unavailable/)).toBeVisible();
+  expect(await screen.findByText(/Your experiment was saved, but it couldn't be started: Try again\./)).toBeVisible();
   queue(`GET ${ACTIVE}`, { body: [started] });
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Try again' })); });
   await screen.findByText(started.question);
@@ -376,7 +376,7 @@ test('other save errors do not offer to drop the guess', async () => {
   await toPlan();
   queue(SAVE, { status: 503, body: { detail: 'Database unavailable' } });
   await startNow();
-  expect(await screen.findByText(/Database unavailable/)).toBeVisible();
+  expect(await screen.findByText(/Couldn't save your experiment\. Try again\./)).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Skip my guess' })).toBeNull();
 });
 

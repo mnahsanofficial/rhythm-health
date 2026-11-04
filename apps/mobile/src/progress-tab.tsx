@@ -31,7 +31,7 @@ function MetricCard({ metric, example = false }: { metric: MetricTrend; example?
 }
 
 /** What's finished, compared, then what's running, day by day. */
-export function ProgressScreen({ entries, updatedAt, token, offline, onExpired }: { entries: DayData[] | null; updatedAt?: Date; token: string; offline: boolean; onExpired: () => void }) { const local = useLocal(); const ui = useStyles();
+export function ProgressScreen({ entries, updatedAt, token, offline, onExpired, onAsk }: { entries: DayData[] | null; updatedAt?: Date; token: string; offline: boolean; onAsk: () => void; onExpired: () => void }) { const local = useLocal(); const ui = useStyles();
   const heading = useStepFocus('progress');
   const [summary, setSummary] = useState<ProgressSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,10 @@ export function ProgressScreen({ entries, updatedAt, token, offline, onExpired }
     <Title textRef={heading}>Progress</Title>
     {offline && updatedAt && <Status>{`Offline, last updated ${updatedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>}
     {entries === null && <Copy>{offline ? 'Reconnect to load your progress.' : 'Loading your progress…'}</Copy>}
-    {(entries?.length === 0 && !summary?.example && !summary?.metrics.length) && <Copy>Nothing running yet.</Copy>}
+    {entries?.length === 0 && <>
+      <Copy>{summary?.metrics.length ? 'Nothing running right now.' : 'Nothing running yet.'}</Copy>
+      <Action label="Ask a question" disabled={offline} onPress={onAsk} />
+    </>}
     {error && <><Alert>{error}</Alert><Action label="Try again" secondary disabled={offline} onPress={() => { setError(null); setAttempt(n => n + 1); }} /></>}
     {!!summary?.kept.length && <View style={ui.stack}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Habits I kept</Copy>

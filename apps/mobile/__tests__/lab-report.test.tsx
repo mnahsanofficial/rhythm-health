@@ -141,7 +141,8 @@ describe('finish', () => {
     queue(COMPLETE, { status: 503, body: { detail: 'Database unavailable' } });
     queue(READ, { status: 404, body: { detail: 'No report for this experiment yet' } });
     await finish();
-    expect(await screen.findByText('Database unavailable')).toBeVisible();
+    expect(await screen.findByText("Couldn't finish the experiment. Try again.")).toBeVisible();
+    expect(screen.queryByText('Database unavailable')).toBeNull();
     expect(count(COMPLETE)).toBe(1);
     await press('See your results');
     await pastFinishFlow();
@@ -234,7 +235,7 @@ describe('finishing from Today when all days are done', () => {
     queue(READ, { status: 404, body: { detail: 'No report for this experiment yet' } });
     render(<MobileApp />);
     await seeResults();
-    expect(await screen.findByText('Database unavailable')).toBeVisible();
+    expect(await screen.findByText("Couldn't finish the experiment. Try again.")).toBeVisible();
     await seeResults();
     expect(await screen.findByRole('button', { name: 'See full Lab Report' })).toBeVisible();
     expect(count(COMPLETE)).toBe(2);
@@ -632,7 +633,7 @@ describe('opening a report', () => {
   test('a read failure offers retry and is not shown as an empty report', async () => {
     queue(READ, { status: 503, body: { detail: 'Database unavailable' } });
     await openFromToday();
-    expect(await screen.findByText(/We couldn't load this report\. Database unavailable/)).toBeVisible();
+    expect(await screen.findByText("Couldn't load this report.")).toBeVisible();
     await press('Try again');
     expect(await screen.findByRole('header', { name: 'Prediction vs reality' })).toBeVisible();
   });
