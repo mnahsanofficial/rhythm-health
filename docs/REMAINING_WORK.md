@@ -21,6 +21,8 @@ Decided by Nazmul on 4 Nov. None of these are needed for the demo.
 | F10 | Edit the AI's plan before starting | A person can only ask again |
 | S10 | The two-week follow-up: are you still doing it, and does it still help? | The Day 10 choice is stored, but nothing follows it up |
 | | Day 10 × opens the Lab Report rather than leaving | Small, and it's clear enough for the demo |
+| | Continue anyway can return a plan on a different subject, with no warning | Found in the [live check](FEEDBACK_TRACKER.md#live-check-of-the-question-flow). Say so on the plan, or ask the designer to refuse |
+| | After a safety block, Design experiment stays enabled on the blocked question, and tapping it pays for another classification | Found in the live check. Small |
 | | A warning when a new question tests the same thing as a running one | [Decision](DECISIONS.md#several-active-experiments--4-nov-2026) left it out |
 | | Scene treatment on the Lab Report result, Day 3 and Day 10 | [Product review](design/06-product-review.md#scene-treatment) |
 | | Onboarding: shrink the scene on long lists, and give each goal its own icon | Review finding 10 |

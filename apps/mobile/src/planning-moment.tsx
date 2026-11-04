@@ -80,7 +80,7 @@ export function PlanningMoment({ heading, question }: { heading: Ref<ComponentRe
     <Copy style={ui.muted}>{question}</Copy>
     <PlanningScene />
     <View style={ui.stack}>{STEPS.map(text => <Step key={text} text={text} />)}</View>
-    <Status style={ui.muted}>Usually 10–20 seconds.</Status>
+    <Status style={ui.muted}>Usually 10–30 seconds.</Status>
   </View>;
 }
 
