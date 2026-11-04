@@ -16,8 +16,8 @@ const madeChanges = (today: TodayCheckin) => Object.fromEntries(today.experiment
   .map(item => [item.id, item.change_made as boolean]));
 
 /** One check-in for every experiment due today. The backend decides what combines and saves it all or not at all. */
-export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: {
-  initial: TodayCheckin; token: string; offline: boolean; onExpired: () => void; onBack: () => void;
+export function CombinedCheckin({ initial, token, offline, onExpired, onBack, onSaved }: {
+  initial: TodayCheckin; token: string; offline: boolean; onExpired: () => void; onBack: () => void; onSaved: (result: TodayCheckin) => void;
 }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const [today, setToday] = useState(initial);
   const [values, setValues] = useState<Record<string, string | boolean>>(() => prefilled(initial));
@@ -27,12 +27,11 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
   const [error, setError] = useState<string>();
   const [stale, setStale] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
   const answersKey = JSON.stringify({ values, changes, note });
   const [loadedAnswers, setLoadedAnswers] = useState(answersKey);
-  useNavScreen({ kind: 'flow', onBack, busy, unsaved: !saved && answersKey !== loadedAnswers ? WONT_BE_KEPT.answers : null });
+  useNavScreen({ kind: 'flow', onBack, busy, unsaved: answersKey !== loadedAnswers ? WONT_BE_KEPT.answers : null });
   const saving = useRef(false);
-  const heading = useStepFocus(saved ? 'saved' : 'form');
+  const heading = useStepFocus('form');
   const testing = today.experiments.filter(item => item.change_required);
   const recorded = today.experiments.some(item => item.recorded);
 
@@ -66,22 +65,12 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
     saving.current = true; setBusy(true); setError(undefined);
     try {
       const result = await saveTodayCheckin(token, { revision: today.revision, answers, changes, note: note.trim() || null });
-      setToday(result); setSaved(true);
+      onSaved(result);
     } catch (cause) {
       if (cause instanceof ApiError && detailCode(cause) === 'checkin_changed') setStale(true);
       failed(cause, "Couldn't save your check-in. Try again.");
     } finally { saving.current = false; setBusy(false); }
   }
-
-  if (saved) return <View style={styles.stack}>
-    <Title textRef={heading}>Today&apos;s check-ins are recorded.</Title>
-    {today.experiments.map(item => <View key={item.id} style={local.item}>
-      <Copy style={local.day}>{`Day ${item.day_number} of ${item.total_days}`}</Copy>
-      <Copy>{item.question}</Copy>
-    </View>)}
-    <Action label="Go to Today" onPress={onBack} />
-    <Action label="Edit answers" secondary onPress={() => setSaved(false)} />
-  </View>;
 
   return <View style={styles.stack}>
     <Title textRef={heading}>Today&apos;s check-in.</Title>

@@ -243,6 +243,8 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `checkins-pe
 
 **Celebration:** the words are `on-accent` on `accent` (6.19:1) in light and `text` on `background` (15.81:1) in dark. The sun has a `text` outline because `marker` alone is 1.51:1 on light surfaces, and the marker is decorative because the words say the same. With a screen reader on, it announces and waits for Continue. Tap to skip works everywhere, and Today shows the same facts afterwards.
 
+**Updating:** Update check-in shows the same celebration as saving, for one experiment and for the combined check-in, which says "2 check-ins recorded" and lists each experiment's day.
+
 **Today card:** one action, spoken as "Check in now, day 4", so the visible words are in the spoken name. Missed days are a plain count in `text`, not in a warning colour.
 
 **First-run guide:** Skip is always on screen at 48pt, the step and mark are text, focus moves to the mark on each step, and the highlight is a 2pt `accent` edge beside the words, so colour isn't the only cue.

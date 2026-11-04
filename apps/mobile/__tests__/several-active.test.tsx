@@ -69,6 +69,8 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
+const press2 = async (name: string) => { const node = await screen.findByRole('button', { name }); await act(async () => { fireEvent.press(node); }); };
+
 describe('your lab with several experiments', () => {
   test('one experiment keeps today\'s screen and never reads the limit', async () => {
     install([first]);
@@ -143,7 +145,27 @@ describe('your lab with several experiments', () => {
       revision: 'rev-1', note: 'late night', changes: { 'second-id': true },
       answers: { 'first-id:energy': 7, 'first-id:focus': 6 },
     }));
-    expect(await screen.findByText("Today's check-ins are recorded.")).toBeVisible();
+    expect(await screen.findByText('2 check-ins recorded')).toBeVisible();
+    expect(screen.getAllByText('Day 1 of 10')[0]).toBeVisible(); // Today sits behind it with the same day.
+    expect(screen.getAllByText('Day 2 of 10')[0]).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
+    await press('Continue');
+    expect(screen.queryByText('2 check-ins recorded')).toBeNull();
+    expect(await screen.findByRole('tab', { name: 'Today', selected: true })).toBeVisible();
+  });
+
+  test('updating the combined check-in shows the same celebration', async () => {
+    install([first, second]);
+    routes['GET /api/checkins/today'] = { body: { ...dueToday([first, second], true) } };
+    routes['POST /api/checkins/today'] = { body: { ...dueToday([first, second], true) } };
+    render(<MobileApp />);
+    await press2('Edit answers');
+    expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    await press('Update check-in');
+    expect(await screen.findByText('2 check-ins recorded')).toBeVisible();
   });
 
   test('a reminder tap leaves the combined check-in for that experiment', async () => {
