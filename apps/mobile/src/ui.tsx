@@ -72,8 +72,10 @@ const PRESS_TIMING = { duration: MOTION_DURATION_MS.press, reduceMotion: ReduceM
  * Fits its words. One per screen without `secondary`; that one is the screen's primary action.
  * `wide` lines it up with what it belongs to: a form's fields, or the bottom of the phone's landing.
  */
-export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, wide = false, testID }: {
+export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, wide = false, testID, onDark }: {
   label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean; wide?: boolean; testID?: string;
+  /** A secondary on a filled screen takes its edge and words from this colour. */
+  onDark?: string;
 }) { const COLORS = useColors(); const styles = useStyles();
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
@@ -86,10 +88,10 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
       onPress={onPress}
       onPressIn={() => { scale.set(withTiming(PRESSED_SCALE, PRESS_TIMING)); }}
       onPressOut={() => { scale.set(withTiming(1, PRESS_TIMING)); }}
-      style={({ pressed }) => [styles.action, secondary && styles.secondary,
-        pressed && { backgroundColor: secondary ? COLORS['accent-tint'] : COLORS['accent-press'] }, disabled && styles.disabled]}
+      style={({ pressed }) => [styles.action, secondary && styles.secondary, onDark ? { borderColor: onDark } : null,
+        pressed && !onDark && { backgroundColor: secondary ? COLORS['accent-tint'] : COLORS['accent-press'] }, pressed && onDark ? { opacity: 0.7 } : null, disabled && styles.disabled]}
     >
-      <Copy style={[styles.actionText, secondary && { color: COLORS.text }, disabled && { color: COLORS.muted }]}>{label}</Copy>
+      <Copy style={[styles.actionText, secondary && { color: onDark ?? COLORS.text }, disabled && { color: COLORS.muted }]}>{label}</Copy>
     </Pressable></Animated.View>
   );
 }

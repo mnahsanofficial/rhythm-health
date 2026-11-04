@@ -49,7 +49,7 @@ afterEach(() => jest.restoreAllMocks());
 const press = (name: string) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
 async function openCheckin(day = 4) {
   render(<MobileApp />);
-  const start = await screen.findByRole('button', { name: `Check in for day ${day}` });
+  const start = await screen.findByRole('button', { name: `Check in now, day ${day}` });
   await act(async () => { fireEvent.press(start); });
   await screen.findByLabelText('Optional note');
 }
@@ -104,25 +104,24 @@ describe('check-in', () => {
     expect(screen.getByText('3 of 3 answered')).toBeVisible();
   });
 
-  test('saving shows the web confirmation with server counts, then returns', async () => {
+  test('saving celebrates with server counts, then returns to Today', async () => {
     await openCheckin();
     answerAll();
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(testDay, { recorded: [1, 2, 3, 4] }) };
     await press("Save check-in");
-    expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
-    expect(await screen.findByText('4 of 10 days logged. 6 to go.')).toBeVisible();
-    expect(screen.getAllByLabelText(/^Day \d+, logged$/)).toHaveLength(4);
-    expect(screen.getByLabelText('Day 5')).toBeVisible();
-    await press('Go to Today');
-    expect(await screen.findByText('Done for today')).toBeVisible();
+    expect(await screen.findByText('6 days left')).toBeVisible();
+    await press('Continue');
+    expect(await screen.findByText('Day 4 recorded')).toBeVisible();
+    expect(screen.getByText('4 logged')).toBeVisible();
   });
 
-  test('Edit answers reopens the form from the confirmation', async () => {
+  test('Edit answers on Today reopens the form', async () => {
     await openCheckin();
     answerAll();
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(testDay, { recorded: [4] }) };
     await press("Save check-in");
-    await screen.findByRole('header', { name: 'Day 4 recorded.' });
+    await screen.findByText('6 days left');
+    await press('Continue');
     await press("Edit answers");
     expect(await screen.findByLabelText('Optional note')).toBeVisible();
   });
@@ -137,8 +136,9 @@ describe('check-in', () => {
       return reply;
     });
     await press("Save check-in");
-    expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
-    expect(await screen.findByText('Your check-in was saved. Refresh Today to see your progress.')).toBeVisible();
+    expect((await screen.findAllByText('Day 4 recorded'))[0]).toBeVisible();
+    await waitFor(() => expect(calls.filter(call => call === `GET /api/experiments/${ID}/progress`).length).toBeGreaterThan(1));
+    expect(screen.queryByText(/days? left/)).toBeNull();
     expect(calls.filter(call => call === `POST /api/experiments/${ID}/checkins`)).toHaveLength(1);
   });
 });

@@ -235,4 +235,16 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `accessibili
 
 **Still open:** M4 on Today's card and the Lab Report (PR 2 and PR 4). The sticky action comes after the content in reading order, which is intended but needs hearing on a device.
 
-**Not checked, and on the PR's iPhone list:** the keyboard with the sticky action; the native time row and picker in dark, because Expo web draws a browser input there; VoiceOver on tabs and the stepper; Dynamic Type at the largest sizes; heading position under the header (R12), which we haven't reproduced.
+**Not checked, and on the PR's iPhone list (PR 1):** the keyboard with the sticky action; the native time row and picker in dark, because Expo web draws a browser input there; VoiceOver on tabs and the stepper; Dynamic Type at the largest sizes; heading position under the header (R12), which we haven't reproduced.
+
+## Re-audit: mobile PR 2, check-ins
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `checkins-people-want.test.tsx` and Expo web at 390 in both modes (`docs/screenshots/mobile-checkins/`).
+
+**Celebration:** the words are `on-accent` on `accent` (6.19:1) in light and `text` on `background` (15.81:1) in dark. The sun has a `text` outline because `marker` alone is 1.51:1 on light surfaces, and the marker is decorative because the words say the same. With a screen reader on, it announces and waits for Continue. Tap to skip works everywhere, and Today shows the same facts afterwards.
+
+**Today card:** one action, spoken as "Check in now, day 4", so the visible words are in the spoken name. Missed days are a plain count in `text`, not in a warning colour.
+
+**First-run guide:** Skip is always on screen at 48pt, the step and mark are text, focus moves to the mark on each step, and the highlight is a 2pt `accent` edge beside the words, so colour isn't the only cue.
+
+**Not checked, and on PR 2's iPhone list:** the haptic; Reduce Motion on a device; VoiceOver focus inside the full-screen modal; the largest text sizes on the celebration.

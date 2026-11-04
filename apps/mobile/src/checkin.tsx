@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
-import { Action, Alert, Copy, Loading, StickyAction, useStyles, Title, Status, useStepFocus, Notice } from './ui';
+import { Action, Alert, Copy, Loading, StickyAction, useStyles, Title, Status, Notice } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
@@ -143,35 +143,6 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   </View>;
 }
 
-/** The web's confirmation. Counts come from the refreshed progress, and only once it has arrived. */
-export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder, onRetry, onBack, onChange }: {
-  day: number; data: DayData | null | undefined; refreshing: boolean; failed: boolean; receipt: React.ReactNode; reminder: React.ReactNode; onRetry: () => void; onBack: () => void; onChange: () => void;
-}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
-  useNavScreen({ kind: 'flow', onBack });
-  const heading = useStepFocus('saved');
-  const progress = data?.timeline.progress;
-  return <View style={styles.stack}>
-    {data?.experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample experiment · Sample check-in</Copy>}
-    <Title textRef={heading}>{`Day ${day} recorded.`}</Title>
-    {receipt}
-    {reminder}
-    {data && progress && !refreshing && !failed && <>
-      <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{`${data.timeline.recorded_days} of ${progress.total_days} days logged. ${progress.days_remaining ? `${progress.days_remaining} to go.` : 'That was the last day.'}`}</Copy>
-      <View style={local.dots}>
-        {data.timeline.days.map(item => {
-          const logged = item.state === 'recorded';
-          return <View key={item.day_number} accessible accessibilityLabel={`Day ${item.day_number}${logged ? ', logged' : ''}`} style={[local.dot, logged ? local.dotLogged : item.day_number <= day ? local.dotPast : local.dotFuture]}>
-            <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.dotText, logged && { color: COLORS['on-accent'] }]}>{logged ? '✓' : item.day_number}</Copy>
-          </View>;
-        })}
-      </View>
-    </>}
-    {failed && <Action label="Try again" secondary disabled={refreshing} onPress={onRetry} />}
-    <Action label="Go to Today" onPress={onBack} />
-    <Action label="Edit answers" secondary onPress={onChange} />
-  </View>;
-}
-
 const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   phase: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
   meter: { gap: SPACING.sm, paddingVertical: SPACING.md, borderTopWidth: LAYOUT.focusWidth / 2, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
@@ -184,10 +155,4 @@ const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMo
   change: { padding: SPACING.sm + SPACING.xs, gap: SPACING.xs, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
   pair: { flexDirection: 'row', gap: SPACING.sm },
   half: { flex: 1 },
-  dots: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs + 2 },
-  dot: { minWidth: LAYOUT.tapTarget, minHeight: LAYOUT.tapTarget, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill, borderWidth: LAYOUT.focusWidth / 2 },
-  dotLogged: { borderColor: COLORS.moss, backgroundColor: COLORS.moss },
-  dotPast: { borderColor: COLORS.control, backgroundColor: COLORS.paper },
-  dotFuture: { borderColor: COLORS.control, borderStyle: 'dashed' },
-  dotText: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption, color: COLORS.ink },
 }); });

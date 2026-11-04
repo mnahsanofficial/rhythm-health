@@ -75,9 +75,7 @@ describe('your lab with an experiment', () => {
     expect(screen.getByText('Keep your usual routine')).toBeVisible();
     expect(screen.getByText('Your change starts on day 4.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'See your experiment' })).toBeVisible();
-    expect(screen.getByText("Today's check-in is waiting.")).toBeVisible();
-    expect(screen.getByText('A baseline day: just record a normal day. About 30 seconds.')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Check in for day 2' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Check in now, day 2' })).toBeVisible();
   });
 
   test('a test day names the change, the timing and how many days remain', async () => {
@@ -85,21 +83,20 @@ describe('your lab with an experiment', () => {
     render(<MobileApp />);
     expect(await screen.findByText('Your small change')).toBeVisible();
     expect(screen.getByText(`${experiment.intervention.timing} · ${experiment.intervention.frequency}`)).toBeVisible();
-    expect(screen.getByText('A test day: tell us whether you made the change, then how it went. About 30 seconds.')).toBeVisible();
   });
 
   test('a recorded day says so and gives the next opening', async () => {
     setActive(testDay, timelineFixture(testDay, { recorded: [4], nextDayAt: '2026-11-05T18:45:00Z' }), [answer(4, 'intervention', true)]);
     render(<MobileApp />);
-    expect(await screen.findByText('Done for today')).toBeVisible();
-    expect(screen.getByText('Day 4 is recorded.')).toBeVisible();
+    expect(await screen.findByText('Day 4 recorded')).toBeVisible();
+    expect(screen.getByText('1 logged')).toBeVisible();
     expect(screen.getByRole('button', { name: "Edit answers" })).toBeVisible();
   });
 
   test('observations live on Progress, with recorded counts from the server', async () => {
     setActive(testDay, timelineFixture(testDay, { recorded: [1, 3, 4], missed: [2], nextDayAt: '2026-11-05T18:45:00Z' }), [answer(1, 'baseline'), answer(3, 'baseline'), answer(4, 'intervention', true)]);
     render(<MobileApp />);
-    await screen.findByText('Day 4 of 10');
+    await screen.findByText('Day 4 recorded');
     await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Progress' })); });
     expect(await screen.findByText('Day by day')).toBeVisible();
     expect(screen.getByText('3 of 10 days recorded')).toBeVisible();
@@ -160,7 +157,7 @@ describe('experiment page', () => {
     setActive(testDay);
     await openPage();
     await screen.findByText('Your timeline');
-    await press('Check in for day 4');
+    await press('Check in now, day 4');
     await press('Close');
     expect(await screen.findByText('Your timeline')).toBeVisible();
   });

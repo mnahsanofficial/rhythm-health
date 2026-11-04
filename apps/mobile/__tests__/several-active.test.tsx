@@ -86,7 +86,7 @@ describe('your lab with several experiments', () => {
     expect(screen.getByText(second.question)).toBeVisible();
     expect(screen.getByText('Day 2 of 10')).toBeVisible();
     expect(screen.getByText('Day 5 of 10')).toBeVisible();
-    await press('Check in for day 5');
+    await press('Check in now, day 5');
     await waitFor(() => expect(calls).toContain('GET /api/experiments/second-id/checkins'));
     expect(calls).not.toContain('GET /api/experiments/first-id/checkins');
   });

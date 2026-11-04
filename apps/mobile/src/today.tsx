@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, AppState, StyleSheet, View } from 'react-native';
-import { LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
+import { AppState, StyleSheet, View } from 'react-native';
+import { LAYOUT, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
 import { SampleControls } from './sample-controls';
 import { BaselineContext } from './baseline-context';
 import { ExperimentDetail } from './experiment-detail';
@@ -8,7 +8,8 @@ import { Observations } from './progress';
 import { TodayCard } from './today-card';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
-import { CheckinForm, CheckinSaved } from './checkin';
+import { Celebration } from './celebration';
+import { CheckinForm } from './checkin';
 import { CombinedCheckin } from './combined-checkin';
 import { getTodayCheckin } from './lib/checkins';
 import type { Section } from './app-header';
@@ -27,7 +28,7 @@ const hidden = { display: 'none' } as const;
 export type DayData = { experiment: Experiment; timeline: ExperimentTimeline };
 export function Today({ token, offline, profile, onExpired, section, navigation, onSection, editProfile, email = 'your account', onSignOut }: {
   token: string; offline: boolean; profile: Profile; onExpired: () => void; section: Section; navigation: number; onSection: (next: Section) => void; editProfile?: () => void; email?: string; onSignOut?: () => void;
-}) { const labStyles = useLabStyles(); const styles = useStyles();
+}) { const styles = useStyles();
   const { service: reminders, state: reminderState } = useReminders();
   const [detail, setDetail] = useState(false);
   const [askKey, setAskKey] = useState(0);
@@ -121,8 +122,6 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
       onBack={() => { setEditing(null); void load(); }}
       onSaved={() => { setSavedDay(editing.timeline.progress.day_number); setEditing(null); void load(); }} />;
-    if (savedDay !== null) return <CheckinSaved day={savedDay} data={data} refreshing={busy} failed={error !== null} receipt={<SavedReceipt failed={error !== null} />} reminder={<ReminderNotice />} onRetry={() => void load()}
-      onBack={() => { setSavedDay(null); void load(); }} onChange={() => { setSavedDay(null); if (data) setEditing(data); }} />;
     if (report) return <LabReportScreen key={report.id} id={report.id} initial={report.initial} token={token} offline={offline} onExpired={onExpired}
       backTo={section === 'history' ? 'History' : section === 'demo' ? 'Example' : 'Today'}
       onBack={() => { setReport(null); void load(); }}
@@ -153,8 +152,8 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
       {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
         : entries.length === 0 ? sampleControls : entries.length === 1 ? <>
           {sampleControls}
-          <ActiveLab data={entries[0]} onDetail={() => openDetail(entries[0])} />
           <TodayCard data={entries[0]} disabled={disabled} onCheckin={() => checkin(entries[0])} onOpenReport={() => setReport({ id: entries[0].experiment.id })} />
+          <ActiveLab data={entries[0]} onDetail={() => openDetail(entries[0])} />
           {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
         </> : <>
           {sampleControls}
@@ -165,21 +164,19 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
             <Action label={loaded.today.all_recorded ? "Edit answers" : 'Check in for today'} secondary={loaded.today.all_recorded} disabled={disabled} onPress={() => setCombined(loaded.today)} />
           </View>}
           {entries.map(entry => <View key={entry.experiment.id} style={styles.divider}>
-            <Copy style={labStyles.day}>{dayLabel(entry.timeline)}</Copy>
-            <ExperimentSummary data={entry} onDetail={() => openDetail(entry)} />
             <TodayCard data={entry} disabled={disabled} onCheckin={() => checkin(entry)} onOpenReport={() => setReport({ id: entry.experiment.id })} />
+            <ExperimentSummary data={entry} onDetail={() => openDetail(entry)} />
           </View>)}
           {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
         </>}
     </View>
   );
   // The flow keeps this one place, hidden or not: moving it would remount it and lose a paid plan.
-  return <View style={styles.stack}>{flow}{content()}</View>;
-}
-
-function dayLabel({ progress }: ExperimentTimeline) {
-  return progress.state === 'in_progress' ? `Day ${progress.day_number} of ${progress.total_days}`
-    : progress.state === 'ended' ? 'Experiment days ended' : progress.state === 'completed' ? 'Completed' : 'Not started';
+  const saved = savedDay !== null && data?.timeline ? data.timeline : null;
+  const fresh = saved && !busy && error === null ? saved : null;
+  return <View style={styles.stack}>{flow}{content()}
+    {savedDay !== null && <Celebration day={savedDay} totalDays={saved?.progress.total_days ?? null} recordedDays={fresh?.recorded_days ?? null} daysLeft={fresh?.progress.days_remaining ?? null} seeded={Boolean(data?.experiment.is_seeded)} onDone={() => setSavedDay(null)} />}
+  </View>;
 }
 
 /** Everything running, day by day. The comparison across experiments arrives with its own endpoint. */
@@ -197,9 +194,8 @@ function ProgressScreen({ entries, updatedAt, token, offline, onExpired }: { ent
   </View>;
 }
 
-function ActiveLab({ data, onDetail }: { data: DayData; onDetail: () => void }) { const labStyles = useLabStyles();
+function ActiveLab({ data, onDetail }: { data: DayData; onDetail: () => void }) {
   return <>
-    <Copy style={labStyles.day}>{dayLabel(data.timeline)}</Copy>
     <ExperimentSummary data={data} baseline onDetail={onDetail} />
   </>;
 }
@@ -218,32 +214,8 @@ function ExperimentSummary({ data: { experiment, timeline }, baseline: showBasel
     <ForwardLink label={progress.state === 'ended' && !experiment.is_seeded ? 'See results' : 'See your experiment'} onPress={onDetail} />
   </>;
 }
-const useLabStyles = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
-  day: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
+const useLabStyles = themedStyles(COLORS => StyleSheet.create({
   caption: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   change: { gap: SPACING.xs, borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.moss, paddingLeft: SPACING.md },
   action: { ...NATIVE_TYPOGRAPHY.lead },
-}); });
-
-function SavedReceipt({ failed }: { failed: boolean }) {
-  const [opacity] = useState(() => new Animated.Value(1));
-  useEffect(() => {
-    let active = true;
-    let animation: Animated.CompositeAnimation | undefined;
-    const animate = (reduced: boolean) => {
-      animation?.stop(); opacity.setValue(1);
-      if (active && !reduced) {
-        opacity.setValue(0);
-        animation = Animated.timing(opacity, { toValue: 1, duration: MOTION_DURATION_MS.response, useNativeDriver: true });
-        animation.start();
-      }
-    };
-    AccessibilityInfo.isReduceMotionEnabled().then(animate).catch(() => { opacity.setValue(1); });
-    const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', animate);
-    return () => { active = false; animation?.stop(); listener.remove(); };
-  }, [opacity]);
-  return <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
-    <Animated.View accessible={false} style={{ opacity }}><Copy>✓</Copy></Animated.View>
-    <Status>{failed ? 'Your check-in was saved. Refresh Today to see your progress.' : 'Check-in saved.'}</Status>
-  </View>;
-}
+}));

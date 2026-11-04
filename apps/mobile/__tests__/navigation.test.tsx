@@ -219,7 +219,7 @@ describe('flows close with one ×', () => {
 
   test('the logo asks first when it would lose typed answers', async () => {
     await withRunning();
-    await press(/Check in for day/);
+    await press(/Check in now, day/);
     await screen.findByRole('header', { name: "Today's check-in." });
     await act(async () => { fireEvent.press(screen.getAllByRole('radio')[0]); });
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
@@ -230,13 +230,13 @@ describe('flows close with one ×', () => {
 
   test('the check-in closes with ×, asking only once something is answered', async () => {
     await withRunning();
-    await press(/Check in for day/);
+    await press(/Check in now, day/);
     await screen.findByRole('header', { name: "Today's check-in." });
     expect(screen.queryByText(/[←‹]/)).toBeNull();
     await press('Close');
     expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
     expect(screen.queryByText('Leave without saving?')).toBeNull();
-    await press(/Check in for day/);
+    await press(/Check in now, day/);
     await screen.findByRole('header', { name: "Today's check-in." });
     const choice = screen.getAllByRole('radio')[0];
     await act(async () => { fireEvent.press(choice); });

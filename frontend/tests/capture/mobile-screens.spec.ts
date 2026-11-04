@@ -87,6 +87,12 @@ for (const scheme of ["light", "dark"] as const) {
     await page.evaluate(() => { for (const node of document.querySelectorAll("div")) if (node.scrollHeight > node.clientHeight + 200) node.scrollTop = node.scrollHeight; });
     await shot("07-setup-review-rows-scrolled");
     await button("Save my rhythm").click();
+    await shot("07a-guide-step-1", () => page.getByText("Example · Step 1 of 3").waitFor());
+    await page.getByRole("radio", { name: "Yes, I made the change" }).click();
+    await shot("07b-guide-step-2");
+    await page.getByRole("radio", { name: "Morning energy: 7" }).click();
+    await shot("07c-guide-step-3");
+    await button("Save example").click();
 
     await shot("08-ask", () => page.getByRole("heading", { name: "Ask a question." }).waitFor());
     await page.getByRole("textbox").first().fill(QUESTION);
@@ -118,8 +124,17 @@ for (const scheme of ["light", "dark"] as const) {
     await shot("19-today-active", () => tab("Today").waitFor());
     await shot("20-progress-active", () => tab("Progress").click());
     await tab("Today").click();
-    await shot("21-checkin", async () => { await button(/^Check in for day/).click(); await button("Save check-in").waitFor(); });
+    await shot("21-checkin", async () => { await button(/^Check in now/).click(); await button("Save check-in").waitFor(); });
     await page.setViewportSize({ width: 320, height: 640 });
     await shot("22-checkin-320");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("radio", { name: "Not today" }).click();
+    for (const metric of proposeResponse.proposal!.metrics) await page.getByRole("radio", { name: `${metric.label}: 7` }).click();
+    await button("Save check-in").click();
+    await page.getByText(/Day 4 recorded/).first().waitFor();
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${folder}/23-celebration.png` });
+    await page.waitForTimeout(2200);
+    await page.screenshot({ path: `${folder}/24-today-after.png` });
   });
 }
