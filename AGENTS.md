@@ -51,6 +51,17 @@ See [`docs/rules/testing.md`](docs/rules/testing.md).
    - Never print, echo or paste a secret value, not even in a response: these logs are public.
 4. **No calorie counting, weight targets or medical claims**, anywhere in the product.
 
+## End of session
+
+Before a session ends, regenerate its log and commit it, so the last turns are never left out:
+
+1. Regenerate the log. In Claude Code, from the repo root, with the session's own transcript:
+   ```bash
+   echo '{"transcript_path":"<transcript>.jsonl"}' | CLAUDE_PROJECT_DIR="$PWD" python3 scripts/claude-log-hook.py
+   ```
+   For Codex, pipe `{"session_id":"…","transcript_path":"…","cwd":"…"}` into `scripts/extract-log-codex.py`.
+2. Commit `.claude-logs/` with a `chore(logs): …` commit on the current branch, and push it. If that branch's PR is already merged, use a new `chore/logs-…` branch from `origin/main` and open a PR.
+
 ## Pair rule
 
 V2 work is split by feature, not by layer: Shakeb and Nazmul both work across frontend, backend and database. Full rule: [`docs/rules/pair-rule.md`](docs/rules/pair-rule.md).
