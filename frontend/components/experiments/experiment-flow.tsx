@@ -1,252 +1,22 @@
 "use client";
-
-import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { ApiError } from "@/lib/api/client";
 import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
-import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
+import { signedPercent } from "@/lib/report/copy";
+import type { Profile, ProposeResponse } from "@/lib/types/api";
 import { closeButton, CloseIcon } from "@/components/nav/close-icon";
 import { useLeaveGuard, useNav } from "@/components/nav/navigation";
 import { PersonalGuess } from "@/components/experiments/personal-guess";
+import { ProposalPreview } from "@/components/experiments/proposal-preview";
+import { ProposalSkeleton } from "@/components/experiments/proposal-skeleton";
+import { starters } from "@/components/experiments/starters";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
 import { QuestionForm } from "@/components/experiments/question-form";
-import { GOAL_QUESTIONS } from "@/components/onboarding/steps";
 import { button } from "@/components/ui/button";
 
-const primary = button("primary");
 const secondary = button("secondary");
-
-function signedPercent(value: number) {
-  return `${value > 0 ? "+" : ""}${value}%`;
-}
-
-function PredictionRange({ min, max }: { min: number; max: number }) {
-  const reduce = useReducedMotion();
-  const extent = Math.max(Math.abs(min), Math.abs(max), 1);
-  const span = extent * 2;
-  const position = (value: number) => ((value + extent) / span) * 100;
-  const left = position(Math.min(min, max));
-  const width = position(Math.max(min, max)) - left;
-  const endpoint = Math.round(extent);
-
-  return (
-    <div className="mt-5" aria-label={`Expected change range ${signedPercent(min)} to ${signedPercent(max)}`}>
-      <div className="relative h-3 rounded-pill bg-line">
-        <div className="absolute inset-y-0 w-px bg-ink/50" style={{ left: "50%" }} />
-        <motion.div
-          initial={reduce ? false : { scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: reduce ? 0 : MOTION_DURATION.reveal, ease: MOTION_EASE.settle }}
-          style={{ left: `${left}%`, width: `${Math.max(width, 3)}%`, transformOrigin: "left" }}
-          className="absolute inset-y-0 rounded-pill bg-night"
-        />
-      </div>
-      <div className="mt-2 flex justify-between font-mono text-caption text-muted">
-        <span>{signedPercent(-endpoint)}</span>
-        <span>0%</span>
-        <span>{signedPercent(endpoint)}</span>
-      </div>
-    </div>
-  );
-}
-
-export function ForecastCard({ prediction, metrics }: {
-  prediction: Experiment["prediction"];
-  metrics: Experiment["metrics"];
-}) {
-  const reduce = useReducedMotion();
-  const metricLabel = metrics.find((metric) => metric.key === prediction.target_metric)?.label
-    ?? prediction.target_metric;
-  const directionText = {
-    increase: "likely to go up",
-    decrease: "likely to go down",
-    no_change: "likely to stay about the same",
-  }[prediction.direction];
-
-  return (
-    <div className="rounded-card border-t-4 border-night bg-night-tint p-5 sm:p-7">
-      <p className="text-caption font-medium text-night">The original forecast</p>
-      <h2 className="mt-2 font-display text-title">{metricLabel} is {directionText}</h2>
-      <p className="mt-4 font-mono text-headline tracking-tight tabular-nums">
-        <motion.span initial={reduce ? false : { opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: reduce ? 0 : MOTION_DURATION.response }}>
-          {signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}
-        </motion.span>
-      </p>
-      <PredictionRange min={prediction.expected_change_min} max={prediction.expected_change_max} />
-      <p className="mt-5 text-caption text-muted">Confidence: <span className="font-medium capitalize text-ink">{prediction.confidence}</span></p>
-      <p className="mt-3">{prediction.reasoning}</p>
-      {prediction.uncertainty_factors.length > 0 && (
-        <div className="mt-4">
-          <p className="text-caption font-medium">Things that may affect the result</p>
-          <ul className="mt-2 list-inside list-disc text-caption text-muted">
-            {prediction.uncertainty_factors.map((factor) => <li key={factor}>{factor}</li>)}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProposalPreview({ result, onStart, onAskSomethingElse, starting, headingLevel }: {
-  result: ProposeResponse;
-  onStart: () => void;
-  onAskSomethingElse: () => void;
-  starting: boolean;
-  headingLevel: 1 | 2;
-}) {
-  const proposal = result.proposal;
-  const prediction = result.prediction;
-  if (!proposal || !prediction) return null;
-  const Heading = headingLevel === 1 ? "h1" : "h2";
-  const totalDays = proposal.baseline_days + proposal.intervention_days;
-
-  return (
-    <section
-      aria-label="Experiment and prediction preview"
-      className="mt-6"
-    >
-      {result.classification.risk === "review" && (
-        <div role="note" className="mb-6 rounded-card bg-clay-tint p-4 text-clay">
-          <p className="font-medium">A note before you begin</p>
-          <p className="mt-1">{result.safety.reason}</p>
-        </div>
-      )}
-
-      <p className="font-mono text-caption text-moss">Your question</p>
-      <Heading className="mt-2 max-w-4xl font-display text-headline tracking-tight sm:text-display-sm">{proposal.question}</Heading>
-
-      <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
-      <div>
-
-      <div>
-        <h2 className="font-display text-title">The hypothesis</h2>
-        <p className="mt-2 text-muted">{proposal.hypothesis}</p>
-      </div>
-
-      <div className="mt-7 rounded-card bg-oat p-5">
-        <h2 className="font-display text-title">The small change</h2>
-        <p className="mt-3 font-medium">{proposal.intervention.action}</p>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-caption text-muted">When</dt>
-            <dd>{proposal.intervention.timing}</dd>
-          </div>
-          <div>
-            <dt className="text-caption text-muted">How often</dt>
-            <dd>{proposal.intervention.frequency}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <div className="mt-7">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-display text-title">A {totalDays}-day timeline</h2>
-          <p className="text-caption text-muted">{proposal.baseline_days} baseline · {proposal.intervention_days} test</p>
-        </div>
-        <ol className="mt-4 grid grid-cols-5 gap-2 sm:grid-cols-10">
-          {Array.from({ length: totalDays }, (_, index) => {
-            const baseline = index < proposal.baseline_days;
-            return (
-              <li key={index} className="min-w-0 text-center">
-                <span className={`mx-auto grid size-9 place-items-center rounded-pill font-mono text-caption ${baseline ? "bg-night-tint text-night" : "bg-moss-tint text-moss"}`}>
-                  {index + 1}
-                </span>
-                <span className="mt-1 block text-[11px] leading-tight text-muted">
-                  {baseline ? "Baseline" : "Test"}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
-
-      <div className="mt-7 border-t border-line pt-6">
-        <h2 className="font-display text-title">What we&apos;ll notice</h2>
-        <ul className="mt-3 space-y-2">
-          {proposal.metrics.map((metric) => (
-            <li key={metric.key} className="flex items-center gap-3">
-              <span aria-hidden="true" className={`size-2 shrink-0 rounded-pill ${metric.primary ? "bg-moss" : "bg-muted"}`} />
-              <span>{metric.label}</span>
-              {metric.primary && <span className="text-caption text-muted">Primary</span>}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      </div>
-      <aside className="lg:sticky lg:top-8" aria-label="Your prediction">
-        <ForecastCard prediction={prediction} metrics={proposal.metrics} />
-      </aside>
-      </div>
-
-      <div className="mt-7 rounded-card border border-line p-4 text-body">
-        <p className="font-medium">This plan and prediction become fixed once you start.</p>
-        <p className="mt-1 text-caption text-muted">Your original forecast stays in place so you can compare it with what happens.</p>
-      </div>
-
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" onClick={onStart} disabled={starting} className={primary}>
-          {starting ? "Saving your experiment…" : "Start this experiment"}
-        </button>
-        <button type="button" onClick={onAskSomethingElse} disabled={starting} className={secondary}>
-          Ask something else
-        </button>
-      </div>
-    </section>
-  );
-}
-
-function starters(profile: Profile): string[] {
-  const questions = profile.goals.slice(0, 2).map((goal) =>
-    GOAL_QUESTIONS[goal as keyof typeof GOAL_QUESTIONS] ?? `What small change could help with: ${goal}?`,
-  );
-  const examples = [
-    { question: "Does walking after dinner improve my sleep?", goals: ["Fall asleep faster"] },
-    { question: "Does less caffeine improve my focus?", goals: ["Better focus"] },
-    { question: "Does waking earlier actually improve my productivity?", goals: ["More energy in the morning"] },
-  ];
-  const distinctExamples = examples
-    .filter(({ goals }) => !profile.goals.some((goal) => goals.includes(goal)))
-    .map(({ question }) => question);
-  return [...new Set([...questions, ...distinctExamples])].filter((question) => question.length <= 500);
-}
-
-function ProposalSkeleton() {
-  return (
-    <section aria-label="Preparing your experiment" className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
-      <p role="status" className="text-lead font-medium">
-        Finding a small change you can test…
-      </p>
-      <p className="mt-2 text-muted">Your plan and forecast will arrive together. This can take a little while.</p>
-      <ol aria-label="What goes into your experiment" className="mt-6 grid gap-4 sm:grid-cols-3">
-        {[
-          ["01", "A suitable question", "Check that this fits a small habit experiment."],
-          ["02", "A plan for your day", "Shape one change around your routine."],
-          ["03", "An honest forecast", "Estimate a range, including what is uncertain."],
-        ].map(([number, title, description]) => (
-          <li key={number} className="border-t border-line pt-3">
-            <span aria-hidden="true" className="font-mono text-caption text-moss">{number}</span>
-            <p className="mt-1 font-medium">{title}</p>
-            <p className="mt-1 text-caption text-muted">{description}</p>
-          </li>
-        ))}
-      </ol>
-      <div aria-hidden="true" className="mt-7 space-y-5 motion-safe:animate-pulse">
-        <div className="h-8 w-3/4 rounded-pill bg-line" />
-        <div className="h-16 rounded-card bg-oat" />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-24 rounded-card bg-oat" />
-          <div className="h-24 rounded-card bg-moss-tint" />
-        </div>
-        <div className="h-24 rounded-card bg-oat" />
-      </div>
-    </section>
-  );
-}
 
 /** A 409 can mean an earlier start landed and only its response was lost, so read before reporting. */
 async function alreadyStarted(id: string) {
@@ -477,7 +247,7 @@ export function ExperimentFlow({
             )}
             {personalGuess !== null && (
               <p className="mt-4 border-l-2 border-moss pl-4 text-body">
-                Your guess: <span className="font-mono">{signedPercent(personalGuess)}</span> change from normal days. Locked before the AI reveal.
+                Your guess: <span className="font-mono">{signedPercent(personalGuess, 2)}</span> change from normal days. Locked before the AI reveal.
               </p>
             )}
             <ProposalPreview

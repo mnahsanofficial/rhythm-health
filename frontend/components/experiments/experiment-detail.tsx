@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
 import { BackLink, backTarget } from "@/components/nav/back-link";
 import { useNav } from "@/components/nav/navigation";
-import { ForecastCard } from "@/components/experiments/new-experiment";
+import { ForecastCard } from "@/components/experiments/forecast-card";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins } from "@/lib/data/checkins";

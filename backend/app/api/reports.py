@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,11 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.deps import db_error, owned_experiment, profile_id_for
 from app.auth.supabase import get_current_user
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
-from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
-from app.repositories import checkins, experiments, profiles, reports
+from app.integrations.supabase import SupabaseUnavailable
+from app.repositories import checkins, profiles, reports
 from app.schemas.analysis import Analysis
 from app.schemas.lab_report import LabReport
-from app.services import analysis
+from app.services import completion
 from app.services.lab_report import build_lab_report, narrative_from_row, narrative_to_columns
 from app.services.report_writer import write_narrative
 
@@ -25,45 +24,13 @@ def complete_experiment(experiment_id: UUID, user_id: str = Depends(get_current_
     and never depends on the AI service.
     """
     row = owned_experiment(user_id, experiment_id)
-    if row["status"] == "completed":
-        raise HTTPException(status_code=409, detail="This experiment is already completed")
-    if row["status"] != "active":
-        raise HTTPException(status_code=409, detail="Only an active experiment can be completed")
-
-    profile_id = profile_id_for(user_id)
     try:
-        logged = checkins.list_for_experiment(str(experiment_id))
-        # Read before writing: a failure here must not save a report that omits an overlap.
-        others = [] if row.get("is_seeded") else experiments.list_for_profile(profile_id)
+        completion.ensure_can_complete(row)
+        return completion.complete_experiment(row, profile_id_for(user_id), str(experiment_id))
+    except completion.CompletionConflict as conflict:
+        raise HTTPException(status_code=409, detail=conflict.detail)
     except SupabaseUnavailable:
         raise db_error()
-
-    need_base, need_inter = analysis.required_checkins(row["baseline_days"], row["intervention_days"])
-    have_base, have_inter = analysis.checkin_counts(logged)
-    if have_base < need_base or have_inter < need_inter:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "message": "Not enough check-ins to complete this experiment yet",
-                "baseline_checkins": have_base,
-                "baseline_required": need_base,
-                "intervention_checkins": have_inter,
-                "intervention_required": need_inter,
-            },
-        )
-
-    completed_at = datetime.now(UTC)
-    result = analysis.analyze(row, logged, completed_at, others)
-    try:
-        saved = reports.upsert(str(experiment_id), result.model_dump(mode="json"))
-        done = experiments.complete(profile_id, str(experiment_id), completed_at.isoformat())
-    except SupabaseConflict:
-        raise HTTPException(status_code=409, detail="This experiment is already completed")
-    except SupabaseUnavailable:
-        raise db_error()
-    if done is None:  # lost a race: no longer active
-        raise HTTPException(status_code=409, detail="This experiment is already completed")
-    return build_lab_report(done, saved, logged)
 
 
 @router.get("/report", response_model=LabReport)

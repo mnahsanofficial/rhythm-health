@@ -7,6 +7,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from app.config import settings
+from app.schemas.rows import DecisionAnswer, DecisionQuestion
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +89,8 @@ def _feedback(exc: ValueError) -> str:
 
 
 def decide(
-    *, task: str, model: str, state: dict, questions: dict, timeout: float = 30
-) -> dict:
+    *, task: str, model: str, state: dict[str, str], questions: dict[str, DecisionQuestion], timeout: float = 30
+) -> dict[str, DecisionAnswer]:
     """Typed decisions (Jev) via OpenRouter's Decisions API. Returns the `answers` map."""
     if not settings.openrouter_api_key:
         raise AIUnavailable("OpenRouter is not configured")

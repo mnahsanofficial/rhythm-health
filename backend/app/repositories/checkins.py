@@ -1,4 +1,5 @@
 from app.integrations.supabase import rest_request
+from app.schemas.rows import CheckinRow
 
 
 def upsert(experiment_id: str, day_number: int, values: dict) -> dict:
@@ -24,7 +25,7 @@ def upsert_many(rows: list[dict]) -> list[dict]:
     )
 
 
-def list_for_experiment(experiment_id: str) -> list[dict]:
+def list_for_experiment(experiment_id: str) -> list[CheckinRow]:
     return rest_request(
         "GET",
         "daily_checkins",

@@ -35,10 +35,9 @@ def test_only_an_active_experiment_can_be_completed(status, message):
 
 
 def test_the_service_saves_the_report_then_completes_the_experiment(db):
-    row = db.get_experiment("profile", EXP_ID)
-    report = completion.complete_experiment(row, "profile", EXP_ID)
+    report = completion.complete_experiment(db.experiment, db.experiment["profile_id"], EXP_ID)
     assert report.experiment.status == "completed"
-    assert db.report is not None
+    assert EXP_ID in db.reports
 
 
 def test_too_few_checkins_carry_the_counts(db, monkeypatch):

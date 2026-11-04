@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { useLeaveGuard } from "@/components/nav/navigation";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
-import { CheckinSkeleton, Shell, primaryButton, secondaryButton, without } from "@/components/checkins/checkin-form";
+import { ChangeQuestion } from "@/components/checkins/change-question";
+import { CheckinSkeleton, Shell, primaryButton, secondaryButton, without } from "@/components/checkins/checkin-chrome";
 import { MetricInput } from "@/components/checkins/metric-input";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
@@ -202,39 +203,18 @@ export function CombinedCheckin() {
         {testing.map((experiment) => {
           const field = `change:${experiment.id}`;
           return (
-            <fieldset key={experiment.id} aria-invalid={Boolean(fieldErrors[field])}>
-              <legend className="text-lead font-medium text-ink">Did you make the change today?</legend>
-              <div className="mt-2 rounded-card bg-moss-tint p-3 text-body text-ink">
-                <p>{experiment.action}</p>
-                <p className="mt-1 text-caption text-muted">When: {experiment.timing}</p>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {[{ v: true, label: "Yes" }, { v: false, label: "Not today" }].map(({ v, label }) => {
-                  const selected = answers.changes[experiment.id] === v;
-                  return (
-                    <label
-                      key={label}
-                      className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] active:scale-[0.98] motion-reduce:transition-none ${
-                        selected ? "border-moss bg-moss text-on-accent" : "border-control bg-paper text-ink hover:border-ink"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={field}
-                        checked={selected}
-                        onChange={() => {
-                          setAnswers((a) => ({ ...a, changes: { ...a.changes, [experiment.id]: v } }));
-                          setFieldErrors((e) => without(e, field));
-                        }}
-                        className="sr-only"
-                      />
-                      {label}
-                    </label>
-                  );
-                })}
-              </div>
-              {fieldErrors[field] && <p className="mt-2 text-caption font-medium text-clay">{fieldErrors[field]}</p>}
-            </fieldset>
+            <ChangeQuestion
+              key={experiment.id}
+              name={field}
+              action={experiment.action}
+              timing={experiment.timing}
+              value={answers.changes[experiment.id]}
+              error={fieldErrors[field]}
+              onChange={(v) => {
+                setAnswers((a) => ({ ...a, changes: { ...a.changes, [experiment.id]: v } }));
+                setFieldErrors((e) => without(e, field));
+              }}
+            />
           );
         })}
 
