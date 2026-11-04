@@ -289,6 +289,86 @@
         ]
       }
     },
+    "/api/experiments/progress-summary": {
+      "get": {
+        "summary": "Get Progress Summary",
+        "description": "Finished experiments compared, metric by metric, and the habits kept. Never calls AI.",
+        "operationId": "get_progress_summary_api_experiments_progress_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSummary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/experiments/{experiment_id}/outcome": {
+      "post": {
+        "summary": "Set Outcome",
+        "description": "What someone chose after finishing. A sample or an unfinished experiment has nothing to choose.",
+        "operationId": "set_outcome_api_experiments__experiment_id__outcome_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "experiment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Experiment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutcomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/experiments/{experiment_id}": {
       "get": {
         "summary": "Get Experiment",
@@ -2137,6 +2217,40 @@
         ],
         "title": "Intervention"
       },
+      "KeptHabit": {
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "habit": {
+            "type": "string",
+            "title": "Habit"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "question",
+          "habit"
+        ],
+        "title": "KeptHabit"
+      },
       "LabReport": {
         "properties": {
           "experiment": {
@@ -2372,6 +2486,111 @@
         ],
         "title": "MetricAnalysis"
       },
+      "MetricRun": {
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "baseline_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Mean"
+          },
+          "result_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Mean"
+          },
+          "percent_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Percent Change"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "question"
+        ],
+        "title": "MetricRun",
+        "description": "One metric in one finished experiment: your normal days against your test days."
+      },
+      "MetricTrend": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/MetricRun"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "normal_change": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normal Change"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "type",
+          "runs"
+        ],
+        "title": "MetricTrend"
+      },
       "NextExperiment": {
         "properties": {
           "question": {
@@ -2389,6 +2608,47 @@
           "reason"
         ],
         "title": "NextExperiment"
+      },
+      "OutcomeOut": {
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "title": "Experiment Id"
+          },
+          "choice": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "variation",
+              "new"
+            ],
+            "title": "Choice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "experiment_id",
+          "choice"
+        ],
+        "title": "OutcomeOut"
+      },
+      "OutcomeRequest": {
+        "properties": {
+          "choice": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "variation",
+              "new"
+            ],
+            "title": "Choice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "choice"
+        ],
+        "title": "OutcomeRequest"
       },
       "Outlier": {
         "properties": {
@@ -2827,6 +3087,62 @@
           "updated_at"
         ],
         "title": "ProfileOut"
+      },
+      "ProgressExample": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricTrend"
+            },
+            "type": "array",
+            "title": "Metrics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "metrics"
+        ],
+        "title": "ProgressExample",
+        "description": "The demo sample, kept apart so it can't reach the real numbers above. Always shown labelled."
+      },
+      "ProgressSummary": {
+        "properties": {
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/MetricTrend"
+            },
+            "type": "array",
+            "title": "Metrics"
+          },
+          "kept": {
+            "items": {
+              "$ref": "#/components/schemas/KeptHabit"
+            },
+            "type": "array",
+            "title": "Kept"
+          },
+          "example": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProgressExample"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "metrics",
+          "kept"
+        ],
+        "title": "ProgressSummary"
       },
       "ProposeRequest": {
         "properties": {

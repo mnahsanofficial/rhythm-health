@@ -9,6 +9,9 @@ type Serialized<T> = T extends readonly (infer U)[]
     : T;
 
 export type Calibration = Serialized<components["schemas"]["Calibration"]>;
+export type ProgressSummary = Serialized<components["schemas"]["ProgressSummary"]>;
+export type MetricTrend = Serialized<components["schemas"]["MetricTrend"]>;
+export type OutcomeChoice = Serialized<components["schemas"]["OutcomeRequest"]>["choice"];
 export type SleepSchedule = components["schemas"]["SleepSchedule"];
 export type Classification = components["schemas"]["Classification"];
 export type SafetyDecision = components["schemas"]["SafetyDecision"];

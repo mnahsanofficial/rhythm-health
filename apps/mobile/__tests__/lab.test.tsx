@@ -149,6 +149,8 @@ describe('experiment page', () => {
     expect(await screen.findByText('Ready for your results.')).toBeVisible();
     await press('See results');
     await press('Yes, finish');
+    const report = await screen.findByRole('button', { name: 'See full Lab Report' });
+    await act(async () => { fireEvent.press(report); });
     expect(await screen.findByRole('button', { name: 'Reveal my result' })).toBeVisible();
     expect(calls.filter(call => call.endsWith('/complete'))).toHaveLength(1);
   });

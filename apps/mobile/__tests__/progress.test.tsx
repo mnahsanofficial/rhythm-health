@@ -28,6 +28,7 @@ beforeEach(() => {
   global.fetch = jest.fn(async (url, options) => {
     expect(options?.method).toBe('GET'); const path = new URL(String(url)).pathname; requests.push(path);
     if (path.endsWith('/checkins') && readStatus !== 200) return { ok: false, status: readStatus, json: async () => ({ detail: 'Answers unavailable' }) } as Response;
+    if (path === '/api/experiments/progress-summary') return { ok: true, status: 200, json: async () => ({ metrics: [], kept: [], example: null }) } as Response;
     return { ok: true, status: 200, json: async () => path === '/api/profile' ? profile : path.endsWith('/progress') ? timeline : path.endsWith('/checkins') ? answers : [active] } as Response;
   });
 });
