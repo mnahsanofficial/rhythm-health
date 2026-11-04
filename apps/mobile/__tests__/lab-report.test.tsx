@@ -215,6 +215,12 @@ describe('finishing from Today when all days are done', () => {
     expect(screen.queryByRole('button', { name: 'See your results' })).toBeNull();
   });
 
+  test('one short line says finishing locks the answers', async () => {
+    render(<MobileApp />);
+    await screen.findByRole('button', { name: 'See your results' });
+    expect(screen.getByText('Finishing locks your answers.')).toBeVisible();
+  });
+
   test('double taps send one finish', async () => {
     render(<MobileApp />);
     const button = await screen.findByRole('button', { name: 'See your results' });
