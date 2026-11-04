@@ -81,8 +81,9 @@ for (const width of [390, 768, 1440]) {
       expect.soft(Math.abs(actionBox.y + actionBox.height / 2 - dayBox.y - dayBox.height / 2), "the action aligns with the experiment day").toBeLessThan(2);
       expect.soft(actionBox.x, "the action sits to the right of the day").toBeGreaterThan(dayBox.x + dayBox.width);
       expect.soft(actionBox.x + actionBox.width, "the action stays inside the experiment column").toBeLessThanOrEqual(questionBox.x + questionBox.width + 1);
-      await expect.soft(toggle).toHaveCSS("background-color", "rgb(47, 107, 79)");
-      await expect.soft(toggle).toHaveCSS("color", "rgb(255, 253, 248)");
+      // A secondary action: today's check-in is the screen's one primary.
+      await expect.soft(toggle).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect.soft(toggle).toHaveCSS("color", "rgb(27, 36, 33)");
       await capture("active-lab");
       await toggle.focus();
       await page.keyboard.press("Enter");

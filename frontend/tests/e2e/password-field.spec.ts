@@ -17,6 +17,7 @@ for (const width of [320, 390, 1440]) {
     await installApiMocks(page);
     await page.goto("/sign-in");
     await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+    await page.waitForFunction(() => document.getAnimations().length === 0); // The screen has settled.
     const email = page.getByLabel("Email", { exact: true });
     const password = page.getByLabel("Password", { exact: true });
     await expect(password).toHaveAttribute("autocomplete", "current-password");
