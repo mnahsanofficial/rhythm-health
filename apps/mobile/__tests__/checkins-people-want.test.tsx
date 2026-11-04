@@ -131,6 +131,25 @@ describe('the celebration', () => {
   });
 });
 
+describe('updating a check-in', () => {
+  test('editing today\'s answers shows the same celebration as saving them', async () => {
+    const done = timelineFixture(running as never, { recorded: [1, 3, 4], missed: [2], nextDayAt: '2026-11-05T10:00:00Z' });
+    routes[`GET /api/experiments/${running.id}/progress`] = { body: done };
+    routes[`GET /api/experiments/${running.id}/checkins`] = { body: [{ id: 'saved', experiment_id: running.id, day_number: 4, phase: 'intervention', metric_values: { energy: 7, sleep_quality: 7 }, intervention_completed: false, note: null }] };
+    routes[`POST /api/experiments/${running.id}/checkins`] = { body: { id: 'saved' } };
+    render(<MobileApp />);
+    const edit = await screen.findByRole('button', { name: 'Edit answers' });
+    await act(async () => { fireEvent.press(edit); });
+    const update = await screen.findByRole('button', { name: 'Update check-in' });
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Sleep quality: 7' }));
+    await act(async () => { fireEvent.press(update); });
+    expect(await screen.findByText('6 days left')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('the Today card', () => {
   test('leads with the day and one action, and says when the day closes', async () => {
     render(<MobileApp />);
