@@ -134,6 +134,16 @@ def test_limits_default_to_five_and_three_and_blank_means_default():
     assert Settings(_env_file=None, ai_daily_limit_propose="9").ai_daily_limit_propose == 9
 
 
+def test_a_limit_of_zero_refuses_the_first_proposal_with_no_paid_call(ai, monkeypatch):
+    """How to see the message without paying: AI_DAILY_LIMIT_PROPOSE=0."""
+    assert Settings(_env_file=None, ai_daily_limit_propose="0").ai_daily_limit_propose == 0
+    monkeypatch.setattr(settings, "ai_daily_limit_propose", 0)
+    response = propose()
+    assert response.status_code == 429
+    assert response.json()["detail"]["message"] == "You've used all of today's experiment plans. Please come back tomorrow."
+    assert ai.posts == []
+
+
 def test_a_missing_table_never_blocks_a_proposal(ai, monkeypatch, ai_call_rows):
     """The app must keep working if this deploys before the migration is applied."""
     def down(*_a, **_k):

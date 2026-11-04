@@ -106,7 +106,7 @@ describe("new experiment flow", () => {
 
   it("explains the daily AI limit, keeps the question and offers no retry", async () => {
     const user = userEvent.setup();
-    const message = "You've made 5 experiment plans today, which is the daily limit. Please come back tomorrow.";
+    const message = "You've used all of today's experiment plans. Please come back tomorrow.";
     installProfileHandler();
     server.use(
       http.post(`${api}/api/experiments/propose`, () => HttpResponse.json(

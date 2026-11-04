@@ -149,7 +149,7 @@ describe("Lab Report flow", () => {
 
   it("shows the daily limit from POST /report without offering a retry", async () => {
     const user = userEvent.setup();
-    const message = "You've had 3 reports written today, which is the daily limit. You can write this one tomorrow.";
+    const message = "You've used all of today's written reports. You can write this one tomorrow.";
     server.use(
       http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(labReport)),
       http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),

@@ -11,12 +11,10 @@ from app.repositories import ai_calls
 logger = logging.getLogger(__name__)
 
 
-def _limit_message(kind: str, limit: int) -> str:
-    if kind == "propose":
-        plans = "experiment plan" if limit == 1 else "experiment plans"
-        return f"You've made {limit} {plans} today, which is the daily limit. Please come back tomorrow."
-    written = "report" if limit == 1 else "reports"
-    return f"You've had {limit} {written} written today, which is the daily limit. You can write this one tomorrow."
+LIMIT_MESSAGES = {
+    "propose": "You've used all of today's experiment plans. Please come back tomorrow.",
+    "report": "You've used all of today's written reports. You can write this one tomorrow.",
+}
 
 
 def ensure_within_daily_limit(profile_id: str, kind: Literal["propose", "report"]) -> None:
@@ -35,5 +33,5 @@ def ensure_within_daily_limit(profile_id: str, kind: Literal["propose", "report"
     if used >= limit:
         raise HTTPException(
             status_code=429,
-            detail={"code": "ai_daily_limit", "message": _limit_message(kind, limit), "limit": limit},
+            detail={"code": "ai_daily_limit", "message": LIMIT_MESSAGES[kind], "limit": limit},
         )

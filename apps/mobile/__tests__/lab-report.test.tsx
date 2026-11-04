@@ -379,7 +379,7 @@ describe('written report', () => {
 
   test('the daily limit shows its message, keeps the results and offers no retry', async () => {
     await openReport();
-    const text = "You've had 3 reports written today, which is the daily limit. You can write this one tomorrow.";
+    const text = "You've used all of today's written reports. You can write this one tomorrow.";
     queue(WRITE, { status: 429, body: { detail: { code: 'ai_daily_limit', message: text, limit: 3 } } });
     await press('Write my report');
     expect(await screen.findByText(`${text} Your results above are saved.`)).toBeVisible();

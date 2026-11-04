@@ -12,6 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[3]
 MIGRATION = ROOT / "supabase/migrations/20261104100000_ai_calls.sql"
 ROLLBACK = ROOT / "supabase/rollbacks/20261104100000_ai_calls.sql"
+LOCKDOWN = ROOT / "supabase/migrations/20261104100100_ai_calls_service_role_only.sql"
 # A clean process environment prevents PG* settings from selecting a real database.
 ENV = {"PATH": os.defpath, "LC_ALL": "C"}
 USER = "11111111-1111-1111-1111-111111111111"
@@ -60,10 +61,17 @@ def main():
                 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE SQL STABLE AS
                 $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
                 GRANT USAGE ON SCHEMA auth TO authenticated;
-                GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;""")
+                GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;
+                -- Supabase's default privileges, which gave these roles everything on a new table.
+                ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;""")
             for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
                 checked([*psql, "-f", str(path)])
             checked([*psql, "-f", str(MIGRATION)])  # Re-applying is safe.
+            checked([*psql, "-f", str(LOCKDOWN)])
+            grants = sql("SELECT string_agg(grantee || ':' || privilege_type, ',' ORDER BY grantee, privilege_type) "
+                         "FROM information_schema.role_table_grants WHERE table_name='ai_calls' "
+                         "AND grantee IN ('anon','authenticated','service_role')")
+            assert grants == "service_role:INSERT,service_role:SELECT", grants
 
             sql(f"""INSERT INTO auth.users VALUES ('{USER}');
                 INSERT INTO public.profiles(id, user_id, age_range, usual_sleep_hours, usual_sleep_schedule, activity_level)
@@ -81,6 +89,7 @@ def main():
 
             for role in ("authenticated", "anon"):
                 assert rejected(f"SET ROLE {role}; SELECT * FROM public.ai_calls")
+                assert rejected(f"SET ROLE {role}; TRUNCATE public.ai_calls")
                 assert rejected(f"SET ROLE {role}; INSERT INTO public.ai_calls(profile_id, kind, model, status, latency_ms) "
                                 f"VALUES ('{PROFILE}', 'propose', 'model', 'ok', 1)")
             assert sql("SELECT relrowsecurity FROM pg_class WHERE oid='public.ai_calls'::regclass") == "t"

@@ -215,7 +215,7 @@ test.each([
 
 test('the daily limit explains itself, keeps the question and offers no retry', async () => {
   await openAsk();
-  const text = "You've made 5 experiment plans today, which is the daily limit. Please come back tomorrow.";
+  const text = "You've used all of today's experiment plans. Please come back tomorrow.";
   queue(PROPOSE, { status: 429, body: { detail: { code: 'ai_daily_limit', message: text, limit: 5 } } });
   await submit();
   expect(await screen.findByText(new RegExp(text))).toBeVisible();
