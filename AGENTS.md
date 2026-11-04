@@ -38,7 +38,7 @@ See [`docs/rules/testing.md`](docs/rules/testing.md).
 1. **Session logs are committed.** Hooks write `.claude-logs/` automatically (see [`docs/logging.md`](docs/logging.md)).
    - Always commit it with your changes.
    - Never gitignore it, edit it or delete files from it.
-   - Don't change `scripts/extract-log.py`. It is the 8x guide's script, byte for byte.
+   - Don't change `scripts/extract-log.py`. It is the 8x guide's script plus one reviewed change to how it reads transcripts, and it writes the guide's format exactly (see [`docs/logging.md`](docs/logging.md#deviations-from-the-guide)). `npm test` pins it.
    - Start a new agent session for each task, and at least each day. A log is one session named by its start time, so a session left open for days hides that work under its first date. `npm test` checks every log (`npm run logs:check`).
 2. **A branch and a PR per feature, merged with a merge commit.**
    - Claude Code, Codex and Cursor may commit, push their own branches and open PRs directly, and refresh their own feature branch by merging `origin/main`. The people review and merge PRs.

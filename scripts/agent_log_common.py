@@ -1,6 +1,6 @@
 """Shared renderer for non-Claude agent logs (Codex, Cursor).
 
-Reuses the helpers from extract-log.py (the 8x guide script, kept unchanged)
+Reuses the helpers from extract-log.py (the 8x guide script)
 and writes the same markdown format to <repo>/.claude-logs/<timestamp>_<session-id>.md.
 """
 

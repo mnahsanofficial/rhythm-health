@@ -8,19 +8,19 @@ All agents write to that one folder, per 8x: no per-agent folders. The `agent:` 
 
 **Start a new agent session for each task, and never keep one open across days.** A log file is one session, named by the moment it started. A session left open for days becomes one huge file under its first date: that's how five days of work ended up looking like two sessions on 28–29 Oct (see [What went wrong](#what-went-wrong-audit-1-nov)). Short sessions also mean fewer automatic conversation summaries and background-task notices in the log.
 
-`npm test` runs `npm run logs:check`, which fails on a log with missing frontmatter, a wrong or `unknown` `github_user`, an empty prompt or an agent-generated prompt.
+`npm test` runs `npm run logs:check`, which fails on any drift from the guide's format, a wrong or `unknown` `github_user`, an empty prompt or an agent-generated prompt. Format drift means a wrong file name, frontmatter key or key order, header block, entry marker, entry field or field order, or any value that doesn't match when recomputed with the script's own functions.
 
 ## What's installed
 
 | Agent | Hook config (committed) | Script | Events |
 |---|---|---|---|
-| Claude Code | `.claude/settings.json` | `scripts/claude-log-hook.py`, which runs `scripts/extract-log.py`, the guide's script byte for byte (sha256 `440fc039…a735`) | `UserPromptSubmit`, `Stop` |
+| Claude Code | `.claude/settings.json` | `scripts/claude-log-hook.py`, which runs `scripts/extract-log.py`, the guide's script plus one reading change (see Deviations; sha256 `939d8138…257a`) | `UserPromptSubmit`, `Stop` |
 | Codex | `.codex/hooks.json` | `scripts/extract-log-codex.py` | `UserPromptSubmit`, `Stop` |
 | Cursor | `.cursor/hooks.json` | `scripts/extract-log-cursor.py` | `beforeSubmitPrompt`, `afterAgentResponse`, `stop` |
 
 The Codex and Cursor scripts share `scripts/agent_log_common.py`. It imports the guide script's helpers and renders the same format, plus one extra frontmatter line, `agent: codex|cursor`. It also resolves `github_user` for all three agents (see below).
 
-Checks: `scripts/check-logs.mjs` (run by `npm run logs:check`), with registered authors in `scripts/log-authors.json` and the listed exceptions for old logs in `scripts/log-waivers.json`. The hook and checker tests are in `scripts/tests/` (`npm run logs:test`).
+Checks: `scripts/check-logs.mjs` (run by `npm run logs:check`) and `scripts/check_log_format.py` (the exact format), with registered authors in `scripts/log-authors.json` and the listed exceptions for old logs in `scripts/log-waivers.json`. The hook and checker tests are in `scripts/tests/` (`npm run logs:test`).
 
 ## Deviations from the guide
 
@@ -32,7 +32,13 @@ cd "$CLAUDE_PROJECT_DIR" && python3 "$CLAUDE_PROJECT_DIR/scripts/claude-log-hook
 
 Anyone who clones the repo gets the same logging. The `cd` is there because Claude Code runs hooks in the session's *current* directory, which moves when the agent `cd`s.
 
-**A thin wrapper around the unchanged guide script.** `scripts/claude-log-hook.py` doesn't change what's written; it only makes sure the guide script logs the right session with the right name:
+**One change to how the guide script reads transcripts (4 Nov, approved by Nazmul).** The guide's script skipped two kinds of prompt a person really sent: prompts sent with an image, whose transcript entry is a list rather than a string, and prompts queued while the agent was working, which the transcript stores as a `queued_command` attachment. It now keeps the text of both, never image data, and only when the entry's `origin.kind` is `human`, so CI events, task notifications and interrupts are still not captured as new prompts. Only `is_user_prompt` and `extract_clean_log` differ from the guide, plus two small helpers. Everything that writes the output is identical, and `scripts/tests/test_log_format.py` checks that against the guide's text.
+
+This recovered 7 prompts across 4 logs (`94c5e335`, `758cdbea`, `3f4138de`, `f678fe6b`), which were regenerated. Because the script keeps the last reply before each prompt, the 5 replies just before those prompts came back with them, later `num=` values moved and the stats recomputed. No existing prompt or reply changed. Shakeb's 3 Claude logs (`ec52fa30`, `6242a36e`, `ec9382b8`) can't be regenerated here, because their transcripts are on Shakeb's machine.
+
+**Extra frontmatter lines.** Codex and Cursor logs add `agent:` right after `project:`, the only way to tell agents apart. The approved backfill `01a18219` also has `backfilled`, `backfilled_at` and `backfill_reason`, listed in `scripts/log-waivers.json`. The format check rejects any other key.
+
+**A thin wrapper around the guide script.** `scripts/claude-log-hook.py` doesn't change what's written; it only makes sure the guide script logs the right session with the right name:
 
 1. Claude Code passes the firing session's `transcript_path` on stdin. The guide script ignores it and logs whichever transcript changed last, so the wrapper touches that file first to make it the latest.
 2. It runs the guide script with Homebrew on `PATH` and `GITHUB_USER` set. The guide script reads `GITHUB_USER` before calling `gh`. The wrapper resolves it with `gh api user`, falling back to gh's local active account (`gh config get -h github.com user`) when the API can't be reached, so attribution doesn't become `unknown` offline or in a sandbox. It never hard-codes a name.
@@ -96,9 +102,9 @@ Expected lag: Claude Code saves a prompt to its transcript just after `UserPromp
 | **Attribution could read `unknown`** | `github_user` came only from `gh api user` with a 5-second timeout. Codex `01a184b2` flipped between `unknown` and `mnahsanofficial` from one rewrite to the next | Offline fallback to gh's active account in all three agents; `logs:check` rejects `unknown` and mismatched logins |
 | **Two sessions in one folder could log each other** | The guide script picks the most recently modified transcript, not the one that fired | The Claude Code wrapper marks the firing transcript first |
 
-What was already right: the format matches the guide in every log (same frontmatter fields and `CLAUDE_LOG_ENTRY` blocks; Codex and Cursor add `agent:`), the guide script is byte-identical, Codex's real prompts are captured exactly (99 of 99 in `01a184b2`, with no injected AGENTS.md text), no log has an empty prompt, and no log is stranded on an unmerged branch.
+What was already right: the format matches the guide in every log (same frontmatter fields and `CLAUDE_LOG_ENTRY` blocks; Codex and Cursor add `agent:`), the guide script was byte-identical at that date, Codex's real prompts are captured exactly (99 of 99 in `01a184b2`, with no injected AGENTS.md text), no log has an empty prompt, and no log is stranded on an unmerged branch.
 
-Still in the logs, by decision: the guide script records Claude Code's automatic conversation summaries and background-task notices as prompts (10 of 91 in `94c5e335`). The script isn't changed; shorter sessions make them rare.
+Still in the logs, by decision: the guide script records Claude Code's automatic conversation summaries and background-task notices as prompts (10 of 91 in `94c5e335`). They stay, because the guide's script writes them; shorter sessions make them rare.
 
 **Missing-session audit and approved backfill:**
 
