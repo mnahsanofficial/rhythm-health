@@ -102,7 +102,7 @@ describe('check-in', () => {
     routes[`GET /api/experiments/${ID}/checkins`] = { body: [saved] };
     await openCheckin();
     expect(screen.getByText("You've already checked in today. Saving again replaces those answers.")).toBeVisible();
-    expect(screen.getByRole('button', { name: "Update today's check-in" })).toBeVisible();
+    expect(screen.getByRole('button', { name: "Update check-in" })).toBeVisible();
     expect(screen.getByText('3 of 3 answered')).toBeVisible();
   });
 
@@ -110,7 +110,7 @@ describe('check-in', () => {
     await openCheckin();
     answerAll();
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(testDay, { recorded: [1, 2, 3, 4] }) };
-    await press("Save today's check-in");
+    await press("Save check-in");
     expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
     expect(await screen.findByText('4 of 10 days logged. 6 to go.')).toBeVisible();
     expect(screen.getAllByLabelText(/^Day \d+, logged$/)).toHaveLength(4);
@@ -119,13 +119,13 @@ describe('check-in', () => {
     expect(await screen.findByText('Done for today')).toBeVisible();
   });
 
-  test('Change today\'s answers reopens the form from the confirmation', async () => {
+  test('Edit answers reopens the form from the confirmation', async () => {
     await openCheckin();
     answerAll();
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(testDay, { recorded: [4] }) };
-    await press("Save today's check-in");
+    await press("Save check-in");
     await screen.findByRole('header', { name: 'Day 4 recorded.' });
-    await press("Change today's answers");
+    await press("Edit answers");
     expect(await screen.findByLabelText('Optional note')).toBeVisible();
   });
 
@@ -138,7 +138,7 @@ describe('check-in', () => {
       if (options?.method === 'POST') routes[`GET /api/experiments/${ID}/progress`] = { status: 503, body: {} };
       return reply;
     });
-    await press("Save today's check-in");
+    await press("Save check-in");
     expect(await screen.findByRole('header', { name: 'Day 4 recorded.' })).toBeVisible();
     expect(await screen.findByText('Your check-in was saved. Refresh Today to see your progress.')).toBeVisible();
     expect(calls.filter(call => call === `POST /api/experiments/${ID}/checkins`)).toHaveLength(1);
@@ -176,7 +176,7 @@ describe('question flow', () => {
     let release!: (reply: Response) => void;
     const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
     fake.mockImplementation((url, options) => String(url).endsWith('/propose') ? new Promise<Response>(resolve => { release = resolve; }) : original(url, options));
-    await press('Design my experiment');
+    await press('Design experiment');
     const panel = await screen.findByText('Finding a small change you can test…');
     expect(panel).toBeVisible();
     for (const text of ['A suitable question', 'A plan for your day', 'An honest forecast', 'Check that this fits a small habit experiment.']) expect(screen.getByText(text)).toBeVisible();
@@ -187,7 +187,7 @@ describe('question flow', () => {
     routes['POST /api/experiments/propose'] = { body: proposeResponse };
     render(<MobileApp />);
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
-    await press('Design my experiment');
+    await press('Design experiment');
     const days = within(await screen.findByTestId('plan-days'));
     expect(days.getAllByText('Baseline')).toHaveLength(3);
     expect(days.getAllByText('Test')).toHaveLength(7);

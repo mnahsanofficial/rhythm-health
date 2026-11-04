@@ -133,14 +133,14 @@ describe('your lab with several experiments', () => {
     expect(screen.getByText(`For: ${first.question}`)).toBeVisible();
     expect(screen.getAllByText('Did you make the change today?')).toHaveLength(1);
     expect(screen.getByText('Change 2')).toBeVisible();
-    await press("Save today's check-in");
+    await press("Save check-in");
     expect(await screen.findByText('An answer is missing or needs checking. Review the fields below.')).toBeVisible();
     expect(body).toBeUndefined();
     fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
     fireEvent.changeText(screen.getByLabelText('Optional note'), ' late night ');
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
-    await press("Save today's check-in");
+    await press("Save check-in");
     await waitFor(() => expect(body).toEqual({
       revision: 'rev-1', note: 'late night', changes: { 'second-id': true },
       answers: { 'first-id:energy': 7, 'first-id:focus': 6 },
@@ -169,7 +169,7 @@ describe('your lab with several experiments', () => {
     fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
-    await press("Save today's check-in");
+    await press("Save check-in");
     expect(await screen.findByText("Today's check-in has changed. Reload it to see the current questions.")).toBeVisible();
     expect(screen.getByRole('button', { name: "Reload today's check-in" })).toBeVisible();
   });
@@ -179,7 +179,7 @@ describe('your lab with several experiments', () => {
     routes['GET /api/checkins/today'] = { body: dueToday([first, second], true) };
     render(<MobileApp />);
     expect(await screen.findByText('Done for today: all 2 check-ins are recorded.')).toBeVisible();
-    expect(screen.getByRole('button', { name: "Change today's answers" })).toBeVisible();
+    expect(screen.getByRole('button', { name: "Edit answers" })).toBeVisible();
   });
 
   test('only one real experiment due means no combined check-in', async () => {
@@ -195,7 +195,7 @@ describe('your lab with several experiments', () => {
     expect(await screen.findByRole('header', { name: '3 experiments running' })).toBeVisible();
     expect(screen.getByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Test another habit' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Design my experiment' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Design experiment' })).toBeNull();
   });
 
   test('one failed read shows the error and Try again, never a partial list', async () => {

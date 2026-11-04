@@ -46,17 +46,17 @@ test('the header offers Sign in, which opens the form on sign-in', async () => {
   expect(within(screen.getByTestId('app-header')).queryByRole('button', { name: 'Sign in' })).toBeNull();
 });
 
-test('Run your first experiment opens account creation', async () => {
+test('Start an experiment opens account creation', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'How it works' });
-  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Run your first experiment' })[0]); });
+  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Start an experiment' })[0]); });
   expect(await screen.findByRole('header', { name: 'Create an account.' })).toBeVisible();
 });
 
 test('the form can go back to the landing', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'How it works' });
-  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Run your first experiment' })[0]); });
+  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Start an experiment' })[0]); });
   await press('Back to rhythm');
   expect(await screen.findByRole('header', { name: 'How it works' })).toBeVisible();
 });

@@ -147,9 +147,9 @@ test('a section reached while editing the rhythm leaves the editor', async () =>
 test('leaving for another section keeps a paid proposal, and coming back sends nothing', async () => {
   await signedIn();
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design my experiment' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
   fireEvent.changeText(await screen.findByLabelText('Your guess for Morning energy'), '10');
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Reveal the AI prediction' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
   await screen.findByRole('button', { name: 'Start this experiment' });
   await goTo('History');
   await screen.findByRole('header', { name: 'Your experiment history' });

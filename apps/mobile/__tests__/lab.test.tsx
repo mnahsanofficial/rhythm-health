@@ -59,7 +59,7 @@ describe('your lab with nothing running', () => {
     render(<MobileApp />);
     expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
-    expect(screen.getByText('Start with a hunch')).toBeVisible();
+    expect(screen.getByLabelText('Suggestions')).toBeVisible();
     expect(screen.queryByText('Nothing running yet.')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Back to your lab' })).toBeNull();
     expect(calls.filter(call => call.endsWith('/propose'))).toEqual([]);
@@ -94,7 +94,7 @@ describe('your lab with an experiment', () => {
     render(<MobileApp />);
     expect(await screen.findByText('Done for today')).toBeVisible();
     expect(screen.getByText('Day 4 is recorded.')).toBeVisible();
-    expect(screen.getByRole('button', { name: "Change today's answers" })).toBeVisible();
+    expect(screen.getByRole('button', { name: "Edit answers" })).toBeVisible();
   });
 
   test('observations sit on the same screen, with recorded counts from the server', async () => {
@@ -112,9 +112,9 @@ describe('your lab with an experiment', () => {
     render(<MobileApp />);
     await screen.findByText('Day 4 of 10');
     await press('Test another habit');
-    expect(screen.queryByText('Start with a hunch')).toBeNull();
+    expect(screen.queryByLabelText('Suggestions')).toBeNull();
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
-    await press('Design my experiment');
+    await press('Design experiment');
     expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
     expect(calls.filter(call => call.endsWith('/propose'))).toHaveLength(1);
     await press('Go to Your lab');
@@ -147,9 +147,9 @@ describe('experiment page', () => {
     render(<MobileApp />);
     expect(await screen.findByText('All 10 days are done.')).toBeVisible();
     expect(screen.queryByText('Ready for your results.')).toBeNull();
-    await press('Finish and see results');
+    await press('See results');
     expect(await screen.findByText('Ready for your results.')).toBeVisible();
-    await press('Finish and see results');
+    await press('See results');
     await press('Yes, finish');
     expect(await screen.findByRole('button', { name: 'Reveal my result' })).toBeVisible();
     expect(calls.filter(call => call.endsWith('/complete'))).toHaveLength(1);

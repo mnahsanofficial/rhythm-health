@@ -382,7 +382,7 @@ test('device draft failure is visible and can retry without losing current answe
   fireEvent.press(screen.getByRole('radio', { name: '25–34' }));
   expect(await screen.findByText(/Couldn't keep your setup/)).toBeVisible();
   expect(screen.getByRole('radio', { name: '25–34' })).toBeChecked();
-  fireEvent.press(screen.getByRole('button', { name: 'Retry keeping my answers' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
   await act(async () => {});
   expect(screen.queryByText(/Couldn't keep your setup/)).toBeNull();
 });

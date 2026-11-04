@@ -76,7 +76,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
       <Copy>{item.question}</Copy>
     </View>)}
     <Action label="Back to Your lab" onPress={onBack} />
-    <Action label="Change today's answers" secondary onPress={() => setSaved(false)} />
+    <Action label="Edit answers" secondary onPress={() => setSaved(false)} />
   </View>;
 
   return <View style={styles.stack}>
@@ -113,7 +113,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
         style={[styles.input, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
       {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
     </View>
-    <Action label={busy ? 'Saving…' : recorded ? "Update today's check-in" : "Save today's check-in"} disabled={busy || offline} onPress={() => void save()} />
+    <Action label={busy ? 'Saving…' : recorded ? "Update check-in" : "Save check-in"} disabled={busy || offline} onPress={() => void save()} />
   </View>;
 }
 

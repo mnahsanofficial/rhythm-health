@@ -127,3 +127,13 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, on 13 screens at 390px an
 **Result:** no text under AA, no target under 44px, no missing label or name, in either mode.
 
 **Not checked:** screen readers; landing text over the moving scene is on a solid card now, so it's measured against the card.
+
+## Re-audit: PR 3, mobile demo path
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, the existing `accessibility.test.tsx` audit, and Expo web at 390px in both modes.
+
+**Fixed from the first audit:** A1 (edges now `control`), A7 and A8 (measured on Expo web: one filled primary per screen, each fits its words), A11 (new motion uses `ReduceMotion.System`), A12 (actions have a press state and scale).
+
+**Found and fixed in this pass:** suggestion chips were 44pt; they're now 48pt, the app's own rule. Disabled actions no longer fade their words.
+
+**Still not checked:** VoiceOver and TalkBack; anything on a real device, including Reanimated motion and Reduce Motion (no simulator on this Mac). See the iPhone list in the PR.

@@ -18,9 +18,9 @@ function Marker({ on }: { on: boolean }) {
   const local = useLocal();
   const shown = useSharedValue(on ? 1 : 0);
   useEffect(() => {
-    shown.value = withTiming(on ? 1 : 0, { duration: MOTION_DURATION_MS.press, reduceMotion: ReduceMotion.System });
+    shown.set(withTiming(on ? 1 : 0, { duration: MOTION_DURATION_MS.press, reduceMotion: ReduceMotion.System }));
   }, [on, shown]);
-  const style = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const style = useAnimatedStyle(() => ({ opacity: shown.get() }));
   return <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, local.marker, style]} />;
 }
 
