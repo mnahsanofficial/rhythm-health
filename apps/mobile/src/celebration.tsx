@@ -17,10 +17,12 @@ const leftWords = (left: number) => left === 0 ? 'That was the last day.' : `${l
  * After a check-in is saved: the sun, or the moon in dark mode, rises along the rhythm ring. Every saved day looks the same,
  * so it can't nudge the answers. Counts come from the server's refreshed progress, and aren't shown until they've arrived.
  */
-export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, title, lines, onDone }: {
+export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, title, lines, hold = false, onDone }: {
   day: number; totalDays: number | null; recordedDays: number | null; daysLeft: number | null; seeded: boolean; onDone: () => void;
   /** For one check-in covering several experiments: the heading, and each one's day. */
   title?: string; lines?: string[];
+  /** There's a sentence to read, so it waits for a tap. */
+  hold?: boolean;
 }) { const COLORS = useColors(); const local = useLocal(); const { scheme } = useTheme();
   const reduce = useReducedMotion();
   const heading = useStepFocus('celebration');
@@ -39,10 +41,10 @@ export function Celebration({ day, totalDays, recordedDays, daysLeft, seeded, ti
   // With a screen reader on it waits for a tap: closing by itself could cut off what's being read.
   useEffect(() => {
     let active = true; let timer: ReturnType<typeof setTimeout> | undefined;
-    const wait = (reading: boolean) => { if (active && !reading) timer = setTimeout(done, MOTION_DURATION_MS.celebration); };
+    const wait = (reading: boolean) => { if (active && !reading && !hold) timer = setTimeout(done, MOTION_DURATION_MS.celebration); };
     AccessibilityInfo.isScreenReaderEnabled().then(wait).catch(() => wait(false));
     return () => { active = false; if (timer) clearTimeout(timer); };
-  }, [done]);
+  }, [done, hold]);
   const words = daysLeft === null ? null : leftWords(daysLeft);
   const headline = title ?? `Day ${day} recorded`;
   const details = lines ?? (words ? [words] : []);
