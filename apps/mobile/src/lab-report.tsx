@@ -6,7 +6,7 @@ import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
 import { getCapacity } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
-import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 type Load = { kind: 'loading' } | { kind: 'ready'; report: LabReport } | { kind: 'not-finished'; experiment: Experiment } | { kind: 'missing' } | { kind: 'error'; message: string };
@@ -28,7 +28,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
       if (!active) return;
       if (cause instanceof ApiError && cause.status === 401) onExpired();
       else if (cause instanceof ApiError && cause.status === 404) setLoad({ kind: 'missing' });
-      else setLoad({ kind: 'error', message: cause instanceof Error ? cause.message : 'Something went wrong.' });
+      else setLoad({ kind: 'error', message: cause instanceof Error ? cause.message : "Couldn't load this. Try again." });
     };
     getReport(token, id).then(async report => {
       const next: Load = report ? { kind: 'ready', report } : { kind: 'not-finished', experiment: await getExperiment(token, id) };
@@ -78,7 +78,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
       <Copy style={local.eyebrow}>Lab Report{finishedOn ? ` · finished ${finishedOn}` : ''}</Copy>
       <Title small textRef={heading}>{experiment.question}</Title>
     </View>
-    {offline && <Status style={ui.muted}>You&apos;re offline. These results are the last ones loaded.</Status>}
+    {offline && <Notice>You&apos;re offline. These results are the last ones loaded.</Notice>}
 
     {analysis.prediction && primary
       ? <PredictionVsReality comparison={analysis.prediction} metricLabel={primary.label} guess={analysis.personal_guess} onRevealed={() => setRevealed(true)} />
@@ -274,7 +274,7 @@ function NextExperiment({ token, offline, narrative, onExpired, onAsk, onToday, 
       <Copy style={ui.muted}>{narrative.next_experiment.reason}</Copy>
       {typeof check === 'object' ? <>
         <Copy>You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.</Copy>
-        <Action label="Go to Your lab" secondary onPress={onToday} />
+        <Action label="Go to your lab" secondary onPress={onToday} />
       </> : check === 'checking' && !offline ? <Status style={local.small}>Checking whether you can start another…</Status>
         : <Action label="Run this experiment" secondary={!nextStep} onPress={() => onAsk(narrative.next_experiment.question)} />}
     </> : <>

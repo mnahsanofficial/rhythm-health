@@ -60,7 +60,7 @@ export function LabReport({ id }: { id: string }) {
         setLoad({
           kind: "error",
           status: e instanceof ApiError ? e.status : 0,
-          message: e instanceof Error ? e.message : "Something went wrong.",
+          message: e instanceof Error ? e.message : "Couldn't load this. Try again.",
         });
       });
     return () => {
@@ -75,7 +75,7 @@ export function LabReport({ id }: { id: string }) {
       <Page>
         <div role="alert" className="rounded-card bg-clay-tint p-6 text-clay">
           <h1 className="font-display text-title">
-            {load.status === 404 ? "We couldn't find that experiment." : "We couldn't load this report."}
+            {load.status === 404 ? "We couldn't find that experiment." : "Couldn't load this report."}
           </h1>
           {load.status !== 404 && <p className="mt-2">{load.message}</p>}
           <div className="mt-5 flex flex-wrap gap-3">
@@ -111,7 +111,7 @@ export function LabReport({ id }: { id: string }) {
             : "Results appear once the experiment is finished. Keep checking in, then finish it from the experiment page."}
         </p>
         <Link href={path} className={`${linkButton} mt-8`}>
-          Go to your experiment
+          Back to your experiment
         </Link>
       </Page>
     );
@@ -263,7 +263,7 @@ function writeErrorText(status: number, message: string): string {
   if (status === 502) return "We couldn't write a report that matched your results.";
   if (status === 409) return "This experiment needs to be finished before its report can be written.";
   if (status === 404) return "There are no results to write about yet.";
-  if (status === 0) return "We couldn't reach the server. Check your connection.";
+  if (status === 0) return "Couldn't reach the server. Check your connection and try again.";
   return message || "Something went wrong while writing your report.";
 }
 
@@ -423,7 +423,7 @@ function NextExperimentSection({ narrative, nextStep }: { narrative: ReportNarra
                 You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.
               </p>
               <Link href="/" className={`${secondaryLink} mt-3`}>
-                Go to Your lab
+                Back to your lab
               </Link>
             </div>
           ) : (

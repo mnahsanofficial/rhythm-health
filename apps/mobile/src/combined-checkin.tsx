@@ -6,7 +6,7 @@ import { metricAnswer } from './checkin';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError, detailCode } from './lib/api';
 import { getTodayCheckin, saveTodayCheckin } from './lib/checkins';
-import { Action, Alert, BackLink, Copy, useStyles, Title, Status, useStepFocus } from './ui';
+import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 const prefilled = (today: TodayCheckin) => Object.fromEntries(today.questions.filter(question => question.value !== null && question.value !== undefined)
@@ -75,7 +75,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
       <Copy style={local.day}>{`Day ${item.day_number} of ${item.total_days}`}</Copy>
       <Copy>{item.question}</Copy>
     </View>)}
-    <Action label="Back to Your lab" onPress={onBack} />
+    <Action label="Back to your lab" onPress={onBack} />
     <Action label="Edit answers" secondary onPress={() => setSaved(false)} />
   </View>;
 
@@ -83,7 +83,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
     <BackLink to="Your lab" disabled={busy} onPress={onBack} />
     <Title textRef={heading}>Today&apos;s check-in.</Title>
     <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{`One check-in for your ${today.experiments.length} experiments. Shared questions are asked once.`}</Copy>
-    {offline && <Status>You&apos;re offline; your answers are kept</Status>}
+    {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {recorded && <Copy style={local.notice}>You&apos;ve already checked in for some of these today. Saving again replaces those answers.</Copy>}
     {error && <Alert>{error}</Alert>}
     {stale && <Action label="Reload today's check-in" secondary disabled={busy || offline} onPress={() => void reload()} />}

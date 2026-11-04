@@ -43,7 +43,7 @@ export function FinishCard({ experiment, timeline, token, offline, onExpired, on
       } catch (read) {
         if (read instanceof ApiError && read.status === 401) { onExpired(); return; }
       }
-      setError(cause instanceof Error ? cause.message : "Couldn't finish the experiment.");
+      setError(cause instanceof Error ? cause.message : "Couldn't finish the experiment. Try again.");
     } finally { inFlight.current = false; setBusy(false); }
   }
 

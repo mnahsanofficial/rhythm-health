@@ -55,7 +55,7 @@ body {
 
 /* Moving between screens. Skipped entirely with reduced motion. */
 @keyframes rhythm-screen {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(calc(var(--spacing) * 1.5)); }
   to { opacity: 1; transform: none; }
 }
 

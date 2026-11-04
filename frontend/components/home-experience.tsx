@@ -93,7 +93,7 @@ function SignedInHome() {
           router.replace("/sign-in?next=/");
           return;
         }
-        setState({ kind: "error", message: error instanceof Error ? error.message : "Please try again." });
+        setState({ kind: "error", message: error instanceof Error ? error.message : "Try again." });
       }
     }
     void load();

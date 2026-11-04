@@ -11,6 +11,6 @@ export const useSharedValue = <T,>(initial: T) => useMemo(() => { let value = in
 export const useAnimatedStyle = <T,>(build: () => T) => build();
 export const withTiming = <T,>(value: T) => value;
 export const FadeInDown = { duration: () => ({ reduceMotion: () => undefined }) };
-export const useReducedMotion = () => false;
+export const useReducedMotion = () => true;
 const Animated = { View, Text, ScrollView, createAnimatedComponent: <T,>(component: T) => component };
 export default Animated;

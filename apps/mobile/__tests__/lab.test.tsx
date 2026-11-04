@@ -117,7 +117,7 @@ describe('your lab with an experiment', () => {
     await press('Design experiment');
     expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
     expect(calls.filter(call => call.endsWith('/propose'))).toHaveLength(1);
-    await press('Go to Your lab');
+    await press('Go to your lab');
     expect(await screen.findByText('Day 4 of 10')).toBeVisible();
   });
 });

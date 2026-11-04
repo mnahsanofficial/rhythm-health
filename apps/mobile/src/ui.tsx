@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useRef, type ComponentRef, type ReactNode, type Ref } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { AccessibilityInfo, findNodeHandle, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
-import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { useColors, themedStyles } from './theme-core';
@@ -40,6 +40,27 @@ function useAnnounce(text: string) {
 export function Status(props: TextProps) {
   useAnnounce(spoken(props.children));
   return <Copy accessibilityLiveRegion="polite" {...props} />;
+}
+/** Not an error: something to know, like being offline. */
+export function Notice({ children }: { children: ReactNode }) { const styles = useStyles();
+  useAnnounce(spoken(children));
+  return <Copy accessibilityLiveRegion="polite" style={styles.notice}>{children}</Copy>;
+}
+/** A real count arriving: only for counts, never for results or other health estimates. */
+export function CountUp({ value, suffix = '', style }: { value: number; suffix?: string; style?: TextProps['style'] }) {
+  const reduce = useReducedMotion();
+  const [shown, setShown] = useState(value);
+  useEffect(() => {
+    if (reduce || value === 0) return;
+    const started = Date.now();
+    let frame = requestAnimationFrame(function step() {
+      const progress = Math.min((Date.now() - started) / MOTION_DURATION_MS.response, 1);
+      setShown(Math.round(value * progress));
+      if (progress < 1) frame = requestAnimationFrame(step);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [value, reduce]);
+  return <Copy style={style}>{`${reduce ? value : shown}${suffix}`}</Copy>;
 }
 export function Alert({ children }: { children: ReactNode }) { const styles = useStyles();
   useAnnounce(spoken(children));
@@ -137,6 +158,7 @@ export const useStyles = themedStyles(COLORS => StyleSheet.create({
   fit: { alignSelf: 'flex-start', maxWidth: LAYOUT.buttonMaxWidth },
   secondary: { backgroundColor: 'transparent', borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
   disabled: { backgroundColor: COLORS.surface, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.border },
+  notice: { color: COLORS.text, backgroundColor: COLORS['warning-tint'], padding: SPACING.md, borderRadius: RADII.card },
   alert: { color: COLORS.clay, backgroundColor: COLORS['clay-tint'], padding: SPACING.md, borderRadius: RADII.card },
   divider: { borderTopWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, paddingTop: SPACING.lg, gap: SPACING.md },
   skeletonTitle: { height: LAYOUT.primaryAction, width: '80%', backgroundColor: COLORS.line, borderRadius: RADII.pill },

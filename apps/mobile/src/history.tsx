@@ -33,7 +33,7 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk,
     }).catch((cause: unknown) => {
       if (!active) return;
       if (expired(cause)) onExpired();
-      else setError(cause instanceof Error ? cause.message : 'Something went wrong.');
+      else setError(cause instanceof Error ? cause.message : "Couldn't load this. Try again.");
     });
     return () => { active = false; };
     // A refreshed token is not a reason to read again; `attempt` is the explicit retry.
@@ -102,7 +102,7 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
     }).catch((cause: unknown) => {
       if (!active) return;
       if (expired(cause)) onExpired();
-      else setState({ kind: 'error', message: cause instanceof Error ? cause.message : 'Something went wrong.' });
+      else setState({ kind: 'error', message: cause instanceof Error ? cause.message : "Couldn't load this. Try again." });
     });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

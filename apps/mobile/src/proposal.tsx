@@ -6,7 +6,7 @@ import { Forecast } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
-import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 type Failure = { status: number; message: string };
@@ -96,8 +96,8 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       } else if (id && cause instanceof ApiError && cause.status === 409) {
         await explainConflict(id);
       } else if (id) {
-        setStartError(`Your experiment was saved, but it couldn't be started: ${message(cause, 'Please try again.')}`);
-      } else setStartError(message(cause, "Couldn't save your experiment. Please try again."));
+        setStartError(`Your experiment was saved, but it couldn't be started: ${message(cause, 'Try again.')}`);
+      } else setStartError(message(cause, "Couldn't save your experiment. Try again."));
     } finally { inFlight.current = false; setStarting(false); }
   }
 
@@ -114,7 +114,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
 
   const blockedNotice = limit !== null && <View style={ui.stack}>
     <Alert>{limit}</Alert>
-    {onBack && <Action label="Go to Your lab" secondary onPress={onBack} />}
+    {onBack && <Action label="Go to your lab" secondary onPress={onBack} />}
   </View>;
 
   if (step === 'guess' && result?.proposal) return <GuessStep heading={heading} proposal={result.proposal} onReveal={setGuess} onBack={() => reset('')} />;
@@ -134,10 +134,10 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       <Copy>This plan and prediction become fixed once you start.</Copy>
       <Copy style={ui.muted}>Your original forecast stays in place so you can compare it with what happens.</Copy>
     </View>
-    {offline && <Status style={ui.muted}>You&apos;re offline. Your plan is kept; reconnect to start.</Status>}
+    {offline && <Notice>You&apos;re offline. Your plan is kept; reconnect to start.</Notice>}
     {startError && <Alert>{startError}</Alert>}
     {guessUnavailable && <Action label="Skip my guess" secondary disabled={starting || offline} onPress={() => void begin(true)} />}
-    {startAtLimit && onBack && <Action label="Go to Your lab" secondary onPress={onBack} />}
+    {startAtLimit && onBack && <Action label="Go to your lab" secondary onPress={onBack} />}
     {startError && <Action label="Try again" secondary disabled={starting || offline} onPress={() => void begin()} />}
     {!startError && <Action label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} />}
     <Action label="Ask something else" secondary disabled={starting} onPress={() => reset('')} />
@@ -160,7 +160,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>
       </View>
     </View>
-    {offline && <Status style={ui.muted}>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Status>}
+    {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
     {!hideStarters && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
         onPress={() => reset(starter)} style={({ pressed }) => [local.chip, pressed && { backgroundColor: COLORS.border }]}>

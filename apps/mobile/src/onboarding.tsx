@@ -6,7 +6,7 @@ import { StepRail } from './rails';
 import { LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type Profile, type ProfileInput } from '@rhythm-health/contract';
 import { TimeField } from './time-field';
-import { Action, Alert, Copy, Loading, useStyles, Status, useScreenEnter } from './ui';
+import { Action, Alert, Copy, Loading, useStyles, Status, useScreenEnter, Notice } from './ui';
 import { ApiError, saveProfile } from './lib/profile';
 import { ACTIVITY_OPTIONS, AGE_OPTIONS, clearDraft, CONSTRAINTS, duration, GOALS, HABITS, habitTime, maxSleep, minutes, nightMinutes, plausible, QUESTIONS, readDraft, suggestedSleep, toProfileInput, writeDraft, type Draft, type StoredDraft } from './lib/onboarding';
 import { useColors, themedStyles } from './theme-core';
@@ -92,7 +92,7 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
     { label: 'Age', value: AGE_OPTIONS.find(o => o.value === draft.age_range)?.label ?? 'Not answered', step: 1 },
   ];
   return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}><View style={styles.stack}>
-    {offline && <Alert>No connection. Your answers stay on this device; reconnect to save your rhythm.</Alert>}
+    {offline && <Notice>No connection. Your answers stay on this device; reconnect to save your rhythm.</Notice>}
     {storageError && <><Alert>Couldn&apos;t keep your setup on this device. Your answers are still here while this screen is open.</Alert>
       <Action label="Try again" secondary onPress={() => persist(data)} /></>}
     {step !== 0 && step !== 8 && <>

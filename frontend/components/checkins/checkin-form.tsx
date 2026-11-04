@@ -86,7 +86,7 @@ export function CheckinForm({ id }: { id: string }) {
         if (cancelled) return;
         if (e instanceof ApiError && e.status === 404) setLoad({ kind: "not-found" });
         else if (e instanceof ApiError && e.status === 401) router.replace(signInPath);
-        else setLoad({ kind: "error", message: e instanceof Error ? e.message : "Something went wrong." });
+        else setLoad({ kind: "error", message: e instanceof Error ? e.message : "Couldn't load this. Try again." });
       });
     return () => {
       cancelled = true;
@@ -123,7 +123,7 @@ export function CheckinForm({ id }: { id: string }) {
             </button>
           ) : (
             <Link href="/" className={`${secondaryButton} mt-4`}>
-              Back to home
+              Back to your lab
             </Link>
           )}
         </div>
@@ -148,7 +148,7 @@ export function CheckinForm({ id }: { id: string }) {
         <h1 className="font-display text-headline tracking-tight">No check-in today.</h1>
         <p className="mt-3 text-lead text-muted">{message}</p>
         <Link href={experimentPath} className={`${primaryButton} mt-8`}>
-          Go to your experiment
+          Back to your experiment
         </Link>
       </Shell>
     );
