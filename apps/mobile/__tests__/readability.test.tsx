@@ -268,7 +268,7 @@ describe('reading order', () => {
     (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => undefined));
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
-    expect(screen.getByText('Usually 10–20 seconds.')).toBeVisible();
+    expect(screen.getByText('Usually 10–30 seconds.')).toBeVisible();
     expect(screen.queryByText('A suitable question')).toBeNull();
   });
 

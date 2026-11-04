@@ -577,7 +577,7 @@ describe('the planning moment', () => {
   test('shows the scene, the three steps and one honest line, instead of the form', async () => {
     await waiting();
     expect(screen.getByTestId('planning-scene', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByText('Usually 10–20 seconds.')).toBeVisible();
+    expect(screen.getByText('Usually 10–30 seconds.')).toBeVisible();
     for (const step of STEPS) expect(screen.getByText(step)).toBeVisible();
     expect(screen.queryByLabelText('Your question or goal')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Design experiment' })).toBeNull();
