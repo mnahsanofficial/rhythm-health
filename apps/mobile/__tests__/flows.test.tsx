@@ -197,3 +197,50 @@ describe('question flow', () => {
     expect(screen.getByText('It never counts as your data.')).toBeVisible();
   });
 });
+
+describe('the last baseline day', () => {
+  const MOMENT = 'Your test starts tomorrow: Walk for 20 minutes.';
+  const lastBaseline = running({ day_number: 3, phase: 'baseline', phase_day: 3, phase_days: 3, days_remaining: 7 });
+  const nextDayAt = '2027-11-05T06:30:00Z';
+  async function saveDay(current: Experiment, day: number, before: number[]) {
+    routes['GET /api/experiments?status=active'] = { body: [current] };
+    routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(current, { recorded: before, nextDayAt }) };
+    await openCheckin(day);
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Sleep quality: 6' }));
+    routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(current, { recorded: [...before, day], nextDayAt }) };
+    await press('Save check-in');
+  }
+
+  test('after the check-in it says the baseline is done and names the change, and waits for a tap', async () => {
+    await saveDay(lastBaseline, 3, [1, 2]);
+    expect(await screen.findByText('Baseline done.')).toBeVisible();
+    expect(screen.getByText(MOMENT)).toBeVisible();
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 2200)); });
+    expect(screen.getByText('Baseline done.')).toBeVisible();
+    await press('Continue');
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull());
+  });
+
+  test('Today keeps saying it once the moment has gone', async () => {
+    await saveDay(lastBaseline, 3, [1, 2]);
+    await press('Continue');
+    expect(await screen.findByText('Day 3 recorded')).toBeVisible();
+    expect(screen.getByText(`Baseline done. ${MOMENT}`)).toBeVisible();
+  });
+
+  test('earlier baseline days look the same as always', async () => {
+    await saveDay(baselineDay, 2, [1]);
+    expect(await screen.findByRole('button', { name: 'Continue' })).toBeVisible();
+    expect(screen.queryByText('Baseline done.')).toBeNull();
+    expect(screen.queryByText(MOMENT)).toBeNull();
+  });
+
+  test('before the check-in it says nothing yet', async () => {
+    routes['GET /api/experiments?status=active'] = { body: [lastBaseline] };
+    routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(lastBaseline, { recorded: [1, 2], nextDayAt }) };
+    render(<MobileApp />);
+    await screen.findByRole('button', { name: 'Check in now, day 3' });
+    expect(screen.queryByText(`Baseline done. ${MOMENT}`)).toBeNull();
+  });
+});
