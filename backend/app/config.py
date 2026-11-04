@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     @field_validator(
         "openrouter_reasoning_model", "openrouter_jev_model", "ai_daily_limit_propose", "ai_daily_limit_report",
         mode="before",
+    )
     @classmethod
     def _blank_means_default(cls, v, info):
         # `KEY=` in .env.local arrives as "", which should fall back to the default.
