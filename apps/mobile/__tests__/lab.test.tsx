@@ -73,7 +73,8 @@ describe('your lab with an experiment', () => {
     expect(await screen.findByText('Day 2 of 10')).toBeVisible();
     expect(screen.getByRole('header', { name: experiment.question })).toBeVisible();
     expect(screen.getByText('Keep your usual routine')).toBeVisible();
-    expect(screen.getByText('Your change starts on day 4.')).toBeVisible();
+    expect(screen.getByText('Starts on day 4: Walk for 20 minutes')).toBeVisible();
+    expect(screen.queryByText('Walk for 20 minutes')).toBeNull();
     expect(screen.getByRole('button', { name: 'See your experiment' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Check in now, day 2' })).toBeVisible();
   });

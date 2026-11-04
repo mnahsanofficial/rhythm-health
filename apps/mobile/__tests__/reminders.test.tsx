@@ -112,12 +112,16 @@ test('scheduling failure is visible with retry and Today remains usable', async 
   fireEvent.press(screen.getByRole('button', { name: 'Try again' })); await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(2));
 });
 
-test('development test uses a one-off ten-second trigger and production hides it', async () => {
+test('the test reminder only shows with EXPO_PUBLIC_DEV_TOOLS=1, and uses a one-off ten-second trigger', async () => {
   const view = render(<MobileApp />); await enable();
-  fireEvent.press(screen.getByRole('button', { name: 'Send test reminder' }));
-  await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalledWith(expect.objectContaining({ identifier: 'rhythm.test', trigger: expect.objectContaining({ seconds: 10, repeats: false }) })));
-  view.unmount(); const old = Reflect.get(globalThis, '__DEV__'); Reflect.set(globalThis, '__DEV__', false);
-  try { render(<MobileApp />); await settings(); expect(screen.queryByRole('button', { name: 'Send test reminder' })).toBeNull(); } finally { Reflect.set(globalThis, '__DEV__', old); }
+  expect(screen.queryByRole('button', { name: 'Send test reminder' })).toBeNull();
+  view.unmount();
+  process.env.EXPO_PUBLIC_DEV_TOOLS = '1';
+  try {
+    render(<MobileApp />); await settings();
+    fireEvent.press(await screen.findByRole('button', { name: 'Send test reminder' }));
+    await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalledWith(expect.objectContaining({ identifier: 'rhythm.test', trigger: expect.objectContaining({ seconds: 10, repeats: false }) })));
+  } finally { delete process.env.EXPO_PUBLIC_DEV_TOOLS; }
 });
 
 test('turning reminders off cancels immediately even if saving the preference fails', async () => {

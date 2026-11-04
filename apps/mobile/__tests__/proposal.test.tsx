@@ -434,3 +434,17 @@ test('the forecast range animates once without reduced motion', async () => {
   await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
 });
 
+test('the sample offer leaves once a plan is open, and comes back when it is cleared', async () => {
+  render(<MobileApp />);
+  fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does a walk after dinner help my energy?');
+  expect(screen.getByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
+  await screen.findByText('What do you think will happen?');
+  expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
+  fireEvent.changeText(screen.getByLabelText(/^Your guess for/), '12');
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
+  await screen.findByRole('button', { name: 'Start this experiment' });
+  expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask something else' })); });
+  expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
+});
