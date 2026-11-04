@@ -4,6 +4,7 @@ import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import type { DayData } from '../today';
 import { devToolsOn } from './config';
+import { isLastBaselineDay } from './experiments';
 
 const DAILY = 'rhythm.next-day', TEST = 'rhythm.test';
 const dailyId = (experiment: string) => `${DAILY}.${experiment}`;
@@ -105,7 +106,10 @@ export class Reminders {
       if (revision !== this.revision) return;
       const identifier = dailyId(experiment.id);
       await Notifications.scheduleNotificationAsync({ identifier,
-        content: { title: `Day ${next.day_number} of ${timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.', data: { kind: 'rhythm-checkin', owner, experiment: experiment.id } },
+        content: { ...(isLastBaselineDay(timeline)
+          // The lock screen never shows the question or the change, only that the test starts.
+          ? { title: 'Baseline done. Your test starts today', body: `Day ${next.day_number} of ${timeline.progress.total_days}. Make your small change, then check in.` }
+          : { title: `Day ${next.day_number} of ${timeline.progress.total_days} is open`, body: 'Your check-in takes about 30 seconds.' }), data: { kind: 'rhythm-checkin', owner, experiment: experiment.id } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date, channelId: 'rhythm' },
       });
       if (revision !== this.revision) { await Notifications.cancelScheduledNotificationAsync(identifier); return; }

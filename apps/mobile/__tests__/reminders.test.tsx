@@ -228,3 +228,13 @@ test('sample experiments cancel pending reminders and never schedule daily or te
   expect(notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('rhythm.test');
   expect(notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
 });
+
+test('the reminder for the first test day says the test starts, without showing the change or the question', async () => {
+  const lastBaseline = { ...active, progress: { ...active.progress, day_number: 3, phase: 'baseline' as const, phase_day: 3, phase_days: 3 } };
+  timeline = timelineFixture(lastBaseline, { recorded: [1, 2, 3], nextDayAt: '2027-11-01T06:30:00Z' });
+  render(<MobileApp />); await enable();
+  const { content } = notifications.scheduleNotificationAsync.mock.calls[0][0];
+  expect(content).toMatchObject({ title: 'Baseline done. Your test starts today', body: 'Day 4 of 10. Make your small change, then check in.' });
+  expect(JSON.stringify(content)).not.toContain(active.question);
+  expect(JSON.stringify(content)).not.toContain(active.intervention.action);
+});
