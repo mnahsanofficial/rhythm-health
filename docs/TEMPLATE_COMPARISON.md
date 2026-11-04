@@ -45,21 +45,21 @@ We didn't start from either template. The first commit here is a README, and the
 
 | Check | Template | Ours |
 |---|---|---|
-| Commit message check | Hook and CI job | None. Conventional Commits by convention only |
-| Secret scan | `pre-commit` hook and CI | None. We rely on the rules in `docs/rules/secrets.md` |
-| Lint strictness | One root ESLint config, `--max-warnings=0`, `no-explicit-any` and `no-console` as errors | Per-workspace configs on framework defaults |
+| Commit message check | Hook and CI job | CI job, on a PR's new commits only |
+| Secret scan | `pre-commit` hook and CI | gitleaks in CI, over all of history, with values redacted. No hook |
+| Lint strictness | One root ESLint config, `--max-warnings=0`, `no-explicit-any` and `no-console` as errors | Per-workspace configs on framework defaults, with `--max-warnings=0` |
 | Format check | Prettier, `format:check` | No Prettier config |
 | Env check | `check:env`, with a Zod env schema | None on web. Pydantic settings on the backend |
 | Standards gate | `check:standards` | None |
 | RLS check | `check:rls` | None. Disposable-database scripts for individual migrations |
-| Migrations in CI | A Postgres service job | Not in CI. Those scripts are run by hand |
+| Migrations in CI | A Postgres service job | A Postgres service job: apply all, roll back all, re-apply. The per-migration scripts are still run by hand |
 | TypeScript extras | `noUncheckedIndexedAccess`, `noImplicitOverride` | Not set |
 | AI review | `claude-code-review.yml` | None |
 | Ours only | | Browser suite in CI, `contract:check`, `brand:check`, `logs:check`, `pytest` |
 
 ## What we'd adopt after the demo
 
-Nothing here happens before the freeze. In order, smallest and safest first:
+**Updated 4 Nov:** items 1, 2 (`--max-warnings=0` only) and 4 are being adopted in CI ahead of the demos, and item 3 stays after the demo, as [ADR 12](adr/0012-ci-discipline-no-prettier.md) explains. The rest happens after the freeze. In order, smallest and safest first:
 
 1. **Secret scan and commit-message hooks, plus their CI job.** This repo's logs are public, and a scan is the safety net for the rule that matters most.
 2. **`--max-warnings=0` and `no-explicit-any` as errors.** Expect some cleanup first.

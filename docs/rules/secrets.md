@@ -17,6 +17,7 @@ These logs are public. Anything a secret touches (a prompt, a response, a commit
   - `SUPABASE_SERVICE_ROLE_KEY` and `OPENROUTER_API_KEY` are read only in `backend/app/config.py`.
   - Never give one a `NEXT_PUBLIC_` name, because Next.js ships every `NEXT_PUBLIC_` variable to the browser.
 - The frontend only has the Supabase URL, the public anon key and the API URL (TRD §36).
+- **CI scans all of history with gitleaks,** including `.claude-logs/`, and never prints a value ([`.gitleaks.toml`](../../.gitleaks.toml)). To allow a false positive, add its exact text there, never a file or folder.
 - If a real value ends up in a commit or a session log, tell the other person straight away and rotate it in Supabase or OpenRouter. Deleting the commit isn't enough once it's pushed.
 
 ## Mobile
