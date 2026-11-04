@@ -402,7 +402,7 @@ test('The account panel can reopen the saved rhythm for editing without creating
   expect(screen.getByText('23:30 to 07:30, about 8 h asleep')).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Change goals' }));
   expect(screen.getByRole('checkbox', { name: 'better morning energy' })).toBeChecked();
-  fireEvent.press(screen.getByRole('button', { name: 'Cancel setup changes' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Close' }));
   expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
 });
 

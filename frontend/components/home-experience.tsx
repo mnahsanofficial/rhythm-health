@@ -6,6 +6,7 @@ import { BaselineContext } from "@/components/experiments/baseline-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { ExperimentFlow } from "@/components/experiments/experiment-flow";
+import { closeButton, CloseIcon } from "@/components/nav/close-icon";
 import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
@@ -136,7 +137,7 @@ function SignedInHome() {
           </button>
         </section>
       ) : state.kind === "ready" ? (
-        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" onReloadLab={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /></>
+        <><SampleControls onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /><ExperimentFlow profile={state.profile} returnTo="/" closable onReloadLab={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }} /></>
       ) : (
         <section className="max-w-2xl py-10 sm:py-16">
           <h1 className="font-display text-display-sm tracking-tight sm:text-display">
@@ -201,9 +202,10 @@ function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
               aria-expanded={open}
               aria-controls={panelId}
               onClick={toggleQuestion}
-              className={`${button("secondary")} ml-auto`}
+              aria-label={open ? "Close question" : undefined}
+              className={open ? `${closeButton} ml-auto` : `${button("secondary")} ml-auto`}
             >
-              {open ? "Close question" : "Test another habit"}
+              {open ? <CloseIcon /> : "Test another habit"}
             </button>
           </div>
           <section hidden={open}>
@@ -305,9 +307,10 @@ function SeveralLab({ profile, items, capacity, today, onChanged }: {
               if (open) toggle.current?.focus();
               setOpen(!open);
             }}
-            className={button("secondary")}
+            aria-label={open ? "Close question" : undefined}
+            className={open ? closeButton : button("secondary")}
           >
-            {open ? "Close question" : "Test another habit"}
+            {open ? <CloseIcon /> : "Test another habit"}
           </button>
         )}
       </div>

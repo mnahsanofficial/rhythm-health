@@ -1,20 +1,28 @@
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, RADII, SPACING, themeColors } from '@rhythm-health/brand';
 import { Action, Copy, useStepFocus } from './ui';
+import { Mark } from './logo';
+import { ThemeCycleButton } from './theme';
 import { themedStyles, useColors } from './theme-core';
 
 /** Illustrations stay in the light palette in both modes, like the web's landing story. */
 const ART = themeColors('light');
-const STARS = [[42, 38, 1.5], [96, 88, 1], [150, 26, 1.5], [214, 70, 1], [262, 30, 1.5], [318, 92, 1], [362, 44, 1.5], [24, 120, 1], [342, 150, 1]] as const;
+/** Kept out of the top band, so the logo sits on clear sky. */
+const STARS = [[48, 112, 1.5], [84, 168, 1], [64, 226, 1.5], [24, 150, 1], [336, 186, 1], [352, 236, 1.5], [316, 152, 1], [372, 132, 1]] as const;
+/** The screens are drawn at this width, then scaled to the phone, so they look like a real screenshot. */
+const SCREEN_WIDTH = 320;
+const PHONE_RATIO = 1.5;
+const FRAME = SPACING.xs + 2;
 
 type Sky = 'night' | 'morning' | 'noon' | 'evening';
 const SUNS: Record<Exclude<Sky, 'night'>, { cx: number; cy: number; warmth: number }> = {
-  morning: { cx: 110, cy: 84, warmth: 0.45 },
-  noon: { cx: 200, cy: 44, warmth: 0.08 },
-  evening: { cx: 286, cy: 92, warmth: 0.7 },
+  morning: { cx: 86, cy: 104, warmth: 0.45 },
+  noon: { cx: 314, cy: 100, warmth: 0.08 },
+  evening: { cx: 314, cy: 112, warmth: 0.7 },
 };
 
 /** The web landing's sky and hills, at four times of day. */
@@ -25,7 +33,7 @@ function Scene({ sky }: { sky: Sky }) {
     {sun && <Rect width={400} height={400} fill={ART.sun} opacity={sun.warmth} />}
     {sun && <Circle cx={sun.cx} cy={sun.cy} r={26} fill={ART.sun} />}
     {sky === 'night' && STARS.map(([cx, cy, r]) => <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill={ART.paper} />)}
-    {sky === 'night' && <><Circle cx={282} cy={58} r={20} fill={ART.paper} /><Circle cx={291} cy={52} r={17} fill={ART.night} /></>}
+    {sky === 'night' && <><Circle cx={314} cy={100} r={18} fill={ART.paper} /><Circle cx={322} cy={94} r={15} fill={ART.night} /></>}
     <Path d="M0 300 Q75 270 155 296 T312 288 T400 282 V400 H0 Z" fill={ART['moss-tint']} />
     <Rect y={330} width={400} height={70} fill={ART.moss} />
   </Svg>;
@@ -40,7 +48,9 @@ function Mini({ children, tone = 'muted', size = tone === 'muted' ? 'caption' : 
 
 function AskScreen() { const local = useLocal();
   return <>
-    <Mini tone="ink" size="title" display>Ask a question.</Mini>
+    <Mini>A little curiosity, a little evidence</Mini>
+    <Mini tone="ink" size="headline" display>Ask a question.</Mini>
+    <Mini>What have you been wondering about your daily habits?</Mini>
     <View style={local.field}><Mini tone="ink">Does walking after dinner improve my sleep?</Mini></View>
     <View style={local.chips}>{['Less caffeine', 'Earlier bedtime', 'Morning light'].map(chip => <View key={chip} style={local.chip}><Mini tone="ink" size="caption">{chip}</Mini></View>)}</View>
     <View style={local.button}><Mini tone="on-accent">Design experiment</Mini></View>
@@ -49,26 +59,31 @@ function AskScreen() { const local = useLocal();
 function PredictionScreen() { const local = useLocal();
   return <>
     <Mini>Written down before day 1</Mini>
-    <Mini tone="ink" size="title" display>Morning energy</Mini>
+    <Mini tone="ink" size="headline" display>Morning energy</Mini>
     <Mini tone="accent" size="headline" display>+8–15%</Mini>
     <View style={local.track}><View style={local.range} /></View>
     <Mini>A range, not a promise.</Mini>
+    <Mini tone="ink">Your small change</Mini>
+    <Mini>A 20-minute walk within an hour of dinner.</Mini>
     <View style={local.note}><Mini tone="ink">3 normal days, then 7 test days</Mini></View>
   </>;
 }
 function CheckInScreen() { const local = useLocal();
   return <>
-    <Mini tone="ink" size="title" display>Day 4 of 10</Mini>
+    <Mini tone="ink" size="headline" display>Day 4 of 10</Mini>
     <View style={local.days}>{Array.from({ length: 10 }, (_, day) => <View key={day} style={[local.day, day < 4 && local.dayDone]} />)}</View>
     <Mini tone="ink">How did you sleep?</Mini>
     <View style={local.scale}>{[1, 2, 3, 4, 5].map(step => <View key={step} style={[local.step, step === 4 && local.stepOn]}><Mini tone={step === 4 ? 'on-accent' : 'ink'} size="caption" center>{step}</Mini></View>)}</View>
+    <Mini tone="ink">How is your energy?</Mini>
+    <View style={local.scale}>{[1, 2, 3, 4, 5].map(step => <View key={step} style={[local.step, step === 3 && local.stepOn]}><Mini tone={step === 3 ? 'on-accent' : 'ink'} size="caption" center>{step}</Mini></View>)}</View>
     <Mini tone="ink">Did you make the change?</Mini>
     <View style={local.chips}><View style={[local.chip, local.stepOn]}><Mini tone="on-accent" size="caption">Yes</Mini></View><View style={local.chip}><Mini tone="ink" size="caption">Not today</Mini></View></View>
+    <View style={local.button}><Mini tone="on-accent">Save check-in</Mini></View>
   </>;
 }
 function ReportScreen() { const local = useLocal();
   return <>
-    <Mini tone="ink" size="title" display>Lab Report</Mini>
+    <Mini tone="ink" size="headline" display>Lab Report</Mini>
     <Mini>Predicted</Mini>
     <View style={local.track}><View style={local.range} /></View>
     <Mini tone="ink">+8–15%</Mini>
@@ -130,6 +145,15 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
   const pager = useRef<ComponentRef<typeof ScrollView>>(null);
   const moving = useRef<number | null>(null); // Where a move we started is heading; the scroll reports stay quiet until it arrives.
   const canMove = !reduce && !reader;
+  const insets = useSafeAreaInsets();
+  // The sky is the same in both themes, so what sits on it is chosen by the sky, not the theme.
+  const onSky = SLIDES[index].sky === 'night' ? ART.paper : ART.ink;
+  const belowLogo = insets.top + LAYOUT.headerHeight + SPACING.lg;
+  const [heroHeight, setHeroHeight] = useState(window.height * 0.68);
+  const room = Math.max(heroHeight - belowLogo, SPACING.section * 3);
+  const phoneWidth = Math.min(width * 0.66, LAYOUT.buttonMaxWidth, room / PHONE_RATIO);
+  const phoneHeight = Math.min(phoneWidth * PHONE_RATIO, room);
+  const scale = (phoneWidth - FRAME * 2) / SCREEN_WIDTH;
 
   const moveTo = (page: number, animated: boolean) => {
     moving.current = page;
@@ -159,14 +183,29 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
         const copy = page === SLIDES.length;
         const current = page === index;
         return <View key={page} style={[local.slide, { width }]} accessibilityElementsHidden={!current} importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}>
-          <View style={local.hero} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <View style={local.art}><Scene sky={sky} /></View>
-            <View style={local.phone}><Mini>Example</Mini><Screen /></View>
+          <View style={local.hero} onLayout={page === 0 ? ({ nativeEvent }: LayoutChangeEvent) => setHeroHeight(nativeEvent.layout.height) : undefined} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <View testID="landing-sky" style={local.art}><Scene sky={sky} /></View>
+            <View testID="landing-phone" style={[local.phone, { width: phoneWidth, height: phoneHeight, borderWidth: FRAME, borderRadius: RADII.card * 2 }]}>
+              <View style={[local.screen, { width: SCREEN_WIDTH, height: (phoneHeight - FRAME * 2) / scale, transform: [{ scale }] }]}>
+                <View style={local.bar}>
+                  <View style={local.barBrand}><Mark size={SPACING.lg} /><Mini tone="ink" display>Rhythm</Mini></View>
+                  <Mini>Example</Mini>
+                </View>
+                <Screen />
+              </View>
+            </View>
           </View>
           <Copy ref={page === 0 ? heading : undefined} accessibilityRole={copy ? undefined : 'header'} style={local.line}>{line}</Copy>
         </View>;
       })}
     </ScrollView>
+    <View pointerEvents="box-none" style={[local.top, { paddingTop: insets.top + SPACING.md }]}>
+      <View testID="landing-logo" accessible accessibilityRole="image" accessibilityLabel="Rhythm" style={local.logo}>
+        <Mark size={SPACING.xl + SPACING.sm} palette={ART} />
+        <Copy style={[local.word, { color: onSky }]}>Rhythm</Copy>
+      </View>
+      <View style={[local.theme, { top: insets.top + SPACING.sm }]}><ThemeCycleButton color={onSky} /></View>
+    </View>
     <View style={local.controls}>
       <View style={local.dots}>{SLIDES.map(({ line }, page) => <Dot key={line} number={page + 1} on={page === index} onPress={() => moveTo(page, !reduce)} />)}</View>
       {canMove && <Pressable accessibilityRole="button" accessibilityLabel={paused ? 'Play slides' : 'Pause slides'} onPress={() => setPaused(value => !value)} style={local.pause}><PlayIcon paused={paused} /></Pressable>}
@@ -182,10 +221,17 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   page: { flex: 1 },
   pager: { flex: 1 },
   slide: { flex: 1 },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: SPACING.lg, overflow: 'hidden' },
-  art: { position: 'absolute', left: 0, right: 0, top: 0, bottom: SPACING.xl },
-  phone: { width: '74%', maxWidth: LAYOUT.buttonMaxWidth, maxHeight: '100%', gap: SPACING.sm, padding: SPACING.md, overflow: 'hidden', backgroundColor: COLORS.paper,
-    borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', overflow: 'hidden' },
+  top: { position: 'absolute', left: 0, right: 0, top: 0 },
+  logo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
+  word: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY['display-sm'] },
+  theme: { position: 'absolute', right: LAYOUT.gutter.min - SPACING.sm },
+  art: { position: 'absolute', left: 0, right: 0, top: 0, bottom: SPACING.section },
+  // The frame stays pale in both themes, so the phone stands out from the sky and the dark page.
+  phone: { overflow: 'hidden', backgroundColor: COLORS.paper, borderColor: ART.line },
+  screen: { transformOrigin: 'top left', gap: SPACING.sm, padding: SPACING.md },
+  bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
+  barBrand: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   line: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title, color: COLORS.ink, textAlign: 'center', paddingHorizontal: LAYOUT.gutter.min, paddingTop: SPACING.md, minHeight: NATIVE_TYPOGRAPHY.title.lineHeight * 2 + SPACING.md },
   field: { padding: SPACING.sm, borderRadius: RADII.control, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs },

@@ -63,6 +63,9 @@ body {
   .screen-enter {
     animation: rhythm-screen var(--motion-panel) var(--ease-settle);
   }
+  .sheet-enter {
+    animation: rhythm-screen var(--motion-panel) var(--ease-settle);
+  }
 }
 
 /* One arrival after an answer or summary state change; never loops. */

@@ -96,12 +96,28 @@ Every page works at any width from 320px to 2560px, and at 200% browser zoom. Th
 - **Content sits in the page frame.** Wrap each page's content in `page-frame` (in `globals.css`): centred, `width: 100%`, padded by the fluid `--gutter`, and at most 90rem of content wide. Focused flows narrow it with an arbitrary property instead of a new container, for example `page-frame [--frame:42rem]` for check-in, `28rem` for sign-in and `48rem` for the demo. The header uses the same frame, so its logo always lines up with the page content. Don't add `mx-auto max-w-* px-4 sm:px-8` containers.
 - **Grids and cards use the width; paragraphs don't.** A global rule caps every `<p>` at `48ch` (about 65–75 characters a line, measured for Instrument Sans). Don't override it with a wider `max-w-*` on a paragraph. Let cards, timelines and multi-column grids take the extra width instead.
 - **Fluid, not stepped.** Prefer `clamp()`, `var(--gutter)`, `minmax()` grid tracks and wrapping flex rows over adding breakpoints. Use a breakpoint where the layout really changes, such as a second column from `lg`.
-- **The header is fixed.** `SiteHeader` is `sticky top-0` with a solid oat background and a bottom border, and its height is `--header-h` (4rem). Anything else that sticks to the top offsets by it: `top-[var(--header-h)]` or `top-[calc(var(--header-h)+2rem)]`, and screen-high sections use `calc(100svh - var(--header-h))`. `html` has `scroll-padding-top` set, so focused headings and anchors land below it.
-- **Header contents.** Visitors see the logo and Sign in. Signed-in people see the logo, the main sections (Your lab, History, Demo) with the current one marked by `aria-current="page"` and a moss underline, and an account button (their initial). It opens a panel with their email, Update your rhythm and Sign out; Escape or a click outside closes it and returns focus. Below `md` the sections move into that panel, so the bar holds only the logo, the account button and the theme button.
+- **The header is fixed.** `SiteHeader` is `sticky top-0` with a solid oat background and a bottom border, except on the signed-out landing page, where it has no background over the night sky and uses the dark theme's colours until you scroll, and its height is `--header-h` (4rem). Anything else that sticks to the top offsets by it: `top-[var(--header-h)]` or `top-[calc(var(--header-h)+2rem)]`, and screen-high sections use `calc(100svh - var(--header-h))`. `html` has `scroll-padding-top` set, so focused headings and anchors land below it.
+- **Header contents.** Visitors see the logo, the theme and Sign in, plus "Start an experiment" on the landing page from tablet width up. Signed-in people see the logo, the main sections (Your lab, History, Demo) with the current one marked, the account panel and the theme. In a flow, the logo, the theme and a ×.
 - **Pinned phone action bars** (`sticky bottom-0`) bleed to the screen edge with `-mx-[var(--gutter)] px-[var(--gutter)]`, not hard-coded `-mx-4`.
 - **Nothing scrolls sideways.** No element may be wider than the viewport. Illustrations use `preserveAspectRatio="xMidYMax slice"` or `w-full h-auto`, never a fixed pixel width.
 
 **How to check:** `frontend/tests/e2e/layout-widths.spec.ts` visits every page at 320, 375, 390, 768, 1024, 1280, 1440, 1920 and 2560px, and at 1280px and 1440px windows zoomed to 200% (640 and 720 CSS px). It fails on horizontal scrolling, content off centre, a page frame not using the available width, a paragraph over 76 characters a line, or overlapping text and controls. Add every new page to it. `CAPTURE_LAYOUT=1` saves a screenshot of each page at each width under `docs/screenshots/layout/`.
+
+## Navigation
+
+One pattern on web and mobile. It's in `frontend/components/nav/` and `apps/mobile/src/nav.tsx`.
+
+| Screen | Examples | Control | Browser or Android back |
+|---|---|---|---|
+| Main section | Your lab, History, Demo, Daily reminders | None. Reached from the header, or its menu on phones | Your lab on Android; the previous page on web |
+| Detail | An experiment, a Lab Report | One link at the top left that names where it goes: `‹ History`. Spoken as "Back to History" | Same as the link |
+| Flow | Sign in, onboarding, asking and the proposal, the check-in | A × at the top right, named Close, which goes to where you came from | Same as the × |
+
+- **The logo is always home**, named "Rhythm, home": the landing page when signed out, Your lab when signed in.
+- **If leaving would lose something**, an in-app sheet asks first: "Leave without saving?", one line on what's lost, then Stay and Leave. Never a browser dialog. On web, `useLeaveGuard` protects a screen from the ×, links and the browser's back button. On mobile, `useNavScreen` takes an `unsaved` line. Leaving makes no request, so it can't send or resend a paid call.
+- **Nothing's at risk, no sheet:** onboarding keeps its answers on the device, and sign in holds nothing worth asking about.
+- **First-time onboarding on mobile has no ×,** because there's nothing behind it; Sign out is on the screen. Steps within a flow go by "Previous".
+
 
 ## Motion system
 

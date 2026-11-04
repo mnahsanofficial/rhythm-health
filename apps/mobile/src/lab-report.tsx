@@ -6,6 +6,7 @@ import { DayChart } from './day-chart';
 import { ApiError } from './lib/api';
 import { getCapacity } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
+import { useNavScreen } from './nav';
 import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
@@ -39,6 +40,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, needsRead, offline, attempt]);
 
+  useNavScreen({ kind: 'detail', onBack });
   const back = <BackLink to={backTo} onPress={onBack} />;
   if (load.kind === 'loading') return offline
     ? <View style={ui.stack}><Status>Reconnect to load this report.</Status>{back}</View>

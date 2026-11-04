@@ -6,6 +6,8 @@ import { BaselineContext } from "./baseline-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
+import { BackLink, backTarget } from "@/components/nav/back-link";
+import { useNav } from "@/components/nav/navigation";
 import { ForecastCard } from "@/components/experiments/new-experiment";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
@@ -44,6 +46,7 @@ function counts(experiment: Experiment, checkins: Checkin[]) {
 
 export function ExperimentDetail({ id }: { id: string }) {
   const router = useRouter();
+  const { previous } = useNav();
   const { session, loading: sessionLoading } = useSession();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -107,7 +110,7 @@ export function ExperimentDetail({ id }: { id: string }) {
               </button>
             )}
             <Link href="/" className="inline-flex min-h-11 items-center underline">
-              Back to your lab
+              Go to your lab
             </Link>
           </div>
         </div>
@@ -121,9 +124,7 @@ export function ExperimentDetail({ id }: { id: string }) {
 
   return (
     <div className="page-frame pt-8 pb-16 sm:pt-14">
-      <Link href="/" className="-mx-1 inline-flex min-h-11 items-center px-1 text-moss hover:underline">
-        ← Your lab
-      </Link>
+      <BackLink {...backTarget(previous, { href: "/", label: "Your lab" })} />
       <p className="mt-6 font-mono text-caption text-moss tabular-nums">
         {progress.state === "in_progress"
           ? `Day ${progress.day_number} of ${progress.total_days} · ${progress.phase === "intervention" ? "Test" : "Baseline"} day ${progress.phase_day} of ${progress.phase_days}`

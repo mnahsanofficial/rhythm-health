@@ -46,12 +46,15 @@ afterEach(() => jest.restoreAllMocks());
 
 const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask a question.' }); };
 
-test('signed out, the header is the mark, the name and the theme', async () => {
+test('signed out, the sign-in form has the mark, the name, the theme and a ×', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'Stop guessing. Test one habit.' });
-  expect(within(screen.getByTestId('app-header')).getByRole('button', { name: /^Theme:/ })).toBeVisible();
-  expect(within(screen.getByTestId('app-header')).getByText('Rhythm')).toBeVisible();
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Sign in' })); });
+  const header = within(screen.getByTestId('app-header'));
+  expect(header.getByRole('button', { name: /^Theme:/ })).toBeVisible();
+  expect(header.getByRole('button', { name: 'Close' })).toBeVisible();
+  expect(header.getByText('Rhythm')).toBeVisible();
   expect(screen.queryByRole('button', { name: /^Account menu/ })).toBeNull();
 });
 
@@ -130,31 +133,29 @@ test('the panel opens the saved rhythm and signs out', async () => {
   await signedIn();
   await goTo('Update your rhythm');
   expect(await screen.findByText("Here's your rhythm.")).toBeVisible();
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Close' })); });
   await goTo('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
   expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
 
-test('a section reached while editing the rhythm leaves the editor', async () => {
+test('the logo leaves the rhythm editor', async () => {
   await signedIn();
   await goTo('Update your rhythm');
   await screen.findByText("Here's your rhythm.");
-  await goTo('History');
-  expect(await screen.findByRole('header', { name: 'Your experiment history' })).toBeVisible();
+  await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(screen.queryByText("Here's your rhythm.")).toBeNull();
 });
 
-test('leaving for another section keeps a paid proposal, and coming back sends nothing', async () => {
+test('going home keeps a paid proposal, and sends nothing', async () => {
   await signedIn();
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
   fireEvent.changeText(await screen.findByLabelText('Your guess for Morning energy'), '10');
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
   await screen.findByRole('button', { name: 'Start this experiment' });
-  await goTo('History');
-  await screen.findByRole('header', { name: 'Your experiment history' });
-  expect(screen.queryByRole('button', { name: 'Start this experiment' })).toBeNull();
-  await goTo('Your lab');
+  await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
   expect(await screen.findByRole('button', { name: 'Start this experiment' })).toBeVisible();
   expect(screen.getByText('Your guess: +10% change from normal days. Locked before the AI reveal.')).toBeVisible();
   expect(calls.filter(call => call.endsWith('/propose'))).toHaveLength(1);
@@ -170,10 +171,11 @@ test('before a profile exists the panel offers only signing out', async () => {
   expect(screen.getAllByRole('button', { name: 'Sign out' }).length).toBeGreaterThan(0);
 });
 
-test('back links read like the web', async () => {
+test('sections have no back link: the menu moves between them', async () => {
   await signedIn();
   await goTo('History');
-  expect(await screen.findByText('← Your lab')).toBeVisible();
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Back to your lab' })); });
+  await screen.findByRole('header', { name: 'Your experiment history' });
+  expect(screen.queryByRole('button', { name: 'Back to your lab' })).toBeNull();
+  await goTo('Your lab');
   await waitFor(() => expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible());
 });

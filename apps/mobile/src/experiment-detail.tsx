@@ -7,6 +7,7 @@ import { Forecast } from './forecast';
 import { Observations } from './progress';
 import { TodayCard } from './today-card';
 import type { DayData } from './today';
+import { useNavScreen } from './nav';
 import { BackLink, Copy, useStyles, Title, useStepFocus } from './ui';
 import { themedStyles } from './theme-core';
 
@@ -14,6 +15,7 @@ import { themedStyles } from './theme-core';
 export function ExperimentDetail({ data, token, offline, disabled, onExpired, onBack, onCheckin, onOpenReport, onCompleted }: {
   data: DayData; token: string; offline: boolean; disabled: boolean; onExpired: () => void; onBack: () => void; onCheckin: () => void; onOpenReport: () => void; onCompleted: (report: LabReport) => void;
 }) { const local = useLocal(); const styles = useStyles();
+  useNavScreen({ kind: 'detail', onBack });
   const { experiment, timeline } = data;
   const { progress } = timeline;
   const heading = useStepFocus('experiment');

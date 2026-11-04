@@ -6,6 +6,8 @@ import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { useLeaveGuard } from "@/components/nav/navigation";
+import { WONT_BE_KEPT } from "@/lib/nav/routes";
 import { MetricInput } from "@/components/checkins/metric-input";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
@@ -61,12 +63,14 @@ export function CheckinForm({ id }: { id: string }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [answers, setAnswers] = useState<Answers>(answersFrom(undefined));
+  const [loadedAnswers, setLoadedAnswers] = useState<Answers>(answers);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Checkin | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const noteId = useId();
+  useLeaveGuard(!saved && !saving && JSON.stringify(answers) !== JSON.stringify(loadedAnswers) ? WONT_BE_KEPT.answers : null);
   const signInPath = `/sign-in?next=${encodeURIComponent(`/experiments/${id}/check-in`)}`;
 
   useEffect(() => {
@@ -80,7 +84,9 @@ export function CheckinForm({ id }: { id: string }) {
       .then(([experiment, checkins]) => {
         if (cancelled) return;
         setLoad({ kind: "ready", experiment, checkins });
-        setAnswers(answersFrom(checkins.find((c) => c.day_number === experiment.progress.day_number)));
+        const existing = answersFrom(checkins.find((c) => c.day_number === experiment.progress.day_number));
+        setAnswers(existing);
+        setLoadedAnswers(existing);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -123,7 +129,7 @@ export function CheckinForm({ id }: { id: string }) {
             </button>
           ) : (
             <Link href="/" className={`${secondaryButton} mt-4`}>
-              Back to your lab
+              Go to your lab
             </Link>
           )}
         </div>
@@ -143,12 +149,12 @@ export function CheckinForm({ id }: { id: string }) {
       in_progress: "Today's day isn't available.",
     }[progress.state];
     return (
-      <Shell back={experimentPath}>
+      <Shell>
         {experiment.is_seeded && <p className="mb-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
         <h1 className="font-display text-headline tracking-tight">No check-in today.</h1>
         <p className="mt-3 text-lead text-muted">{message}</p>
         <Link href={experimentPath} className={`${primaryButton} mt-8`}>
-          Back to your experiment
+          Go to your experiment
         </Link>
       </Shell>
     );
@@ -166,7 +172,7 @@ export function CheckinForm({ id }: { id: string }) {
   if (saved) {
     const logged = new Set(checkins.map((c) => c.day_number));
     return (
-      <Shell back={experimentPath}>
+      <Shell>
         <div role="status" className="flex flex-col items-start">
           <Tick reduceMotion={Boolean(reduceMotion)} />
           {experiment.is_seeded && <p className="mt-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
@@ -203,7 +209,7 @@ export function CheckinForm({ id }: { id: string }) {
           </ol>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href={experimentPath} className={primaryButton}>
-              Back to your experiment
+              Go to your experiment
             </Link>
             <button type="button" onClick={() => setSaved(null)} className={secondaryButton}>
               Change today&apos;s answers
@@ -267,9 +273,9 @@ export function CheckinForm({ id }: { id: string }) {
   }
 
   return (
-    <Shell back={experimentPath} backLabel={`Day ${day} of ${progress.total_days}`}>
+    <Shell>
       <p className="font-mono text-caption text-moss tabular-nums">
-        {testDay ? "Test" : "Baseline"} · day {progress.phase_day} of {progress.phase_days}
+        Day {day} of {progress.total_days} · {testDay ? "Test" : "Baseline"} day {progress.phase_day} of {progress.phase_days}
       </p>
       {experiment.is_seeded && <p className="mb-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
       <h1 className="mt-2 font-display text-display-sm tracking-tight">Today&apos;s check-in.</h1>
@@ -400,22 +406,9 @@ export function CheckinForm({ id }: { id: string }) {
   );
 }
 
-export function Shell({
-  children,
-  back,
-  backLabel = "Your experiment",
-}: {
-  children: React.ReactNode;
-  back?: string;
-  backLabel?: string;
-}) {
+export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="page-frame flex-1 pt-6 pb-16 sm:pt-10 [--frame:42rem]">
-      {back && (
-        <Link href={back} className="-mx-1 mb-6 inline-flex min-h-11 items-center px-1 text-body text-moss hover:underline">
-          ← {backLabel}
-        </Link>
-      )}
       {children}
     </div>
   );

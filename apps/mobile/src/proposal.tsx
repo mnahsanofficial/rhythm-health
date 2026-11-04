@@ -6,12 +6,15 @@ import { Forecast } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
 import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
-import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Status, Notice } from './ui';
+import { useNavScreen, WONT_BE_KEPT } from './nav';
+import { Action, Alert, Copy, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 type Failure = { status: number; message: string };
 type Props = {
   token: string; offline: boolean; profile: Profile; initialQuestion?: string; hideStarters?: boolean; onExpired: () => void;
+  /** False while another section is on show: this stays mounted, with its plan safe, but isn't what's being left. */
+  shown?: boolean;
   onBack?: () => void; onStarted: () => void; onEditProfile?: () => void;
 };
 const message = (cause: unknown, fallback: string) => cause instanceof Error && cause.message ? cause.message : fallback;
@@ -29,7 +32,7 @@ function failureTitle({ status }: Failure) {
  * tap, guarded by one synchronous lock; the result stays in this component's state, so returning
  * to the foreground or a refreshed token never asks again.
  */
-export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, onExpired, onBack, onStarted, onEditProfile }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+export function ProposalFlow({ token, offline, profile, initialQuestion = '', hideStarters = false, shown = true, onExpired, onBack, onStarted, onEditProfile }: Props) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [question, setQuestion] = useState(initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '');
   const [result, setResult] = useState<ProposeResponse | null>(null);
   const [guess, setGuess] = useState<number | null>(null);
@@ -46,6 +49,15 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const planReady = result?.safety.allowed && result.proposal && result.prediction;
   const step = !planReady ? (result ? 'refused' : 'ask') : result.personal_guess_available && guess === null ? 'guess' : 'plan';
   const heading = useStepFocus(step);
+  const initial = initialQuestion.length >= QUESTION_MIN && initialQuestion.length <= QUESTION_MAX ? initialQuestion : '';
+  const typed = question.trim() !== '' && question !== initial;
+  // With nothing running the question is your lab itself, so a × only appears once there's a plan to clear.
+  const close = onBack ?? (result ? () => reset('') : undefined);
+  // eslint-disable-next-line react-hooks/refs -- `close` is stored for a later press; it doesn't run during render.
+  useNavScreen(shown && close ? {
+    kind: 'flow', onBack: close, busy: busy !== null || starting, safeAtHome: true,
+    unsaved: result?.proposal ? WONT_BE_KEPT.proposal : typed ? WONT_BE_KEPT.question : null,
+  } : null);
 
   const expired = (cause: unknown) => {
     if (cause instanceof ApiError && cause.status === 401) { onExpired(); return true; }
@@ -146,7 +158,6 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
   const length = question.trim().length;
   const working = busy !== null;
   return <View style={ui.stack}>
-    {onBack && <BackLink to="Your lab" disabled={working} onPress={onBack} />}
     <Copy style={local.curiosity}>A little curiosity, a little evidence</Copy>
     <Title textRef={heading}>Ask a question.</Title>
     <Copy style={ui.muted}>What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.</Copy>

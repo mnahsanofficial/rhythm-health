@@ -9,7 +9,10 @@ import { motion, useReducedMotion } from "motion/react";
 import { ApiError } from "@/lib/api/client";
 import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
 import type { Experiment, Profile, ProposeResponse } from "@/lib/types/api";
+import { closeButton, CloseIcon } from "@/components/nav/close-icon";
+import { useLeaveGuard, useNav } from "@/components/nav/navigation";
 import { PersonalGuess } from "@/components/experiments/personal-guess";
+import { WONT_BE_KEPT } from "@/lib/nav/routes";
 import { QuestionForm } from "@/components/experiments/question-form";
 import { GOAL_QUESTIONS } from "@/components/onboarding/steps";
 import { button } from "@/components/ui/button";
@@ -262,6 +265,7 @@ export function ExperimentFlow({
   headingLevel = 1,
   showStarters = true,
   onReloadLab,
+  closable = false,
 }: {
   profile: Profile;
   initialQuestion?: string;
@@ -270,8 +274,11 @@ export function ExperimentFlow({
   showStarters?: boolean;
   /** Set when already on Your lab, where a link to it would do nothing. */
   onReloadLab?: () => void;
+  /** Set when the question is Your lab itself: once there's a proposal, a × clears it. */
+  closable?: boolean;
 }) {
   const router = useRouter();
+  const { confirm } = useNav();
   const [question, setQuestion] = useState(
     initialQuestion.length >= 5 && initialQuestion.length <= 500 ? initialQuestion : "",
   );
@@ -292,10 +299,13 @@ export function ExperimentFlow({
   const input = useRef<HTMLTextAreaElement>(null);
   const output = useRef<HTMLElement>(null);
   const hasShownResult = useRef(false);
+  const typed = question.trim() !== "" && question !== initialQuestion;
+  const unsaved = starting || savedExperimentId ? null : result?.proposal ? WONT_BE_KEPT.proposal : typed ? WONT_BE_KEPT.question : null;
+  useLeaveGuard(unsaved);
 
   const labLink = onReloadLab
-    ? <button type="button" onClick={onReloadLab} className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Back to your lab</button>
-    : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Back to your lab</Link>;
+    ? <button type="button" onClick={onReloadLab} className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to your lab</button>
+    : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to your lab</Link>;
 
   useEffect(() => {
     if (result) output.current?.focus();
@@ -399,6 +409,13 @@ export function ExperimentFlow({
 
   return (
     <div>
+      {closable && result?.proposal && (
+        <div className="-mb-3 flex justify-end">
+          <button type="button" aria-label="Close" onClick={() => confirm(() => chooseQuestion(""), WONT_BE_KEPT.proposal)} className={closeButton}>
+            <CloseIcon />
+          </button>
+        </div>
+      )}
       <div className="mt-5 grid gap-10">
         <div className="min-w-0">
           {!result?.safety.allowed && <>

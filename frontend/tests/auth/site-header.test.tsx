@@ -58,7 +58,7 @@ describe("site header", () => {
 
   it("marks Your lab on the experiment pages under it", () => {
     signIn();
-    nav.pathname = "/experiments/abc/check-in";
+    nav.pathname = "/experiments/abc/report";
     render(<SiteHeader />);
     const main = screen.getByRole("navigation", { name: "Main" });
     expect(within(main).getByRole("link", { name: "Your lab" })).toHaveAttribute("aria-current", "page");

@@ -188,7 +188,7 @@ describe("Lab Report flow", () => {
     render(<LabReport id={id} />);
     const next = await screen.findByRole("region", { name: "What to test next" });
     expect(await within(next).findByText(/running 3 experiments, the most at once/i)).toBeInTheDocument();
-    expect(within(next).getByRole("link", { name: "Back to your lab" })).toHaveAttribute("href", "/");
+    expect(within(next).getByRole("link", { name: "Go to your lab" })).toHaveAttribute("href", "/");
     expect(within(next).queryByRole("link", { name: "Run this experiment" })).toBeNull();
   });
 

@@ -2,6 +2,7 @@ import { THEMES } from "@rhythm-health/brand";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Instrument_Sans } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
+import { NavProvider } from "@/components/nav/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SessionProvider } from "@/lib/auth/session";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -57,10 +58,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <SessionProvider>
           <MotionProvider>
-            <SiteHeader />
-            <main id="main" className="flex flex-1 flex-col">
-              {children}
-            </main>
+            <NavProvider>
+              <SiteHeader />
+              <main id="main" className="flex flex-1 flex-col">
+                {children}
+              </main>
+            </NavProvider>
           </MotionProvider>
         </SessionProvider>
       </body>

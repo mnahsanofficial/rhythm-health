@@ -92,11 +92,11 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
     </Pressable></Animated.View>
   );
 }
-/** The web's "← Your lab" link. The arrow is visual; the spoken name says where it goes. */
+/** The one way back from a detail screen: "‹ Your lab". The mark is visual; the spoken name says where it goes. */
 export function BackLink({ to, name, onPress, disabled = false }: { to: string; name?: string; onPress: () => void; disabled?: boolean }) { const COLORS = useColors(); const styles = useStyles();
   return <Pressable accessibilityRole="button" accessibilityLabel={name ?? `Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }, disabled && styles.disabled]}>
-    <Copy style={{ color: COLORS.moss }}>← {to}</Copy>
+    <Copy style={{ color: COLORS.moss }}>‹ {to}</Copy>
   </Pressable>;
 }
 export function ForwardLink({ label, onPress }: { label: string; onPress: () => void }) { const COLORS = useColors(); const styles = useStyles();
@@ -104,7 +104,7 @@ export function ForwardLink({ label, onPress }: { label: string; onPress: () => 
     <Copy style={{ color: COLORS.moss, fontFamily: FONT_FAMILIES.sansMedium }}>{label}  →</Copy>
   </Pressable>;
 }
-/** `bare` hands the whole space under the header to one screen that lays itself out and doesn't scroll. */
+/** `bare` hands the whole screen, up under the status bar, to one that lays itself out and doesn't scroll. */
 export function Frame({ children, header, fontsReady = true, bare = false }: { children: ReactNode; header?: ReactNode; fontsReady?: boolean; bare?: boolean }) { const styles = useStyles();
   const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
   const opacity = useSharedValue(1);
@@ -118,7 +118,7 @@ export function Frame({ children, header, fontsReady = true, bare = false }: { c
   }, [opacity, rise]);
   const enter = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ translateY: rise.get() }] }));
   return (
-    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><SafeAreaView style={styles.safe} edges={bare ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
       {header}
       {bare ? <View style={styles.bare}>{children}</View> : <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
         <View style={styles.column}>

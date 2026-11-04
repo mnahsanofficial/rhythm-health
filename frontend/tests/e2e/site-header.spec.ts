@@ -17,10 +17,9 @@ for (const width of [320, 390, 1440]) {
     await page.goto("/");
     await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
     await expectPinned(page);
-    // The story's scene starts below the header rather than underneath it.
-    const header = (await page.getByRole("banner").boundingBox())!;
+    // The story's scene runs under the header, which turns solid once scrolled.
     const stage = (await page.locator("[data-story-stage]").boundingBox())!;
-    expect(stage.y).toBeGreaterThanOrEqual(header.y + header.height - 1);
+    expect(stage.y).toBeLessThanOrEqual(0);
 
     await answerOnboardingWithMouse(page);
     await createAccountAndSaveProfile(page, counts);

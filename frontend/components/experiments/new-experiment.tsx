@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExperimentFlow } from "@/components/experiments/experiment-flow";
@@ -74,9 +73,6 @@ export function NewExperiment({ initialQuestion = "" }: { initialQuestion?: stri
 
   return (
     <div className="page-frame pt-8 pb-16 sm:pt-14">
-      <Link href="/" className="inline-flex min-h-11 items-center text-moss hover:underline">
-        ← Your lab
-      </Link>
       <ExperimentFlow
         key={session.user.id}
         profile={profile}

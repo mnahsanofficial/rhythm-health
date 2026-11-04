@@ -10,6 +10,7 @@ import { InstrumentSans_400Regular } from '@expo-google-fonts/instrument-sans/40
 import { InstrumentSans_500Medium } from '@expo-google-fonts/instrument-sans/500Medium';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono/400Regular';
 import { AppHeader, type Section } from './app-header';
+import { NavProvider } from './nav';
 import { ReminderProvider, useReminders } from './reminder-context';
 import { ReminderNotice } from './settings';
 import { Today } from './today';
@@ -122,14 +123,18 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
 
   const hasProfile = profile.kind === 'ready' && profile.owner === owner && profile.profile !== null;
   const onLanding = ready && !session && !authFailure && visitor === 'landing';
-  const header = <AppHeader account={session ? {
+  const goHome = () => {
+    if (!session) { setVisitor('landing'); setMessage(null); return; }
+    setEditingProfile(false); setSection('lab'); setNavigation(n => n + 1);
+  };
+  const header = <AppHeader onHome={ready && !authFailure ? goHome : undefined} account={session ? {
     email: session.user.email ?? 'your account', section, hasProfile,
     onSection: next => { setEditingProfile(false); setSection(next); setNavigation(n => n + 1); },
     onEditProfile: () => setEditingProfile(true),
     onSignOut: () => void signOut(),
   } : undefined} />;
-  return (
-    <Frame header={header} bare={onLanding}>
+  return <NavProvider>
+    <Frame header={onLanding ? undefined : header} bare={onLanding}>
       {authFailure ? <>
         <Alert>{authFailure === 'restore' ? "Couldn't restore your saved session." : "Couldn't remove your saved session."} Try again.</Alert>
         <Action label="Try again" onPress={authFailure === 'signout' ? () => void signOut(message) : retry} />
@@ -159,5 +164,5 @@ function SessionGate({ config }: { config: ReturnType<typeof readConfig> }) {
       </>}
       {ready && !session && <ReminderNotice feedbackOnly />}
     </Frame>
-  );
+  </NavProvider>;
 }

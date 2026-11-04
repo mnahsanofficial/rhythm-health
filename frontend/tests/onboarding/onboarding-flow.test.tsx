@@ -81,12 +81,12 @@ describe("onboarding flow", () => {
       "aria-valuetext",
       "Question 3 of 7",
     );
-    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Previous" }));
     expect(await screen.findByRole("heading", { name: "When do you usually sleep?" })).toBeVisible();
     expect(screen.getByLabelText("Bedtime")).toHaveValue("22:30");
     expect(screen.getByLabelText("Wake time")).toHaveValue("06:30");
 
-    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Previous" }));
     expect(await screen.findByRole("heading", { name: "How old are you?" })).toBeVisible();
     expect(screen.getByRole("radio", { name: "25–34" })).toBeChecked();
     expect(screen.getByRole("progressbar", { name: "Setup progress" })).toHaveAttribute(
@@ -141,6 +141,6 @@ describe("onboarding flow", () => {
 
     await waitFor(() => expect(saveProfile).toHaveBeenCalledWith(draft));
     expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
-    expect(within(screen.getByRole("status")).getByRole("link", { name: "Back to your lab" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("status")).getByRole("link", { name: "Go to your lab" })).toHaveAttribute("href", "/");
   });
 });

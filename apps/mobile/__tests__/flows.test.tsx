@@ -62,10 +62,10 @@ const answerAll = () => {
 describe('check-in', () => {
   test('a test day uses the web heading, phase line and lead', async () => {
     await openCheckin();
-    expect(screen.getByText('Test · day 1 of 7')).toBeVisible();
+    expect(screen.getByText(/Test day 1 of 7$/)).toBeVisible();
     expect(screen.getByText('A test day. Tell us whether you made the change, then how it went.')).toBeVisible();
     expect(screen.getByText(`When: ${experiment.intervention.timing}`)).toBeVisible();
-    expect(screen.getByText('← Day 4 of 10')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible();
     expect(screen.getByText('Anything unusual yesterday? (optional)')).toBeVisible();
   });
 
@@ -73,7 +73,7 @@ describe('check-in', () => {
     routes['GET /api/experiments?status=active'] = { body: [baselineDay] };
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(baselineDay, {}) };
     await openCheckin(2);
-    expect(screen.getByText('Baseline · day 2 of 3')).toBeVisible();
+    expect(screen.getByText(/Baseline day 2 of 3$/)).toBeVisible();
     expect(screen.getByText("A normal day. Don't change anything yet, just notice how it went.")).toBeVisible();
   });
 
@@ -115,7 +115,7 @@ describe('check-in', () => {
     expect(await screen.findByText('4 of 10 days logged. 6 to go.')).toBeVisible();
     expect(screen.getAllByLabelText(/^Day \d+, logged$/)).toHaveLength(4);
     expect(screen.getByLabelText('Day 5')).toBeVisible();
-    await press('Back to your experiment');
+    await press('Go to your lab');
     expect(await screen.findByText('Done for today')).toBeVisible();
   });
 

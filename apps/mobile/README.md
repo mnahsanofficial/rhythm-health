@@ -149,7 +149,7 @@ Verification before the iPhone gate: 131 native behavior tests pass, including a
 Restart Expo after the dependency updates, with the backend reachable on Wi-Fi. In Expo Go:
 
 1. Sign out if needed, choose **Create an account**, and enter a new account yourself. Confirm it by email and return to sign-in if requested.
-2. Complete the seven questions with your own answers; try Back, optional Skip and a summary Change. Check the sleep/wake times and actual-sleep total.
+2. Complete the seven questions with your own answers; try Previous, optional Skip and a summary Change. Check the sleep/wake times and actual-sleep total.
 3. Before saving, fully close/reopen the app: the summary should still be there. Save my rhythm should open Today.
 4. Open **Settings → Update your rhythm**: your saved answers should be present. Cancel should return to Today.
 5. Check large system text, Reduce Motion and VoiceOver labels/order, then close/reopen and confirm the account/profile still loads. Sign out and confirm private content is gone.

@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
-import { Action, Alert, BackLink, Copy, useStyles, Title, Status } from './ui';
+import { Action, Alert, Copy, useStyles, Title, Status } from './ui';
+import { useNavScreen } from './nav';
 import { themedStyles, useColors } from './theme-core';
 
 /** An open eye while the password is hidden; crossed out once it is shown. The same drawing as the web's. */
@@ -25,6 +26,7 @@ export function AuthForm({ offline, message, initialMode = 'signIn', onBack, aut
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const sending = useRef(false);
+  useNavScreen(onBack ? { kind: 'flow', onBack, busy } : null);
   const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6;
   async function submit() {
     if (sending.current || offline || !valid) return;
@@ -44,7 +46,6 @@ export function AuthForm({ offline, message, initialMode = 'signIn', onBack, aut
   }
   return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={styles.stack}>
-      {onBack && <BackLink to="Back" name="Back to rhythm" disabled={busy} onPress={onBack} />}
       <Title>{mode === 'signIn' ? 'Welcome back.' : 'Create an account.'}</Title>
       <Copy style={styles.muted}>{mode === 'signIn' ? 'Sign in to keep up with your daily experiment.' : 'Your experiments start from your rhythm. Seven quick questions come next.'}</Copy>
       {offline && <Alert>No connection</Alert>}

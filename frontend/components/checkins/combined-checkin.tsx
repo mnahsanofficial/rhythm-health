@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import { useLeaveGuard } from "@/components/nav/navigation";
+import { WONT_BE_KEPT } from "@/lib/nav/routes";
 import { CheckinSkeleton, Shell, primaryButton, secondaryButton, without } from "@/components/checkins/checkin-form";
 import { MetricInput } from "@/components/checkins/metric-input";
 import { ApiError } from "@/lib/api/client";
@@ -47,11 +49,13 @@ export function CombinedCheckin() {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [answers, setAnswers] = useState<Answers>({ values: {}, texts: {}, changes: {}, note: "" });
+  const [loadedAnswers, setLoadedAnswers] = useState<Answers>(answers);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  useLeaveGuard(!saved && !saving && JSON.stringify(answers) !== JSON.stringify(loadedAnswers) ? WONT_BE_KEPT.answers : null);
   const inFlight = useRef(false);
   const alertRef = useRef<HTMLDivElement>(null);
   const savedRef = useRef<HTMLHeadingElement>(null);
@@ -73,6 +77,7 @@ export function CombinedCheckin() {
         }
         setLoad({ kind: "ready", today });
         setAnswers(answersFrom(today));
+        setLoadedAnswers(answersFrom(today));
         setFieldErrors({});
         setFormError(null);
         setStale(false);
@@ -113,7 +118,7 @@ export function CombinedCheckin() {
   const { today } = load;
   if (today.experiments.length === 0) {
     return (
-      <Shell back="/" backLabel="Your lab">
+      <Shell>
         <h1 className="font-display text-display-sm tracking-tight">Today&apos;s check-in.</h1>
         <p className="mt-3 text-lead text-muted">No check-in is open right now.</p>
       </Shell>
@@ -129,7 +134,7 @@ export function CombinedCheckin() {
           ))}
         </ul>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/" className={primaryButton}>Back to your lab</Link>
+          <Link href="/" className={primaryButton}>Go to your lab</Link>
           <button type="button" onClick={() => setSaved(false)} className={secondaryButton}>Change today&apos;s answers</button>
         </div>
       </Shell>
@@ -180,7 +185,7 @@ export function CombinedCheckin() {
   }
 
   return (
-    <Shell back="/" backLabel="Your lab">
+    <Shell>
       <h1 className="font-display text-display-sm tracking-tight">Today&apos;s check-in.</h1>
       <p className="mt-3 text-lead text-muted">One check-in for your {today.experiments.length} experiments. Shared questions are asked once.</p>
       {today.experiments.some((experiment) => experiment.recorded) && (

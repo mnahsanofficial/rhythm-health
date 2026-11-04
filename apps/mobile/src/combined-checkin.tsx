@@ -6,7 +6,8 @@ import { metricAnswer } from './checkin';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError, detailCode } from './lib/api';
 import { getTodayCheckin, saveTodayCheckin } from './lib/checkins';
-import { Action, Alert, BackLink, Copy, useStyles, Title, useStepFocus, Notice } from './ui';
+import { useNavScreen, WONT_BE_KEPT } from './nav';
+import { Action, Alert, Copy, useStyles, Title, useStepFocus, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 const prefilled = (today: TodayCheckin) => Object.fromEntries(today.questions.filter(question => question.value !== null && question.value !== undefined)
@@ -27,6 +28,9 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
   const [stale, setStale] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const answersKey = JSON.stringify({ values, changes, note });
+  const [loadedAnswers, setLoadedAnswers] = useState(answersKey);
+  useNavScreen({ kind: 'flow', onBack, busy, unsaved: !saved && answersKey !== loadedAnswers ? WONT_BE_KEPT.answers : null });
   const saving = useRef(false);
   const heading = useStepFocus(saved ? 'saved' : 'form');
   const testing = today.experiments.filter(item => item.change_required);
@@ -43,7 +47,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
     try {
       const fresh = await getTodayCheckin(token);
       if (!fresh.experiments.length) { onBack(); return; }
-      setToday(fresh); setValues(prefilled(fresh)); setChanges(madeChanges(fresh)); setNote(fresh.note ?? ''); setFields({}); setError(undefined); setStale(false);
+      setToday(fresh); setValues(prefilled(fresh)); setChanges(madeChanges(fresh)); setNote(fresh.note ?? ''); setLoadedAnswers(JSON.stringify({ values: prefilled(fresh), changes: madeChanges(fresh), note: fresh.note ?? '' })); setFields({}); setError(undefined); setStale(false);
     } catch (cause) { failed(cause, "Couldn't load today's check-in. Try again."); }
     finally { saving.current = false; setBusy(false); }
   }
@@ -75,12 +79,11 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack }: 
       <Copy style={local.day}>{`Day ${item.day_number} of ${item.total_days}`}</Copy>
       <Copy>{item.question}</Copy>
     </View>)}
-    <Action label="Back to your lab" onPress={onBack} />
+    <Action label="Go to your lab" onPress={onBack} />
     <Action label="Edit answers" secondary onPress={() => setSaved(false)} />
   </View>;
 
   return <View style={styles.stack}>
-    <BackLink to="Your lab" disabled={busy} onPress={onBack} />
     <Title textRef={heading}>Today&apos;s check-in.</Title>
     <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{`One check-in for your ${today.experiments.length} experiments. Shared questions are asked once.`}</Copy>
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}

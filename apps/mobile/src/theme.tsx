@@ -41,25 +41,26 @@ export function ThemeControl() {
   </View>;
 }
 
-function ThemeIcon({ choice }: { choice: ThemeChoice }) {
+function ThemeIcon({ choice, color }: { choice: ThemeChoice; color?: string }) {
   const COLORS = useColors();
-  const stroke = { stroke: COLORS.muted, strokeWidth: 1.5, strokeLinecap: 'round' as const, fill: 'none' };
+  const tone = color ?? COLORS.muted;
+  const stroke = { stroke: tone, strokeWidth: 1.5, strokeLinecap: 'round' as const, fill: 'none' };
   return <Svg width={SPACING.lg - SPACING.xs} height={SPACING.lg - SPACING.xs} viewBox="0 0 20 20" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     {choice === 'light' && <><Circle cx={10} cy={10} r={3.5} {...stroke} /><Path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" {...stroke} /></>}
     {choice === 'dark' && <Path d="M16 12.2A6.5 6.5 0 0 1 7.8 4a6.5 6.5 0 1 0 8.2 8.2Z" {...stroke} />}
-    {choice === 'system' && <><Circle cx={10} cy={10} r={6.5} {...stroke} /><Path d="M10 3.5a6.5 6.5 0 0 1 0 13Z" fill={COLORS.muted} /></>}
+    {choice === 'system' && <><Circle cx={10} cy={10} r={6.5} {...stroke} /><Path d="M10 3.5a6.5 6.5 0 0 1 0 13Z" fill={tone} /></>}
   </Svg>;
 }
 
-/** For the header before sign-in, where there's no menu to hold the full control. */
-export function ThemeCycleButton() {
+/** Before sign-in, where there's no menu to hold the full control. `color` is for when it sits on the landing's sky. */
+export function ThemeCycleButton({ color }: { color?: string }) {
   const COLORS = useColors();
   const { choice, choose } = useTheme();
   const index = CHOICES.findIndex(({ value }) => value === choice);
   const next = CHOICES[(index + 1) % CHOICES.length];
   return <Pressable accessibilityRole="button" accessibilityLabel={`Theme: ${CHOICES[index].label}. Change to ${next.label}`} onPress={() => choose(next.value)}
     style={({ pressed }) => [fixed.cycle, pressed && { backgroundColor: COLORS.line }]}>
-    <ThemeIcon choice={choice} />
+    <ThemeIcon choice={choice} color={color} />
   </Pressable>;
 }
 
