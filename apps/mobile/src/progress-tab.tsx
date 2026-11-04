@@ -52,8 +52,8 @@ export function ProgressScreen({ entries, updatedAt, token, offline, onExpired, 
     <Title textRef={heading}>Progress</Title>
     {offline && updatedAt && <Status>{`Offline, last updated ${updatedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>}
     {entries === null && <Copy>{offline ? 'Reconnect to load your progress.' : 'Loading your progress…'}</Copy>}
-    {(entries?.length === 0 && !summary?.example && !summary?.metrics.length) && <>
-      <Copy>Nothing running yet.</Copy>
+    {entries?.length === 0 && <>
+      <Copy>{summary?.metrics.length ? 'Nothing running right now.' : 'Nothing running yet.'}</Copy>
       <Action label="Ask a question" disabled={offline} onPress={onAsk} />
     </>}
     {error && <><Alert>{error}</Alert><Action label="Try again" secondary disabled={offline} onPress={() => { setError(null); setAttempt(n => n + 1); }} /></>}
