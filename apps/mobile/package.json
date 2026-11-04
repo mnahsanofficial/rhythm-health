@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "export": "expo export --platform ios --platform android",
     "assets": "node scripts/generate-assets.mjs"
   },
