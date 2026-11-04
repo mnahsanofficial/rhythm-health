@@ -187,7 +187,7 @@ describe('the sums behind the scene', () => {
     expect(habitIcon('Walk after dinner')).toBe('walk');
     expect(habitIcon('Tea before bed')).toBe('spark');
   });
-  test.each([[844, 8, 0.2], [844, 2, 0.3], [667, 2, 0.24], [844, 7, 0.26]])('at height %s, step %s, the scene takes about %s of the screen', (height, step, share) => {
+  test.each([[844, 8, 0.17], [844, 2, 0.3], [844, 3, 0.35], [667, 2, 0.24], [844, 7, 0.22]])('at height %s, step %s, the scene takes about %s of the screen', (height, step, share) => {
     expect(sceneHeight(height, step) / height).toBeCloseTo(share, 1);
   });
   test('the review ring is never more than a third of the screen', () => {

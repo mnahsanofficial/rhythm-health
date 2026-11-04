@@ -250,3 +250,16 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `checkins-pe
 **First-run guide:** Skip is always on screen at 48pt, the step and mark are text, focus moves to the mark on each step, and the highlight is a 2pt `accent` edge beside the words, so colour isn't the only cue.
 
 **Not checked, and on PR 2's iPhone list:** the haptic; Reduce Motion on a device; VoiceOver focus inside the full-screen modal; the largest text sizes on the celebration.
+
+## Re-audit: mobile PR 4, onboarding template
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `onboarding-template.test.tsx` and Expo web in both modes (`docs/screenshots/mobile-onboarding/`).
+
+**Scenes:** hidden from screen readers, and never the only place for a fact: bedtime, hours, activity and picks are all in words or controls. Hour labels are `text` from the dark theme on a night sky in both modes.
+
+**Controls:** choices stay radios and checkboxes with their names, at 48pt or more. Icons on goals and habits are decorative. Compact Review rows are 48pt, cut long values to one line on screen, and speak the whole value.
+
+**Focus:** moves to the heading on each step, as before. The slide doesn't move focus or delay any control.
+
+**Not checked, and on the PR's iPhone list:** VoiceOver through all steps; Reduce Motion on a device; the largest text sizes, where Review and Limits will scroll, which the padding allows for; the native time rows, because Expo web draws a browser input there.
+

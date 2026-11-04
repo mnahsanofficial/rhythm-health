@@ -69,35 +69,55 @@ for (const scheme of ["light", "dark"] as const) {
     };
 
     // In a development build on web, Expo's warning toast covers the page. It reports web-only warnings (BackHandler, SVG props).
-    await page.addInitScript(() => addEventListener("DOMContentLoaded", () => { const style = document.createElement("style"); style.textContent = "#error-toast { display: none !important; }"; document.head.append(style); }));
+    // PHONE_INSETS=1 takes an iPhone's status bar and home area off the page, so the "fits" numbers match the device.
+    const insets = process.env.PHONE_INSETS ? "#root { position: fixed !important; top: 47px !important; bottom: 34px !important; left: 0; right: 0; height: auto !important; }" : "";
+    await page.addInitScript(extra => addEventListener("DOMContentLoaded", () => { const style = document.createElement("style"); style.textContent = `#error-toast { display: none !important; } ${extra}`; document.head.append(style); }), insets);
     await page.goto(APP);
     await button("Sign in").click();
     await page.getByLabel("Email").fill("learner@example.invalid");
     await page.getByLabel("Password", { exact: true }).fill("fake-test-password");
     await page.getByTestId("submit-action").getByRole("button").click();
 
-    await shot("01-setup-start", () => button("Start").waitFor());
+    // Every step but goals and habits should fit one 844-high screen. Printed so the PR can quote it.
+    const fits = async (name: string) => {
+      const overflow = await page.evaluate(() => Math.max(0, ...[...document.querySelectorAll("div")].filter(node => ["auto", "scroll"].includes(getComputedStyle(node).overflowY) && node.clientHeight > 100).map(node => node.scrollHeight - node.clientHeight)));
+      console.log(`${scheme} ${name}: scrolls by ${overflow}px`);
+    };
+    const step = async (name: string, prepare?: () => Promise<unknown>) => { await shot(name, prepare); await fits(name); };
+    await step("01-start", () => button("Start").waitFor());
     await button("Start").click();
-    await shot("02-setup-age-disabled", () => page.getByText("Pick one to continue.").waitFor());
+    await step("02-age-untouched", () => page.getByText("Pick one to continue.").waitFor());
     await page.getByRole("radio", { name: "25–34" }).click();
+    await step("03-age-picked");
     await button("Continue").click();
-    await shot("03-setup-sleep-untouched", () => page.getByText("Pick both times to continue.").waitFor());
+    await step("04-sleep-untouched", () => page.getByText("Pick both times to continue.").waitFor());
     // Expo web draws the browser's own time input here; the native time row is on the iPhone list.
     await page.locator('input[type="time"]').nth(0).fill("23:30");
     await page.locator('input[type="time"]').nth(1).fill("07:00");
+    await step("05-sleep-set");
     await button("Continue").click();
-    await shot("04-setup-hours-stepper", () => page.getByRole("button", { name: "Half an hour more" }).waitFor());
+    await step("06-hours", () => page.getByRole("button", { name: "Half an hour more" }).waitFor());
+    await page.getByRole("button", { name: "Half an hour less" }).click();
+    await step("07-hours-less");
     await button("Continue").click();
-    await page.getByRole("radio", { name: /^Lightly active/ }).click();
+    await step("08-activity-untouched", () => page.getByRole("radio", { name: /^Lightly active/ }).waitFor());
+    await page.getByRole("radio", { name: /^Very active/ }).click();
+    await step("09-activity-very");
     await button("Continue").click();
-    await page.getByRole("checkbox", { name: "Better focus" }).click();
-    await shot("05-setup-goals");
+    await step("10-goals-untouched", () => page.getByRole("checkbox", { name: "Better focus" }).waitFor());
+    for (const goal of ["Better focus", "Fall asleep faster", "Eat more vegetables"]) await page.getByRole("checkbox", { name: goal }).click();
+    await step("11-goals-picked");
     await button("Continue").click();
-    await button(/Skip|Continue/).click();
-    await button(/Skip|Continue/).click();
-    await shot("06-setup-review-rows", () => page.getByText("Here's your rhythm.").waitFor());
-    await page.evaluate(() => { for (const node of document.querySelectorAll("div")) if (node.scrollHeight > node.clientHeight + 200) node.scrollTop = node.scrollHeight; });
-    await shot("07-setup-review-rows-scrolled");
+    for (const habit of ["Coffee around 9am", "Walk after dinner", "Phone in bed"]) await page.getByRole("checkbox", { name: habit }).click();
+    await step("12-habits-picked");
+    await button("Continue").click();
+    await page.getByRole("checkbox", { name: "Long commute" }).click();
+    await step("13-limits");
+    await button("Continue").click();
+    await step("14-review", () => page.getByText("Here's your rhythm.").waitFor());
+    await page.setViewportSize({ width: 375, height: 667 });
+    await step("15-review-small-phone");
+    await page.setViewportSize({ width: 390, height: 844 });
     await button("Save my rhythm").click();
     await shot("07a-guide-step-1", () => page.getByText("Example · Step 1 of 3").waitFor());
     await page.getByRole("radio", { name: "Yes, I made the change" }).click();

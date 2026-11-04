@@ -21,6 +21,14 @@ const PATHS = {
   chevronDown: ['M6 9l6 6 6-6'],
   minus: ['M6 12h12'],
   plus: ['M12 6v12M6 12h12'],
+  sunrise: ['M3 18h18M6 18a6 6 0 0 1 12 0M12 5v3M5 9l2 2M19 9l-2 2M8 21h8'],
+  focus: ['M12 3v4M12 17v4M3 12h4M17 12h4M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'],
+  coffee: ['M5 9h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9ZM17 11h1.5a2.5 2.5 0 0 1 0 5H17M8 3v3M12 3v3'],
+  walk: ['M13 4.5a1.5 1.5 0 1 0 0 .01M11 8l-3 3 1 4M11 8l3 3 3 1M11 8l1 6-3 7M12 14l3 3 1 4'],
+  greens: ['M12 21c-5 0-8-3-8-7h16c0 4-3 7-8 7ZM12 14c0-5 2-8 6-10 1 4-1 8-6 10ZM12 14c0-3-2-6-5-7-1 3 1 6 5 7Z'],
+  plate: ['M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'],
+  phone: ['M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM11 18h2'],
+  spark: ['M12 3v5M12 16v5M3 12h5M16 12h5M6 6l3 3M15 15l3 3M18 6l-3 3M9 15l-3 3'],
 } as const;
 export type IconName = keyof typeof PATHS;
 

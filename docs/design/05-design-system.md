@@ -301,3 +301,22 @@ Full screen, after saving a check-in. It's the third signature moment, after the
 | Moving screens into tabs touches `today.tsx`'s navigation state, including the paid proposal that must stay mounted | High | Tests first. The existing "stays mounted" tests must keep passing untouched |
 | Tests look up the strings being cut | Med | Update them with each screen, and say so in the PR |
 | Five tabs at 320 wide with large text | Med | Test at 320; capped label |
+
+### Onboarding template
+
+One layout for every step. From the top: header, progress bar with "2 of 7 · Sleep", scene, question, one line, controls, sticky action.
+
+| Rule | Detail |
+|---|---|
+| Pinned | The bar and scene sit above the scroller (`PinnedTop`), so nothing covers them. The scene steps aside while the keyboard is open |
+| Scene height | 35% of the screen on start and hours, 33% on age, 30% on the rest, 22% on Limits, 17% on Review, and 24% on phones under 700 high. Never over a third on Review |
+| Fit | No scrolling on an 844-high iPhone, status bar and home area included, except Goals and Habits. Measured with `PHONE_INSETS=1` |
+| Space | Controls centre in what's left, so a short step has no gap at the bottom |
+| Scroll padding | The sticky bar floats over the scroller, and the content's bottom padding equals its measured height. This holds on every screen |
+| Copy | Continue on every step, also when editing. "Save my rhythm" only on Review. One line under each question |
+| Scene | Drawn with `react-native-svg` in tokens, hidden from screen readers. Every fact is also in words |
+| Morph | Layers crossfade in place. The ring stays on across Sleep, Hours and Review, so its arc changes rather than swaps |
+| Motion | The question slides over `step` (350), the right way round. The bar fills over `step`. The scene follows an answer over `response` (280). Choices scale over `press`, with a light haptic |
+| Reduce Motion | Everything is simply there, with no movement |
+
+Hour labels on the ring don't grow with text size, because the picture has a fixed shape. The rows and values below do, and carry the same facts.

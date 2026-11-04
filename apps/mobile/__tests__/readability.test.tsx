@@ -207,7 +207,7 @@ describe('setup', () => {
 
   test('the step label is one line of text that can wrap', async () => {
     await setupAt(2, {});
-    expect(await screen.findByText('Question 2 of 7 · Sleep')).toBeVisible();
+    expect(await screen.findByText('2 of 7 · Sleep')).toBeVisible();
   });
 
   test('the time picker follows the dark theme', async () => {
