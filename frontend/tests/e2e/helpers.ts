@@ -78,6 +78,11 @@ export async function installApiMocks(page: Page) {
       return;
     }
 
+    if (url.pathname === "/api/experiments/calibration" && method === "GET") {
+      await route.fulfill({ status: 200, json: { points: [], average_off_by_points: null, trend: null, example: null } });
+      return;
+    }
+
     if (url.pathname === "/api/experiments" && method === "GET") {
       await route.fulfill({ status: 200, json: url.searchParams.get("status") === "active" && activeExperiment ? [activeExperiment] : [] });
       return;

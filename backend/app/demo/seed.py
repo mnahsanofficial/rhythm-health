@@ -15,6 +15,9 @@ CATEGORY = "energy"
 BASELINE_DAYS = 3
 INTERVENTION_DAYS = 7
 
+# An invented guess, used only to show the calibration card's labelled example.
+EXAMPLE_GUESS_PERCENT = 5
+
 # Each run is finished a day ago, so the dates in the demo always look recent.
 FINISHED_DAYS_AGO = 1
 

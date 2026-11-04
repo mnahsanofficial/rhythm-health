@@ -8,6 +8,7 @@ type Serialized<T> = T extends readonly (infer U)[]
     ? { [K in keyof T]-?: Serialized<T[K]> }
     : T;
 
+export type Calibration = Serialized<components["schemas"]["Calibration"]>;
 export type SleepSchedule = components["schemas"]["SleepSchedule"];
 export type Classification = components["schemas"]["Classification"];
 export type SafetyDecision = components["schemas"]["SafetyDecision"];
