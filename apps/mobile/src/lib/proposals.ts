@@ -24,7 +24,7 @@ export function parseGuess(answer: string): number | null {
 export const signedPercent = (value: number) => `${value > 0 ? '+' : ''}${value}%`;
 
 /** Said on Ask and in You. */
-export const TRUST_LINE = 'Your question goes to an AI to design the experiment. Your result is calculated from your own check-ins, not by the AI.';
+export const TRUST_LINE = 'Your question goes to an AI to design the experiment, and the AI puts your results into words. The numbers come from your own check-ins.';
 
 const GOAL_QUESTIONS: Record<string, string> = {
   'More energy in the morning': 'What could give me more energy in the morning?',
