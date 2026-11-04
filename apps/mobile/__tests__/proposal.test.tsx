@@ -540,6 +540,7 @@ test('a safety block with only advice shows it as text, offers nothing to fill, 
   expect(await screen.findByText(advice)).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Use this instead' })).toBeNull();
   expect(screen.getByLabelText('Your question or goal').props.value).toBe('');
+  expect(screen.queryByLabelText('Suggestions')).toBeNull(); // The advice stays on screen, without scrolling.
   expect(count(PROPOSE)).toBe(1);
 });
 
@@ -575,7 +576,7 @@ describe('the planning moment', () => {
 
   test('shows the scene, the three steps and one honest line, instead of the form', async () => {
     await waiting();
-    expect(screen.getByTestId('planning-scene')).toBeTruthy();
+    expect(screen.getByTestId('planning-scene', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText('Usually 10–20 seconds.')).toBeVisible();
     for (const step of STEPS) expect(screen.getByText(step)).toBeVisible();
     expect(screen.queryByLabelText('Your question or goal')).toBeNull();
@@ -584,8 +585,8 @@ describe('the planning moment', () => {
 
   test('draws the 10 days: 3 baseline, then 7 test', async () => {
     await waiting();
-    expect(screen.getAllByTestId('planning-day-baseline')).toHaveLength(3);
-    expect(screen.getAllByTestId('planning-day-test')).toHaveLength(7);
+    expect(screen.getAllByTestId('planning-day-baseline', { includeHiddenElements: true })).toHaveLength(3);
+    expect(screen.getAllByTestId('planning-day-test', { includeHiddenElements: true })).toHaveLength(7);
   });
 
   test('the API has no stages, so no step ever claims to be done', async () => {
@@ -596,7 +597,7 @@ describe('the planning moment', () => {
 
   test('with Reduce Motion the scene is static: every day drawn, nothing pulsing', async () => {
     await waiting(); // The test double reports Reduce Motion on.
-    for (const day of screen.getAllByTestId(/^planning-day-/)) expect(StyleSheet.flatten(day.props.style).opacity).toBe(1);
+    for (const day of screen.getAllByTestId(/^planning-day-/, { includeHiddenElements: true })) expect(StyleSheet.flatten(day.props.style).opacity).toBe(1);
     expect(screen.getByLabelText(`${STEPS[0]}, in progress`)).toBeTruthy();
   });
 
