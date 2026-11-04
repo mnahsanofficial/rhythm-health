@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # How long to wait for the reasoning model's answer.
     openrouter_timeout_seconds: float = 75.0
 
+    # Optional. Blank means no error reporting.
+    sentry_dsn: str = ""
+
     # Paid AI actions one person can use per UTC day.
     ai_daily_limit_propose: int = 5
     ai_daily_limit_report: int = 3
