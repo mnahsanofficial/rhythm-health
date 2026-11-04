@@ -147,6 +147,25 @@ describe("Lab Report flow", () => {
     expect(posts).toBe(2);
   });
 
+  it("shows the daily limit from POST /report without offering a retry", async () => {
+    const user = userEvent.setup();
+    const message = "You've used all of today's written reports. You can write this one tomorrow.";
+    server.use(
+      http.get(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(labReport)),
+      http.get(`${api}/api/experiments/capacity`, () => HttpResponse.json({ active: 0, limit: 3, can_start: true })),
+      http.post(`${api}/api/experiments/${id}/report`, () => HttpResponse.json(
+        { detail: { code: "ai_daily_limit", message, limit: 3 } }, { status: 429 },
+      )),
+    );
+    render(<LabReport id={id} />);
+    await user.click(await screen.findByRole("button", { name: "Write my report" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(message);
+    expect(alert).toHaveTextContent(/results above are saved/i);
+    expect(within(alert).queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
   it("takes every figure from the analysis, never from the narrative text", async () => {
     const misquoted: LabReportData = {
       ...writtenLabReport,

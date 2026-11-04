@@ -240,7 +240,7 @@ function Learning({ id, token, offline, seeded, narrative, onExpired, onWritten,
       <Copy style={ui.muted}>Your results are in. We can write them up in plain words: what they suggest about you, what may have shaped them, and what to test next.</Copy>
       {writing.kind === 'error' ? <>
         <Alert>{writeErrorText(writing.status, writing.message)} Your results above are saved.</Alert>
-        {writing.status !== 409 && writing.status !== 404 && <Action label="Try again" secondary disabled={offline} onPress={() => void write()} />}
+        {writing.status !== 409 && writing.status !== 404 && writing.status !== 429 && <Action label="Try again" secondary disabled={offline} onPress={() => void write()} />}
       </> : <Action label={busy ? 'Writing your report…' : 'Write my report'} secondary={!nextStep} disabled={busy || offline} onPress={() => void write()} />}
       {busy && <Status style={local.small}>Writing your report from your results. This can take a little while; you can stay on this page.</Status>}
     </>}

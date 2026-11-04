@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import db_error, owned_experiment, profile_id_for
 from app.auth.supabase import get_current_user
+from app.integrations import ai_usage
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
 from app.integrations.supabase import SupabaseConflict, SupabaseUnavailable
 from app.repositories import checkins, experiments, profiles, reports
 from app.schemas.analysis import Analysis
 from app.schemas.lab_report import LabReport
-from app.services import analysis
+from app.services import ai_limit, analysis
 from app.services.lab_report import build_lab_report, narrative_from_row, narrative_to_columns
 from app.services.report_writer import write_narrative
 
@@ -107,8 +108,11 @@ def write_report(
     if narrative_from_row(saved) is not None and not regenerate:
         return build_lab_report(row, saved, logged)
 
+    profile_id = str(profile["id"])
+    ai_limit.ensure_within_daily_limit(profile_id, "report")
     try:
-        narrative = write_narrative(row, Analysis.model_validate(saved["analysis"]), logged, profile)
+        with ai_usage.for_profile(profile_id):
+            narrative = write_narrative(row, Analysis.model_validate(saved["analysis"]), logged, profile)
     except AIUnavailable:
         raise HTTPException(status_code=503, detail="AI service unavailable, please try again")
     except AIInvalidOutput:
