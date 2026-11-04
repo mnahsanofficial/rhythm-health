@@ -113,9 +113,8 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
     setReport(null); setDetail(false); setFinishing(null); onSection('ask'); setStarted(false);
     if (question) { setAskKey(key => key + 1); setAsking(question); }
   };
-  const finished = (result: LabReport) => {
-    if (!data) return;
-    void reminders.refresh(entries.filter(item => item !== data)); setStarted(false); setDetail(false);
+  const finished = (entry: DayData, result: LabReport) => {
+    void reminders.refresh(entries.filter(item => item !== entry)); setStarted(false); setDetail(false);
     setFinishing(result); setLoaded(null); void load();
   };
   const checkin = (entry: DayData) => { setStarted(false); setChosen(entry.experiment.id); setEditing(entry); };
@@ -146,7 +145,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
         onAsk={() => ask('')} />
     </View>;
     if (detail && data) return <ExperimentDetail data={data} token={token} offline={offline} disabled={disabled} onExpired={onExpired}
-      onBack={() => { setDetail(false); void load(); }} onCheckin={() => checkin(data)} onOpenReport={() => setReport({ id: data.experiment.id })} onCompleted={finished} />;
+      onBack={() => { setDetail(false); void load(); }} onCheckin={() => checkin(data)} onOpenReport={() => setReport({ id: data.experiment.id })} onCompleted={result => finished(data, result)} />;
     return lab;
   };
   const lab = (
@@ -160,7 +159,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
       {!loaded ? (!offline && busy ? <Loading message="Loading your day…" /> : offline ? <Copy>Reconnect to load today&apos;s experiment.</Copy> : null)
         : entries.length === 0 ? (planOpen ? null : sampleControls) : entries.length === 1 ? <>
           {sampleControls}
-          <TodayCard data={entries[0]} disabled={disabled} onCheckin={() => checkin(entries[0])} onOpenReport={() => setReport({ id: entries[0].experiment.id })} />
+          <TodayCard data={entries[0]} disabled={disabled} token={token} offline={offline} onExpired={onExpired} onCompleted={result => finished(entries[0], result)} onCheckin={() => checkin(entries[0])} onOpenReport={() => setReport({ id: entries[0].experiment.id })} />
           <ActiveLab data={entries[0]} onDetail={() => openDetail(entries[0])} />
           {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
         </> : <>
@@ -172,7 +171,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
             <Action label={loaded.today.all_recorded ? "Edit answers" : 'Check in for today'} secondary={loaded.today.all_recorded} disabled={disabled} onPress={() => setCombined(loaded.today)} />
           </View>}
           {entries.map(entry => <View key={entry.experiment.id} style={styles.divider}>
-            <TodayCard data={entry} disabled={disabled} onCheckin={() => checkin(entry)} onOpenReport={() => setReport({ id: entry.experiment.id })} />
+            <TodayCard data={entry} disabled={disabled} token={token} offline={offline} onExpired={onExpired} onCompleted={result => finished(entry, result)} onCheckin={() => checkin(entry)} onOpenReport={() => setReport({ id: entry.experiment.id })} />
             <ExperimentSummary data={entry} onDetail={() => openDetail(entry)} />
           </View>)}
           {!offline && busy && <Status style={styles.muted}>Refreshing your day…</Status>}
@@ -212,7 +211,7 @@ function ExperimentSummary({ data: { experiment, timeline }, baseline: showBasel
         <Copy>{`${experiment.intervention.timing} · ${experiment.intervention.frequency}`}</Copy>
       </>}
     </View>
-    <ForwardLink label={progress.state === 'ended' && !experiment.is_seeded ? 'See results' : 'See your experiment'} onPress={onDetail} />
+    <ForwardLink label="See your experiment" onPress={onDetail} />
   </>;
 }
 const useLabStyles = themedStyles(COLORS => StyleSheet.create({

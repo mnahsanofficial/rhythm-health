@@ -144,10 +144,8 @@ describe('controls have names and 48pt targets', () => {
   test('Lab Report, with the chart columns left out of the accessibility tree', async () => {
     setActive(ended);
     render(<MobileApp />);
-    const link = await screen.findByRole('button', { name: 'See results' });
-    await act(async () => { fireEvent.press(link); });
-    await press('See results');
-    await press('Yes, finish');
+    const finish = await screen.findByRole('button', { name: 'See your results' });
+    await act(async () => { fireEvent.press(finish); });
     const report = await screen.findByRole('button', { name: 'See full Lab Report' });
     await act(async () => { fireEvent.press(report); });
     await screen.findByRole('button', { name: 'Compare with the prediction' });
@@ -187,10 +185,8 @@ describe('screen readers hear what changes', () => {
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
     setActive(ended);
     render(<MobileApp />);
-    const link = await screen.findByRole('button', { name: 'See results' });
-    await act(async () => { fireEvent.press(link); });
-    await press('See results');
-    await press('Yes, finish');
+    const finish = await screen.findByRole('button', { name: 'See your results' });
+    await act(async () => { fireEvent.press(finish); });
     const report = await screen.findByRole('button', { name: 'See full Lab Report' });
     await act(async () => { fireEvent.press(report); });
     await press('Compare with the prediction');
