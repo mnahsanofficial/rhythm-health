@@ -345,3 +345,11 @@ Design can add optional nullable `Metric.min_label` / `max_label`, stored in exi
 - TypedDicts document shapes but don't validate them, and nothing here runs a type checker on the backend. Pydantic would validate, but it would change how every row is handled the day before the demo.
 - The red alert box (`rounded-card bg-clay-tint`) still appears in 10 files. Sharing it would touch almost every screen for little gain, so it can wait until after the demo.
 - `scene-art.tsx` stays at 363 lines. It's one illustration, with no copying between it, `day-story` and `experiment-flow`.
+
+## Continuous integration (4 Nov 2026)
+
+**What:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull request and on `main`. The `checks` job runs lint, typecheck, root `npm test` (with `logs:check`), `contract:check`, `brand:check`, the web build and backend `pytest`. The `browser` job runs the Playwright suite.
+
+**Why:** until now these ran only if someone remembered to run them on their own machine.
+
+**Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.
