@@ -434,7 +434,7 @@ test('the forecast range animates once without reduced motion', async () => {
   await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
 });
 
-const TRUST = 'Your question goes to an AI to design the experiment. Your result is calculated from your own check-ins, not by the AI.';
+const TRUST = 'Your question goes to an AI to design the experiment, and the AI puts your results into words. The numbers come from your own check-ins.';
 
 test('Ask says where the question goes and that the AI does not calculate the result', async () => {
   await openAsk();
