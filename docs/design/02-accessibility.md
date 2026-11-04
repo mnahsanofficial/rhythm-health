@@ -248,3 +248,13 @@ Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `checkins-pe
 **First-run guide:** Skip is always on screen at 48pt, the step and mark are text, focus moves to the mark on each step, and the highlight is a 2pt `accent` edge beside the words, so colour isn't the only cue.
 
 **Not checked, and on PR 2's iPhone list:** the haptic; Reduce Motion on a device; VoiceOver focus inside the full-screen modal; the largest text sizes on the celebration.
+
+## Re-audit: mobile PR 3, Progress and day 10
+
+Run on 4 Nov 2026 with `/design:accessibility-review`, from source, `progress-day10.test.tsx` and Expo web at 390 in both modes (`docs/screenshots/mobile-progress/`).
+
+**Progress:** results are written as sentences ("Normal 5 → with the change 6 (+20%)"), so nothing relies on a chart or on colour. The Example panel says "Example" in words, as a heading, and is `text` on `night-tint` (8+:1 in both modes). The trends note stays visible.
+
+**Finish flow:** the three facts are rows with their label beside the value. Each choice is a 48pt+ row with a hint that says where it goes. Overlaps with other experiments are shown here, because a one-sentence result without them could mislead. A failed save is an alert, and the rows stay usable.
+
+**Not checked, and on PR 3's iPhone list:** VoiceOver through the finish flow; the largest text sizes on long questions in Progress.

@@ -17,7 +17,13 @@ const running = { ...experiment, id: "running-id", status: "active", started_at:
 const timeline = timelineFixture(running as never, { recorded: [1, 3], missed: [2], nextDayAt: "2026-11-05T10:00:00Z" });
 const USER = { id: "11111111-1111-4111-8111-111111111111", aud: "authenticated", role: "authenticated", email: "learner@example.invalid", app_metadata: {}, user_metadata: {}, created_at: "2026-10-01T00:00:00Z" };
 
-async function mocks(page: Page, state: { hasProfile: boolean; active: unknown[] }) {
+const trend = (label: string, runs: [string, string, number, number, number][], normalChange: number | null) => ({
+  key: label, label, type: "scale", normal_change: normalChange,
+  runs: runs.map(([id, question, baseline, result, percent]) => ({ experiment_id: id, question, completed_at: null, baseline_mean: baseline, result_mean: result, percent_change: percent })),
+});
+
+type State = { hasProfile: boolean; active: unknown[]; compared: unknown[]; kept: unknown[] };
+async function mocks(page: Page, state: State) {
   await page.route(/supabase\.test\.invalid/, route => route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" }, json: {
     access_token: "fake-access-token", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, refresh_token: "fake-refresh-token", user: USER,
   } }));
@@ -33,6 +39,9 @@ async function mocks(page: Page, state: { hasProfile: boolean; active: unknown[]
     }
     if (path === "/api/experiments?status=active") return json(state.active);
     if (path === "/api/experiments?status=completed") return json([writtenLabReport.experiment]);
+    if (path === "/api/experiments/progress-summary") return json({ metrics: state.compared, kept: state.kept, example: state.compared.length ? null : { question: "Example: does a walk after dinner help my mornings?", metrics: [trend("Morning energy", [["example", "Example: does a walk after dinner help my mornings?", 5.4, 6.6, 22.2]], null)] } });
+    if (path.endsWith("/outcome")) { state.kept = [{ experiment_id: "a", question: QUESTION, habit: "Walk for 20 minutes", completed_at: null }]; return json({ experiment_id: "a", choice: "keep" }); }
+    if (path.endsWith("/complete")) return json(writtenLabReport);
     if (path === "/api/experiments/propose") return json({ ...proposeResponse, personal_guess_available: true });
     if (path === "/api/experiments/calibration") return json({ points: [], trend: null, average_off_by_points: null, example: null, count: 0 });
     if (path.endsWith("/progress")) return json(timeline);
@@ -46,7 +55,7 @@ for (const scheme of ["light", "dark"] as const) {
   test(`phone ${scheme}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.setViewportSize({ width: 390, height: 844 });
-    const state = { hasProfile: false, active: [] as unknown[] };
+    const state: State = { hasProfile: false, active: [], compared: [], kept: [] };
     await mocks(page, state);
     const folder = `${out}/${scheme}`;
     mkdirSync(folder, { recursive: true });
@@ -134,7 +143,26 @@ for (const scheme of ["light", "dark"] as const) {
     await page.getByText(/Day 4 recorded/).first().waitFor();
     await page.waitForTimeout(700);
     await page.screenshot({ path: `${folder}/23-celebration.png` });
-    await page.waitForTimeout(2200);
+    // react-native-web reports a screen reader as on, so here the celebration waits for a tap, as it does with VoiceOver.
+    await button("Continue").click();
+    await page.waitForTimeout(450);
     await page.screenshot({ path: `${folder}/24-today-after.png` });
+    await shot("25-progress-with-example", () => tab("Progress").click());
+
+    const ended = { ...running, progress: { ...running.progress, state: "ended", day_number: null, phase: null, phase_day: null, phase_days: null, days_remaining: 0 } };
+    state.active = [ended];
+    await page.route(/api\.test\.invalid.*\/progress$/, route => route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, json: timelineFixture(ended as never, { recorded: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }) }));
+    await page.reload();
+    await button("Sign in").click();
+    await page.getByLabel("Email").fill("learner@example.invalid");
+    await page.getByLabel("Password", { exact: true }).fill("fake-test-password");
+    await page.getByTestId("submit-action").getByRole("button").click();
+    await button("See results").click();
+    await button("See results").click();
+    await button("Yes, finish").click();
+    await shot("26-finish-flow", () => button("See full Lab Report").waitFor());
+    state.compared = [trend("Morning energy", [["a", QUESTION, 5.4, 6.6, 22.2], ["b", "Does less coffee help?", 6.1, 6.8, 11.5]], 0.7)];
+    await button(/^Keep this habit/).click();
+    await shot("27-progress-compared", () => page.getByText("Habits I kept").waitFor());
   });
 }

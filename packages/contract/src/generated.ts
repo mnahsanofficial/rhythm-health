@@ -110,6 +110,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/experiments/progress-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Progress Summary
+         * @description Finished experiments compared, metric by metric, and the habits kept. Never calls AI.
+         */
+        get: operations["get_progress_summary_api_experiments_progress_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/experiments/{experiment_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Outcome
+         * @description What someone chose after finishing. A sample or an unfinished experiment has nothing to choose.
+         */
+        post: operations["set_outcome_api_experiments__experiment_id__outcome_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/experiments/{experiment_id}": {
         parameters: {
             query?: never;
@@ -764,6 +804,17 @@ export interface components {
             /** Frequency */
             frequency: string;
         };
+        /** KeptHabit */
+        KeptHabit: {
+            /** Experiment Id */
+            experiment_id: string;
+            /** Question */
+            question: string;
+            /** Habit */
+            habit: string;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /**
          * LabReport
          * @description Everything the Lab Report screen needs, in one response.
@@ -831,12 +882,61 @@ export interface components {
              */
             outliers: components["schemas"]["Outlier"][];
         };
+        /**
+         * MetricRun
+         * @description One metric in one finished experiment: your normal days against your test days.
+         */
+        MetricRun: {
+            /** Experiment Id */
+            experiment_id: string;
+            /** Question */
+            question: string;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Baseline Mean */
+            baseline_mean?: number | null;
+            /** Result Mean */
+            result_mean?: number | null;
+            /** Percent Change */
+            percent_change?: number | null;
+        };
+        /** MetricTrend */
+        MetricTrend: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Type */
+            type: string;
+            /** Runs */
+            runs: components["schemas"]["MetricRun"][];
+            /** Normal Change */
+            normal_change?: number | null;
+        };
         /** NextExperiment */
         NextExperiment: {
             /** Question */
             question: string;
             /** Reason */
             reason: string;
+        };
+        /** OutcomeOut */
+        OutcomeOut: {
+            /** Experiment Id */
+            experiment_id: string;
+            /**
+             * Choice
+             * @enum {string}
+             */
+            choice: "keep" | "variation" | "new";
+        };
+        /** OutcomeRequest */
+        OutcomeRequest: {
+            /**
+             * Choice
+             * @enum {string}
+             */
+            choice: "keep" | "variation" | "new";
         };
         /** Outlier */
         Outlier: {
@@ -991,6 +1091,24 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * ProgressExample
+         * @description The demo sample, kept apart so it can't reach the real numbers above. Always shown labelled.
+         */
+        ProgressExample: {
+            /** Question */
+            question: string;
+            /** Metrics */
+            metrics: components["schemas"]["MetricTrend"][];
+        };
+        /** ProgressSummary */
+        ProgressSummary: {
+            /** Metrics */
+            metrics: components["schemas"]["MetricTrend"][];
+            /** Kept */
+            kept: components["schemas"]["KeptHabit"][];
+            example?: components["schemas"]["ProgressExample"] | null;
         };
         /**
          * ProposeRequest
@@ -1398,6 +1516,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Calibration"];
+                };
+            };
+        };
+    };
+    get_progress_summary_api_experiments_progress_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressSummary"];
+                };
+            };
+        };
+    };
+    set_outcome_api_experiments__experiment_id__outcome_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                experiment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

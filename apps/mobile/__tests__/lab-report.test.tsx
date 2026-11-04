@@ -87,11 +87,17 @@ async function finish() {
   await press('See results');
   await press('Yes, finish');
 }
+/** Finishing shows the short result and the choice first. The report is one tap further. */
+async function pastFinishFlow() {
+  const link = await screen.findByRole('button', { name: 'See full Lab Report' });
+  await act(async () => { fireEvent.press(link); });
+  await screen.findByRole('header', { name: 'Prediction vs reality' });
+}
 async function openReport(report: LabReport = labReport) {
   defaults[COMPLETE] = { body: report };
   defaults[READ] = { body: report };
   await finish();
-  await screen.findByRole('header', { name: 'Prediction vs reality' });
+  await pastFinishFlow();
 }
 
 describe('finish', () => {
@@ -119,7 +125,7 @@ describe('finish', () => {
     await press('See results');
     const button = screen.getByRole('button', { name: 'Yes, finish' });
     await act(async () => { fireEvent.press(button); fireEvent.press(button); });
-    await screen.findByRole('header', { name: 'Prediction vs reality' });
+    await pastFinishFlow();
     expect(count(COMPLETE)).toBe(1);
   });
 
@@ -136,7 +142,7 @@ describe('finish', () => {
   ])('%s reads the current state and opens the report without finishing again', async (_name, reply) => {
     queue(COMPLETE, reply);
     await finish();
-    await screen.findByRole('header', { name: 'Prediction vs reality' });
+    await pastFinishFlow();
     expect(count(READ)).toBe(1);
     expect(count(COMPLETE)).toBe(1);
   });
@@ -148,7 +154,7 @@ describe('finish', () => {
     expect(await screen.findByText('Database unavailable')).toBeVisible();
     expect(count(COMPLETE)).toBe(1);
     await press('Yes, finish');
-    await screen.findByRole('header', { name: 'Prediction vs reality' });
+    await pastFinishFlow();
     expect(count(COMPLETE)).toBe(2);
   });
 
@@ -222,7 +228,7 @@ describe('comparison', () => {
     const report = { ...labReport, analysis: { ...labReport.analysis, prediction: null, personal_guess: { guessed_change_percent: 12.5, observed_change_percent: null, error_points: null } } };
     defaults[COMPLETE] = { body: report };
     await finish();
-    await screen.findByRole('header', { name: 'Prediction vs reality' });
+    await pastFinishFlow();
   }
 
   test('reduced motion reveals at once', async () => {
@@ -447,6 +453,7 @@ describe('run this experiment', () => {
     defaults[READ] = { body: writtenLabReport };
     defaults[CAPACITY] = { body: { active: 3, limit: 3, can_start: false } };
     await finish();
+    await pastFinishFlow();
     expect(await screen.findByText("You're running 3 experiments, the most at once. Finish one before starting this one.")).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Run this experiment' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Go to Today' })).toBeVisible();
@@ -457,6 +464,7 @@ describe('run this experiment', () => {
     defaults[READ] = { body: writtenLabReport };
     defaults[CAPACITY] = { body: { active: 2, limit: 3, can_start: true } };
     await finish();
+    await pastFinishFlow();
     expect(await screen.findByRole('button', { name: 'Run this experiment' })).toBeVisible();
   });
 
@@ -468,6 +476,8 @@ describe('run this experiment', () => {
     defaults[COMPLETE] = { body: withOverlap };
     defaults[READ] = { body: withOverlap };
     await finish();
+    expect(await screen.findByText(description)).toBeVisible();
+    await pastFinishFlow();
     expect(await screen.findByRole('header', { name: 'Other experiments at the same time' })).toBeVisible();
     expect(screen.getByText(description)).toBeVisible();
   });
@@ -476,6 +486,7 @@ describe('run this experiment', () => {
     defaults[COMPLETE] = { body: writtenLabReport };
     defaults[READ] = { body: writtenLabReport };
     await finish();
+    await pastFinishFlow();
     await screen.findByRole('button', { name: 'Run this experiment' });
     expect(screen.queryByRole('header', { name: 'Other experiments at the same time' })).toBeNull();
   });

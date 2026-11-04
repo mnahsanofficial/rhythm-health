@@ -81,6 +81,23 @@ def list_completed(profile_id: str, limit: int) -> list[ExperimentRow]:
     )
 
 
+def set_outcome(profile_id: str, experiment_id: str, choice: str) -> ExperimentRow | None:
+    """Store what someone chose after finishing. Only a real, completed experiment of theirs can have one."""
+    rows = rest_request(
+        "PATCH",
+        "experiments",
+        params={
+            "id": f"eq.{experiment_id}",
+            "profile_id": f"eq.{profile_id}",
+            "status": "eq.completed",
+            "is_seeded": "eq.false",
+        },
+        json={"outcome": choice},
+        prefer="return=representation",
+    )
+    return rows[0] if rows else None
+
+
 def delete_seeded(profile_id: str) -> None:
     """Remove this profile's seeded demo experiments. Check-ins and reports go with them
     (on delete cascade). Normal experiments are never matched."""
