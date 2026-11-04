@@ -4,7 +4,8 @@ import { LAYOUT, NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
 import { SampleControls } from './sample-controls';
 import { BaselineContext } from './baseline-context';
 import { ExperimentDetail } from './experiment-detail';
-import { Observations } from './progress';
+import { FinishFlow } from './finish-flow';
+import { ProgressScreen } from './progress-tab';
 import { TodayCard } from './today-card';
 import { ReminderNotice, Settings } from './settings';
 import { useReminders } from './reminder-context';
@@ -19,7 +20,7 @@ import { ProposalFlow } from './proposal';
 import { You } from './you';
 import type { ActiveCapacity, Experiment, ExperimentTimeline, LabReport, Profile, TodayCheckin } from '@rhythm-health/contract';
 import { useNavScreen } from './nav';
-import { Action, Alert, Copy, ForwardLink, Loading, useStepFocus, useStyles, Title, Status } from './ui';
+import { Action, Alert, Copy, ForwardLink, Loading, useStyles, Title, Status } from './ui';
 import { ApiError } from './lib/api';
 import { getCapacity, getProgress, listActiveExperiments } from './lib/experiments';
 import { themedStyles } from './theme-core';
@@ -44,6 +45,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const [asking, setAsking] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [report, setReport] = useState<{ id: string; initial?: LabReport } | null>(null);
+  const [finishing, setFinishing] = useState<LabReport | null>(null);
   const [historyCache] = useState<HistoryCache>({ value: null });
   const load = useCallback(async () => {
     if (offline) return;
@@ -83,7 +85,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
 
   // Choosing a section in the header leaves open screens. An open proposal stays mounted (below): it was paid for.
   const [seenNavigation, setSeenNavigation] = useState(navigation);
-  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setSavedAll(null); setChosen(null); setCombined(null); }
+  if (seenNavigation !== navigation) { setSeenNavigation(navigation); setEditing(null); setReport(null); setDetail(false); setSavedDay(null); setSavedAll(null); setChosen(null); setCombined(null); setFinishing(null); }
 
   const disabled = offline || busy || error !== null;
   const entries = loaded?.value ?? [];
@@ -99,7 +101,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const inline = Boolean(loaded) && entries.length === 0;
   if (section === 'ask' && asking === null) setAsking('');
   const flowOpen = asking !== null || inline;
-  const flowShown = flowOpen && (section === 'ask' || (section === 'lab' && inline)) && !combined && !editing && savedDay === null && !report && !detail;
+  const flowShown = flowOpen && (section === 'ask' || (section === 'lab' && inline)) && !combined && !editing && savedDay === null && !report && !detail && !finishing;
   const flow = flowOpen && <View style={flowShown ? undefined : hidden}>
     <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile} shown={flowShown}
       onHome={toLab}
@@ -107,23 +109,26 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   </View>;
   /** A suggested question replaces whatever was open; an empty ask keeps a plan already on screen. */
   const ask = (question: string) => {
-    setReport(null); setDetail(false); onSection('ask'); setStarted(false);
+    setReport(null); setDetail(false); setFinishing(null); onSection('ask'); setStarted(false);
     if (question) { setAskKey(key => key + 1); setAsking(question); }
   };
   const finished = (result: LabReport) => {
     if (!data) return;
     void reminders.refresh(entries.filter(item => item !== data)); setStarted(false); setDetail(false);
-    setReport({ id: data.experiment.id, initial: result }); setLoaded(null); void load();
+    setFinishing(result); setLoaded(null); void load();
   };
   const checkin = (entry: DayData) => { setStarted(false); setChosen(entry.experiment.id); setEditing(entry); };
   const openDetail = (entry: DayData) => { setChosen(entry.experiment.id); setDetail(true); };
-  useNavScreen(section !== 'lab' && !combined && !editing && savedDay === null && !report ? { kind: 'section', onBack: toLab } : null);
+  useNavScreen(section !== 'lab' && !combined && !editing && savedDay === null && !report && !finishing ? { kind: 'section', onBack: toLab } : null);
   const content = () => {
     if (combined) return <CombinedCheckin key={combined.revision} initial={combined} token={token} offline={offline} onExpired={onExpired} onBack={() => { setCombined(null); void load(); }}
       onSaved={result => { setCombined(null); setSavedAll(result); void load(); }} />;
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
       onBack={() => { setEditing(null); void load(); }}
       onSaved={() => { setSavedDay(editing.timeline.progress.day_number); setEditing(null); void load(); }} />;
+    if (finishing) return <FinishFlow report={finishing} token={token} offline={offline} onExpired={onExpired}
+      onSeeReport={() => { setReport({ id: finishing.experiment.id, initial: finishing }); setFinishing(null); }}
+      onKeep={() => { setFinishing(null); onSection('progress'); }} onVariation={ask} onNew={() => ask('')} />;
     if (report) return <LabReportScreen key={report.id} id={report.id} initial={report.initial} token={token} offline={offline} onExpired={onExpired}
       backTo={section === 'history' ? 'History' : section === 'demo' ? 'Example' : 'Today'}
       onBack={() => { setReport(null); void load(); }}
@@ -181,21 +186,6 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
     {savedAll && savedAll.experiments.length > 0 && <Celebration day={savedAll.experiments[0].day_number} totalDays={savedAll.experiments[0].total_days} recordedDays={null} daysLeft={null}
       seeded={entries.some(entry => entry.experiment.is_seeded && savedAll.experiments.some(item => item.id === entry.experiment.id))}
       title={`${savedAll.experiments.length} check-ins recorded`} lines={savedAll.experiments.map(item => `Day ${item.day_number} of ${item.total_days}`)} onDone={() => setSavedAll(null)} />}
-  </View>;
-}
-
-/** Everything running, day by day. The comparison across experiments arrives with its own endpoint. */
-function ProgressScreen({ entries, updatedAt, token, offline, onExpired }: { entries: DayData[] | null; updatedAt?: Date; token: string; offline: boolean; onExpired: () => void }) { const styles = useStyles();
-  const heading = useStepFocus('progress');
-  return <View style={styles.stack}>
-    <Title textRef={heading}>Progress</Title>
-    {offline && updatedAt && <Status>{`Offline, last updated ${updatedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>}
-    {entries === null ? <Copy>{offline ? 'Reconnect to load your progress.' : 'Loading your progress…'}</Copy>
-      : entries.length === 0 ? <Copy>Nothing running yet.</Copy>
-      : entries.map(entry => <View key={entry.experiment.id} style={styles.stack}>
-        <Copy style={styles.sectionTitle}>{entry.experiment.question}</Copy>
-        <Observations data={entry} title="Day by day" token={token} offline={offline} onExpired={onExpired} />
-      </View>)}
   </View>;
 }
 

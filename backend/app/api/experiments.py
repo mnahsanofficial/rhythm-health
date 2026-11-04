@@ -15,7 +15,8 @@ from app.schemas.experiment import ActiveCapacity, ExperimentOut, ExperimentStat
 from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
 from app.schemas.progress import ExperimentTimeline
-from app.services import ai_limit, calibration, experiment_limit, safety
+from app.schemas.progress_summary import OutcomeOut, OutcomeRequest, ProgressSummary
+from app.services import ai_limit, calibration, experiment_limit, progress_summary, safety
 from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
 from app.services.timeline import experiment_timeline
@@ -116,6 +117,33 @@ def get_calibration(user_id: str = Depends(get_current_user)):
         return calibration.load(profile_id)
     except SupabaseUnavailable:
         raise db_error()
+
+
+@router.get("/progress-summary", response_model=ProgressSummary)
+def get_progress_summary(user_id: str = Depends(get_current_user)):
+    """Finished experiments compared, metric by metric, and the habits kept. Never calls AI."""
+    profile_id = profile_id_for(user_id)
+    try:
+        return progress_summary.load(profile_id)
+    except SupabaseUnavailable:
+        raise db_error()
+
+
+@router.post("/{experiment_id}/outcome", response_model=OutcomeOut)
+def set_outcome(experiment_id: UUID, body: OutcomeRequest, user_id: str = Depends(get_current_user)):
+    """What someone chose after finishing. A sample or an unfinished experiment has nothing to choose."""
+    profile_id = profile_id_for(user_id)
+    try:
+        row = experiments.get(profile_id, str(experiment_id))
+        if row is None:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        if row["status"] != "completed" or row["is_seeded"]:
+            raise HTTPException(status_code=409, detail="Only a finished experiment of your own can have a choice")
+        if experiments.set_outcome(profile_id, str(experiment_id), body.choice) is None:
+            raise HTTPException(status_code=409, detail="Only a finished experiment of your own can have a choice")
+    except SupabaseUnavailable:
+        raise db_error()
+    return OutcomeOut(experiment_id=str(experiment_id), choice=body.choice)
 
 
 @router.get("/{experiment_id}", response_model=ExperimentOut)

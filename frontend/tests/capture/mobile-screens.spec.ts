@@ -17,7 +17,12 @@ const running = { ...experiment, id: "running-id", status: "active", started_at:
 const timeline = timelineFixture(running as never, { recorded: [1, 3], missed: [2], nextDayAt: "2026-11-05T10:00:00Z" });
 const USER = { id: "11111111-1111-4111-8111-111111111111", aud: "authenticated", role: "authenticated", email: "learner@example.invalid", app_metadata: {}, user_metadata: {}, created_at: "2026-10-01T00:00:00Z" };
 
-type State = { hasProfile: boolean; active: unknown[]; saved: boolean; blocked: string[] };
+const trend = (label: string, runs: [string, string, number, number, number][], normalChange: number | null) => ({
+  key: label, label, type: "scale", normal_change: normalChange,
+  runs: runs.map(([id, question, baseline, result, percent]) => ({ experiment_id: id, question, completed_at: null, baseline_mean: baseline, result_mean: result, percent_change: percent })),
+});
+
+type State = { hasProfile: boolean; active: unknown[]; saved: boolean; blocked: string[]; compared: unknown[]; kept: unknown[]; ended: boolean };
 const APP = process.env.MOBILE_URL ?? "http://127.0.0.1:8092";
 const savedAnswers = [{ id: "saved", experiment_id: "running-id", day_number: 4, phase: "intervention", metric_values: { morning_energy: 7, sleep_quality: 7 }, intervention_completed: false, note: null }];
 
@@ -38,8 +43,12 @@ async function mocks(page: Page, state: State) {
     }
     if (path === "/api/experiments?status=active") return json(state.active);
     if (path === "/api/experiments?status=completed") return json([writtenLabReport.experiment]);
+    if (path === "/api/experiments/progress-summary") return json({ metrics: state.compared, kept: state.kept, example: state.compared.length ? null : { question: "Example: does a walk after dinner help my mornings?", metrics: [trend("Morning energy", [["example", "Example: does a walk after dinner help my mornings?", 5.4, 6.6, 22.2]], null)] } });
+    if (path.endsWith("/outcome")) { state.kept = [{ experiment_id: "a", question: QUESTION, habit: "Walk for 20 minutes", completed_at: null }]; return json({ experiment_id: "a", choice: "keep" }); }
+    if (path.endsWith("/complete")) return json(writtenLabReport);
     if (path === "/api/experiments/propose") return json({ ...proposeResponse, personal_guess_available: true });
     if (path === "/api/experiments/calibration") return json({ points: [], trend: null, average_off_by_points: null, example: null, count: 0 });
+    if (path.endsWith("/progress") && state.ended) return json(timelineFixture({ ...running, progress: { ...running.progress, state: "ended", day_number: null, phase: null, phase_day: null, phase_days: null, days_remaining: 0 } } as never, { recorded: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }));
     if (path.endsWith("/progress")) return json(state.saved ? timelineFixture(running as never, { recorded: [1, 3, 4], missed: [2], nextDayAt: "2026-11-05T10:00:00Z" }) : timeline);
     if (path.endsWith("/checkins")) {
       if (request.method() === "POST") { state.saved = true; return json(savedAnswers[0]); }
@@ -56,7 +65,7 @@ for (const scheme of ["light", "dark"] as const) {
   test(`phone ${scheme}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.setViewportSize({ width: 390, height: 844 });
-    const state: State = { hasProfile: false, active: [], saved: false, blocked: [] };
+    const state: State = { hasProfile: false, active: [], saved: false, blocked: [], compared: [], kept: [], ended: false };
     await mocks(page, state);
     const folder = `${out}/${scheme}`;
     mkdirSync(folder, { recursive: true });
@@ -180,6 +189,23 @@ for (const scheme of ["light", "dark"] as const) {
     await page.screenshot({ path: `${folder}/27-celebration-after-update.png` });
     await button("Continue").click();
     await shot("28-today-after-update", () => button("Edit answers").waitFor());
+    await shot("29-progress-with-example", () => tab("Progress").click());
+
+    const ended = { ...running, progress: { ...running.progress, state: "ended", day_number: null, phase: null, phase_day: null, phase_days: null, days_remaining: 0 } };
+    state.active = [ended];
+    state.ended = true;
+    await page.reload();
+    await button("Sign in").click();
+    await page.getByLabel("Email").fill("learner@example.invalid");
+    await page.getByLabel("Password", { exact: true }).fill("fake-test-password");
+    await page.getByTestId("submit-action").getByRole("button").click();
+    await button("See results").click();
+    await button("See results").click();
+    await button("Yes, finish").click();
+    await shot("30-finish-flow", () => button("See full Lab Report").waitFor());
+    state.compared = [trend("Morning energy", [["a", QUESTION, 5.4, 6.6, 22.2], ["b", "Does less coffee help?", 6.1, 6.8, 11.5]], 0.7)];
+    await button(/^Keep this habit/).click();
+    await shot("31-progress-compared", () => page.getByText("Habits I kept").waitFor());
     console.log(`refused hosts: ${state.blocked.length ? [...new Set(state.blocked)].join(", ") : "none"}`);
   });
 }
