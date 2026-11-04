@@ -6,6 +6,7 @@ import { StepRail } from './rails';
 import { LAYOUT, MOTION_DURATION_MS, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_LIST_ITEMS, MIN_SLEEP_HOURS, type Profile, type ProfileInput } from '@rhythm-health/contract';
 import { TimeField } from './time-field';
+import { useNavScreen, WONT_BE_KEPT } from './nav';
 import { Action, Alert, Copy, Loading, useStyles, Status, useScreenEnter, Notice } from './ui';
 import { ApiError, saveProfile } from './lib/profile';
 import { ACTIVITY_OPTIONS, AGE_OPTIONS, clearDraft, CONSTRAINTS, duration, GOALS, HABITS, habitTime, maxSleep, minutes, nightMinutes, plausible, QUESTIONS, readDraft, suggestedSleep, toProfileInput, writeDraft, type Draft, type StoredDraft } from './lib/onboarding';
@@ -24,6 +25,12 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const heading = useRef<React.ComponentRef<typeof Text>>(null);
+  const changed = initial !== undefined && data !== null && JSON.stringify(data.draft) !== JSON.stringify(profileDraft(initial));
+  // Editing a saved rhythm can be closed. The first time through there's nowhere to go back to.
+  useNavScreen(onCancel && data ? {
+    kind: 'flow', busy, unsaved: changed ? WONT_BE_KEPT.changes : null,
+    onBack: () => { setBusy(true); void clearDraft(owner).then(() => { if (mounted.current) onCancel(); }).catch(() => { setSaveError("Couldn't discard your setup changes. Try again."); }).finally(() => setBusy(false)); },
+  } : null);
   useEffect(() => {
     let active = true;
     readDraft(owner).then(stored => {
@@ -144,12 +151,11 @@ export function Onboarding({ owner, token, offline, initial, onSaved, onExpired,
         <Copy style={styles.muted}>Your experiment should fit your life. These help us choose a manageable change.</Copy>
         <MultiChoice key="constraints" options={CONSTRAINTS} values={draft.constraints ?? []} max={MAX_LIST_ITEMS} addLabel="Anything else?" placeholder="e.g. Dog walks at 7am" onChange={constraints => update({ constraints })} />
       </>}
-      <View style={local.buttons}><Action label="Back" secondary onPress={() => go(step! - 1)} />
+      <View style={local.buttons}><Action label="Previous" secondary onPress={() => go(step! - 1)} />
         <Action label={editing ? 'Done' : !answered && step! >= 6 ? 'Skip' : 'Continue'} disabled={!answered && step! < 6} onPress={next} /></View>
       {step! >= 2 && plausible(draft) && <RhythmSoFar draft={draft} />}
     </>}
     {saveError && <Alert>{saveError}</Alert>}
-    {onCancel && <Action label="Cancel setup changes" secondary disabled={busy} onPress={() => { setBusy(true); void clearDraft(owner).then(() => { if (mounted.current) onCancel(); }).catch(() => { setSaveError("Couldn't discard your setup changes. Try again."); }).finally(() => setBusy(false)); }} />}
   </View></KeyboardAvoidingView>;
 }
 function profileDraft(p: ProfileInput): Draft {

@@ -62,7 +62,7 @@ for (const timezoneId of ["Asia/Dhaka", "America/Toronto"]) {
           await expect(page.getByText(`Lab Report · finished ${localDate}`, { exact: true })).toBeVisible();
           expect(report.analysis.adherence.coverage_rate).toBeCloseTo(expected.coverage_rate, 3);
           // The detail timeline must use the same backend-owned list as the report chart.
-          await page.getByRole("link", { name: "← Your experiment", exact: true }).click();
+          await page.getByRole("link", { name: "Back to Your experiment", exact: true }).click();
           const timeline = page.getByRole("region", { name: "Your timeline", exact: true });
           await expect(timeline).toBeVisible();
           for (const day of expected.missing_days) {

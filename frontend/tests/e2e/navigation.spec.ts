@@ -62,11 +62,11 @@ test.describe("landing header", () => {
       const start = header.getByRole("link", { name: "Start an experiment", exact: true });
       await expect(signIn).toBeVisible();
       await expect(start).toBeVisible();
-      expect(contrast(parse(await colorOf(page, "Sign in")), hex(THEMES.light.night ?? "#263a6b"))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(parse(await colorOf(page, "Sign in")), hex("#263a6b"))).toBeGreaterThanOrEqual(4.5);
       const startOver = await start.evaluate(el => { const s = getComputedStyle(el); return [s.color, s.backgroundColor]; });
       expect(contrast(parse(startOver[0]), parse(startOver[1]))).toBeGreaterThanOrEqual(4.5);
       // Only one filled button shows: the hero's own button steps aside at this width.
-      await expect(page.locator("main").getByRole("link", { name: "Start an experiment", exact: true }).first()).toBeHidden();
+      await expect(page.locator("main section").first().getByRole("link", { name: "Start an experiment", exact: true })).toHaveCount(0);
 
       await page.evaluate(() => window.scrollTo(0, 200));
       await expect(header).toHaveAttribute("data-over-hero", "false");
@@ -157,7 +157,7 @@ test.describe("flows close with one ×", () => {
     expect(box.width).toBeGreaterThanOrEqual(44);
     await close.click();
     await expect(page).toHaveURL(/\/demo$/);
-    await page.goBack();
+    await page.getByRole("banner").getByRole("link", { name: "Sign in", exact: true }).click();
     await expect(page).toHaveURL(/\/sign-in/);
     await page.goBack();
     await expect(page).toHaveURL(/\/demo$/);
@@ -232,6 +232,25 @@ test.describe("flows close with one ×", () => {
     await expect(page).toHaveURL(/\/history$/);
     expect(counts.proposals).toBe(1);
     expect(counts.saves).toBe(0);
+  });
+
+  test("answers typed into the check-in ask first, and untouched ones don't", async ({ page }) => {
+    failOnBrowserDialogs(page);
+    await signedIn(page);
+    await openAskFrom(page, "/history");
+    await page.getByLabel(/question or goal/i).fill(QUESTION);
+    await page.getByRole("button", { name: "Design experiment" }).click();
+    await page.getByRole("button", { name: "Show prediction" }).click({ timeout: 3000 }).catch(() => undefined);
+    await page.getByRole("button", { name: "Start this experiment" }).click();
+    await page.waitForURL(/\/experiments\/[^/]+$|\/$/);
+    await page.goto(`/experiments/${experiment.id}/check-in`);
+    await hideBadge(page);
+    await page.getByRole("heading", { name: /check-in/i }).first().waitFor();
+    await page.getByRole("radio").first().check({ force: true });
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByRole("dialog")).toContainText("Your answers won't be kept.");
+    await page.getByRole("button", { name: "Leave" }).click();
+    await expect(page).toHaveURL(new RegExp(`/experiments/${experiment.id}$`));
   });
 
   test("the sheet holds keyboard focus, closes on Escape and returns focus to the ×", async ({ page }) => {

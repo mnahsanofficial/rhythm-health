@@ -5,7 +5,7 @@ import type { Experiment, LabReport } from '@rhythm-health/contract';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
 import { getReport, reportPercent, SIGNAL_COPY } from './lib/reports';
-import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status } from './ui';
+import { Action, Alert, Copy, Loading, useStyles, Title, useStepFocus, Status } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 /** Held by Today for this app session, so going offline can still show what was read. Not an offline database. */
@@ -14,9 +14,9 @@ export type HistoryCache = { value: { experiments: Experiment[]; at: Date; repor
 const expired = (cause: unknown) => cause instanceof ApiError && cause.status === 401;
 const stamp = (item: Experiment) => Date.parse(item.completed_at ?? item.created_at) || 0;
 
-export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk, onBack }: {
+export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk }: {
   token: string; offline: boolean; cache: HistoryCache; onExpired: () => void;
-  onOpen: (id: string, cached?: LabReport) => void; onAsk: () => void; onBack: () => void;
+  onOpen: (id: string, cached?: LabReport) => void; onAsk: () => void;
 }) { const local = useLocal(); const ui = useStyles();
   const [list, setList] = useState<Experiment[] | null>(cache.value?.experiments ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,6 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk,
   const at = cache.value?.at;
   return <View style={local.page}>
     <View style={ui.stack}>
-      <BackLink to="Your lab" onPress={onBack} />
       <Copy style={local.eyebrow}>What you&apos;ve learned</Copy>
       <Title textRef={heading}>Your experiment history</Title>
       <Copy style={ui.muted}>Look back at your predictions and the patterns your experiments found.</Copy>
@@ -72,11 +71,10 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk,
   </View>;
 }
 
-export function DemoScreen({ token, offline, onExpired, onOpen, onBack }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void; onBack: () => void }) { const local = useLocal(); const ui = useStyles();
+export function DemoScreen({ token, offline, onExpired, onOpen }: { token: string; offline: boolean; onExpired: () => void; onOpen: (report: LabReport) => void }) { const local = useLocal(); const ui = useStyles();
   const heading = useStepFocus('demo');
   return <View style={local.page}>
     <View style={ui.stack}>
-      <BackLink to="Your lab" onPress={onBack} />
       <Title textRef={heading}>Explore a sample experiment.</Title>
       <Copy style={[ui.muted, NATIVE_TYPOGRAPHY.lead]}>See how a completed experiment becomes a Lab Report. The demo uses labelled sample data.</Copy>
     </View>

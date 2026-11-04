@@ -37,7 +37,7 @@ for (const width of [390, 1440]) {
       await page.getByText("Shift work", { exact: true }).click();
       await expect(page.getByRole("status").filter({ hasText: "1 thing to work around" })).toBeVisible();
       await capture("constraints");
-      await page.getByRole("button", { name: "Back", exact: true }).click();
+      await page.getByRole("button", { name: "Previous", exact: true }).click();
       await expect(page.getByRole("checkbox", { name: "Coffee around 9am" })).toBeChecked();
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       await page.getByText("Shift work", { exact: true }).click();

@@ -127,7 +127,7 @@ test('with a screen reader on, the slides wait for you', async () => {
 test('Sign in under the main action opens the form on sign-in', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: FIRST });
-  expect(within(screen.getByTestId('app-header')).queryByRole('button', { name: 'Sign in' })).toBeNull();
+  expect(screen.queryByTestId('app-header')).toBeNull();
   await press('Sign in');
   expect(await screen.findByRole('header', { name: 'Welcome back.' })).toBeVisible();
 });
@@ -143,7 +143,7 @@ test('the form can go back to the landing', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: FIRST });
   await press('Start an experiment');
-  await press('Back to rhythm');
+  await press('Close');
   expect(await screen.findByRole('header', { name: FIRST })).toBeVisible();
 });
 

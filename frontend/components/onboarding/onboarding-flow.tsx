@@ -176,7 +176,7 @@ function Flow() {
               onClick={() => go(step - 1)}
               className={button("quiet")}
             >
-              Back
+              Previous
             </button>
           )}
           <button

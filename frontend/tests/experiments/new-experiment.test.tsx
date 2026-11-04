@@ -99,7 +99,7 @@ describe("new experiment flow", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("You're running 3 experiments, the most at once.");
     expect(alert).not.toHaveTextContent("profile");
-    expect(within(alert).getByRole("link", { name: "Back to your lab" })).toHaveAttribute("href", "/");
+    expect(within(alert).getByRole("link", { name: "Go to your lab" })).toHaveAttribute("href", "/");
     expect(within(alert).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Experiment and prediction preview" })).not.toBeInTheDocument();
   });
@@ -231,7 +231,7 @@ describe("new experiment flow", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Your experiment was saved, but it couldn’t start yet. You're running 3 experiments, the most at once.");
-    expect(within(alert).getByRole("link", { name: "Back to your lab" })).toHaveAttribute("href", "/");
+    expect(within(alert).getByRole("link", { name: "Go to your lab" })).toHaveAttribute("href", "/");
     await user.click(within(alert).getByRole("button", { name: "Try again" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));

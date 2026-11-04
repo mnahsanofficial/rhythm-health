@@ -121,7 +121,7 @@ describe('controls have names and 48pt targets', () => {
     await act(async () => { fireEvent.press(start); });
     await screen.findByLabelText('Optional note');
     auditControls();
-    await press('Back to your lab');
+    await press('Close');
     await screen.findByText('Your observations, day by day.');
     auditControls();
   });

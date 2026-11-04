@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { BackLink, backTarget } from "@/components/nav/back-link";
+import { useNav } from "@/components/nav/navigation";
 import { DayChart } from "@/components/report/day-chart";
 import { PredictionVsReality } from "@/components/report/prediction-vs-reality";
 import { ApiError } from "@/lib/api/client";
@@ -92,7 +94,7 @@ export function LabReport({ id }: { id: string }) {
               </button>
             )}
             <Link href="/" className="inline-flex min-h-11 items-center underline">
-              Back to your lab
+              Go to your lab
             </Link>
           </div>
         </div>
@@ -111,7 +113,7 @@ export function LabReport({ id }: { id: string }) {
             : "Results appear once the experiment is finished. Keep checking in, then finish it from the experiment page."}
         </p>
         <Link href={path} className={`${linkButton} mt-8`}>
-          Back to your experiment
+          Go to your experiment
         </Link>
       </Page>
     );
@@ -423,7 +425,7 @@ function NextExperimentSection({ narrative, nextStep }: { narrative: ReportNarra
                 You&apos;re running {check.limit} experiments, the most at once. Finish one before starting this one.
               </p>
               <Link href="/" className={`${secondaryLink} mt-3`}>
-                Back to your lab
+                Go to your lab
               </Link>
             </div>
           ) : (
@@ -457,13 +459,10 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function Page({ children, back }: { children: React.ReactNode; back?: string }) {
+  const { previous } = useNav();
   return (
     <div className="page-frame flex-1 pt-8 pb-16 sm:pt-14">
-      {back && (
-        <Link href={back} className="-mx-1 mb-6 inline-flex min-h-11 items-center px-1 text-moss hover:underline">
-          ← Your experiment
-        </Link>
-      )}
+      {back && <BackLink {...backTarget(previous, { href: back, label: "Your experiment" })} className="mb-6" />}
       {children}
     </div>
   );

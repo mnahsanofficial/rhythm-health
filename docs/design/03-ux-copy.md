@@ -8,7 +8,7 @@ Our rules still apply: sentence case, real numbers, no "unlock", "journey", "dis
 
 1. **Buttons: verb first, 3 words or fewer where possible.** The rest of the sentence goes in a caption next to the button, which is where the detail belongs.
 2. **One name for one thing.** It's "Your lab", "Lab Report", "check-in".
-3. **Going back names the destination:** `← Your lab` as a link, "Back to your lab" as a button. One spelling each. *Changed while building: a button reads better with the words.*
+3. **Going back names the destination:** `‹ Your lab` as the one link at the top of a detail page, "Go to your lab" as a button. Flows close with a × instead, and main sections have no back control. If closing would lose something, the sheet says "Leave without saving?" with one line on what's lost, and the buttons say Stay and Leave. Steps within a flow go by "Previous". *Changed 4 Nov: replaces the scattered "Back" buttons; the pattern is in `DESIGN.md`.*
 4. **Retry is always "Try again".** The sentence above it says what was kept.
 5. **Errors: what happened, then what to do.** No "Something went wrong" alone.
 
@@ -25,10 +25,10 @@ Labels change, behaviour doesn't. Browser and unit tests that look up these name
 | Reload today's check-in | Try again | Same pattern | Combined check-in |
 | Reveal the AI prediction | Show prediction | | Personal guess |
 | Change today's answers | Edit answers | | Today |
-| Back to your experiment / Go to your experiment | ← Your experiment | One pattern | Check-in, report |
-| Back to Your lab / Back to your lab / Go to Your lab | ← Your lab | Three spellings today | Several |
-| Back to home | ← Your lab | Same destination, different name | Check-in, summary |
-| Back to Today | ← Today | Mobile | Mobile |
+| Back to your experiment / Go to your experiment | ‹ Your experiment on detail pages; Go to your experiment as a button | One pattern | Check-in, report |
+| Back to Your lab / Back to your lab / Go to Your lab | ‹ Your lab on detail pages; Go to your lab as a button | One pattern | Several |
+| Back to home | Go to your lab | Same destination, different name | Check-in, summary |
+| Back to Today | ‹ Your lab | Mobile | Mobile |
 | Finish and see results | See results | | Mobile, finish |
 | Save today's check-in | Save check-in | | Check-in |
 | Design my experiment | Design experiment | | Ask a question |
@@ -96,7 +96,7 @@ Skill: `/design:ux-copy`. Added 4 Nov 2026 after an iPhone check, with Strava's 
 | Password toggle (spoken only) | Show password / Hide password | The eye has no visible words |
 | Sign-up hint | At least 6 characters. | Same as the web. Explains why the button stays disabled |
 | Switching forms | New here? Create an account / Already have an account? Sign in | A link inside the sentence |
-| Going back | ← Back | The header already says Rhythm |
+| Leaving sign in | × in the header, named Close | Same as every flow |
 
 ### Alternatives considered
 

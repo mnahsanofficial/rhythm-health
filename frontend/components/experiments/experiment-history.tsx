@@ -64,8 +64,7 @@ export function ExperimentHistory() {
   if (load.kind === "error") {
     return (
       <div className="page-frame pt-8 pb-16 sm:pt-14">
-        <Link href="/" className={secondary}>← Your lab</Link>
-        <div role="alert" className="mt-8 rounded-card bg-clay-tint p-6 text-clay sm:p-8">
+        <div role="alert" className="rounded-card bg-clay-tint p-6 text-clay sm:p-8">
           <h1 className="font-display text-headline">We couldn&apos;t load your history.</h1>
           <p className="mt-3 text-body">{load.message}</p>
           <button
@@ -90,8 +89,7 @@ export function ExperimentHistory() {
 
   return (
     <div className="page-frame pt-8 pb-16 sm:pt-14">
-      <Link href="/" className={secondary}>← Your lab</Link>
-      <div className="mt-5">
+      <div>
         <p className="font-mono text-caption text-moss">What you&apos;ve learned</p>
         <h1 className="mt-2 font-display text-headline tracking-tight sm:text-display-sm">Your experiment history</h1>
         <p className="mt-3 text-lead text-muted">

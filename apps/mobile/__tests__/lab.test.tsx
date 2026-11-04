@@ -160,7 +160,7 @@ describe('experiment page', () => {
     await openPage();
     await screen.findByText('Your timeline');
     await press('Check in for day 4');
-    await press('Back to your lab');
+    await press('Close');
     expect(await screen.findByText('Your timeline')).toBeVisible();
   });
 

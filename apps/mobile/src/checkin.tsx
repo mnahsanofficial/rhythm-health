@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
-import { Action, BackLink, Alert, Copy, Loading, useStyles, Title, Status, useStepFocus, Notice } from './ui';
+import { useNavScreen, WONT_BE_KEPT } from './nav';
+import { Action, Alert, Copy, Loading, useStyles, Title, Status, useStepFocus, Notice } from './ui';
 import { MetricInput, Radio } from './metric-input';
 import { ApiError } from './lib/api';
 import { listCheckins, saveCheckin } from './lib/checkins';
@@ -22,6 +23,8 @@ export function metricAnswer(metric: Metric, raw: string | boolean | undefined):
   return { value: number };
 }
 
+const answersKey = (values: Record<string, string | boolean>, intervention: boolean | undefined, note: string) => JSON.stringify({ values, intervention, note });
+
 export function CheckinForm({ data: { experiment, timeline }, token, offline, onExpired, onSaved, onBack }: {
   data: DayData; token: string; offline: boolean; onExpired: () => void; onSaved: () => void; onBack: () => void;
 }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
@@ -30,6 +33,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [intervention, setIntervention] = useState<boolean>();
   const [note, setNote] = useState('');
+  const [loadedAnswers, setLoadedAnswers] = useState(() => answersKey({}, undefined, ''));
   const [noteFocused, setNoteFocused] = useState(false);
   const [ready, setReady] = useState(false);
   const [already, setAlready] = useState(false);
@@ -39,6 +43,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   const [fields, setFields] = useState<Record<string, string>>({});
   const [retrySave, setRetrySave] = useState(false);
   const [busy, setBusy] = useState(false);
+  useNavScreen({ kind: 'flow', onBack, busy, unsaved: answersKey(values, intervention, note) !== loadedAnswers ? WONT_BE_KEPT.answers : null });
   const saving = useRef(false);
   useEffect(() => {
     if (offline || ready) return;
@@ -48,8 +53,10 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
       const previous = checkins.find(item => item.day_number === day);
       if (previous) {
         setAlready(true);
-        setValues(Object.fromEntries(Object.entries(previous.metric_values).map(([key, value]) => [key, typeof value === 'boolean' ? value : String(value)])));
+        const restored = Object.fromEntries(Object.entries(previous.metric_values).map(([key, value]) => [key, typeof value === 'boolean' ? value : String(value)]));
+        setValues(restored);
         setIntervention(previous.intervention_completed); setNote(previous.note ?? '');
+        setLoadedAnswers(answersKey(restored, previous.intervention_completed, previous.note ?? ''));
       }
       setReadError(undefined); setReady(true);
     }).catch(cause => {
@@ -89,8 +96,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   const total = metrics.length + Number(test);
   const answered = metrics.filter(metric => values[metric.key] !== undefined && values[metric.key] !== '').length + Number(test && intervention !== undefined);
   return <View style={styles.stack}>
-    <BackLink to={`Day ${day} of ${timeline.progress.total_days}`} name="Back to your lab" disabled={busy} onPress={onBack} />
-    <Copy style={local.phase}>{`${test ? 'Test' : 'Baseline'} · day ${timeline.progress.phase_day} of ${timeline.progress.phase_days}`}</Copy>
+    <Copy style={local.phase}>{`Day ${day} of ${timeline.progress.total_days} · ${test ? 'Test' : 'Baseline'} day ${timeline.progress.phase_day} of ${timeline.progress.phase_days}`}</Copy>
     {experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample experiment · Sample check-in</Copy>}
     <Title>Today&apos;s check-in.</Title>
     <Copy style={[styles.muted, NATIVE_TYPOGRAPHY.lead]}>{test ? 'A test day. Tell us whether you made the change, then how it went.' : "A normal day. Don't change anything yet, just notice how it went."}</Copy>
@@ -142,6 +148,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
 export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder, onRetry, onBack, onChange }: {
   day: number; data: DayData | null | undefined; refreshing: boolean; failed: boolean; receipt: React.ReactNode; reminder: React.ReactNode; onRetry: () => void; onBack: () => void; onChange: () => void;
 }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
+  useNavScreen({ kind: 'flow', onBack });
   const heading = useStepFocus('saved');
   const progress = data?.timeline.progress;
   return <View style={styles.stack}>
@@ -161,7 +168,7 @@ export function CheckinSaved({ day, data, refreshing, failed, receipt, reminder,
       </View>
     </>}
     {failed && <Action label="Try again" secondary disabled={refreshing} onPress={onRetry} />}
-    <Action label="Back to your experiment" onPress={onBack} />
+    <Action label="Go to your lab" onPress={onBack} />
     <Action label="Edit answers" secondary onPress={onChange} />
   </View>;
 }

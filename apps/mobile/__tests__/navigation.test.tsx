@@ -19,11 +19,11 @@ const propose = { ...proposeResponse, personal_guess_available: false };
 const running = { ...experiment, status: 'active', started_at: '2026-10-25T10:00:00Z', progress: { state: 'in_progress', day_number: 2, phase: 'baseline', phase_day: 2, phase_days: 3, total_days: 10, days_remaining: 8, started_at: '2026-10-25T10:00:00Z', ends_at: '2026-11-04T10:00:00Z' } };
 let routes: Record<string, { status?: number; body: unknown }>;
 let calls: string[];
-let backHandlers: (() => boolean | null | undefined)[];
+let backHandlers: ((event: never) => boolean | null | undefined)[];
 
 /** Android's back button: the newest listener goes first. Returns whether the app handled it. */
 const hardwareBack = () => act(async () => {
-  for (const handler of [...backHandlers].reverse()) if (handler()) return;
+  for (const handler of [...backHandlers].reverse()) if ((handler as () => boolean)()) return;
 });
 
 beforeEach(() => {
@@ -31,7 +31,7 @@ beforeEach(() => {
   mockNetwork.isConnected = mockNetwork.isInternetReachable = true;
   calls = []; backHandlers = [];
   jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_event, handler) => {
-    backHandlers.push(handler);
+    backHandlers.push(handler as never);
     return { remove: () => { backHandlers = backHandlers.filter(item => item !== handler); } };
   });
   routes = {
@@ -136,7 +136,7 @@ describe('main sections and detail screens', () => {
 
   test('your lab leaves Android back to the system', async () => {
     await signedIn();
-    expect(backHandlers.every(handler => !handler())).toBe(true);
+    expect(backHandlers.every(handler => !(handler as () => boolean)())).toBe(true);
   });
 
   test('an experiment has one link naming where it goes, and Android back does the same', async () => {
@@ -223,14 +223,23 @@ describe('flows close with one ×', () => {
     expect(calls.filter(call => call.startsWith('POST /api/experiments') && !call.endsWith('/propose'))).toEqual([]);
   });
 
-  test('a proposal stays safe while you look at another section, and the logo brings you back to it', async () => {
+  test('the logo keeps a proposal open and safe, without asking', async () => {
     await withPlan();
-    await goTo('History');
-    await screen.findByRole('header', { name: 'Your experiment history' });
-    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
+    expect(screen.queryByText('Leave without saving?')).toBeNull();
     expect(await screen.findByRole('button', { name: 'Start this experiment' })).toBeVisible();
     expect(proposals()).toBe(1);
+  });
+
+  test('the logo asks first when it would lose typed answers', async () => {
+    await withRunning();
+    await press(/Check in for day/);
+    await screen.findByRole('header', { name: "Today's check-in." });
+    await act(async () => { fireEvent.press(screen.getAllByRole('radio')[0]); });
+    await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
+    expect(screen.getByText("Your answers won't be kept.")).toBeVisible();
+    await press('Leave');
+    expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
   });
 
   test('the check-in closes with ×, asking only once something is answered', async () => {
@@ -243,8 +252,6 @@ describe('flows close with one ×', () => {
     expect(screen.queryByText('Leave without saving?')).toBeNull();
     await press(/Check in for day/);
     await screen.findByRole('header', { name: "Today's check-in." });
-    const metric = experiment.metrics[0];
-    expect(metric).toBeDefined();
     const choice = screen.getAllByRole('radio')[0];
     await act(async () => { fireEvent.press(choice); });
     await press('Close');

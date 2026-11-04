@@ -94,8 +94,9 @@ for (const scheme of ["light", "dark"] as const) {
     await shot("demo", async () => { await menu("Demo"); await page.getByRole("heading", { name: "Explore a sample experiment." }).waitFor(); });
     await shot("settings", async () => { await menu("Daily reminders"); await page.getByRole("switch").first().waitFor(); });
     await shot("rhythm", async () => { await menu("Update your rhythm"); await page.getByText("Here's your rhythm.").waitFor(); });
-    await menu("Your lab").catch(() => undefined);
+    await button("Close").click({ timeout: 2000 }).catch(() => undefined);
     await page.getByRole("button", { name: "Cancel setup changes" }).click({ timeout: 1000 }).catch(() => undefined);
+    await menu("Your lab").catch(() => undefined);
     await page.getByRole("heading", { name: "Ask a question." }).waitFor();
     await page.getByRole("textbox").first().fill(QUESTION);
     await shot("proposal", async () => { await button("Design experiment").click(); await button(/Start this experiment|Show prediction/).waitFor(); });
@@ -108,6 +109,6 @@ for (const scheme of ["light", "dark"] as const) {
     await shot("lab-active", () => page.getByText("Your experiment has started.").waitFor());
     await shot("experiment", async () => { await button(/See your experiment/).click(); await page.waitForTimeout(800); });
     await button(/Your lab/).click().catch(() => undefined);
-    await shot("check-in", async () => { await button(/Check in/).click(); await page.getByRole("heading", { name: "Today's check-in." }).waitFor(); });
+    await shot("check-in", async () => { await button(/Check in for/).click(); await page.getByRole("heading", { name: "Today's check-in." }).waitFor(); });
   });
 }

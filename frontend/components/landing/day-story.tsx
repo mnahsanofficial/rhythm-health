@@ -94,19 +94,19 @@ export function DayStory() {
   const animate = isClient && !reduce;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative -mt-[var(--header-h)] motion-reduce:mt-0">
       {/* Not a scroll anchor: its layers stay put while the page moves and mount as scenes change,
           so the browser must not use them to adjust the reader's scroll position. */}
       <div
         data-story-stage
         data-theme="light"
         aria-hidden="true"
-        className="sticky top-[var(--header-h)] h-[calc(100svh-var(--header-h))] w-full overflow-hidden bg-night [overflow-anchor:none] motion-reduce:hidden"
+        className="sticky top-0 h-svh w-full overflow-hidden bg-night [overflow-anchor:none] motion-reduce:hidden"
       >
         {animate && <Stage target={ref} />}
       </div>
 
-      <div className="relative -mt-[calc(100svh-var(--header-h))] motion-reduce:mt-0">
+      <div className="relative -mt-[100svh] motion-reduce:mt-0">
         <StorySection first>
           <h1 className="font-display text-display-sm tracking-tight text-balance sm:text-display">
             Stop guessing what works for you.
@@ -116,7 +116,7 @@ export function DayStory() {
             Turn a habit question into a small personal experiment. Record your usual routine, test one
             change, then compare the forecast with what you observed.
           </p>
-          <div className="mt-7"><HomeCta /></div>
+          <div className="mt-7"><HomeCta wide="hero" /></div>
           <p className="mt-6 border-t border-line pt-4 text-caption text-muted">
             An example day, illustrated. He&apos;s on day 3 of a 10-day experiment. Scroll to follow it.
           </p>
@@ -134,7 +134,7 @@ export function DayStory() {
               {scene.title}
             </h2>
             <p className="mt-3 text-lead text-muted">{scene.body}</p>
-            {scene.id === "tomorrow" && <div className="mt-6"><HomeCta /></div>}
+            {scene.id === "tomorrow" && <div className="mt-6"><HomeCta wide="hero" /></div>}
           </StorySection>
         ))}
       </div>
@@ -146,7 +146,7 @@ function StorySection({ children, first = false, labelledBy }: { children: React
   return (
     <section
       aria-labelledby={labelledBy}
-      className={`flex min-h-[calc(100svh-var(--header-h))] items-start lg:items-center motion-reduce:min-h-0 motion-reduce:py-6 ${first ? "pt-[max(1.5rem,6svh)] lg:pt-0 motion-reduce:pt-8" : "pt-[max(4.5rem,12svh)] lg:pt-0"}`}
+      className={`flex items-start lg:items-center motion-reduce:min-h-0 motion-reduce:py-6 ${first ? "min-h-svh pt-[calc(var(--header-h)+max(1.5rem,6svh))] lg:pt-[var(--header-h)] motion-reduce:pt-8" : "min-h-[calc(100svh-var(--header-h))] pt-[max(4.5rem,12svh)] lg:pt-0"}`}
     >
       {/* The card sits in the page frame, so it lines up with the header at every width. */}
       <div className="page-frame">

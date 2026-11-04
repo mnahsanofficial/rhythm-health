@@ -128,6 +128,6 @@ test("home explains the limit when the backend refuses a proposal", async ({ pag
   await expect(page.getByRole("main").getByRole("alert")).toContainText("You're running 3 experiments");
   expect(counts.saves).toBe(0);
   // Already on Your lab, so this reloads rather than linking to the same page.
-  await page.getByRole("button", { name: "Back to your lab" }).click();
+  await page.getByRole("button", { name: "Go to your lab" }).click();
   await expect(page.getByRole("textbox", { name: "Your question or goal" })).toHaveValue("");
 });

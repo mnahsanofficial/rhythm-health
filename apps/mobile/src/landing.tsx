@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, RADII, SPACING, themeColors } from '@rhythm-health/brand';
 import { Action, Copy, useStepFocus } from './ui';
+import { Mark } from './logo';
+import { ThemeCycleButton } from './theme';
 import { themedStyles, useColors } from './theme-core';
 
 /** Illustrations stay in the light palette in both modes, like the web's landing story. */
@@ -130,6 +133,10 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
   const pager = useRef<ComponentRef<typeof ScrollView>>(null);
   const moving = useRef<number | null>(null); // Where a move we started is heading; the scroll reports stay quiet until it arrives.
   const canMove = !reduce && !reader;
+  const insets = useSafeAreaInsets();
+  // The sky is the same in both themes, so what sits on it is chosen by the sky, not the theme.
+  const onSky = SLIDES[index].sky === 'night' ? ART.paper : ART.ink;
+  const belowLogo = insets.top + LAYOUT.headerHeight + SPACING.md;
 
   const moveTo = (page: number, animated: boolean) => {
     moving.current = page;
@@ -159,7 +166,7 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
         const copy = page === SLIDES.length;
         const current = page === index;
         return <View key={page} style={[local.slide, { width }]} accessibilityElementsHidden={!current} importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}>
-          <View style={local.hero} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View style={[local.hero, { paddingTop: belowLogo }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             <View style={local.art}><Scene sky={sky} /></View>
             <View style={local.phone}><Mini>Example</Mini><Screen /></View>
           </View>
@@ -167,6 +174,13 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
         </View>;
       })}
     </ScrollView>
+    <View pointerEvents="box-none" style={[local.top, { paddingTop: insets.top + SPACING.sm }]}>
+      <View testID="landing-logo" accessible accessibilityRole="image" accessibilityLabel="Rhythm" style={local.logo}>
+        <Mark size={SPACING.xl + SPACING.sm} palette={ART} />
+        <Copy style={[local.word, { color: onSky }]}>Rhythm</Copy>
+      </View>
+      <View style={[local.theme, { top: insets.top + SPACING.xs }]}><ThemeCycleButton color={onSky} /></View>
+    </View>
     <View style={local.controls}>
       <View style={local.dots}>{SLIDES.map(({ line }, page) => <Dot key={line} number={page + 1} on={page === index} onPress={() => moveTo(page, !reduce)} />)}</View>
       {canMove && <Pressable accessibilityRole="button" accessibilityLabel={paused ? 'Play slides' : 'Pause slides'} onPress={() => setPaused(value => !value)} style={local.pause}><PlayIcon paused={paused} /></Pressable>}
@@ -182,7 +196,11 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   page: { flex: 1 },
   pager: { flex: 1 },
   slide: { flex: 1 },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingTop: SPACING.lg, overflow: 'hidden' },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', overflow: 'hidden' },
+  top: { position: 'absolute', left: 0, right: 0, top: 0 },
+  logo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm },
+  word: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY['display-sm'] },
+  theme: { position: 'absolute', right: LAYOUT.gutter.min - SPACING.sm },
   art: { position: 'absolute', left: 0, right: 0, top: 0, bottom: SPACING.xl },
   phone: { width: '74%', maxWidth: LAYOUT.buttonMaxWidth, maxHeight: '100%', gap: SPACING.sm, padding: SPACING.md, overflow: 'hidden', backgroundColor: COLORS.paper,
     borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },

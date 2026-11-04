@@ -16,7 +16,8 @@ import { DemoScreen, HistoryScreen, type HistoryCache } from './history';
 import { LabReportScreen } from './lab-report';
 import { ProposalFlow } from './proposal';
 import type { ActiveCapacity, Experiment, ExperimentTimeline, LabReport, Profile, TodayCheckin } from '@rhythm-health/contract';
-import { Action, Alert, BackLink, Copy, ForwardLink, Loading, useStyles, Title, Status } from './ui';
+import { useNavScreen } from './nav';
+import { Action, Alert, Copy, ForwardLink, Loading, useStyles, Title, Status } from './ui';
 import { ApiError } from './lib/api';
 import { getCapacity, getProgress, listActiveExperiments } from './lib/experiments';
 import { themedStyles } from './theme-core';
@@ -95,7 +96,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const flowOpen = asking !== null || inline;
   const flowShown = flowOpen && section === 'lab' && !combined && !editing && savedDay === null && !report && !detail;
   const flow = flowOpen && <View style={flowShown ? undefined : hidden}>
-    <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile}
+    <ProposalFlow key={askKey} token={token} offline={offline} profile={profile} initialQuestion={asking ?? ''} hideStarters={entries.length > 0} onExpired={onExpired} onEditProfile={editProfile} shown={flowShown}
       onBack={inline ? undefined : () => { setAsking(null); void load(); }}
       onStarted={() => { setAsking(null); setLoaded(null); setStarted(true); void load(); }} />
   </View>;
@@ -112,6 +113,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   };
   const checkin = (entry: DayData) => { setStarted(false); setChosen(entry.experiment.id); setEditing(entry); };
   const openDetail = (entry: DayData) => { setChosen(entry.experiment.id); setDetail(true); };
+  useNavScreen(section !== 'lab' && !combined && !editing && savedDay === null && !report ? { kind: 'section', onBack: toLab } : null);
   const content = () => {
     if (combined) return <CombinedCheckin key={combined.revision} initial={combined} token={token} offline={offline} onExpired={onExpired} onBack={() => { setCombined(null); void load(); }} />;
     if (editing) return <CheckinForm key={`${editing.experiment.id}:${editing.timeline.progress.day_number}`} data={editing} token={token} offline={offline} onExpired={onExpired}
@@ -124,10 +126,10 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
       onBack={() => { setReport(null); void load(); }}
       onToday={() => { setReport(null); toLab(); }}
       onAsk={ask} />;
-    if (section === 'reminders') return <View style={styles.stack}><BackLink to="Your lab" onPress={toLab} /><ReminderNotice feedbackOnly /><Settings /></View>;
-    if (section === 'demo') return <DemoScreen token={token} offline={offline} onExpired={onExpired} onOpen={openDemo} onBack={toLab} />;
+    if (section === 'reminders') return <View style={styles.stack}><ReminderNotice feedbackOnly /><Settings /></View>;
+    if (section === 'demo') return <DemoScreen token={token} offline={offline} onExpired={onExpired} onOpen={openDemo} />;
     if (section === 'history') return <View style={styles.stack}><ReminderNotice feedbackOnly />
-      <HistoryScreen token={token} offline={offline} cache={historyCache} onExpired={onExpired} onBack={toLab}
+      <HistoryScreen token={token} offline={offline} cache={historyCache} onExpired={onExpired}
         onOpen={(id, initial) => setReport({ id, initial })}
         onAsk={() => ask('')} />
     </View>;

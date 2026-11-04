@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { supabase } from "@/lib/auth/supabase";
+import { ThemeControl } from "@/components/theme-control";
+import { button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/session";
 
 const SECTIONS = [
@@ -17,16 +19,22 @@ export function AuthNav() {
   const { session, loading } = useSession();
   const pathname = usePathname();
 
-  if (loading) return <span aria-hidden="true" className="ml-auto h-9 w-20 rounded-pill bg-line" />;
+  if (loading) return <><span aria-hidden="true" className="ml-auto h-9 w-20 rounded-pill bg-line" /><ThemeControl /></>;
 
   if (!session) {
     return (
-      <Link
-        href="/sign-in"
-        className="ml-auto flex min-h-11 items-center rounded-pill px-4 text-body font-medium text-ink hover:bg-line/60"
-      >
-        Sign in
-      </Link>
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        <ThemeControl />
+        <Link href="/sign-in" className="flex min-h-11 items-center rounded-pill px-3 text-body font-medium text-ink hover:bg-line/60 sm:px-4">
+          Sign in
+        </Link>
+        {/* On phones the hero's own button is the main action; there's no room for both here. */}
+        {pathname === "/" && (
+          <Link href="/onboarding" className={`${button("primary")} max-sm:hidden whitespace-nowrap`}>
+            Start an experiment
+          </Link>
+        )}
+      </div>
     );
   }
 
@@ -55,6 +63,7 @@ export function AuthNav() {
         </ul>
       </nav>
       <AccountMenu email={session.user.email ?? "your account"} pathname={pathname} />
+      <ThemeControl />
     </>
   );
 }

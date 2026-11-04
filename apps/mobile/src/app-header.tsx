@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Line, Path } from 'react-native-svg';
+import Svg, { Line, Path } from 'react-native-svg';
 import { FONT_FAMILIES, LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { Copy, useStyles } from './ui';
+import { Mark } from './logo';
+import { useNav } from './nav';
 import { ThemeControl, ThemeCycleButton } from './theme';
 import { useColors, themedStyles } from './theme-core';
 
@@ -12,12 +14,9 @@ const fixedRow = { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs }
 export type Section = 'lab' | 'history' | 'demo' | 'reminders';
 const SECTIONS: { key: Section; label: string }[] = [{ key: 'lab', label: 'Your lab' }, { key: 'history', label: 'History' }, { key: 'demo', label: 'Demo' }];
 
-/** The web's mark: a 24-hour dial, midnight at the top, with night from 22:00 to 06:00 and a midday sun. */
-function Mark() { const COLORS = useColors();
-  return <Svg width={SPACING.lg} height={SPACING.lg} viewBox="0 0 24 24" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-    <Circle cx={12} cy={12} r={10} fill={COLORS.paper} stroke={COLORS.ink} strokeWidth={1.5} />
-    <Path d="M12 12 L7.5 4.21 A9 9 0 0 1 21 12 Z" fill={COLORS.night} />
-    <Circle cx={10.3} cy={18.3} r={2} fill={COLORS.sun} stroke={COLORS.ink} strokeWidth={0.75} />
+function CloseIcon() { const COLORS = useColors();
+  return <Svg width={SPACING.lg - SPACING.xs} height={SPACING.lg - SPACING.xs} viewBox="0 0 20 20" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <Path d="M5 5l10 10M15 5L5 15" stroke={COLORS.ink} strokeWidth={1.75} strokeLinecap="round" fill="none" />
   </Svg>;
 }
 function MenuIcon() { const COLORS = useColors();
@@ -32,15 +31,18 @@ type Account = {
 };
 
 /** Pinned above the scrolling page with a solid background and a border, as on the web at phone width. */
-export function AppHeader({ account }: { account?: Account }) { const local = useLocal();
+export function AppHeader({ account, onHome }: { account?: Account; onHome?: () => void }) { const COLORS = useColors(); const local = useLocal();
+  const nav = useNav();
+  const brand = <><Mark size={SPACING.lg} /><Copy style={local.name}>Rhythm</Copy></>;
   return <View testID="app-header" style={local.bar}>
-    <View style={local.brand}>
-      <Mark />
-      <Copy style={local.name}>Rhythm</Copy>
-    </View>
+    {onHome
+      ? <Pressable accessibilityRole="link" accessibilityLabel="Rhythm, home" onPress={() => nav.goHome(onHome)} style={({ pressed }) => [local.brand, pressed && { opacity: 0.6 }]}>{brand}</Pressable>
+      : <View style={local.brand}>{brand}</View>}
     <View style={fixedRow}>
       {!account && <ThemeCycleButton />}
-      {account && <AccountMenu account={account} />}
+      {account && !nav.closable && <AccountMenu account={account} />}
+      {nav.closable && <Pressable accessibilityRole="button" accessibilityLabel="Close" accessibilityState={{ disabled: nav.closeBusy }} disabled={nav.closeBusy} onPress={nav.close}
+        style={({ pressed }) => [local.close, pressed && { backgroundColor: COLORS.line }, nav.closeBusy && { opacity: 0.4 }]}><CloseIcon /></Pressable>}
     </View>
   </View>;
 }
@@ -91,7 +93,8 @@ function Row({ label, selected, onPress }: { label: string; selected?: boolean; 
 
 const useLocal = themedStyles(COLORS => StyleSheet.create({
   bar: { minHeight: LAYOUT.headerHeight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, paddingHorizontal: LAYOUT.gutter.min, backgroundColor: COLORS.oat, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flexShrink: 1 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flexShrink: 1, minHeight: LAYOUT.primaryAction },
+  close: { minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill },
   name: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title, color: COLORS.ink },
   trigger: { minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.xs, paddingLeft: SPACING.xs, paddingRight: SPACING.sm, borderRadius: RADII.pill },
   initial: { minWidth: SPACING.xl + SPACING.xs, minHeight: SPACING.xl + SPACING.xs, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill, backgroundColor: COLORS.moss },
