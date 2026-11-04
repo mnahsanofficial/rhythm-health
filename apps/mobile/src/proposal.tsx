@@ -182,7 +182,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     </View>
     <Copy style={local.helpText}>{TRUST_LINE}</Copy>
     {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
-    {!hideStarters && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
+    {!hideStarters && !result?.habit_check && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}
         onPress={() => reset(starter)} style={({ pressed }) => [local.chip, pressed && { backgroundColor: COLORS['accent-tint'] }]}>
         <Copy>{starter}</Copy>
