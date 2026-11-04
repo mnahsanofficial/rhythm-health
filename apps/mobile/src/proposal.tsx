@@ -6,7 +6,7 @@ import { Disclosure } from './form-rows';
 import { Forecast, ForecastReasons } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
-import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment } from './lib/proposals';
+import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment, TRUST_LINE } from './lib/proposals';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
 import { Action, Alert, Copy, StickyAction, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
@@ -179,6 +179,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         {question.length > QUESTION_MAX - 50 && <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>}
       </View>
     </View>
+    <Copy style={local.helpText}>{TRUST_LINE}</Copy>
     {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
     {!hideStarters && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}

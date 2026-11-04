@@ -23,6 +23,9 @@ export function parseGuess(answer: string): number | null {
 
 export const signedPercent = (value: number) => `${value > 0 ? '+' : ''}${value}%`;
 
+/** Said on Ask and in You. */
+export const TRUST_LINE = 'Your question goes to an AI to design the experiment, and the AI puts your results into words. The numbers come from your own check-ins.';
+
 const GOAL_QUESTIONS: Record<string, string> = {
   'More energy in the morning': 'What could give me more energy in the morning?',
   'Better focus': 'What could help me focus better?',
@@ -41,7 +44,8 @@ const EXAMPLES = [
 
 /** The web's "Start with a hunch" list: two from the person's goals, then everyday examples. */
 export function questionStarters(goals: string[]): string[] {
-  const fromGoals = goals.slice(0, 2).map(goal => GOAL_QUESTIONS[goal] ?? `What small change could help with: ${goal}?`);
+  // A goal someone typed has no written question, and a template can't read as a plain one, so the examples fill in.
+  const fromGoals = goals.flatMap(goal => GOAL_QUESTIONS[goal] ?? []).slice(0, 2);
   const examples = EXAMPLES.filter(example => !goals.some(goal => example.goals.includes(goal))).map(example => example.question);
   return [...new Set([...fromGoals, ...examples])].filter(question => question.length <= QUESTION_MAX);
 }

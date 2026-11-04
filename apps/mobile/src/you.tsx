@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { FormRow, FormRows } from './form-rows';
+import { TRUST_LINE } from './lib/proposals';
 import { ThemeControl } from './theme';
 import { Copy, Title, useStepFocus, useStyles } from './ui';
 
@@ -17,6 +18,10 @@ export function You({ email, onEditProfile, onReminders, onExample, onSignOut }:
       <FormRow icon="example" label="See an example" hint="Opens a finished sample experiment" onPress={onExample} />
     </FormRows>
     <ThemeControl />
+    <View style={ui.stack}>
+      <Copy accessibilityRole="header" style={ui.sectionTitle}>About</Copy>
+      <Copy>{TRUST_LINE}</Copy>
+    </View>
     <FormRows>
       <FormRow icon="signOut" label="Sign out" hint="Signs out on this phone" onPress={onSignOut} />
     </FormRows>
