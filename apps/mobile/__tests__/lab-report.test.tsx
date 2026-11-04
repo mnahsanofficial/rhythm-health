@@ -261,16 +261,25 @@ describe('the result comes first', () => {
     },
   });
   test.each([
-    ['likely_signal', 11, 'Morning energy rose 11%, likely real, not chance.'],
-    ['likely_signal', 20.5, 'Morning energy rose 21%, likely real, not chance.'],
-    ['possible_signal', -8, 'Morning energy fell 8%, possibly real, but the evidence is limited.'],
-    ['unclear', 3, "Morning energy rose 3%, but it's too unclear to say whether that's real."],
-    ['probably_noise', -2, 'Morning energy fell 2%, probably just chance.'],
+    ['likely_signal', 11, 'Morning energy rose 11%, more than your normal ups and downs.'],
+    ['likely_signal', 20.5, 'Morning energy rose 21%, more than your normal ups and downs.'],
+    ['possible_signal', -8, 'Morning energy fell 8%, possibly more than your normal ups and downs.'],
+    ['unclear', 3, 'Morning energy rose 3%, but the days were too mixed to tell.'],
+    ['probably_noise', -2, 'Morning energy changed 2%, within your normal ups and downs.'],
     ['probably_noise', 0.2, 'Morning energy stayed about the same.'],
-    ['unclear', null, "There isn't enough data to say what happened to Morning energy."],
+    ['unclear', null, 'Not enough days recorded to tell yet.'],
   ] as const)('%s at %s%% reads as one plain sentence', async (classification, percent, sentence) => {
     await openReport(withResult(classification, percent));
     expect(screen.getByRole('header', { name: sentence })).toBeVisible();
+  });
+  test('too few days says so, even when a percent can be worked out', async () => {
+    const report = withResult('unclear', 12);
+    await openReport({ ...report, analysis: { ...report.analysis, signal: { ...report.analysis.signal, reasons: ['insufficient_data'] } } });
+    expect(screen.getByRole('header', { name: 'Not enough days recorded to tell yet.' })).toBeVisible();
+  });
+  test('it never sounds surer than a short experiment can be', async () => {
+    await openReport();
+    expect(JSON.stringify(screen.toJSON())).not.toMatch(/likely real|not chance/);
   });
   test('the sentence comes before the chart, the chart before the prediction, and both before the details', async () => {
     await openReport();
