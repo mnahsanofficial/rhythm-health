@@ -144,11 +144,7 @@ describe('experiment page', () => {
     setActive(ended);
     render(<MobileApp />);
     expect(await screen.findByText('All 10 days are done.')).toBeVisible();
-    expect(screen.queryByText('Ready for your results.')).toBeNull();
-    await press('See results');
-    expect(await screen.findByText('Ready for your results.')).toBeVisible();
-    await press('See results');
-    await press('Yes, finish');
+    await press('See your results');
     const report = await screen.findByRole('button', { name: 'See full Lab Report' });
     await act(async () => { fireEvent.press(report); });
     expect(await screen.findByRole('button', { name: 'Compare with the prediction' })).toBeVisible();
