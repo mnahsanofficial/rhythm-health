@@ -193,12 +193,12 @@ test('font errors offer retry and keep content hidden until resources are ready'
   expect(screen.getByRole('alert')).toHaveTextContent("Couldn't open Rhythm.");
   mockFonts.ready = true; mockFonts.error = null;
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByRole('header', { name: 'How it works' })).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Stop guessing. Test one habit.' })).toBeVisible();
 });
 
 
 async function createAccount() {
-  fireEvent.press(await screen.findByRole('button', { name: 'Create an account' }));
+  fireEvent.press(await screen.findByRole('link', { name: 'Create an account' }));
   fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.invalid');
   fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Create account' })); });
@@ -240,7 +240,7 @@ test('creates an account natively and routes its missing profile to setup', asyn
 
 test('matches account validation, password visibility and offline submission guards', async () => {
   await renderToForm();
-  fireEvent.press(await screen.findByRole('button', { name: 'Create an account' }));
+  fireEvent.press(await screen.findByRole('link', { name: 'Create an account' }));
   fireEvent.changeText(screen.getByLabelText('Email'), 'new@example.invalid');
   fireEvent.changeText(screen.getByLabelText('Password'), '12345');
   expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();

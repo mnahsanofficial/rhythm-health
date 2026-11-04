@@ -1,6 +1,6 @@
 /**
  * Button looks, for <button> and <Link> alike. Every button fits its words and is at least 48px high.
- * One `primary` per screen. Only the single primary pinned to the bottom of a phone may add `w-full sm:w-fit`.
+ * One `primary` per screen. On a phone, a primary pinned to the bottom may add `w-full sm:w-fit`, and a form submit also adds `max-w-none sm:max-w-(--button-max)`.
  */
 const base =
   "inline-flex min-h-12 w-fit max-w-[var(--button-max)] items-center justify-center rounded-pill px-6 text-center font-medium transition-[background-color,border-color,color,scale] duration-[var(--motion-press)] ease-[var(--ease-settle)] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:active:scale-100";

@@ -32,7 +32,7 @@ type Account = {
 };
 
 /** Pinned above the scrolling page with a solid background and a border, as on the web at phone width. */
-export function AppHeader({ account, onSignIn }: { account?: Account; onSignIn?: () => void }) { const COLORS = useColors(); const local = useLocal();
+export function AppHeader({ account }: { account?: Account }) { const local = useLocal();
   return <View testID="app-header" style={local.bar}>
     <View style={local.brand}>
       <Mark />
@@ -41,7 +41,6 @@ export function AppHeader({ account, onSignIn }: { account?: Account; onSignIn?:
     <View style={fixedRow}>
       {!account && <ThemeCycleButton />}
       {account && <AccountMenu account={account} />}
-    {onSignIn && <Pressable accessibilityRole="button" accessibilityLabel="Sign in" onPress={onSignIn} style={({ pressed }) => [local.signIn, pressed && { backgroundColor: COLORS.line }]}><Copy style={local.email}>Sign in</Copy></Pressable>}
     </View>
   </View>;
 }
@@ -94,7 +93,6 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   bar: { minHeight: LAYOUT.headerHeight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.sm, paddingHorizontal: LAYOUT.gutter.min, backgroundColor: COLORS.oat, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
   brand: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flexShrink: 1 },
   name: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title, color: COLORS.ink },
-  signIn: { minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.md, borderRadius: RADII.pill },
   trigger: { minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.xs, paddingLeft: SPACING.xs, paddingRight: SPACING.sm, borderRadius: RADII.pill },
   initial: { minWidth: SPACING.xl + SPACING.xs, minHeight: SPACING.xl + SPACING.xs, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill, backgroundColor: COLORS.moss },
   initialText: { fontFamily: FONT_FAMILIES.sansMedium, color: COLORS['on-accent'], textTransform: 'uppercase' },

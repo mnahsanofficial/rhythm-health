@@ -76,3 +76,42 @@ Use: **Your lab**, **Lab Report**, **check-in**, **baseline** in the data, "norm
 ## Scope for the build
 
 Button and error strings change with each screen's PR, not all at once, so a test failure points at one screen. Any string rendered by the backend (signal labels, safety messages) doesn't change here.
+
+## Phone landing carousel and sign-in
+
+Skill: `/design:ux-copy`. Added 4 Nov 2026 after an iPhone check, with Strava's sign-up carousel as the pattern: one line per slide under a picture of the app, the same two ways in on every slide. The pattern is the reference; the words, colours and screens are ours. How well people read these is an **assumption** until the hallway test runs.
+
+### Recommended copy
+
+| Element | Copy | Note |
+|---|---|---|
+| Slide 1 | Stop guessing. Test one habit. | Shortens the web's headline |
+| Slide 2 | See the prediction before day one. | The order is the product's promise |
+| Slide 3 | Check in each day in about 30 seconds. | Keeps "about": it's an estimate |
+| Slide 4 | Compare the prediction with what happened. | The Lab Report, in plain words |
+| Slide 4's picture | Likely signal. A pattern, not proof. | Must stay |
+| Every picture | Example | Sample data is labelled |
+| Main action | Start an experiment | Same as the web |
+| Quiet action | Sign in | Same as the web. Our term, not "Log in" |
+| Password toggle (spoken only) | Show password / Hide password | The eye has no visible words |
+| Sign-up hint | At least 6 characters. | Same as the web. Explains why the button stays disabled |
+| Switching forms | New here? Create an account / Already have an account? Sign in | A link inside the sentence |
+| Going back | ← Back | The header already says Rhythm |
+
+### Alternatives considered
+
+| Instead of | Alternative | Why not |
+|---|---|---|
+| Start an experiment | Join for free | Says nothing about what happens next, and makes a pricing promise we haven't made |
+| Stop guessing. Test one habit. | Your habits, tested. | Reads as a tagline, and loses the web's voice |
+| Check in each day in about 30 seconds. | Check in in 30 seconds. | Drops "about", and doubles "in" |
+| Compare the prediction with what happened. | See if it worked. | Promises a yes or no; a short experiment shows a pattern, not proof |
+
+### Rationale
+
+Someone opening the app wants to know what it does before committing. Four lines, read in order, tell the whole loop: a question, a prediction first, a daily check-in, then the comparison. No line needs the one before it, because a slide can arrive at any time.
+
+### Localization notes
+
+Keep lines under 44 characters in English so they hold two lines at 320 wide. "Signal" and "pattern" are the product's terms: translate them the same way as in the Lab Report.
+

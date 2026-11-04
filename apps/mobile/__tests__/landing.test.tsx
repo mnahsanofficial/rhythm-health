@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { AppState } from 'react-native';
+import { AccessibilityInfo, AppState } from 'react-native';
+import * as Reanimated from 'react-native-reanimated';
+import { MOTION_DURATION_MS } from '@rhythm-health/brand';
 import { MobileApp } from '../src/mobile-app';
 import { profile } from '../../../frontend/tests/support/fixtures';
 
@@ -24,48 +26,132 @@ beforeEach(() => {
     return { ok: true, status: 200, json: async () => body } as Response;
   });
 });
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
 const press = (name: string) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
 
-test('signed out, the app opens on the landing with no private request', async () => {
+const SLIDES = ['Stop guessing. Test one habit.', 'See the prediction before day one.', 'Check in each day in about 30 seconds.', 'Compare the prediction with what happened.'];
+const FIRST = SLIDES[0];
+const motionAllowed = () => jest.spyOn(Reanimated, 'useReducedMotion').mockReturnValue(false);
+const currentDot = () => screen.getAllByRole('button', { name: /^Go to slide/ }).findIndex(dot => dot.props.accessibilityState?.selected);
+const wait = (ms: number) => act(async () => { jest.advanceTimersByTime(ms); });
+
+test('signed out, the app opens on the carousel with no private request', async () => {
   render(<MobileApp />);
-  expect(await screen.findByRole('header', { name: 'How it works' })).toBeVisible();
-  expect(screen.getByRole('header', { name: 'A question worth testing.' })).toBeVisible();
-  expect(screen.getByRole('header', { name: 'Your first question takes about a minute to set up.' })).toBeVisible();
-  expect(screen.getByText('Does walking after dinner improve my sleep?')).toBeVisible();
-  expect(screen.getByRole('header', { name: 'The prediction comes first.' })).toBeVisible();
+  expect(await screen.findByRole('header', { name: FIRST })).toBeVisible();
+  expect(screen.getAllByRole('button', { name: /^Go to slide/ })).toHaveLength(SLIDES.length);
   expect(global.fetch).not.toHaveBeenCalled();
 });
 
-test('the header offers Sign in, which opens the form on sign-in', async () => {
+test('every slide says one short line, in the rules for the product', async () => {
   render(<MobileApp />);
-  await screen.findByRole('header', { name: 'How it works' });
-  const header = within(screen.getByTestId('app-header'));
-  await act(async () => { fireEvent.press(header.getByRole('button', { name: 'Sign in' })); });
-  expect(await screen.findByRole('header', { name: 'Welcome back.' })).toBeVisible();
+  await screen.findByRole('header', { name: FIRST });
+  for (const line of SLIDES) {
+    expect(line.length).toBeLessThanOrEqual(44);
+    expect(line).not.toMatch(/unlock|journey|discover|transform|calorie|weight|cure|diagnos/i);
+    expect(screen.getAllByText(line, { includeHiddenElements: true }).length).toBeGreaterThan(0);
+  }
+  expect(screen.getByText(/A pattern, not proof/, { includeHiddenElements: true })).toBeTruthy();
+});
+
+test('the slides advance by themselves and loop', async () => {
+  motionAllowed();
+  jest.useFakeTimers();
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  expect(currentDot()).toBe(0);
+  await wait(MOTION_DURATION_MS.dwell);
+  expect(currentDot()).toBe(1);
+  await wait(MOTION_DURATION_MS.dwell);
+  await wait(MOTION_DURATION_MS.dwell);
+  expect(currentDot()).toBe(3);
+  await wait(MOTION_DURATION_MS.dwell);
+  expect(currentDot()).toBe(0);
+});
+
+test('Pause stops the slides and Play starts them again', async () => {
+  motionAllowed();
+  jest.useFakeTimers();
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  await press('Pause slides');
+  await wait(MOTION_DURATION_MS.dwell * 2);
+  expect(currentDot()).toBe(0);
+  await press('Play slides');
+  await wait(MOTION_DURATION_MS.dwell);
+  expect(currentDot()).toBe(1);
+});
+
+test('a dot goes to its slide', async () => {
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  await press('Go to slide 3 of 4');
+  expect(currentDot()).toBe(2);
+  expect(screen.getByRole('header', { name: SLIDES[2] })).toBeVisible();
+});
+
+test('holding a slide stops it moving until you let go', async () => {
+  motionAllowed();
+  jest.useFakeTimers();
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  const pager = screen.getByTestId('landing-slides');
+  fireEvent(pager, 'scrollBeginDrag');
+  await wait(MOTION_DURATION_MS.dwell * 2);
+  expect(currentDot()).toBe(0);
+  fireEvent(pager, 'scrollEndDrag');
+  await wait(MOTION_DURATION_MS.dwell);
+  expect(currentDot()).toBe(1);
+});
+
+test('with Reduce Motion on, the slides wait for you', async () => {
+  jest.useFakeTimers();
+  render(<MobileApp />); // The test double reports Reduce Motion on.
+  await screen.findByRole('header', { name: FIRST });
+  await wait(MOTION_DURATION_MS.dwell * 2);
+  expect(currentDot()).toBe(0);
+  expect(screen.queryByRole('button', { name: 'Pause slides' })).toBeNull();
+});
+
+test('with a screen reader on, the slides wait for you', async () => {
+  motionAllowed();
+  jest.spyOn(AccessibilityInfo, 'isScreenReaderEnabled').mockResolvedValue(true);
+  jest.useFakeTimers();
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
+  await wait(0);
+  await wait(MOTION_DURATION_MS.dwell * 2);
+  expect(currentDot()).toBe(0);
+  expect(screen.queryByRole('button', { name: 'Pause slides' })).toBeNull();
+});
+
+test('Sign in under the main action opens the form on sign-in', async () => {
+  render(<MobileApp />);
+  await screen.findByRole('header', { name: FIRST });
   expect(within(screen.getByTestId('app-header')).queryByRole('button', { name: 'Sign in' })).toBeNull();
+  await press('Sign in');
+  expect(await screen.findByRole('header', { name: 'Welcome back.' })).toBeVisible();
 });
 
 test('Start an experiment opens account creation', async () => {
   render(<MobileApp />);
-  await screen.findByRole('header', { name: 'How it works' });
-  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Start an experiment' })[0]); });
+  await screen.findByRole('header', { name: FIRST });
+  await press('Start an experiment');
   expect(await screen.findByRole('header', { name: 'Create an account.' })).toBeVisible();
 });
 
 test('the form can go back to the landing', async () => {
   render(<MobileApp />);
-  await screen.findByRole('header', { name: 'How it works' });
-  await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'Start an experiment' })[0]); });
+  await screen.findByRole('header', { name: FIRST });
+  await press('Start an experiment');
   await press('Back to rhythm');
-  expect(await screen.findByRole('header', { name: 'How it works' })).toBeVisible();
+  expect(await screen.findByRole('header', { name: FIRST })).toBeVisible();
 });
 
 test('a signed-in person never sees it', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'Ask a question.' });
-  expect(screen.queryByRole('header', { name: 'How it works' })).toBeNull();
+  expect(screen.queryByRole('header', { name: FIRST })).toBeNull();
 });
 
 test('signing out goes to the form rather than the landing', async () => {
@@ -75,5 +161,5 @@ test('signing out goes to the form rather than the landing', async () => {
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: /^Account menu/ })); });
   await press('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();
-  expect(screen.queryByRole('header', { name: 'How it works' })).toBeNull();
+  expect(screen.queryByRole('header', { name: FIRST })).toBeNull();
 });

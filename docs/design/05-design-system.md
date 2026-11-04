@@ -95,7 +95,7 @@ One size change, the display maximum. The confidence comes from using these bett
 |---|---|
 | Height | At least 48pt everywhere (`LAYOUT.primaryAction`) |
 | Web and tablet | Fits its content, up to `button-max: 320`. Never fills a wide column |
-| Phone (under 640 wide) | Full width **only** for the single primary pinned at the bottom. Anything else fits its content |
+| Phone (under 640 wide) | Full width for the primary pinned at the bottom, a form's submit, and the phone landing's main action. Anything else fits its content. *Changed after the iPhone check on 4 Nov: a fitted submit under full-width fields looked unfinished* |
 | Per screen | One `primary` (filled accent). All others are `secondary` (outline in `control`) or `quiet` (text) |
 | Labels | Three words or fewer where possible; see `03-ux-copy.md` |
 | States | Default, hover, press (scale 0.98, `press`), focus ring, busy (label changes and stays disabled), disabled (surface fill and muted text, not faded accent) |
