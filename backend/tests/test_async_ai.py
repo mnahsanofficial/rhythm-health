@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from app.auth.supabase import get_current_user
 from app.config import settings
-from app.integrations import concurrency, openrouter
+from app.integrations import ai_usage, concurrency, openrouter
 from app.main import app
 from app.repositories import checkins, experiments, profiles, reports
 from tests.test_completion import EXP_ID, FakeDb
@@ -71,6 +71,27 @@ def test_only_one_retry(transport):
     with pytest.raises(openrouter.AIUnavailable):
         complete()
     assert transport["calls"] == 2
+
+
+def test_a_retried_call_writes_a_row_for_each_try(transport, ai_call_rows):
+    async def run():
+        with ai_usage.for_profile("profile-1"):
+            return await openrouter.complete(task="report_narrative", model="m", schema=Tiny, system="s", user="u")
+
+    transport["replies"] = [httpx.Response(503, json={}), httpx.Response(200, json=GOOD)]
+    assert asyncio.run(run()) == Tiny(ok=True)
+    assert [(r["kind"], r["status"]) for r in ai_call_rows.rows] == [("report", "error"), ("report", "ok")]
+
+
+def test_a_call_that_fails_twice_writes_two_rows(transport, ai_call_rows):
+    async def run():
+        with ai_usage.for_profile("profile-1"):
+            return await openrouter.complete(task="report_narrative", model="m", schema=Tiny, system="s", user="u")
+
+    transport["replies"] = [httpx.Response(503, json={})]
+    with pytest.raises(openrouter.AIUnavailable):
+        asyncio.run(run())
+    assert [r["status"] for r in ai_call_rows.rows] == ["error", "error"]
 
 
 @pytest.mark.parametrize("failure", [

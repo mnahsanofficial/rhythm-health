@@ -377,6 +377,16 @@ describe('written report', () => {
     expect(count(WRITE)).toBe(2);
   });
 
+  test('the daily limit shows its message, keeps the results and offers no retry', async () => {
+    await openReport();
+    const text = "You've used all of today's written reports. You can write this one tomorrow.";
+    queue(WRITE, { status: 429, body: { detail: { code: 'ai_daily_limit', message: text, limit: 3 } } });
+    await press('Write my report');
+    expect(await screen.findByText(`${text} Your results above are saved.`)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(count(WRITE)).toBe(1);
+  });
+
   test.each<[number, string]>([
     [409, 'This experiment needs to be finished before its report can be written.'],
     [404, 'There are no results to write about yet.'],

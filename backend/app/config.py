@@ -19,7 +19,18 @@ class Settings(BaseSettings):
     # How long to wait for the reasoning model's answer.
     openrouter_timeout_seconds: float = 75.0
 
-    @field_validator("openrouter_reasoning_model", "openrouter_jev_model", "openrouter_timeout_seconds", mode="before")
+    # Paid AI actions one person can use per UTC day.
+    ai_daily_limit_propose: int = 5
+    ai_daily_limit_report: int = 3
+
+    @field_validator(
+        "openrouter_reasoning_model",
+        "openrouter_jev_model",
+        "openrouter_timeout_seconds",
+        "ai_daily_limit_propose",
+        "ai_daily_limit_report",
+        mode="before",
+    )
     @classmethod
     def _blank_means_default(cls, v, info):
         # `KEY=` in .env.local arrives as "", which should fall back to the default.

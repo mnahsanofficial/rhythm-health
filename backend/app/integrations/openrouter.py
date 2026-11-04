@@ -8,6 +8,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from app.config import settings
+from app.integrations import ai_usage
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,11 @@ async def complete(
     ]
     for attempt in (0, 1):
         started = time.monotonic()
-        content = await _call(task, model, schema, messages, timeout)
+        try:
+            content = await _call(task, model, schema, messages, timeout)
+        except AIUnavailable:
+            await _record(task, model, "error", started)
+            raise
         try:
             result = schema.model_validate_json(content)
             if check is not None:
@@ -70,6 +75,7 @@ async def complete(
                 "ai_invalid_output task=%s model=%s validation_retry=%s",
                 task, model, attempt,
             )
+            await _record(task, model, "invalid" if attempt == 1 else "retry", started)
             if attempt == 1:
                 raise AIInvalidOutput(task) from exc
             messages += [
@@ -82,12 +88,18 @@ async def complete(
                 },
             ]
             continue
+        await _record(task, model, "ok", started)
         logger.info(
             "ai_complete task=%s model=%s latency_ms=%d validation_retry=%s",
             task, model, (time.monotonic() - started) * 1000, attempt,
         )
         return result
     raise AssertionError("unreachable")
+
+
+async def _record(task: str, model: str, status: str, started: float) -> None:
+    """Write the usage row. It's a blocking database call, so it runs off the event loop."""
+    await asyncio.to_thread(ai_usage.record, task, model, status, started)
 
 
 def _feedback(exc: ValueError) -> str:
@@ -100,11 +112,19 @@ async def decide(
     """Typed decisions (Jev) via OpenRouter's Decisions API. Returns the `answers` map."""
     if not settings.openrouter_api_key:
         raise AIUnavailable("OpenRouter is not configured")
-    data = await _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
+    started = time.monotonic()
     try:
-        return data["answers"]
+        data = await _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
+    except AIUnavailable:
+        await _record(task, model, "error", started)
+        raise
+    try:
+        answers = data["answers"]
     except (KeyError, TypeError) as exc:
+        await _record(task, model, "invalid", started)
         raise AIInvalidOutput(task) from exc
+    await _record(task, model, "ok", started)
+    return answers
 
 
 async def _call(task: str, model: str, schema: type[BaseModel], messages: list[dict], timeout: float) -> str:
@@ -136,6 +156,7 @@ async def _post(task: str, model: str, url: str, payload: dict, timeout: float) 
     limits = httpx.Timeout(timeout, connect=CONNECT_TIMEOUT_SECONDS)
     async with httpx.AsyncClient(timeout=limits) as client:
         for attempt in (0, 1):
+            started = time.monotonic()
             try:
                 res = await client.post(
                     url,
@@ -156,5 +177,7 @@ async def _post(task: str, model: str, url: str, payload: dict, timeout: float) 
             except (httpx.HTTPError, ValueError) as exc:
                 logger.error("ai_error task=%s model=%s error_type=%s attempt=%s", task, model, type(exc).__name__, attempt)
                 raise AIUnavailable(task) from exc
+            # The caller records how the last try ended, so only a try that's retried is recorded here.
+            await _record(task, model, "error", started)
             await asyncio.sleep(RETRY_DELAY_SECONDS)
     raise AssertionError("unreachable")

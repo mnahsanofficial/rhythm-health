@@ -267,3 +267,28 @@ def test_narratives_saved_under_older_rules_still_load(completed):
     res = client.get(REPORT)
     assert res.status_code == 200
     assert len(res.json()["narrative"]["interpretation"]) > 600
+
+
+def test_the_fourth_written_report_of_the_day_is_429_and_the_results_stay_readable(completed, monkeypatch, ai_call_rows):
+    fake = model(monkeypatch, NARRATIVE)
+    profile_id = completed.get_profile(completed.current)["id"]
+    for _ in range(3):
+        ai_call_rows.insert(profile_id, "report", "model", "ok", 1)
+    response = client.post(REPORT)
+    assert response.status_code == 429
+    assert response.json()["detail"]["code"] == "ai_daily_limit"
+    assert "tomorrow" in response.json()["detail"]["message"]
+    assert fake.calls == []
+    assert client.get(REPORT).status_code == 200
+
+
+def test_a_written_report_is_recorded_and_a_saved_one_is_not_recharged(completed, monkeypatch, ai_call_rows):
+    model(monkeypatch, NARRATIVE)
+    assert client.post(REPORT).status_code == 200
+    assert [(row["kind"], row["status"]) for row in ai_call_rows.rows] == [("report", "ok")]
+    # A saved narrative comes back for free, even at the limit.
+    profile_id = completed.get_profile(completed.current)["id"]
+    for _ in range(3):
+        ai_call_rows.insert(profile_id, "report", "model", "ok", 1)
+    assert client.post(REPORT).status_code == 200
+

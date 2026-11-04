@@ -47,6 +47,8 @@ Every variable is a field of `Settings` in `backend/app/config.py`, read from `b
 | `OPENROUTER_REASONING_MODEL` | Model for experiment design and prediction | Optional. Defaults to `anthropic/claude-sonnet-5.5` | No |
 | `OPENROUTER_JEV_MODEL` | Jev classifier model (category, intent, risk) | Optional. Defaults to `typesafe/jev-router` | No |
 | `OPENROUTER_TIMEOUT_SECONDS` | How long to wait for the reasoning model's answer | Optional. Defaults to 75 | No |
+| `AI_DAILY_LIMIT_PROPOSE` | Experiment plans one person can make per UTC day | Optional. Defaults to 5 | No |
+| `AI_DAILY_LIMIT_REPORT` | Reports one person can have written per UTC day | Optional. Defaults to 3 | No |
 
 Without the Supabase values, protected routes answer 503 ("Auth is not configured"). Without the OpenRouter key, `/api/experiments/propose` answers 503 ("AI service unavailable").
 
