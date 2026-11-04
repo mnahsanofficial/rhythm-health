@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pytest
@@ -75,7 +76,7 @@ class FakeAI:
         self.outputs.update(overrides)
         self.tasks: list[str] = []
 
-    def __call__(self, *, task, model, schema, system, user, timeout=90):
+    async def __call__(self, *, task, model, schema, system, user, timeout=None):
         self.tasks.append(task)
         out = self.outputs[task]
         if isinstance(out, Exception):
@@ -97,7 +98,7 @@ def api(monkeypatch):
         fake = FakeAI(**overrides)
         monkeypatch.setattr(openrouter, "complete", fake)
 
-        def decide(**_kw):
+        async def decide(**_kw):
             fake.tasks.append("classification")
             out = fake.outputs["classification"]
             if isinstance(out, Exception):
@@ -204,7 +205,11 @@ def test_prediction_for_wrong_metric_is_retried_then_502(api, monkeypatch):
         {"proposal": PROPOSAL, "prediction": {**PREDICTION, "target_metric": "something_else"}}
     )
     calls = []
-    monkeypatch.setattr(openrouter, "_call", lambda *a: (calls.append(a), wrong)[1])
+    async def call(*a):
+        calls.append(a)
+        return wrong
+
+    monkeypatch.setattr(openrouter, "_call", call)
     assert propose().status_code == 502
     assert len(calls) == 2  # first answer + one retry
 
@@ -268,25 +273,30 @@ def keyed(monkeypatch):
 def test_client_retries_once_then_succeeds(keyed, monkeypatch):
     replies = iter(['{"n": "oops"}', '{"n": 3}'])
     seen = []
-    monkeypatch.setattr(
-        openrouter, "_call", lambda *a: (seen.append(a[3]), next(replies))[1]
-    )
-    out = openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u")
+    async def call(*a):
+        seen.append(a[3])
+        return next(replies)
+
+    monkeypatch.setattr(openrouter, "_call", call)
+    out = asyncio.run(openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u"))
     assert out.n == 3
     assert len(seen) == 2
     assert "rejected" in seen[1][-1]["content"]
 
 
 def test_client_gives_up_after_second_invalid(keyed, monkeypatch):
-    monkeypatch.setattr(openrouter, "_call", lambda *a: "not json")
+    async def call(*_a):
+        return "not json"
+
+    monkeypatch.setattr(openrouter, "_call", call)
     with pytest.raises(openrouter.AIInvalidOutput):
-        openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u")
+        asyncio.run(openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u"))
 
 
 def test_client_without_key_is_unavailable(monkeypatch):
     monkeypatch.setattr(settings, "openrouter_api_key", "")
     with pytest.raises(openrouter.AIUnavailable):
-        openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u")
+        asyncio.run(openrouter.complete(task="t", model="m", schema=Tiny, system="s", user="u"))
 
 
 def _answers(**choices):
@@ -300,12 +310,12 @@ def test_jev_decisions_map_to_classification(monkeypatch):
 
     seen = {}
 
-    def fake_decide(*, task, model, state, questions, timeout=30):
+    async def fake_decide(*, task, model, state, questions, timeout=30):
         seen.update(model=model, state=state, questions=questions)
         return _answers(risk="review")
 
     monkeypatch.setattr(openrouter, "decide", fake_decide)
-    result = jev.classify("Does walking help?")
+    result = asyncio.run(jev.classify("Does walking help?"))
     assert result == Classification(category="sleep", intent="question", risk="review")
     assert seen["model"] == settings.openrouter_jev_model
     assert seen["state"] == {"question": "Does walking help?"}
@@ -323,20 +333,20 @@ def test_jev_decisions_map_to_classification(monkeypatch):
 def test_jev_failure_falls_back_to_reasoning_model(monkeypatch, failure):
     from app.integrations import jev
 
-    def fake_decide(**_kw):
+    async def fake_decide(**_kw):
         if isinstance(failure, Exception):
             raise failure
         return failure
 
     models = []
 
-    def fake_complete(*, task, model, schema, system, user, timeout=90):
+    async def fake_complete(*, task, model, schema, system, user, timeout=None):
         models.append(model)
         return schema.model_validate(CLASSIFICATION)
 
     monkeypatch.setattr(openrouter, "decide", fake_decide)
     monkeypatch.setattr(openrouter, "complete", fake_complete)
-    assert jev.classify("q").category == "sleep"
+    assert asyncio.run(jev.classify("q")).category == "sleep"
     assert models == [settings.openrouter_reasoning_model]
 
 
@@ -358,7 +368,11 @@ def test_running_questions_reach_the_designer_for_reuse(api, monkeypatch):
     api()
     prompts = []
     real = openrouter.complete
-    monkeypatch.setattr(openrouter, "complete", lambda **kw: (prompts.append(kw), real(**kw))[1])
+    async def complete(**kw):
+        prompts.append(kw)
+        return await real(**kw)
+
+    monkeypatch.setattr(openrouter, "complete", complete)
     assert client.post("/api/experiments/propose", json={"question": "Does a walk after dinner help my energy?"}).status_code == 200
     design = next(kw for kw in prompts if kw["task"] == "experiment_design")
     section = design["user"].split("<running_questions>")[1].split("</running_questions>")[0]

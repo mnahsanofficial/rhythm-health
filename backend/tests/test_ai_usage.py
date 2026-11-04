@@ -1,4 +1,5 @@
 """Every OpenRouter call writes one row, and paid work stops at the daily limit."""
+import asyncio
 import json
 from datetime import UTC, datetime, timedelta
 
@@ -28,7 +29,7 @@ class FakeOpenRouter:
         self.design = [{"proposal": PROPOSAL, "prediction": PREDICTION}]
         self.classification = {k: {"choice": v} for k, v in CLASSIFICATION.items()}
 
-    def __call__(self, task, model, url, payload, timeout):
+    async def __call__(self, task, model, url, payload, timeout):
         self.posts.append(task)
         if task == "classification":
             if isinstance(self.classification, Exception):
@@ -96,7 +97,7 @@ def test_the_jev_fallback_writes_a_row_for_both_calls(ai, ai_call_rows, monkeypa
     ai.classification = openrouter.AIUnavailable("classification")
     ai.design = [CLASSIFICATION]
     with ai_usage.for_profile(PROFILE_ID):
-        assert jev.classify("Does walking help?") == Classification.model_validate(CLASSIFICATION)
+        assert asyncio.run(jev.classify("Does walking help?")) == Classification.model_validate(CLASSIFICATION)
     assert summary(ai_call_rows.rows) == [("other", "error"), ("other", "ok")]
 
 

@@ -47,6 +47,7 @@ Every variable is a field of `Settings` in `backend/app/config.py`, read from `b
 | `OPENROUTER_API_KEY` | Calls to the reasoning model and Jev through OpenRouter | OpenRouter → Keys | **Yes. Backend only. Each call costs money** |
 | `OPENROUTER_REASONING_MODEL` | Model for experiment design and prediction | Optional. Defaults to `anthropic/claude-sonnet-5.5` | No |
 | `OPENROUTER_JEV_MODEL` | Jev classifier model (category, intent, risk) | Optional. Defaults to `typesafe/jev-router` | No |
+| `OPENROUTER_TIMEOUT_SECONDS` | How long to wait for the reasoning model's answer | Optional. Defaults to 75 | No |
 | `SENTRY_DSN` | Backend error reporting | Optional. Sentry → Project Settings → Client Keys. Blank means it does nothing | No |
 | `AI_DAILY_LIMIT_PROPOSE` | Experiment plans one person can make per UTC day | Optional. Defaults to 5 | No |
 | `AI_DAILY_LIMIT_REPORT` | Reports one person can have written per UTC day | Optional. Defaults to 3 | No |
