@@ -83,6 +83,8 @@ for (const scheme of ["light", "dark"] as const) {
     const menu = async (name: string) => { await button(/^Account menu/).click(); await button(name).click(); };
 
     await shot("landing", async () => { await page.goto(base!); await page.getByRole("heading", { name: "Stop guessing. Test one habit." }).first().waitFor(); });
+    for (const slide of [2, 3, 4]) await shot(`landing-slide-${slide}`, () => button(`Go to slide ${slide} of 4`).click());
+    await button("Go to slide 1 of 4").click();
     await shot("sign-in", async () => { await button("Sign in").click(); await page.getByLabel("Email").waitFor(); });
     await page.getByLabel("Email").fill("learner@example.invalid");
     await page.getByLabel("Password", { exact: true }).fill("fake-test-password");

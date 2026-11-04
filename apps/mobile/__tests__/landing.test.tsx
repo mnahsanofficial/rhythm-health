@@ -167,12 +167,12 @@ test('signing out goes to the form rather than the landing', async () => {
 test('the picture of the app is a real phone frame, labelled as an example, that overlaps the edge of the sky', async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: FIRST });
-  const frame = StyleSheet.flatten(screen.getAllByTestId('landing-phone')[0].props.style) as { width: number; height: number; borderWidth: number; borderRadius: number };
+  const frame = StyleSheet.flatten(screen.getAllByTestId('landing-phone', { includeHiddenElements: true })[0].props.style) as { width: number; height: number; borderWidth: number; borderRadius: number };
   expect(frame.borderWidth).toBeGreaterThanOrEqual(SPACING.xs);
   expect(frame.borderRadius).toBeGreaterThanOrEqual(RADII.card);
   expect(frame.height / frame.width).toBeGreaterThan(1.4);
   expect(frame.width).toBeLessThanOrEqual(LAYOUT.buttonMaxWidth);
-  const sky = StyleSheet.flatten(screen.getAllByTestId('landing-sky')[0].props.style) as { bottom: number };
+  const sky = StyleSheet.flatten(screen.getAllByTestId('landing-sky', { includeHiddenElements: true })[0].props.style) as { bottom: number };
   expect(sky.bottom).toBeGreaterThanOrEqual(SPACING.section);
-  expect(screen.getAllByText('Example').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('Example', { includeHiddenElements: true }).length).toBeGreaterThan(0);
 });
