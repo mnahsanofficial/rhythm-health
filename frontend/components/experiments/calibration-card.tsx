@@ -110,7 +110,7 @@ function ExampleGuess({ example }: { example: NonNullable<Calibration["example"]
   return (
     <div role="group" aria-label="Example, not your results" className="mt-5 border-t border-line pt-4">
       <span className="inline-block rounded-pill bg-line px-3 py-1 text-caption text-ink">Example</span>
-      <p className="mt-2 text-caption text-muted">Built from invented check-ins. It isn&apos;t part of your results.</p>
+      <p className="mt-2 text-caption text-muted">Built from invented check-ins and an invented guess. It isn&apos;t part of your results.</p>
       <p className="mt-3 font-medium">{example.question}</p>
       <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-mono text-caption text-muted tabular-nums">
         <span>Guessed {signedPercent(example.guessed_change_percent, 2)}</span>

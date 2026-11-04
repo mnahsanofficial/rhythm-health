@@ -29,7 +29,7 @@ def reset(profile_id: str, now: datetime | None = None) -> LabReport:
     row = experiments.create(
         profile_id,
         {
-            **seed.EXPERIMENT,
+            **seed.COMPLETED_EXPERIMENT,
             "id": experiment_id,
             "started_at": started_at.isoformat(),
             "completed_at": completed_at.isoformat(),

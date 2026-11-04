@@ -39,13 +39,13 @@ def load(profile_id: str) -> Calibration:
 
 @lru_cache(maxsize=1)
 def _example() -> CalibrationPoint | None:
-    """The demo sample's computed result against an invented guess. Reads and writes nothing."""
+    """The completed demo sample's stored guess against its computed result. Reads and writes nothing."""
     started_at, completed_at = seed.timeline(datetime.now(UTC))
-    row = {**seed.EXPERIMENT, "started_at": started_at.isoformat(), "completed_at": completed_at.isoformat()}
-    primary = next(m for m in analysis_service.analyze(row, seed.checkins(), completed_at).metrics if m.primary)
-    if primary.percent_change is None:
+    row = {**seed.COMPLETED_EXPERIMENT, "started_at": started_at.isoformat(), "completed_at": completed_at.isoformat()}
+    guess = analysis_service.analyze(row, seed.checkins(), completed_at).personal_guess
+    if guess is None or guess.observed_change_percent is None:
         return None
-    return _build_point("example", seed.QUESTION, None, seed.EXAMPLE_GUESS_PERCENT, primary.percent_change)
+    return _build_point("example", seed.QUESTION, None, guess.guessed_change_percent, guess.observed_change_percent)
 
 
 def _point(row: dict, analysis: dict | None) -> CalibrationPoint | None:

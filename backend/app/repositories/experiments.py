@@ -1,7 +1,8 @@
 from app.integrations.supabase import PersonalGuessUnavailable, rest_request
+from app.schemas.rows import ExperimentRow
 
 
-def create(profile_id: str, values: dict) -> dict:
+def create(profile_id: str, values: dict) -> ExperimentRow:
     """`values` may carry an `id` (the seeded demo uses a fixed one per profile)."""
     rows = rest_request(
         "POST",
@@ -12,14 +13,14 @@ def create(profile_id: str, values: dict) -> dict:
     return rows[0]
 
 
-def list_for_profile(profile_id: str, status: str | None = None) -> list[dict]:
+def list_for_profile(profile_id: str, status: str | None = None) -> list[ExperimentRow]:
     params = {"profile_id": f"eq.{profile_id}", "select": "*", "order": "created_at.desc"}
     if status:
         params["status"] = f"eq.{status}"
     return rest_request("GET", "experiments", params=params)
 
 
-def get(profile_id: str, experiment_id: str) -> dict | None:
+def get(profile_id: str, experiment_id: str) -> ExperimentRow | None:
     """Scoped to the profile, so another user's experiment looks the same as a missing one."""
     rows = rest_request(
         "GET",
@@ -29,7 +30,7 @@ def get(profile_id: str, experiment_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def start(profile_id: str, experiment_id: str, started_at: str) -> dict | None:
+def start(profile_id: str, experiment_id: str, started_at: str) -> ExperimentRow | None:
     """Move proposed -> active. The status filter makes the transition atomic:
     None means the experiment was no longer proposed. May raise SupabaseConflict if
     the profile already has an active experiment (partial unique index)."""
@@ -47,7 +48,7 @@ def start(profile_id: str, experiment_id: str, started_at: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def complete(profile_id: str, experiment_id: str, completed_at: str) -> dict | None:
+def complete(profile_id: str, experiment_id: str, completed_at: str) -> ExperimentRow | None:
     """Move active -> completed. The status filter makes the transition atomic:
     None means the experiment was no longer active."""
     rows = rest_request(
@@ -64,7 +65,7 @@ def complete(profile_id: str, experiment_id: str, completed_at: str) -> dict | N
     return rows[0] if rows else None
 
 
-def list_completed(profile_id: str, limit: int) -> list[dict]:
+def list_completed(profile_id: str, limit: int) -> list[ExperimentRow]:
     """Newest completed experiments first, leaving out the seeded demo."""
     return rest_request(
         "GET",

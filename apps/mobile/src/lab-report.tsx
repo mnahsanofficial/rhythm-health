@@ -74,7 +74,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Your la
     {back}
     {experiment.is_seeded && <View style={local.sample}>
       <Copy style={{ color: COLORS.night }}>Sample experiment</Copy>
-      <Copy style={ui.muted}>This report is based on seeded example check-ins.</Copy>
+      <Copy style={ui.muted}>{`This report is based on seeded example check-ins${analysis.personal_guess ? ' and an invented guess' : ''}.`}</Copy>
     </View>}
     <View style={ui.stack}>
       <Copy style={local.eyebrow}>Lab Report{finishedOn ? ` · finished ${finishedOn}` : ''}</Copy>

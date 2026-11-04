@@ -30,7 +30,7 @@ Sources: [API](../backend/app/api/experiments.py), [repository probe](../backend
 
 The Lab Report compares **Your guess / We predicted / You saw**. The existing reveal/replay action brings in the actual observation; the guess uses a diamond, and the actual uses a circle, so colour is not the only distinction. Reduced motion shows the same information immediately. Comparison numbers come from the deterministic analysis, never narrative text. Display retains up to two decimals for the guess; observed/AI figures retain the report's existing whole-percent presentation. No extra paid call is introduced.
 
-Sources: [analysis schema](../backend/app/schemas/analysis.py), [analysis service](../backend/app/services/analysis.py), [completion test](../backend/tests/test_completion.py), [report comparison](../frontend/components/report/prediction-vs-reality.tsx), [report page](../frontend/components/report/lab-report.tsx).
+Sources: [analysis schema](../backend/app/schemas/analysis.py), [analysis service](../backend/app/services/analysis/), [completion test](../backend/tests/test_completion.py), [report comparison](../frontend/components/report/prediction-vs-reality.tsx), [report page](../frontend/components/report/lab-report.tsx).
 
 ## Migration
 

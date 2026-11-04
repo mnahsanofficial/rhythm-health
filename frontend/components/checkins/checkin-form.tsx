@@ -1,20 +1,20 @@
 "use client";
 
-import { MOTION_DURATION, MOTION_EASE } from "@/lib/motion";
-
-import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { useLeaveGuard } from "@/components/nav/navigation";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
+import { AnswerProgress } from "@/components/checkins/answer-progress";
+import { ChangeQuestion } from "@/components/checkins/change-question";
+import { CheckinSkeleton, primaryButton, secondaryButton, Shell, without } from "@/components/checkins/checkin-chrome";
+import { CheckinSaved } from "@/components/checkins/checkin-saved";
 import { MetricInput } from "@/components/checkins/metric-input";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins, submitCheckin } from "@/lib/data/checkins";
 import { getExperiment } from "@/lib/data/experiments";
 import { MAX_NOTE_LENGTH, type Checkin, type Experiment, type MetricValue } from "@/lib/types/api";
-import { button } from "@/components/ui/button";
 
 type Load =
   | { kind: "loading" }
@@ -28,15 +28,6 @@ type Answers = {
   interventionDone: boolean | undefined;
   note: string;
 };
-
-export const primaryButton = `${button("primary")} text-lead`;
-export const secondaryButton = button("secondary");
-
-export function without(errors: Record<string, string>, key: string): Record<string, string> {
-  const next = { ...errors };
-  delete next[key];
-  return next;
-}
 
 /** Answers already saved for today, so a second visit edits instead of starting over. */
 function answersFrom(checkin: Checkin | undefined): Answers {
@@ -57,8 +48,6 @@ function answersFrom(checkin: Checkin | undefined): Answers {
 /** Today's check-in for one experiment: the PRD's main daily action, aimed at under 30 seconds. */
 export function CheckinForm({ id }: { id: string }) {
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
-  const savedHeadingRef = useRef<HTMLHeadingElement>(null);
   const { session, loading: sessionLoading } = useSession();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -102,10 +91,6 @@ export function CheckinForm({ id }: { id: string }) {
   useEffect(() => {
     if (formError) alertRef.current?.focus();
   }, [formError]);
-
-  useEffect(() => {
-    if (saved) savedHeadingRef.current?.focus();
-  }, [saved]);
 
   if (load.kind === "loading") return <CheckinSkeleton />;
 
@@ -170,54 +155,7 @@ export function CheckinForm({ id }: { id: string }) {
     + Number(testDay && answers.interventionDone !== undefined);
 
   if (saved) {
-    const logged = new Set(checkins.map((c) => c.day_number));
-    return (
-      <Shell>
-        <div role="status" className="flex flex-col items-start">
-          <Tick reduceMotion={Boolean(reduceMotion)} />
-          {experiment.is_seeded && <p className="mt-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
-          <h1
-            ref={savedHeadingRef}
-            tabIndex={-1}
-            className="mt-5 font-display text-display-sm tracking-tight outline-none"
-          >
-            Day {day} recorded.
-          </h1>
-          <p className="mt-3 text-lead text-muted">
-            {logged.size} of {progress.total_days} days logged.{" "}
-            {progress.days_remaining ? `${progress.days_remaining} to go.` : "That was the last day."}
-          </p>
-          <ol aria-label="Days logged" className="mt-6 flex flex-wrap gap-1.5">
-            {Array.from({ length: progress.total_days }, (_, i) => {
-              const n = i + 1;
-              const isLogged = logged.has(n);
-              return (
-                <motion.li
-                  key={n}
-                  aria-label={`Day ${n}${isLogged ? ", logged" : ""}`}
-                  initial={n === day && !reduceMotion ? { scale: 0.7, opacity: 0 } : false}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
-                  className={`grid size-11 place-items-center rounded-pill border font-mono text-caption ${
-                    isLogged ? "border-moss bg-moss text-on-accent" : n <= day ? "border-line bg-paper" : "border-dashed border-line"
-                  }`}
-                >
-                  <span aria-hidden="true">{isLogged ? "✓" : n}</span>
-                </motion.li>
-              );
-            })}
-          </ol>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href={experimentPath} className={primaryButton}>
-              Go to your experiment
-            </Link>
-            <button type="button" onClick={() => setSaved(null)} className={secondaryButton}>
-              Change today&apos;s answers
-            </button>
-          </div>
-        </div>
-      </Shell>
-    );
+    return <CheckinSaved experiment={experiment} checkins={checkins} day={day} experimentPath={experimentPath} onEdit={() => setSaved(null)} />;
   }
 
   const setValue = (key: string, value: MetricValue | undefined, text: string) => {
@@ -284,29 +222,7 @@ export function CheckinForm({ id }: { id: string }) {
           ? "A test day. Tell us whether you made the change, then how it went."
           : "A normal day. Don't change anything yet, just notice how it went."}
       </p>
-      <div className="mt-6 border-y border-line py-4">
-        <div className="flex items-center justify-between gap-4 text-caption">
-          <p role="status" className="font-mono tabular-nums">
-            {answered} of {answerTotal} answered
-          </p>
-          <span className="text-muted">{answered === answerTotal ? "Ready to record" : "Note optional"}</span>
-        </div>
-        <div
-          role="progressbar"
-          aria-label="Check-in answers"
-          aria-valuemin={0}
-          aria-valuemax={answerTotal}
-          aria-valuenow={answered}
-          className="mt-3 h-1 overflow-hidden rounded-pill bg-line"
-        >
-          <motion.div
-            initial={false}
-            animate={{ scaleX: answerTotal ? answered / answerTotal : 0 }}
-            transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
-            className="h-full origin-left bg-moss"
-          />
-        </div>
-      </div>
+      <AnswerProgress answered={answered} total={answerTotal} />
       {alreadyToday && (
         <p className="mt-4 rounded-card bg-moss-tint p-3 text-body text-ink">
           You&apos;ve already checked in today. Saving again replaces those answers.
@@ -328,45 +244,17 @@ export function CheckinForm({ id }: { id: string }) {
         )}
 
         {testDay && (
-          <fieldset aria-invalid={Boolean(fieldErrors.intervention_completed)}>
-            <legend className="text-lead font-medium text-ink">Did you make the change today?</legend>
-            {/* Shown as written: the AI's wording can run to several sentences. */}
-            <div className="mt-2 rounded-card bg-moss-tint p-3 text-body text-ink">
-              <p>{experiment.intervention.action}</p>
-              <p className="mt-1 text-caption text-muted">When: {experiment.intervention.timing}</p>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {[
-                { v: true, label: "Yes" },
-                { v: false, label: "Not today" },
-              ].map(({ v, label }) => {
-                const selected = answers.interventionDone === v;
-                return (
-                  <label
-                    key={label}
-                    className={`grid min-h-12 cursor-pointer place-items-center rounded-card border text-lead transition-transform duration-[var(--motion-press)] motion-reduce:transition-none active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-moss ${
-                      selected ? "border-moss bg-moss text-on-accent" : "border-control bg-paper text-ink hover:border-ink"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="intervention_completed"
-                      checked={selected}
-                      onChange={() => {
-                        setAnswers((a) => ({ ...a, interventionDone: v }));
-                        setFieldErrors((e) => without(e, "intervention_completed"));
-                      }}
-                      className="sr-only"
-                    />
-                    {label}
-                  </label>
-                );
-              })}
-            </div>
-            {fieldErrors.intervention_completed && (
-              <p className="mt-2 text-caption font-medium text-clay">{fieldErrors.intervention_completed}</p>
-            )}
-          </fieldset>
+          <ChangeQuestion
+            name="intervention_completed"
+            action={experiment.intervention.action}
+            timing={experiment.intervention.timing}
+            value={answers.interventionDone}
+            error={fieldErrors.intervention_completed}
+            onChange={(v) => {
+              setAnswers((a) => ({ ...a, interventionDone: v }));
+              setFieldErrors((e) => without(e, "intervention_completed"));
+            }}
+          />
         )}
 
         {metrics.map((m) => (
@@ -403,60 +291,5 @@ export function CheckinForm({ id }: { id: string }) {
         </div>
       </form>
     </Shell>
-  );
-}
-
-export function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="page-frame flex-1 pt-6 pb-16 sm:pt-10 [--frame:42rem]">
-      {children}
-    </div>
-  );
-}
-
-/** A single settling tick confirms the successful save. */
-function Tick({ reduceMotion }: { reduceMotion: boolean }) {
-  return (
-    <motion.svg
-      viewBox="0 0 48 48"
-      className="size-20"
-      aria-hidden="true"
-      initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: reduceMotion ? 0 : MOTION_DURATION.response, ease: MOTION_EASE.settle }}
-    >
-      <circle cx="24" cy="24" r="22" fill="var(--color-moss-tint)" />
-      <path
-        d="M14 24.5 L21 31.5 L34 17"
-        fill="none"
-        stroke="var(--color-moss)"
-        strokeWidth={3.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </motion.svg>
-  );
-}
-
-/** Same shape as the form: header, three questions, the save button. */
-export function CheckinSkeleton() {
-  return (
-    <div aria-hidden="true" className="page-frame pt-6 sm:pt-10 [--frame:42rem]">
-      <div className="h-5 w-32 rounded-pill bg-line" />
-      <div className="mt-8 h-3 w-36 rounded-pill bg-line" />
-      <div className="mt-3 h-10 w-2/3 rounded-pill bg-line" />
-      <div className="mt-3 h-4 w-full rounded-pill bg-line" />
-      {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="mt-8">
-          <div className="h-4 w-40 rounded-pill bg-line" />
-          <div className="mt-3 grid grid-cols-5 gap-2">
-            {Array.from({ length: 5 }, (_, j) => (
-              <div key={j} className="h-12 rounded-card bg-line/70" />
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="mt-10 h-12 w-56 rounded-pill bg-line" />
-    </div>
   );
 }
