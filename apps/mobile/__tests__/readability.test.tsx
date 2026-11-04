@@ -95,6 +95,14 @@ describe('the tab bar', () => {
     expect(screen.getByText('Nothing running yet.')).toBeVisible();
   });
 
+  test('empty Progress offers the next step', async () => {
+    await signedIn();
+    await pressTab('Progress');
+    await screen.findByText('Nothing running yet.');
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask a question' })); });
+    expect(await screen.findByLabelText('Your question')).toBeVisible();
+  });
+
   test('is hidden in a flow, and hidden while the keyboard is up', async () => {
     await signedIn();
     expect(tab('Today')).toBeVisible();

@@ -141,7 +141,8 @@ describe('finish', () => {
     queue(COMPLETE, { status: 503, body: { detail: 'Database unavailable' } });
     queue(READ, { status: 404, body: { detail: 'No report for this experiment yet' } });
     await finish();
-    expect(await screen.findByText('Database unavailable')).toBeVisible();
+    expect(await screen.findByText("Couldn't finish the experiment. Try again.")).toBeVisible();
+    expect(screen.queryByText('Database unavailable')).toBeNull();
     expect(count(COMPLETE)).toBe(1);
     await press('See your results');
     await pastFinishFlow();
