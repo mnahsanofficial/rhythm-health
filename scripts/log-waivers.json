@@ -1,4 +1,10 @@
 {
+  "2026-10-28_16-41-30_01a18219-c8cd-7b30-8246-43f2497fc36a.md": {
+    "checks": [
+      "frontmatter_keys"
+    ],
+    "reason": "The backfill Maham (8x) approved on 1 Nov records backfilled, backfilled_at and backfill_reason, which the guide's format doesn't have. See docs/logging.md."
+  },
   "2026-10-29_16-44-55_01a18743-40a4-72d2-8a5d-514e8a836ef0.md": {
     "checks": [
       "generated_prompt"

@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // Checks every agent log in .claude-logs/ against the 8x guide's format (docs/agent-logging-setup.md).
-// Fails on missing frontmatter, a github_user that's unknown or doesn't match the author's email,
-// a session_id that disagrees with the filename, and empty or agent-generated prompts.
+// scripts/check_log_format.py checks the exact format: file name, frontmatter keys and order, header block,
+// entry markers and fields, and every recomputed value. This file adds who wrote the log and what's in it:
+// a github_user that's unknown or doesn't match the author's email, a session_id that disagrees with the
+// filename, and empty or agent-generated prompts.
 // Old logs can't be edited, so a known problem in one is excused only by an entry in
 // scripts/log-waivers.json naming the file, the checks excused and why.
+import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +21,15 @@ const GENERATED = [
   /^# Overview\s+Generate 0 to 3 hyperpersonalized suggestions/,
   /^The following is the Codex agent history/,
 ];
+
+const FORMAT_CHECK = join(dirname(fileURLToPath(import.meta.url)), "check_log_format.py");
+
+/** [check, message] pairs from the Python format check, which reuses the guide script's own functions. */
+function formatProblems(name, text) {
+  const run = spawnSync("python3", [FORMAT_CHECK], { input: JSON.stringify({ name, text }), encoding: "utf8", maxBuffer: 2 ** 28 });
+  if (run.status !== 0) return [["format_check", `the format check couldn't run: ${run.error?.message ?? run.stderr}`]];
+  return JSON.parse(run.stdout);
+}
 
 function frontmatter(text) {
   const match = /^---\n([\s\S]*?)\n---/.exec(text);
@@ -44,13 +56,15 @@ function prompts(text) {
 }
 
 /** Problems with one log, as plain sentences. An empty list means it passes. */
-export function checkLog(name, text, { authors, waivers }) {
+export function checkLog(name, text, { authors, waivers, format = formatProblems }) {
   const excused = new Set(waivers[name]?.checks ?? []);
   const problems = [];
   const report = (check, message) => { if (!excused.has(check)) problems.push(`${name}: ${message}`); };
 
+  for (const [check, message] of format(name, text)) report(check, message);
+
   const front = frontmatter(text);
-  if (!front) return [`${name}: no frontmatter`];
+  if (!front) return problems.length ? problems : [`${name}: no frontmatter`];
   for (const key of REQUIRED) {
     if (!front[key] && !excused.has("frontmatter")) problems.push(`${name}: missing frontmatter field ${key}`);
   }
