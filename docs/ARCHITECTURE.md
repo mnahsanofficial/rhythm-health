@@ -329,3 +329,11 @@ Web collects a primary-metric percentage guess before mounting the AI forecast. 
 ## Scale words and chart day flags (B12/B11/F13)
 
 Design can add optional nullable `Metric.min_label` / `max_label`, stored in existing metric JSON and rendered by web/mobile Check-in with Low / High for missing ends. Every chart point carries `missed` from stored deterministic analysis; the web chart no longer receives a missing-days list or calculates a day rule. No migration, paid call or shared write was needed. [Contract, code sources, tests and evidence](SCALE_WORDS_CHART_DAYS.md).
+
+## Continuous integration (4 Nov 2026)
+
+**What:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every pull request and on `main`. The `checks` job runs lint, typecheck, root `npm test` (with `logs:check`), `contract:check`, `brand:check`, the web build and backend `pytest`. The `browser` job runs the Playwright suite.
+
+**Why:** until now these ran only if someone remembered to run them on their own machine.
+
+**Trade-off:** the workflow has no secrets and only reads the repo, so it can't reach Supabase or OpenRouter. Real sign-in, real AI output and the iPhone stay manual checks. The browser suite is a separate job because it's the slowest and the most sensitive to timing, and a failure there is easier to read on its own.
