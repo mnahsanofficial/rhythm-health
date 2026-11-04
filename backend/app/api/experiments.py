@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import db_error, owned_experiment, profile_id_for
 from app.auth.supabase import get_current_user
+from app.integrations import ai_usage
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
 from app.integrations.supabase import PersonalGuessUnavailable, SupabaseConflict, SupabaseUnavailable
 from app.repositories import checkins, experiments, profiles
@@ -12,7 +13,7 @@ from app.schemas.experiment import ActiveCapacity, ExperimentOut, ExperimentStat
 from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
 from app.schemas.progress import ExperimentTimeline
-from app.services import experiment_limit, safety
+from app.services import ai_limit, experiment_limit, safety
 from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
 from app.services.timeline import experiment_timeline
@@ -33,8 +34,10 @@ def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_current_
         # Before any paid AI work: a plan that couldn't be started is money wasted.
         if not experiment_limit.capacity(str(row["id"])).can_start:
             raise experiment_limit.limit_reached()
+        ai_limit.ensure_within_daily_limit(str(row["id"]), "propose")
         available = experiments.supports_personal_guess(str(row["id"]))
-        result = propose(body.question, ProfileOut.model_validate(row))
+        with ai_usage.for_profile(str(row["id"])):
+            result = propose(body.question, ProfileOut.model_validate(row))
         return result.model_copy(update={"personal_guess_available": available})
     except SupabaseUnavailable:
         raise db_error()

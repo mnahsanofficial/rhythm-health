@@ -210,9 +210,9 @@ export function ExperimentFlow({
           </>}
 
           {error && <div role="alert" className="mt-6 rounded-card bg-clay-tint p-5 text-clay">
-            <p className="font-medium">{error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : "Your question hasn’t been submitted successfully."}</p>
+            <p className="font-medium">{error.status === 503 ? "The service is unavailable right now." : error.status === 502 ? "We couldn’t put together a complete plan." : error.status === 409 ? "Your profile needs to be saved first." : error.status === 422 ? "Let’s adjust that question." : error.status === 429 ? "You’ve reached today’s limit." : "Your question hasn’t been submitted successfully."}</p>
             <p className="mt-2">{error.message}</p>
-            {error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
+            {error.status === 409 ? <Link href="/onboarding" className={`${secondary} mt-4 inline-flex items-center text-ink`}>Go to your rhythm</Link> : error.status === 429 ? null : <button type="button" onClick={() => void submit()} className={`${secondary} mt-4 text-ink`}>Retry</button>}
           </div>}
 
           {limitMessage && !result && (

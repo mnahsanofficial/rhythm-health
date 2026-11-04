@@ -17,7 +17,17 @@ class Settings(BaseSettings):
     # Jev classifier, served through OpenRouter.
     openrouter_jev_model: str = "typesafe/jev-router"
 
-    @field_validator("openrouter_reasoning_model", "openrouter_jev_model", mode="before")
+    # Optional. Blank means no error reporting.
+    sentry_dsn: str = ""
+
+    # Paid AI actions one person can use per UTC day.
+    ai_daily_limit_propose: int = 5
+    ai_daily_limit_report: int = 3
+
+    @field_validator(
+        "openrouter_reasoning_model", "openrouter_jev_model", "ai_daily_limit_propose", "ai_daily_limit_report",
+        mode="before",
+    )
     @classmethod
     def _blank_means_default(cls, v, info):
         # `KEY=` in .env.local arrives as "", which should fall back to the default.
