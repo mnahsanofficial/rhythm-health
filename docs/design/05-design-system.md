@@ -190,3 +190,112 @@ Risks left, none resolved by this document:
 | `DESIGN.md` says no global page entrance effects | Low | `screen` is a narrow exception on navigation. PR 1 updates `DESIGN.md` and `ui-motion.md`, including count-up rules |
 
 Not checked: the Kept reference by eye, real users, and native rendering.
+
+## Mobile rules (added after round 1)
+
+Skill: `/design:design-system`. Added 4 Nov 2026. **These apply to `apps/mobile`; the web is frozen.** They add to the rules above and replace them where they conflict, which the "Changes" table lists. Values come from `@rhythm-health/brand`. Components are new or restyled in `apps/mobile/src`.
+
+### Type hierarchy
+
+A screen reads in this order, and no two levels look the same.
+
+| Level | Style | Colour | Rule |
+|---|---|---|---|
+| 1. Heading | `headline` 28, Fraunces | `text` | One per screen. Replaces `display-sm` 36 in flows, where questions wrap to three or four lines |
+| 2. Guidance | `body` 16, Instrument Sans | `text` | One short line. Not grey: it's what to do |
+| 3. Section title | `title` 22, Fraunces | `text` | Only on screens with more than one section |
+| 4. Value or answer | `lead` 18 or `body` medium | `text` | What you came to read |
+| 5. Caption | `caption` 14 | `muted` | Metadata only: times and units |
+| Numbers | Same size as the level, Geist Mono | `text` | **Not green by default.** Green means you can tap it |
+
+Rules that follow:
+- `muted` never carries something you need in order to act.
+- `accent` as text only for links. No green eyebrows, no green monospace on controls.
+- No eyebrow above the heading unless you need it, such as "Example".
+- Text never clips. `Copy` doesn't shrink, and rows wrap.
+
+### Form rows
+
+`FormRow`: **icon, label, value, chevron**. It's one button, used on review and settings. This is how a list of six things stops being six buttons.
+
+| Part | Spec |
+|---|---|
+| Height | At least 48pt, grows with text |
+| Icon | 24pt, in `text`, from our own `Icon` set (`react-native-svg`, no new dependency). Hidden from screen readers |
+| Label | `body`, `text` |
+| Value | `body`, `muted` when empty ("Choose"), `text` when set. Wraps under the label at large text instead of clipping |
+| Chevron | `muted`. Only when tapping goes somewhere; a `Switch` takes its place for on and off |
+| Edge | `surface` fill and `control` edge with `control` radius; or grouped in one card with `border` dividers |
+| Spoken | "Sleep, 23:00 to 07:00", role `button`, hint "Change" |
+| States | Pressed: `accent-tint`. Disabled while saving |
+
+Variants share the layout. `TimeRow` opens the native picker in a sheet and follows the current mode. `Stepper` is label, − value +, with 48pt round buttons, role `adjustable`, and increment and decrement actions.
+
+**Errors appear after interaction.** Until someone has touched a field, a disabled action with a hint is enough.
+
+### Sticky bottom action
+
+`StickyAction` is the one primary action in a flow. It sits outside the scroller, so content can't push it off screen.
+
+| Rule | Detail |
+|---|---|
+| Structure | `Frame` is header, scroller, then footer, all inside one `KeyboardAvoidingView`. A screen fills the footer through context; it doesn't lay itself out |
+| Keyboard | `behavior="padding"` on iOS, `height` on Android. `keyboardShouldPersistTaps="handled"`, so the first tap on the action works. The focused input scrolls into view above the bar |
+| Safe area | Footer pads to the bottom inset, and drops it while the keyboard is open |
+| Look | `background` fill, `border` top edge, full-width button |
+| Secondary | "Previous" and the like go beside it, or as a quiet link above it. Never two filled buttons |
+| Disabled | `accent-tint` fill, `muted` text, and a caption above saying what unlocks it |
+| Not used on | Tab screens. There, the action sits in a card and the tab bar owns the bottom |
+
+### Tab bar
+
+Today, Progress, **Ask** (centre), History, You.
+
+| Rule | Detail |
+|---|---|
+| Height | At least 56pt plus the bottom inset. Each tab at least 48pt tall |
+| Tab | Icon 24pt, label `caption`. Selected: `accent` icon and label, medium weight, plus a filled icon. Colour is never the only cue |
+| Ask | Same size as the others, in a filled `accent` circle. It doesn't float above the bar, and doesn't count as the screen's primary |
+| Shown on | The five tab screens. **Hidden in flows** (setup, check-in, guess, plan, celebration): a flow has its own sticky action and × |
+| Moves to You | Account, Update your rhythm, Daily reminders, theme, See an example, Sign out. The header keeps only the logo, and the × in flows |
+| Spoken | Role `tablist`, each `tab` with selected state. Label may cap at 1.3× text; the icon and spoken name stay |
+
+### Celebration
+
+Full screen, after saving a check-in. It's the third signature moment, after the rhythm ring and prediction versus reality.
+
+| Part | Spec |
+|---|---|
+| Picture | The rhythm ring, drawn large. The sun (light) or moon (dark) rises along it to the share of days recorded. In light mode the sun has a `text` outline |
+| Words | "Day 4 recorded", then "6 days left". Counts come from the server's refreshed progress: if it isn't back yet, show only the day |
+| Background | Solid, from our own tokens. No confetti, no thumbs, nothing borrowed |
+| Sample | Says "Example" |
+| Haptic | `expo-haptics` success, once, when the screen appears. Ignores failure |
+| Time | `reveal` 480 for the rise, held to 2 seconds in total, then Today. Needs **one new token, `celebration: 2000`**, which reverses "no new duration tokens" and adds one unused variable to the generated web CSS, with no visible web change |
+| Tap | Anywhere skips |
+| Reduce Motion | Still ring at its final position, words at once, same 2 seconds |
+| VoiceOver | Announces the words, moves focus there, and waits for a tap |
+| Honest | The same for every saved day: never bigger for a good answer, because that would nudge the data |
+
+### Disclosure
+
+`Disclosure` ("Why?" or "More"): a quiet text button with a chevron that opens in place, closed by default. The chevron rotates over `press`. No height animation, per `ui-motion.md`.
+
+### Changes to the rules above, for mobile
+
+| Rule above | On mobile now |
+|---|---|
+| Heading `display-sm` in flows | `headline` |
+| Disabled: surface fill and muted text | `accent-tint` fill and muted text |
+| Sections in the account menu | Tab bar, and You |
+| "No new duration tokens" | One: `celebration` |
+| "Your lab" (`03-ux-copy.md`) | "Today" on the phone |
+
+### Risks
+
+| Risk | Level | Handling |
+|---|---|---|
+| Keyboard behaviour can't be tested here: no simulator, and Expo web has no keyboard | High | First item on every iPhone list. Tests cover structure only |
+| Moving screens into tabs touches `today.tsx`'s navigation state, including the paid proposal that must stay mounted | High | Tests first. The existing "stays mounted" tests must keep passing untouched |
+| Tests look up the strings being cut | Med | Update them with each screen, and say so in the PR |
+| Five tabs at 320 wide with large text | Med | Test at 320; capped label |

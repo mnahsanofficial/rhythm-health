@@ -2,7 +2,45 @@
 
 Skill: `/design:user-research`. Written 4 Nov 2026, for the 5 Nov final demo.
 
-**Status: no one has been asked yet.** Everything about users below is an **assumption**, taken from `PRODUCT.md` and `PRD.md §4`, which describe who we are building for, not who we have met. No user, quote or result in this folder is invented. Results go in the table at the end, and only real answers may replace an assumption.
+**Status: one round, one person, and that person built the app.** See [Round 1](#round-1-the-builder-on-an-iphone). No outside user has been asked yet, so everything else about users below is still an **assumption**, taken from `PRODUCT.md` and `PRD.md §4`, which describe who we are building for, not who we have met. No user, quote or result in this folder is invented. Results go in the table at the end, and only real answers may replace an assumption.
+
+## Round 1: the builder on an iPhone
+
+**Who:** Nazmul, n=1, on 4 Nov 2026, using the mobile app in Expo Go on their own iPhone. **Read this honestly:** a builder knows what every screen is for, so a new user will probably stumble in more places, not fewer. This round finds obvious problems. It can't show how common they are, and it doesn't answer Q1–Q5 below.
+
+Their summary: "it's hard to see what to read and what to tap."
+
+| # | What they saw | Screen | Kind of problem |
+|---|---|---|---|
+| R1 | Too much grey paragraph text, all at a similar weight | All, worst on guess and proposal | Hierarchy |
+| R2 | Guess and proposal are walls of text | Guess, proposal | Too much to read |
+| R3 | The hypothesis repeats "the small change" right below it | Proposal | Repetition |
+| R4 | A big "Sign out" button on every onboarding step | Onboarding | Wrong place: it belongs in the menu |
+| R5 | The disabled Continue is almost invisible | Onboarding | Can't see the next step |
+| R6 | "Enter both times." shows as an error before anything is touched | Onboarding, sleep times | Blames the user too early |
+| R7 | "Choose a time" in green monospace looks broken | Onboarding, sleep times | Doesn't look like a control |
+| R8 | "Half an hour less/more" buttons are long; a − / + stepper is clearer | Onboarding, hours asleep | Control doesn't fit the job |
+| R9 | Six "Change …" pill buttons stacked | Onboarding, review | Repeated actions; should be rows |
+| R10 | Suggestion chips look like solid buttons | Ask | Looks like the main action |
+| R11 | The loading line is cut off ("This can take") | Ask | Broken text |
+| R12 | Headings slide under the header | Ask, others | Layout |
+| R13 | The step label ("Age", "Sleep") at the top right gets clipped | Onboarding | Broken text |
+
+Not a finding: the blue gear is Expo Go's developer menu, not our app.
+
+**Quality reference:** Nazmul's screenshots of Strava's save and home screens. Taken from them as a bar, not to copy: form rows with an icon, label, value and chevron; one sticky primary action; a bottom tab bar; a streak card with one action; a full-screen moment after saving. Our colours, type, shapes and words stay ours.
+
+## The 3 tasks a new user must complete
+
+What a new person has to get done, and what would make each one obvious without help. These are the pass marks for the next round with someone who isn't on the team.
+
+| Task | Done when | What makes it obvious | Round 1 problems in the way |
+|---|---|---|---|
+| **T1. Set up my rhythm** | Profile saved, from first screen to Today | One question per screen, and the one action always in the same place at the bottom. An enabled-looking next step the moment it's answered. A review screen of rows, so changing an answer is one tap | R4, R5, R6, R7, R8, R9, R13 |
+| **T2. Start my first experiment** | A question asked, my guess locked, and the experiment started | One short line on what to do. The plan as a summary first: the change, how many days, what to track. Everything else behind "Why?". The prediction is the thing to read, and Start is the thing to tap | R1, R2, R3, R10, R11, R12 |
+| **T3. Do today's check-in** | Today's answers saved, and I can see what that did to my progress | Today says which day it is and offers one action. The check-in is one screen of taps. Saving is unmistakable and says how many days are left | R1; the rest is unproven until someone new tries it |
+
+**Questions for the next round:** without help, can a new person do T1, T2 and T3 on a phone, and where do they stop for more than a few seconds? Afterwards: "what did the app want you to do on that screen?"
 
 ## Who we think our users are (assumption)
 
