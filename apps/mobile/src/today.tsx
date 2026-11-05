@@ -165,9 +165,9 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   const saved = savedDay !== null && data?.timeline ? data.timeline : null;
   const fresh = saved && !busy && error === null ? saved : null;
   return <View style={styles.stack}>{flow}{content()}
-    {savedDay !== null && <Celebration {...(saved && data && isLastBaselineDay(saved) && saved.progress.day_number === savedDay ? { title: 'Baseline done.', lines: [testStartsLine(data.experiment.intervention.action, saved.next_day_at)], hold: true } : {})} day={savedDay} totalDays={saved?.progress.total_days ?? null} recordedDays={fresh?.recorded_days ?? null} daysLeft={fresh?.progress.days_remaining ?? null} seeded={Boolean(data?.experiment.is_seeded)} onDone={() => setSavedDay(null)} />}
+    {savedDay !== null && <Celebration {...(saved && data && isLastBaselineDay(saved) && saved.progress.day_number === savedDay ? { title: 'Baseline done.', lines: [{ id: `${data.experiment.id}:${savedDay}`, text: testStartsLine(data.experiment.intervention.action, saved.next_day_at) }], hold: true } : {})} day={savedDay} totalDays={saved?.progress.total_days ?? null} recordedDays={fresh?.recorded_days ?? null} daysLeft={fresh?.progress.days_remaining ?? null} seeded={Boolean(data?.experiment.is_seeded)} onDone={() => setSavedDay(null)} />}
     {savedAll && savedAll.experiments.length > 0 && <Celebration day={savedAll.experiments[0].day_number} totalDays={savedAll.experiments[0].total_days} recordedDays={null} daysLeft={null}
       seeded={entries.some(entry => entry.experiment.is_seeded && savedAll.experiments.some(item => item.id === entry.experiment.id))}
-      title={`${savedAll.experiments.length} check-ins recorded`} lines={savedAll.experiments.map(item => `Day ${item.day_number} of ${item.total_days}`)} onDone={() => setSavedAll(null)} />}
+      title={`${savedAll.experiments.length} check-ins recorded`} lines={savedAll.experiments.map(item => ({ id: `${item.id}:${item.day_number}`, text: `Day ${item.day_number} of ${item.total_days}` }))} onDone={() => setSavedAll(null)} />}
   </View>;
 }
