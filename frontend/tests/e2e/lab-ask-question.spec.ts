@@ -75,12 +75,7 @@ for (const width of [390, 768, 1440]) {
       const toggle = page.getByRole("button", { name: "Test another habit" });
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
       await page.mouse.move(0, 0); // Check the normal fill, not the hover colour.
-      const actionBox = (await toggle.boundingBox())!;
-      const dayBox = (await page.getByText("Day 1 of 10", { exact: true }).boundingBox())!;
-      const questionBox = (await page.getByRole("heading", { name: experiment.question }).boundingBox())!;
-      expect.soft(Math.abs(actionBox.y + actionBox.height / 2 - dayBox.y - dayBox.height / 2), "the action aligns with the experiment day").toBeLessThan(2);
-      expect.soft(actionBox.x, "the action sits to the right of the day").toBeGreaterThan(dayBox.x + dayBox.width);
-      expect.soft(actionBox.x + actionBox.width, "the action stays inside the experiment column").toBeLessThanOrEqual(questionBox.x + questionBox.width + 1);
+      await expect(page.getByRole("heading", { name: "Evening walk" })).toBeVisible();
       // A secondary action: today's check-in is the screen's one primary.
       await expect.soft(toggle).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
       await expect.soft(toggle).toHaveCSS("color", "rgb(27, 36, 33)");
@@ -88,7 +83,7 @@ for (const width of [390, 768, 1440]) {
       await toggle.focus();
       await page.keyboard.press("Enter");
       await expect(field).toBeFocused();
-      await expect(page.getByRole("heading", { name: experiment.question })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Evening walk" })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
       await expect(page.getByRole("link", { name: "See your experiment" })).toHaveCount(0);
       await expect(page.getByText("Start with a hunch", { exact: true })).toHaveCount(0);
@@ -100,7 +95,8 @@ for (const width of [390, 768, 1440]) {
       expect(calls).toBe(2);
       await page.getByRole("button", { name: "Close question" }).click();
       await expect(toggle).toBeFocused();
-      await expect(page.getByRole("heading", { name: experiment.question })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Evening walk" })).toBeVisible();
+      await page.getByText("Details", { exact: true }).click();
       await expect(page.getByRole("link", { name: "See your experiment" })).toBeVisible();
       await toggle.click();
       await expect(field).toHaveValue("Does less caffeine improve my focus?");

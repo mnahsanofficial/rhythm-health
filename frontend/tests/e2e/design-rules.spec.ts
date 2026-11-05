@@ -110,7 +110,7 @@ for (const mode of ["light", "dark"] as const) for (const width of [390, 1440]) 
     await page.route(`${API}/api/experiments/${completedId}/report`, route => route.fulfill({ json: report }));
 
     for (const [screen, path, heading] of [
-      ["Today", "/", experiment.question],
+      ["Today", "/", "Evening walk"],
       ["ask a question", "/experiments/new", "Ask a question."],
       ["check-in", `/experiments/${experiment.id}/check-in`, /check-in/i],
       ["Lab Report", `/experiments/${completedId}/report`, experiment.question],

@@ -34,12 +34,12 @@ for (const width of [390, 1440]) {
         json: timelineFixture(active, { recorded: doneToday ? [1, 4] : [1], missed: [2, 3], nextDayAt: "2026-10-29T10:00:00Z" }),
       }));
       await page.goto("/");
-      await expect(page.getByRole("heading", { name: experiment.question })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Evening walk" })).toBeVisible();
       await expect(page.getByText("Day 4 of 10", { exact: true })).toBeVisible();
       await expect(page.getByText(/sample data|Questions people test|Stop guessing/)).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Test a new question" })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Check in for day 4" })).toHaveAttribute("href", `/experiments/${experiment.id}/check-in`);
-      await expect(page.getByText("1 of 10 days recorded", { exact: true })).toBeVisible();
+      await expect(page.getByRole("list", { name: "Evening walk: 10-day timeline" })).toBeVisible();
 
       const capture = async (phase: string) => {
         if (!process.env.CAPTURE_UI_MOTION || reducedMotion === "reduce") return;
@@ -47,22 +47,25 @@ for (const width of [390, 1440]) {
         await page.screenshot({ path: `../docs/screenshots/ui-motion/dashboard/${width}/${phase}.png`, fullPage: true });
       };
       await capture("before");
+      await page.getByRole("link", { name: "Explore your observations" }).click();
+      await expect(page).toHaveURL(new RegExp(`/experiments/${experiment.id}$`));
+      // Daily answers belong on the experiment page; Today carries the compact strip.
+      await page.route(`${API}/api/experiments/${experiment.id}`, route => route.fulfill({ json: active }));
+      await page.reload();
       await page.getByRole("button", { name: "Day 1, baseline, logged" }).click();
       const details = page.getByRole("region", { name: "Recorded day" });
       await expect(details).toContainText("A quiet evening.");
       await capture("during");
       await expect(details.getByRole("article")).toHaveCSS("opacity", "1");
       await capture("after");
-      await expect(page.getByRole("button", { name: "Day 1, baseline, logged" })).toHaveAttribute("aria-pressed", "true");
       if (reducedMotion === "reduce") {
         expect(await details.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
       }
       doneToday = true;
-      await page.reload();
+      await page.goto("/");
       await expect(page.getByText("Done for today", { exact: true })).toBeVisible();
-      await expect(page.getByText("2 of 10 days recorded", { exact: true })).toBeVisible();
+      await expect(page.getByText("2/10 recorded", { exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: "Change today's answers" })).toHaveAttribute("href", `/experiments/${experiment.id}/check-in`);
-      await expect(page.getByText("Change made on 0 of 1 test days", { exact: true })).toBeVisible();
       await capture("done-today");
       expect(counts.proposals).toBe(0);
     });

@@ -61,7 +61,7 @@ for (const view of ["detail", "home"] as const) {
       expect(screen.getByLabelText("Day 2, baseline, missed")).toBeVisible();
       expect(screen.getByLabelText("Day 5, test, upcoming")).toBeVisible();
       expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
-      expect(screen.getByText(/0 of 10 days (logged|recorded)/)).toBeVisible();
+      expect(screen.getByText(view === "home" ? "0/10 recorded" : /0 of 10 days logged/)).toBeVisible();
     });
 
     it("keeps the skeleton until progress resolves", async () => {
@@ -106,7 +106,9 @@ for (const view of ["home", "detail"] as const) {
     const show = () => render(view === "detail" ? <ExperimentDetail id={experiment.id} /> : <HomeExperience>Public</HomeExperience>);
     it("shows each backend summary before the small change, even with a stale experiment phase", async () => {
       server.use(http.get(url, () => HttpResponse.json({ ...timeline, baseline_summary: normal })));
-      show(); expect(await screen.findByRole("heading", { name: "Your normal, before the change." })).toBeVisible();
+      show();
+      if (view === "home") await userEvent.click(await screen.findByText("Your normal days", { exact: true }));
+      expect(await screen.findByRole("heading", { name: "Your normal, before the change." })).toBeVisible();
       expect(screen.getByText("2 of 3 normal days recorded.")).toBeVisible();
       for (const metric of normal.metrics) expect(screen.getByText(metric.description)).toBeVisible();
       expect(screen.getByText("Some normal days are missing, so this starting point is limited.")).toBeVisible();
@@ -114,7 +116,9 @@ for (const view of ["home", "detail"] as const) {
     });
     it("handles no baseline check-ins without inventing normal values", async () => {
       server.use(http.get(url, () => HttpResponse.json({ ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } })));
-      show(); expect(await screen.findByText("No normal-day answers recorded.")).toBeVisible();
+      show();
+      if (view === "home") await userEvent.click(await screen.findByText("Your normal days", { exact: true }));
+      expect(await screen.findByText("No normal-day answers recorded.")).toBeVisible();
       expect(screen.queryByText(normal.metrics[0].description)).not.toBeInTheDocument();
       expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
     });
@@ -134,7 +138,9 @@ for (const view of ["home", "detail"] as const) {
       const user = userEvent.setup(); let failed = false;
       server.use(http.get(url, () => { if (!failed) { failed = true; return HttpResponse.json({ detail: "Progress unavailable" }, { status: 503 }); } return HttpResponse.json({ ...timeline, baseline_summary: normal }); }));
       show(); await screen.findByRole("alert"); expect(screen.queryByText(normal.metrics[0].description)).not.toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: "Try again" })); expect(await screen.findByText(normal.metrics[0].description)).toBeVisible();
+      await user.click(screen.getByRole("button", { name: "Try again" }));
+      if (view === "home") await user.click(await screen.findByText("Your normal days", { exact: true }));
+      expect(await screen.findByText(normal.metrics[0].description)).toBeVisible();
     });
   });
 }

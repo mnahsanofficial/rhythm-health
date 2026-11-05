@@ -31,8 +31,8 @@ export function SampleControls({ experiment, onChanged }: { experiment?: Experim
   if (experiment && !experiment.is_seeded) return null;
   return <section className="my-6 border-y border-line py-5" aria-label="Sample experiment controls">
     <p className="font-medium text-moss">{experiment ? "Sample experiment" : "Try the daily loop with a sample"}</p>
-    <p className="mt-2 text-muted">Sample answers never become your real experiment data. Fixed design and prediction, with no AI calls.</p>
-    {experiment && <p className="mt-2 text-muted">Remove the sample to free up a slot for a real experiment.</p>}
+    <p className="mt-2 text-ink">Sample answers never become your real experiment data. Fixed design and prediction, with no AI calls.</p>
+    {experiment && <p className="mt-2 text-ink">Remove the sample to free up a slot for a real experiment.</p>}
     {error && <p role="alert" className="mt-3 text-clay">{error}</p>}
     {confirm ? <div className="mt-4" role="group" aria-labelledby="sample-removal-heading">
       <h2 id="sample-removal-heading" tabIndex={-1} ref={heading} className="font-display text-title">Remove this sample experiment?</h2>
