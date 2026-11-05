@@ -154,3 +154,9 @@ Decided by Nazmul, from the [completeness audit](FEEDBACK_TRACKER.md).
 - **CI adopts the template's checks, without Prettier** ([ADR 12](adr/0012-ci-discipline-no-prettier.md)).
 - **Questions that aren't about a habit get a soft check, never a hard block,** so a wrong label can't stop the demo. It stops before the paid design call, and offers a rewording and "Continue anyway". Merged in [#93](https://github.com/mnahsanofficial/rhythm-health/pull/93).
 - **Moved to after the demo:** editing a plan before starting (F10), mobile error reporting, the two-week follow-up, the dead web files and the Day 10 ×. See [REMAINING_WORK](REMAINING_WORK.md#after-the-demo).
+
+## One-time agent merges — 5 Nov 2026
+
+To keep the 8x feedback work moving before the 6 Nov deadline, Nazmul authorized one session (`7975bf46`) to merge its own PRs with merge commits: the logs and docs PRs once CI is green, and app PRs 1 to 5 once CI is green and its Expo web screenshots look right.
+
+This is one exception, not a change to the rule: agents still never merge PRs, and it doesn't extend to any other PR or session. It replaces the usual iPhone check before each merge with one full iPhone pass by Nazmul on `main` on the morning of 6 Nov, with anything broken going to follow-up fixes.
