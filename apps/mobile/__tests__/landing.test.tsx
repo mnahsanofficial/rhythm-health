@@ -160,14 +160,14 @@ test('the form can go back to the landing', async () => {
 test('a signed-in person never sees it', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
   render(<MobileApp />);
-  await screen.findByRole('header', { name: 'Ask a question.' });
+  await screen.findByRole('header', { name: 'Ask your first question' });
   expect(screen.queryByRole('header', { name: FIRST })).toBeNull();
 });
 
 test('signing out goes to the form rather than the landing', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session }, error: null });
   render(<MobileApp />);
-  await screen.findByRole('header', { name: 'Ask a question.' });
+  await screen.findByRole('header', { name: 'Ask your first question' });
   await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'You' })); });
   await press('Sign out');
   expect(await screen.findByLabelText('Email')).toBeVisible();

@@ -36,6 +36,7 @@ async function enable() { notificationState.granted = true; await settings(); fi
 test('does not ask OS permission on launch, explains reminders after a recorded check-in', async () => {
   render(<MobileApp />); await screen.findByText(active.question);
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByRole('button', { name: 'See your experiment' }));
   expect(await screen.findByText(/A reminder when the next day opens/)).toBeVisible();
   notificationState.granted = true; fireEvent.press(screen.getByRole('button', { name: 'Enable daily reminders' }));
   await waitFor(() => expect(notifications.scheduleNotificationAsync).toHaveBeenCalled());

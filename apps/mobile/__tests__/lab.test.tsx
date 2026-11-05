@@ -55,10 +55,10 @@ afterEach(() => jest.restoreAllMocks());
 const press = (name: string) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
 
 describe('your lab with nothing running', () => {
-  test('goes straight to the question, as on the web, with the sample offered above it', async () => {
+  test('starts with a calm empty hero and opens the question on request', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
     expect(screen.getByLabelText('Suggestions')).toBeVisible();
     expect(screen.queryByText('Nothing running yet.')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Back to today' })).toBeNull();
@@ -72,9 +72,8 @@ describe('your lab with an experiment', () => {
     render(<MobileApp />);
     expect(await screen.findByText('Day 2 of 10')).toBeVisible();
     expect(screen.getByRole('header', { name: experiment.question })).toBeVisible();
-    expect(screen.getByText('Keep your usual routine')).toBeVisible();
-    expect(screen.getByText('Starts on day 4: Walk for 20 minutes')).toBeVisible();
-    expect(screen.queryByText('Walk for 20 minutes')).toBeNull();
+    expect(screen.getByText('Walk for 20 minutes')).toBeVisible();
+    expect(screen.getByText(/Baseline/)).toBeVisible();
     expect(screen.getByRole('button', { name: 'See your experiment' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Check in now, day 2' })).toBeVisible();
   });
@@ -82,16 +81,17 @@ describe('your lab with an experiment', () => {
   test('a test day names the change, the timing and how many days remain', async () => {
     setActive(testDay);
     render(<MobileApp />);
-    expect(await screen.findByText('Your small change')).toBeVisible();
-    expect(screen.getByText(`${experiment.intervention.timing} · ${experiment.intervention.frequency}`)).toBeVisible();
+    fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
+    expect(await screen.findByText('The small change')).toBeVisible();
+    expect(screen.getByText(`When: ${experiment.intervention.timing}`)).toBeVisible();
   });
 
   test('a recorded day says so and gives the next opening', async () => {
     setActive(testDay, timelineFixture(testDay, { recorded: [4], nextDayAt: '2026-11-05T18:45:00Z' }), [answer(4, 'intervention', true)]);
     render(<MobileApp />);
     expect(await screen.findByText('Day 4 recorded')).toBeVisible();
-    expect(screen.getByText('1 logged')).toBeVisible();
-    expect(screen.getByRole('button', { name: "Edit answers" })).toBeVisible();
+    expect(screen.queryByText('1 logged')).toBeNull();
+    expect(screen.getByRole('button', { name: "Edit today's answers" })).toBeVisible();
   });
 
   test('observations live on Progress, with recorded counts from the server', async () => {
@@ -144,7 +144,7 @@ describe('experiment page', () => {
   test('finishing lives here, and ended days lead straight to it', async () => {
     setActive(ended);
     render(<MobileApp />);
-    expect(await screen.findByText('All 10 days are done.')).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'See your results' })).toBeVisible();
     await press('See your results');
     const report = await screen.findByRole('button', { name: 'See full Lab Report' });
     await act(async () => { fireEvent.press(report); });

@@ -138,7 +138,7 @@ describe('updating a check-in', () => {
     routes[`GET /api/experiments/${running.id}/checkins`] = { body: [{ id: 'saved', experiment_id: running.id, day_number: 4, phase: 'intervention', metric_values: { energy: 7, sleep_quality: 7 }, intervention_completed: false, note: null }] };
     routes[`POST /api/experiments/${running.id}/checkins`] = { body: { id: 'saved' } };
     render(<MobileApp />);
-    const edit = await screen.findByRole('button', { name: 'Edit answers' });
+    const edit = await screen.findByRole('button', { name: "Edit today's answers" });
     await act(async () => { fireEvent.press(edit); });
     const update = await screen.findByRole('button', { name: 'Update check-in' });
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
@@ -146,13 +146,14 @@ describe('updating a check-in', () => {
     await act(async () => { fireEvent.press(update); });
     expect(await screen.findByText('6 days left')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
-    expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(2);
   });
 });
 
-describe('the Today card', () => {
+describe('the detailed Today card', () => {
   test('leads with the day and one action, and says when the day closes', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
     expect(await screen.findByRole('header', { name: 'Day 4 of 10' })).toBeVisible();
     expect(screen.getByText('Check in now')).toBeVisible();
     expect(screen.getByText(/^Closes .+\. About 30 seconds\.$/)).toBeVisible();
@@ -161,6 +162,7 @@ describe('the Today card', () => {
 
   test('shows missed days truthfully, without shame', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
     expect(await screen.findByText('2 logged, 1 missed')).toBeVisible();
     expect(screen.queryByText(/streak|don't break|oops|sorry|behind/i)).toBeNull();
   });
@@ -168,12 +170,14 @@ describe('the Today card', () => {
   test('with nothing missed, it says only what was logged', async () => {
     routes[`GET /api/experiments/${running.id}/progress`] = { body: timelineFixture(running as never, { recorded: [1, 2, 3], nextDayAt: '2026-11-05T10:00:00Z' }) };
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
     expect(await screen.findByText('3 logged')).toBeVisible();
   });
 
   test('once recorded, it says so and when the next day opens', async () => {
     routes[`GET /api/experiments/${running.id}/progress`] = { body: timelineFixture(running as never, { recorded: [1, 3, 4], missed: [2], nextDayAt: '2026-11-05T10:00:00Z' }) };
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
     expect(await screen.findByRole('header', { name: 'Day 4 recorded' })).toBeVisible();
     expect(screen.getByText(/^Day 5 opens /)).toBeVisible();
     expect(screen.queryByText('Check in now')).toBeNull();
@@ -222,20 +226,20 @@ describe('the first-run guide', () => {
     await finishSetup();
     expect(await screen.findByText('Example · Step 1 of 3')).toBeVisible();
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Skip' })); });
-    expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Ask your first question' })).toBeVisible();
   });
 
   test('is remembered on the device', async () => {
     preferences().set(FIRST_RUN_KEY, 'seen');
     await finishSetup();
-    expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Ask your first question' })).toBeVisible();
     expect(screen.queryByText(/^Example · Step/)).toBeNull();
   });
 
   test('never appears for someone who already has a profile', async () => {
     routes['GET /api/experiments?status=active'] = { body: [] };
     render(<MobileApp />);
-    await screen.findByRole('header', { name: 'Ask a question.' });
+    await screen.findByRole('header', { name: 'Ask your first question' });
     expect(screen.queryByText(/^Example · Step/)).toBeNull();
   });
 });

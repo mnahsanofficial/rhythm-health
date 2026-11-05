@@ -105,6 +105,7 @@ describe('controls have names and 48pt targets', () => {
 
   test('Today, Settings and History', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     await screen.findByRole('header', { name: 'Ask a question.' });
     auditControls();
     await goTo('Daily reminders');
@@ -129,6 +130,7 @@ describe('controls have names and 48pt targets', () => {
 
   test('question, guess and plan', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     await screen.findByRole('header', { name: 'Ask a question.' });
     auditControls();
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
@@ -159,6 +161,7 @@ describe('screen readers hear what changes', () => {
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
     routes['POST /api/experiments/propose'] = { status: 503, body: { detail: 'AI service unavailable' } };
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     await screen.findByRole('header', { name: 'Ask a question.' });
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
     await press('Design experiment');
@@ -169,6 +172,7 @@ describe('screen readers hear what changes', () => {
   test('progress messages are announced on iOS', async () => {
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     await screen.findByRole('header', { name: 'Ask a question.' });
     let release!: (reply: Response) => void;
     const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;

@@ -112,7 +112,7 @@ describe('check-in', () => {
     expect(await screen.findByText('6 days left')).toBeVisible();
     await press('Continue');
     expect(await screen.findByText('Day 4 recorded')).toBeVisible();
-    expect(screen.getByText('4 logged')).toBeVisible();
+    expect(screen.getByLabelText('4 of 7 days recorded in this experiment’s last seven days')).toBeVisible();
   });
 
   test('Edit answers on Today reopens the form', async () => {
@@ -122,7 +122,7 @@ describe('check-in', () => {
     await press("Save check-in");
     await screen.findByText('6 days left');
     await press('Continue');
-    await press("Edit answers");
+    await press("Edit today's answers");
     expect(await screen.findByLabelText('Optional note')).toBeVisible();
   });
 
@@ -164,11 +164,13 @@ describe('question flow', () => {
 
   test('says what to do in one line', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     expect(await screen.findByText('What do you want to test?')).toBeVisible();
   });
 
   test('waiting says it may take a while, without claiming live stages', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
     let release!: (reply: Response) => void;
     const fake = global.fetch as jest.Mock; const original = fake.getMockImplementation()!;
@@ -182,6 +184,7 @@ describe('question flow', () => {
   test('the plan draws its days, and says them in words', async () => {
     routes['POST /api/experiments/propose'] = { body: proposeResponse };
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
     await press('Design experiment');
     expect(await screen.findByTestId('plan-days')).toBeVisible();
@@ -192,6 +195,9 @@ describe('question flow', () => {
 
   test('the sample section uses the web wording', async () => {
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
+    await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'You' })); });
+    await press('See an example');
     expect(await screen.findByText('Try a sample')).toBeVisible();
     expect(screen.getByText('It never counts as your data.')).toBeVisible();
   });
@@ -200,7 +206,8 @@ describe('question flow', () => {
 describe('the last baseline day', () => {
   const MOMENT = 'Your test starts tomorrow: Walk for 20 minutes.';
   const lastBaseline = running({ day_number: 3, phase: 'baseline', phase_day: 3, phase_days: 3, days_remaining: 7 });
-  const nextDayAt = '2027-11-05T06:30:00Z';
+  const opening = new Date(); opening.setDate(opening.getDate() + 1); opening.setHours(12, 30, 0, 0);
+  const nextDayAt = opening.toISOString();
   async function saveDay(current: Experiment, day: number, before: number[]) {
     routes['GET /api/experiments?status=active'] = { body: [current] };
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(current, { recorded: before, nextDayAt }) };
@@ -225,6 +232,8 @@ describe('the last baseline day', () => {
     await saveDay(lastBaseline, 3, [1, 2]);
     await press('Continue');
     expect(await screen.findByText('Day 3 recorded')).toBeVisible();
+    expect(screen.getByText('Baseline done · your test starts tomorrow')).toBeVisible();
+    await press('See your experiment');
     expect(screen.getByText(`Baseline done. ${MOMENT}`)).toBeVisible();
   });
 

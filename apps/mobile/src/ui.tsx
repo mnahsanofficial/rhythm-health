@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { AccessibilityInfo, findNodeHandle, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextProps } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaInsetsContext, SafeAreaView } from 'react-native-safe-area-context';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { useColors, themedStyles } from './theme-core';
@@ -73,11 +74,12 @@ const PRESS_TIMING = { duration: MOTION_DURATION_MS.press, reduceMotion: ReduceM
  * Fits its words. One per screen without `secondary`; that one is the screen's primary action.
  * `wide` lines it up with what it belongs to: a form's fields, or the bottom of the phone's landing.
  */
-export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, wide = false, testID, onDark }: {
+export function Action({ label, name, onPress, disabled = false, secondary = false, link = false, selected, wide = false, testID, onDark, haptic = false }: {
   label: string; name?: string; onPress: () => void; disabled?: boolean; secondary?: boolean; link?: boolean; selected?: boolean; wide?: boolean; testID?: string;
   /** A secondary on a filled screen takes its edge and words from this colour. */
-  onDark?: string;
+  onDark?: string; haptic?: boolean;
 }) { const COLORS = useColors(); const styles = useStyles();
+  const reduce = useReducedMotion();
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   return (
@@ -86,9 +88,9 @@ export function Action({ label, name, onPress, disabled = false, secondary = fal
       accessibilityLabel={name ?? label}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
-      onPress={onPress}
-      onPressIn={() => { scale.set(withTiming(PRESSED_SCALE, PRESS_TIMING)); }}
-      onPressOut={() => { scale.set(withTiming(1, PRESS_TIMING)); }}
+      onPress={() => { if (haptic) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
+      onPressIn={() => { if (!reduce) scale.set(withTiming(PRESSED_SCALE, PRESS_TIMING)); }}
+      onPressOut={() => { if (!reduce) scale.set(withTiming(1, PRESS_TIMING)); }}
       style={({ pressed }) => [styles.action, secondary && styles.secondary, onDark ? { borderColor: onDark } : null,
         pressed && !onDark && { backgroundColor: secondary ? COLORS['accent-tint'] : COLORS['accent-press'] }, pressed && onDark ? { opacity: 0.7 } : null, disabled && styles.disabled]}
     >

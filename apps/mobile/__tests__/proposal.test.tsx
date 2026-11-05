@@ -69,6 +69,7 @@ afterEach(() => jest.restoreAllMocks());
 
 async function openAsk() {
   render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
   await screen.findByRole('header', { name: 'Ask a question.' });
 }
 function typeQuestion(text = QUESTION) { fireEvent.changeText(screen.getByLabelText('Your question or goal'), text); }
@@ -471,10 +472,10 @@ test('starter chips are always plain questions, even for a goal without one writ
   expect(screen.queryByText(/What small change could help with/)).toBeNull();
 });
 
-test('the sample offer leaves once a plan is open, and comes back when it is cleared', async () => {
-  render(<MobileApp />);
+test('examples stay off the question and plan so each has one primary action', async () => {
+  await openAsk();
   fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does a walk after dinner help my energy?');
-  expect(screen.getByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
   await screen.findByText('What do you think will happen?');
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
@@ -483,7 +484,8 @@ test('the sample offer leaves once a plan is open, and comes back when it is cle
   await screen.findByRole('button', { name: 'Start this experiment' });
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask something else' })); });
-  expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
 });
 
 describe('a question that is not about a habit', () => {

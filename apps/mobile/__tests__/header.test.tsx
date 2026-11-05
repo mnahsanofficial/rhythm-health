@@ -43,7 +43,7 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask a question.' }); };
+const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask your first question' }); };
 
 test('signed out, the sign-in form has the mark, the name, the theme and a ×', async () => {
   mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
@@ -107,18 +107,20 @@ test('the logo leaves the rhythm editor', async () => {
   await goTo('Update your rhythm');
   await screen.findByText("Here's your rhythm.");
   await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
-  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+  expect(await screen.findByRole('header', { name: 'Ask your first question' })).toBeVisible();
   expect(screen.queryByText("Here's your rhythm.")).toBeNull();
 });
 
 test('going home keeps a paid proposal, and sends nothing', async () => {
   await signedIn();
+  await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
   fireEvent.changeText(await screen.findByLabelText('Your guess for Morning energy'), '10');
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
   await screen.findByRole('button', { name: 'Start this experiment' });
   await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
+await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
   expect(await screen.findByRole('button', { name: 'Start this experiment' })).toBeVisible();
   expect(screen.getByText('Your guess: +10% change from normal days. Locked before the AI reveal.')).toBeVisible();
   expect(calls.filter(call => call.endsWith('/propose'))).toHaveLength(1);
@@ -140,5 +142,5 @@ test('sections have no back link: the menu moves between them', async () => {
   await screen.findByRole('header', { name: 'Your history' });
   expect(screen.queryByRole('button', { name: 'Back to today' })).toBeNull();
   await goTo('Your lab');
-  await waitFor(() => expect(screen.getByRole('header', { name: 'Ask a question.' })).toBeVisible());
+  await waitFor(() => expect(screen.getByRole('header', { name: 'Ask your first question' })).toBeVisible());
 });
