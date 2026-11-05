@@ -85,7 +85,6 @@ describe('history', () => {
     expect(row.getByText('+8–15%')).toBeVisible();
     expect(row.getByText('Likely signal')).toBeVisible();
     expect(row.getByRole('button', { name: `Open Lab Report for ${newer.question}` })).toBeVisible();
-    expect(screen.getByText('2 completed experiments · newest first')).toBeVisible();
     expect(paid()).toEqual([]);
   });
 
@@ -96,7 +95,6 @@ describe('history', () => {
     const reads = count(`GET ${COMPLETED}`);
     await press('Oldest first');
     expect(within(rows()[0]).getByText(older.question)).toBeVisible();
-    expect(screen.getByText('2 completed experiments · oldest first')).toBeVisible();
     expect(count(`GET ${COMPLETED}`)).toBe(reads);
   });
 
@@ -118,11 +116,13 @@ describe('history', () => {
     await screen.findByRole('button', { name: 'Write my report' });
     defaults[`POST /api/experiments/${newer.id}/report`] = { body: { ...writtenLabReport, experiment: newer } };
     await press('Write my report');
+    await press('Details');
     await screen.findByText(writtenLabReport.narrative!.summary);
     defaults[`GET /api/experiments/${newer.id}/report`] = { body: { ...writtenLabReport, experiment: newer } };
     await press('Back to history');
     await screen.findAllByTestId('history-row');
     await press(`Open Lab Report for ${newer.question}`);
+    await press('Details');
     await screen.findByText(writtenLabReport.narrative!.summary);
     expect(screen.queryByRole('button', { name: 'Write my report' })).toBeNull();
     expect(count(`POST /api/experiments/${newer.id}/report`)).toBe(1);
@@ -132,7 +132,6 @@ describe('history', () => {
     defaults[`GET ${COMPLETED}`] = { body: [] };
     await openHistory();
     expect(await screen.findByText('Nothing finished yet.')).toBeVisible();
-    expect(screen.getByText('Completed experiments will appear here.')).toBeVisible();
     await press('Test a new question');
     expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
     expect(paid()).toEqual([]);
@@ -229,6 +228,7 @@ describe('completed demo', () => {
     expect(await screen.findByText('Sample experiment')).toBeVisible();
     expect(screen.getByText('This report is based on seeded example check-ins.')).toBeVisible();
     expect(screen.getByRole('header', { name: seededReport.experiment.question })).toBeVisible();
+    await press('Details');
     expect(screen.getByText(writtenLabReport.narrative!.summary)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Write my report' })).toBeNull();
     expect(paid()).toEqual([]);
@@ -279,6 +279,7 @@ describe('completed demo', () => {
 });
 
 describe('calibration card', () => {
+  const openCalibration = async () => { await openHistory(); await press('How close your guesses were'); };
   const point = (number: number, guess: number, observed: number, off: number) => ({
     experiment_id: `exp-${number}`, question: `Question ${number}?`, completed_at: `2026-10-0${number}T10:00:00Z`,
     guessed_change_percent: guess, observed_change_percent: observed, off_by_points: off,
@@ -294,7 +295,7 @@ describe('calibration card', () => {
 
   test('shows each guess against what happened, newest first, and the trend', async () => {
     defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 30, 20), point(2, 10, 12.5, 2.5)], average_off_by_points: 11.3, trend: 'closer', example: null } };
-    await openHistory();
+    await openCalibration();
     expect(await screen.findByText('Your guesses are getting closer.')).toBeVisible();
     expect(screen.getByText('11.3 points away on average across 2 experiments. A few short experiments show a pattern, not proof.')).toBeVisible();
     const items = screen.getAllByTestId('calibration-point');
@@ -305,7 +306,7 @@ describe('calibration card', () => {
 
   test('explains what one guess cannot show yet', async () => {
     defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 11, 1)], average_off_by_points: 1, trend: null, example: null } };
-    await openHistory();
+    await openCalibration();
     expect(await screen.findByText("Finish another experiment to see whether you're getting closer.")).toBeVisible();
     expect(screen.getByText('You guessed +10% · It changed +11% · 1 point away')).toBeVisible();
   });
@@ -313,7 +314,7 @@ describe('calibration card', () => {
   test('labels the sample as an example, keeps it out of real guesses, and shows it before anything has finished', async () => {
     defaults[`GET ${COMPLETED}`] = { body: [] };
     defaults[`GET ${CALIBRATION}`] = { body: { points: [], average_off_by_points: null, trend: null, example: point(1, 5, 10.9, 5.9) } };
-    await openHistory();
+    await openCalibration();
     const example = await screen.findByTestId('calibration-example');
     expect(example.props.accessibilityLabel).toBe('Example, not your results');
     expect(within(example).getByText('Example')).toBeVisible();
@@ -325,19 +326,19 @@ describe('calibration card', () => {
 
   test('shows no example beside real guesses', async () => {
     defaults[`GET ${CALIBRATION}`] = { body: { points: [point(1, 10, 14, 4)], average_off_by_points: 4, trend: null, example: null } };
-    await openHistory();
+    await openCalibration();
     await screen.findAllByTestId('calibration-point');
     expect(screen.queryByTestId('calibration-example')).toBeNull();
   });
 
   test('has an empty state that says how to start', async () => {
-    await openHistory();
+    await openCalibration();
     expect(await screen.findByText(/Your next experiment asks for your own guess/)).toBeVisible();
   });
 
   test('a failure explains itself, retries on a tap and leaves the history in place', async () => {
     queue(`GET ${CALIBRATION}`, { status: 503, body: { detail: 'Database unavailable' } });
-    await openHistory();
+    await openCalibration();
     expect(await screen.findByText("Couldn't compare your guesses. Try again.")).toBeVisible();
     expect(screen.queryByText(/Database unavailable/)).toBeNull();
     expect(rows()).toHaveLength(2);

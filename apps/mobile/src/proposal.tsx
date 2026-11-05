@@ -204,11 +204,10 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         onChangeText={value => { continuing.current = false; setContinued(false); setQuestion(value); setResult(null); setFailure(null); setLimit(null); }} maxLength={QUESTION_MAX + 1}
         placeholder="Does walking after dinner improve my sleep?" placeholderTextColor={COLORS.muted} style={[ui.input, local.question]} />
       <View style={local.help}>
-        <Copy style={local.helpText}>One small change at a time.</Copy>
         {question.length > QUESTION_MAX - 50 && <Copy style={[ui.number, local.count]}>{question.length}/{QUESTION_MAX}</Copy>}
       </View>
     </View>
-    <Copy style={local.helpText}>{TRUST_LINE}</Copy>
+    <DetailsRow label="How it works"><Copy>One small change at a time.</Copy><Copy>{TRUST_LINE}</Copy></DetailsRow>
     {offline && <Notice>You&apos;re offline. Your question is kept; reconnect to design your experiment.</Notice>}
     {!hideStarters && !result && <View accessibilityRole="none" accessibilityLabel="Suggestions" style={local.chips}>
       {questionStarters(profile.goals).map(starter => <Pressable key={starter} accessibilityRole="button" accessibilityLabel={starter} accessibilityState={{ disabled: working }} disabled={working}

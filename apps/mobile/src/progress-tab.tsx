@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { MetricTrend, ProgressSummary } from '@rhythm-health/contract';
+import { DetailsRow } from './details-sheet';
 import { ApiError } from './lib/api';
 import { getProgressSummary } from './lib/progress-summary';
 import { reportPercent } from './lib/reports';
@@ -59,19 +60,19 @@ export function ProgressScreen({ entries, updatedAt, token, offline, onExpired, 
     {error && <><Alert>{error}</Alert><Action label="Try again" secondary disabled={offline} onPress={() => { setError(null); setAttempt(n => n + 1); }} /></>}
     {!!summary?.kept.length && <View style={ui.stack}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Habits I kept</Copy>
-      {summary.kept.map(item => <View key={item.experiment_id} style={local.card}><Copy>{item.habit}</Copy><Copy style={local.caption}>{item.question}</Copy></View>)}
+      {summary.kept.map(item => <View key={item.experiment_id} style={local.card}><Copy>{item.habit}</Copy></View>)}
     </View>}
-    {!!summary?.metrics.length && <View style={ui.stack}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>Your experiments compared</Copy>
+    {!!summary?.metrics.length && <DetailsRow label="Your experiments compared">
       {summary.metrics.map(metric => <MetricCard key={`${metric.key}:${metric.type}`} metric={metric} />)}
-    </View>}
+      <Copy>Changing several things over time means this shows trends, not proof.</Copy>
+    </DetailsRow>}
     {summary?.example && <View testID="progress-example" style={local.example}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Example</Copy>
       <Copy>Invented check-ins. Never counted.</Copy>
       <Copy style={local.caption}>{summary.example.question}</Copy>
       {summary.example.metrics.map(metric => <MetricCard key={`${metric.key}:${metric.type}`} metric={metric} example />)}
     </View>}
-    {summary && (summary.metrics.length > 0 || summary.example) && <Copy>Changing several things over time means this shows trends, not proof.</Copy>}
+    {summary?.example && !summary.metrics.length && <Copy>Changing several things over time means this shows trends, not proof.</Copy>}
     {entries?.map(entry => <View key={entry.experiment.id} style={ui.stack}>
       <Copy style={ui.sectionTitle}>{entry.experiment.question}</Copy>
       <Observations data={entry} title="Day by day" token={token} offline={offline} onExpired={onExpired} />

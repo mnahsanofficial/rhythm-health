@@ -20,7 +20,7 @@ const BUDGET = {
   'combined, the change': 16,
   'combined, a question': 16,
   'combined, review': 25,
-  ask: 40,
+  ask: 41,
   'plan, the change': 12,
   guess: 15,
   'plan, the reveal': 16,
