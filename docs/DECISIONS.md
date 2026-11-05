@@ -160,3 +160,7 @@ Decided by Nazmul, from the [completeness audit](FEEDBACK_TRACKER.md).
 To keep the 8x feedback work moving before the 6 Nov deadline, Nazmul authorized one session (`7975bf46`) to merge its own PRs with merge commits: the logs and docs PRs once CI is green, and app PRs 1 to 5 once CI is green and its Expo web screenshots look right.
 
 This is one exception, not a change to the rule: agents still never merge PRs, and it doesn't extend to any other PR or session. It replaces the usual iPhone check before each merge with one full iPhone pass by Nazmul on `main` on the morning of 6 Nov, with anything broken going to follow-up fixes.
+
+## Check-in scenes merge — 5 Nov 2026
+
+Nazmul authorized session `7ef914cd` to merge its own check-in scenes PR with a merge commit once CI, including the Browser suite, is green and its screenshots look right, with his iPhone check on the morning of 6 Nov. One exception, like the one above: agents still never merge PRs.

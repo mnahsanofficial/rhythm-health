@@ -8,6 +8,7 @@ For 8x reviewers. Updated 5 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov
 
 - **The full mobile flow:** sign-up, onboarding, Ask, your guess, the plan, daily check-ins, reminders, Lab Report, the Day 10 choice, Progress and History. Up to 3 experiments at once. ([README](../README.md))
 - **Maham's 5 Nov feedback:** one question per screen, state shown as icons, word budgets enforced by a test, grey for captions only, and an answer to "how do we know it helped?". ([what changed](design/07-feedback-5-nov.md), [tracker](FEEDBACK_TRACKER.md#5-nov-demo-call-maham))
+- **A check-in question fills the phone:** a scene that reacts to your answer in the middle, and the answers at the bottom, within reach of the thumb. Decorative only, and it adds no words. ([motion rule](rules/ui-motion.md))
 - **Honest results:** Python measures, the AI only writes it up, and samples are flagged and never counted. ([ADR 3](adr/0003-ai-proposes-python-measures.md), [ADR 5](adr/0005-samples-flagged-never-counted.md))
 - **Process:** every session logged, every PR merge-committed, and CI on lint, types, tests, migrations and secrets. ([logging](logging.md), [5 Nov log audit](logging.md#audit-of-5-nov-2026))
 

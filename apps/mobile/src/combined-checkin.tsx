@@ -72,15 +72,15 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack, on
   const asked = new Set<string>();
   for (const item of today.experiments) {
     const caption = `Day ${item.day_number} · ${item.change_required ? 'Test' : 'Normal'} day`;
-    if (item.change_required) steps.push({ key: `change:${item.id}`, kind: 'change', action: item.action, name: item.action, caption });
+    if (item.change_required) steps.push({ key: `change:${item.id}`, kind: 'change', action: item.action, name: item.action, caption, day: item.day_number });
     for (const question of today.questions) {
       if (asked.has(question.id) || !question.experiment_ids.includes(item.id)) continue;
       asked.add(question.id);
       const shared = question.experiment_ids.length;
-      steps.push({ key: question.id, kind: 'metric', metric: question.metric, name: item.action, caption, audience: shared === 1 ? undefined : shared === 2 ? 'Counts for both' : `Counts for all ${shared}` });
+      steps.push({ key: question.id, kind: 'metric', metric: question.metric, name: item.action, caption, day: item.day_number, audience: shared === 1 ? undefined : shared === 2 ? 'Counts for both' : `Counts for all ${shared}` });
     }
   }
-  return <View style={styles.stack}>
+  return <View style={[styles.stack, { flexGrow: 1 }]}>
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     <CheckinFlow key={today.revision} steps={steps} values={{ ...values, ...Object.fromEntries(Object.entries(changes).map(([id, made]) => [`change:${id}`, made])) }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
       onAnswer={(key, value) => { if (key.startsWith('change:')) setChanges(current => ({ ...current, [key.slice('change:'.length)]: value as boolean })); else setValues(current => ({ ...current, [key]: value })); }}

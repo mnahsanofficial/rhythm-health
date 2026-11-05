@@ -40,13 +40,13 @@ const today = (list) => ({ revision: 'r', note: null, all_recorded: false,
     { id: 'q2', experiment_ids: [list[list.length - 1].id], value: null, metric: { key: 'focus', label: 'Focus', ...scale } },
   ] });
 
-async function open(browser, { mode, list, recorded = [], reducedMotion = 'no-preference' }) {
+async function open(browser, { mode, list, recorded = [], reducedMotion = 'no-preference', saved = { morning_energy: 7, sleep_quality: 6 } }) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'Asia/Dhaka', colorScheme: mode, reducedMotion });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error' && /same key|unique.*key/i.test(message.text())) errors.push(message.text()); });
-  const checkins = recorded.map(day => ({ id: `c${day}`, experiment_id: experiment.id, day_number: day, phase: day <= 3 ? 'baseline' : 'intervention', intervention_completed: true, metric_values: { morning_energy: 7, sleep_quality: 6 }, note: null, created_at: '2026-11-01T10:00:00Z', updated_at: '2026-11-01T10:00:00Z' }));
+  const checkins = recorded.map(day => ({ id: `c${day}`, experiment_id: experiment.id, day_number: day, phase: day <= 3 ? 'baseline' : 'intervention', intervention_completed: true, metric_values: saved, note: null, created_at: '2026-11-01T10:00:00Z', updated_at: '2026-11-01T10:00:00Z' }));
   await page.route('**/*', async route => {
     const url = route.request().url();
     if (url.startsWith(`${base}/`) || url === base) return route.continue();
@@ -91,7 +91,75 @@ const shoot = async (page, group, name, mode) => {
 const radio = (page, name) => page.getByRole('radio', { name, exact: true }).click();
 const button = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
+const SCENE_METRICS = [
+  { key: 'morning_energy', label: 'Morning energy', ...scale, primary: true, min_label: 'Drained', max_label: 'Ready' },
+  { key: 'sleep_quality', label: 'Sleep quality', ...scale, min_label: 'Restless', max_label: 'Deep' },
+  { key: 'focus', label: 'Focus at work', ...scale, min_label: 'Scattered', max_label: 'Clear' },
+  { key: 'time_to_sleep', label: 'Time to fall asleep', type: 'duration', min: null, max: null, primary: false, min_label: null, max_label: null },
+  { key: 'vegetables', label: 'Vegetables eaten', ...scale, min_label: 'None', max_label: 'Plenty' },
+];
+const fitsTheScreen = (page, name) => page.evaluate(() => [...document.querySelectorAll('div')].filter(node => ['auto', 'scroll'].includes(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1).length).then(count => { if (count) throw new Error(`${name}: scrolls`); });
+const heading = (page, name) => page.getByRole('heading', { name, exact: true }).waitFor();
+
 const GROUPS = {
+  async scenes(browser, mode) {
+    const list = [on(4, 'intervention', { metrics: SCENE_METRICS })];
+    const edit = async (saved) => {
+      const run = await open(browser, { mode, list, recorded: [4], saved });
+      await button(run.page, "Edit today's answers");
+      await run.page.getByRole('radio', { name: 'Yes, I made the change', exact: true }).waitFor();
+      return run;
+    };
+    const next = async (page, name) => { await button(page, 'Next'); await heading(page, name); await page.waitForTimeout(500); };
+    const answers = { morning_energy: 2, sleep_quality: 8, focus: 7, time_to_sleep: 15, vegetables: 4 };
+    let run = await edit(answers);
+    await shoot(run.page, 'scenes', '2-change-yes', mode);
+    await next(run.page, 'Morning energy');
+    await fitsTheScreen(run.page, 'energy');
+    await shoot(run.page, 'scenes', '3-energy-2', mode);
+    await next(run.page, 'Sleep quality');
+    await shoot(run.page, 'scenes', '5-sleep', mode);
+    await next(run.page, 'Focus at work');
+    await shoot(run.page, 'scenes', '6-focus', mode);
+    await next(run.page, 'Time to fall asleep');
+    await fitsTheScreen(run.page, 'minutes');
+    await shoot(run.page, 'scenes', '7-minutes', mode);
+    await next(run.page, 'Vegetables eaten');
+    await shoot(run.page, 'scenes', '8-fallback', mode);
+    await run.page.setViewportSize({ width: 375, height: 667 });
+    await run.page.waitForTimeout(300);
+    await fitsTheScreen(run.page, 'fallback at 667');
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+    run = await edit({ ...answers, morning_energy: 9 });
+    await next(run.page, 'Morning energy');
+    await shoot(run.page, 'scenes', '4-energy-9', mode);
+    await run.context.close();
+    // A first answer on a new day: the resting scene, Not today, then the real wait in a real browser.
+    run = await open(browser, { mode, list });
+    await button(run.page, 'Check in now, day 4');
+    await run.page.getByRole('radio', { name: 'Not today', exact: true }).waitFor();
+    await shoot(run.page, 'scenes', '1-change-resting', mode);
+    await radio(run.page, 'Not today');
+    await shoot(run.page, 'scenes', '1-change-not-today', mode).catch(() => undefined);
+    await heading(run.page, 'Morning energy');
+    await run.page.waitForTimeout(500);
+    const started = Date.now();
+    await radio(run.page, 'Morning energy: 9');
+    await heading(run.page, 'Sleep quality');
+    console.log(`${mode}: a tap went on after ${Date.now() - started}ms`);
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+    run = await open(browser, { mode, list, reducedMotion: 'reduce' });
+    await button(run.page, 'Check in now, day 4');
+    await radio(run.page, 'Yes, I made the change');
+    await heading(run.page, 'Morning energy');
+    const still = Date.now();
+    await radio(run.page, 'Morning energy: 2');
+    await heading(run.page, 'Sleep quality');
+    console.log(`${mode}, Reduce Motion: a tap went on after ${Date.now() - still}ms`);
+    await run.context.close();
+  },
   async know(browser, mode) {
     const run = await open(browser, { mode, list: [] });
     await run.page.getByRole('tab', { name: 'Ask' }).click();

@@ -11,6 +11,7 @@ const FontAvailability = createContext(true);
 const ScrollToTop = createContext<(settle?: boolean) => void>(() => undefined);
 const TopSlot = createContext<((node: ReactNode) => void) | null>(null);
 const FooterSlot = createContext<((node: ReactNode) => void) | null>(null);
+const FillSlot = createContext<((on: boolean) => void) | null>(null);
 export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }) { const styles = useStyles();
   const available = useContext(FontAvailability);
   return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
@@ -120,6 +121,11 @@ export function StickyAction({ children }: { children: ReactNode }) {
   useEffect(() => () => fill?.(null), [fill]);
   return fill ? null : <>{children}</>;
 }
+/** While mounted, the screen's content stretches to the visible height, so a child with flexGrow takes what's left. */
+export function useFillScreen() {
+  const fill = useContext(FillSlot);
+  useEffect(() => { fill?.(true); return () => fill?.(false); }, [fill]);
+}
 /** Held above the scroller, under the header: what must stay in view while the content below it moves. */
 export function PinnedTop({ children }: { children: ReactNode }) {
   const fill = useContext(TopSlot);
@@ -140,6 +146,7 @@ export function useKeyboardOpen() {
 export function Frame({ children, header, tabs, fontsReady = true, bare = false }: { children: ReactNode; header?: ReactNode; tabs?: ReactNode; fontsReady?: boolean; bare?: boolean }) { const styles = useStyles();
   const [footer, setFooter] = useState<ReactNode>(null);
   const [top, setTop] = useState<ReactNode>(null);
+  const [fill, setFill] = useState(false);
   /** The bar floats over the scroller, so the content always ends this far above the bottom. Measured, because large text makes it taller. */
   const [footerHeight, setFooterHeight] = useState<number>(LAYOUT.primaryAction + SPACING.md);
   const keyboardOpen = useKeyboardOpen();
@@ -157,14 +164,14 @@ export function Frame({ children, header, tabs, fontsReady = true, bare = false 
   }, [opacity, rise]);
   const enter = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ translateY: rise.get() }] }));
   return (
-    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><FooterSlot.Provider value={setFooter}><TopSlot.Provider value={setTop}><SafeAreaView style={styles.safe} edges={bare ? ['left', 'right'] : ['top', 'left', 'right']}>
+    <FontAvailability.Provider value={fontsReady}><ScrollToTop.Provider value={scrollToTop}><FooterSlot.Provider value={setFooter}><FillSlot.Provider value={setFill}><TopSlot.Provider value={setTop}><SafeAreaView style={styles.safe} edges={bare ? ['left', 'right'] : ['top', 'left', 'right']}>
       {header}
       {top}
       {bare ? <View style={[styles.bare, { paddingBottom: bottomInset }]}>{children}</View> : <KeyboardAvoidingView style={styles.bare} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.bare}>
           <ScrollView ref={scroller} style={styles.bare} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.scroll, footer ? { paddingBottom: footerHeight } : null]}>
-            <View style={[styles.column, top ? styles.columnUnderTop : null]}>
-              <Animated.View style={[styles.content, top ? styles.contentUnderTop : null, enter]}>{children}</Animated.View>
+            <View style={[styles.column, top || fill ? styles.columnUnderTop : null]}>
+              <Animated.View style={[styles.content, top || fill ? styles.contentUnderTop : null, enter]}>{children}</Animated.View>
             </View>
           </ScrollView>
           {footer && <View testID="sticky-footer" onLayout={event => setFooterHeight(event.nativeEvent.layout.height)} style={styles.footer}><View style={[styles.column, styles.stack]}>{footer}</View></View>}
@@ -172,7 +179,7 @@ export function Frame({ children, header, tabs, fontsReady = true, bare = false 
         {!keyboardOpen && tabs}
         {!keyboardOpen && <View style={{ height: bottomInset }} />}
       </KeyboardAvoidingView>}
-    </SafeAreaView></TopSlot.Provider></FooterSlot.Provider></ScrollToTop.Provider></FontAvailability.Provider>
+    </SafeAreaView></TopSlot.Provider></FillSlot.Provider></FooterSlot.Provider></ScrollToTop.Provider></FontAvailability.Provider>
   );
 }
 export function Loading({ message }: { message: string }) { const styles = useStyles();
