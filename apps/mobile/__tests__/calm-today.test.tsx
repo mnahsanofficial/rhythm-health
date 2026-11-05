@@ -55,3 +55,11 @@ test('the last due day closes at the returned experiment end', () => {
   show([last]);
   expect(screen.getByText('Check-in due · closes Thursday 4:00 PM')).toBeVisible();
 });
+test('a missing earlier-day boundary is not replaced by the experiment end', () => {
+  const current = entry('current', 4);
+  current.timeline.next_day_at = null;
+  current.timeline.progress.ends_at = new Date(2026, 10, 11, 16).toISOString();
+  show([current]);
+  expect(screen.getByText('Check-in due')).toBeVisible();
+  expect(screen.queryByText(/closes/)).toBeNull();
+});
