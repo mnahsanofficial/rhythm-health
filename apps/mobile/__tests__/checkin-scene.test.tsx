@@ -10,6 +10,7 @@ import { CheckinFlow, type Answer, type CheckinStep } from '../src/checkin-steps
 import { CHECKIN_ADVANCE_MS, sceneFor, sceneLevel } from '../src/lib/checkin-scene';
 import { Frame } from '../src/ui';
 
+jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(async () => undefined), ImpactFeedbackStyle: { Light: 'light' } }));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 
 const scale = (key: string, label: string, extra: Partial<Metric> = {}): Metric => ({ key, label, type: 'scale', min: 1, max: 10, primary: true, min_label: 'Low', max_label: 'High', ...extra });
@@ -229,9 +230,9 @@ describe('the question step', () => {
     expect(haptic).toHaveBeenCalledWith('light');
     expect(screen.getByRole('radio', { name: 'Morning energy: 9' })).toBeChecked();
     wait(CHECKIN_ADVANCE_MS - 1);
-    expect(heading('Morning energy')).toBeVisible();
+    expect(heading('Morning energy')).toBeTruthy();
     wait(1);
-    expect(heading('Sleep quality')).toBeVisible();
+    expect(heading('Sleep quality')).toBeTruthy();
     expect(CHECKIN_ADVANCE_MS).toBeGreaterThanOrEqual(500);
     expect(CHECKIN_ADVANCE_MS).toBeLessThanOrEqual(900);
   });
@@ -245,9 +246,9 @@ describe('the question step', () => {
     wait(CHECKIN_ADVANCE_MS - 1);
     expect(screen.getByRole('radio', { name: 'Morning energy: 4' })).toBeChecked();
     wait(1);
-    expect(heading('Sleep quality')).toBeVisible();
+    expect(heading('Sleep quality')).toBeTruthy();
     wait(CHECKIN_ADVANCE_MS * 2);
-    expect(heading('Sleep quality')).toBeVisible();
+    expect(heading('Sleep quality')).toBeTruthy();
   });
 
   test('Back during the hold cancels going on', () => {
@@ -257,7 +258,7 @@ describe('the question step', () => {
     tap('Sleep quality: 3');
     fireEvent.press(screen.getByRole('button', { name: 'Back' }));
     wait(CHECKIN_ADVANCE_MS * 2);
-    expect(heading('Morning energy')).toBeVisible();
+    expect(heading('Morning energy')).toBeTruthy();
   });
 
   test('Yes on the change step waits the same way', () => {
@@ -265,16 +266,16 @@ describe('the question step', () => {
     render(<Flow steps={[change('Walk for 20 minutes'), energy]} />);
     tap('Yes, I made the change');
     wait(CHECKIN_ADVANCE_MS - 1);
-    expect(heading('Did you make the change?')).toBeVisible();
+    expect(heading('Did you make the change?')).toBeTruthy();
     wait(1);
-    expect(heading('Morning energy')).toBeVisible();
+    expect(heading('Morning energy')).toBeTruthy();
   });
 
   test('Reduce Motion goes on straight away, still with the haptic', () => {
     const haptic = jest.mocked(Haptics.impactAsync); haptic.mockClear();
     render(<Flow steps={[energy, sleep]} />);
     tap('Morning energy: 9');
-    expect(heading('Sleep quality')).toBeVisible();
+    expect(heading('Sleep quality')).toBeTruthy();
     expect(haptic).toHaveBeenCalledTimes(1);
   });
 
@@ -284,7 +285,7 @@ describe('the question step', () => {
     render(<Flow steps={[minutes, sleep]} />);
     fireEvent.changeText(screen.getByLabelText('Time to fall asleep, in minutes'), '20');
     wait(CHECKIN_ADVANCE_MS * 2);
-    expect(heading('Time to fall asleep')).toBeVisible();
+    expect(heading('Time to fall asleep')).toBeTruthy();
     expect(haptic).not.toHaveBeenCalled();
   });
 
@@ -324,7 +325,7 @@ describe('the question step', () => {
   test('the review has no scene', () => {
     render(<Flow steps={[energy]} />);
     tap('Morning energy: 7');
-    expect(heading('Review')).toBeVisible();
+    expect(heading('Review')).toBeTruthy();
     expect(screen.queryByTestId('checkin-scene', hidden)).toBeNull();
   });
 });

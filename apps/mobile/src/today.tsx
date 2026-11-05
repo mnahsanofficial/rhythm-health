@@ -164,7 +164,7 @@ export function Today({ token, offline, profile, onExpired, section, navigation,
   // The flow keeps this one place, hidden or not: moving it would remount it and lose a paid plan.
   const saved = savedDay !== null && data?.timeline ? data.timeline : null;
   const fresh = saved && !busy && error === null ? saved : null;
-  return <View style={styles.stack}>{flow}{content()}
+  return <View style={[styles.stack, (combined || editing) && { flexGrow: 1 }]}>{flow}{content()}
     {savedDay !== null && <Celebration {...(saved && data && isLastBaselineDay(saved) && saved.progress.day_number === savedDay ? { title: 'Baseline done.', lines: [{ id: `${data.experiment.id}:${savedDay}`, text: testStartsLine(data.experiment.intervention.action, saved.next_day_at) }], hold: true } : {})} day={savedDay} totalDays={saved?.progress.total_days ?? null} recordedDays={fresh?.recorded_days ?? null} daysLeft={fresh?.progress.days_remaining ?? null} seeded={Boolean(data?.experiment.is_seeded)} onDone={() => setSavedDay(null)} />}
     {savedAll && savedAll.experiments.length > 0 && <Celebration day={savedAll.experiments[0].day_number} totalDays={savedAll.experiments[0].total_days} recordedDays={null} daysLeft={null}
       seeded={entries.some(entry => entry.experiment.is_seeded && savedAll.experiments.some(item => item.id === entry.experiment.id))}

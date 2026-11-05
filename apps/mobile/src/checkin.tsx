@@ -83,11 +83,11 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   const metrics = [...experiment.metrics].sort((a, b) => Number(b.primary) - Number(a.primary));
   const caption = `Day ${day} · ${test ? 'Test' : 'Normal'} day`;
   const steps: CheckinStep[] = [
-    ...(test ? [{ key: 'intervention_completed', kind: 'change' as const, action: experiment.intervention.action, caption }] : []),
-    ...metrics.map(metric => ({ key: metric.key, kind: 'metric' as const, metric, caption })),
+    ...(test ? [{ key: 'intervention_completed', kind: 'change' as const, action: experiment.intervention.action, caption, day }] : []),
+    ...metrics.map(metric => ({ key: metric.key, kind: 'metric' as const, metric, caption, day })),
   ];
   const clearField = (key: string) => setFields(current => { if (!(key in current)) return current; const next = { ...current }; delete next[key]; return next; });
-  return <View style={styles.stack}>
+  return <View style={[styles.stack, { flexGrow: 1 }]}>
     {experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample check-in</Copy>}
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {!ready ? readError ? <><Alert>{readError}</Alert><Action label="Try again" disabled={offline} onPress={() => { setReadError(undefined); setAttempt(value => value + 1); }} /></>

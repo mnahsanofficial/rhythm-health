@@ -147,7 +147,8 @@ describe('updating a check-in', () => {
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Update check-in' })); });
     expect(await screen.findByText('6 days left')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
-    expect(Haptics.impactAsync).toHaveBeenCalledTimes(2);
+    // A tap on each of the three answers, then the save and the celebration.
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(5);
   });
 });
 

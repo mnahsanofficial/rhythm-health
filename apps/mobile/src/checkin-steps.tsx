@@ -1,15 +1,18 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import Animated, { ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import { MAX_NOTE_LENGTH, type Metric } from '@rhythm-health/contract';
+import { CheckinScene } from './checkin-scene';
 import { Icon } from './icons';
-import { MetricInput, Radio } from './metric-input';
+import { MetricInput, Radio, scaleCaption } from './metric-input';
+import { CHECKIN_ADVANCE_MS } from './lib/checkin-scene';
 import { metricAnswer } from './lib/checkins';
 import { themedStyles, useColors } from './theme-core';
-import { Action, BackLink, Copy, StickyAction, Title, useStepFocus, useStyles } from './ui';
+import { Action, BackLink, Copy, StickyAction, Title, useFillScreen, useStepFocus, useStyles } from './ui';
 
-export type CheckinStep = { key: string; caption?: string; name?: string; audience?: string } & (
+export type CheckinStep = { key: string; caption?: string; name?: string; audience?: string; day?: number | null } & (
   | { kind: 'change'; action: string }
   | { kind: 'metric'; metric: Metric }
 );
@@ -35,7 +38,7 @@ function Slide({ direction, children }: { direction: 1 | -1; children: ReactNode
     x.set(withTiming(0, timing)); opacity.set(withTiming(1, timing));
   }, [reduce, x, opacity]);
   const style = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ translateX: x.get() }] }));
-  return <Animated.View testID="checkin-step" style={[{ gap: SPACING.lg }, style]}>{children}</Animated.View>;
+  return <Animated.View testID="checkin-step" style={[{ gap: SPACING.md, flexGrow: 1 }, style]}>{children}</Animated.View>;
 }
 
 function Dots({ now, total }: { now: number; total: number }) { const local = useLocal();
@@ -52,23 +55,44 @@ function Top({ step, now, total }: { step?: CheckinStep; now: number; total: num
   </View>;
 }
 
-function Question({ step, value, error, busy, onAnswer, onNext }: { step: CheckinStep; value: Answer; error?: string; busy: boolean; onAnswer: (value: string | boolean, advance: boolean) => void; onNext: () => void }) {
-  const COLORS = useColors(); const local = useLocal();
+/**
+ * One question fills the phone without scrolling: the words at the top, the scene in the middle, and the answers in
+ * the bottom bar, where the thumb is. A tap lets the scene move to the answer and hold, then goes on. Reduce Motion goes on at once.
+ */
+function Question({ step, value, error, busy, onAnswer, onNext, onBack }: { step: CheckinStep; value: Answer; error?: string; busy: boolean; onAnswer: (value: string | boolean) => void; onNext: () => void; onBack?: () => void }) {
+  const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const heading = useStepFocus(step.key);
-  const needsNext = step.kind === 'metric' && typed(step.metric);
-  const answered = value !== undefined && value !== '';
+  const reduce = useReducedMotion();
+  useFillScreen();
+  const isTyped = step.kind === 'metric' && typed(step.metric);
+  // Decided on arrival: a new tap goes on by itself, so Next appearing under it would only move the buttons.
+  const [arrivedAnswered] = useState(value !== undefined && value !== '');
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const tapped = (next: string | boolean) => {
+    clearTimeout(timer.current);
+    onAnswer(next);
+    try { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined); } catch { /* A phone without haptics still moves on. */ }
+    if (reduce) onNext();
+    else timer.current = setTimeout(onNext, CHECKIN_ADVANCE_MS);
+  };
   return <>
     <Title textRef={heading}>{step.kind === 'change' ? 'Did you make the change?' : step.metric.label}</Title>
     {step.kind === 'change' && !step.name && <Copy>{step.action}</Copy>}
     {step.audience && <Copy style={local.caption}>{step.audience}</Copy>}
-    {step.kind === 'change'
-      ? <View accessibilityRole="radiogroup" accessibilityLabel="Did you make the change?" style={local.pair}>
-        <View style={local.half}><Radio big label="Yes, I made the change" text="Yes" selected={value === true} disabled={busy} onPress={() => onAnswer(true, true)} /></View>
-        <View style={local.half}><Radio big label="Not today" selected={value === false} disabled={busy} onPress={() => onAnswer(false, true)} /></View>
-      </View>
-      : <MetricInput big metric={step.metric} value={value} disabled={busy} onChange={next => onAnswer(next, !typed(step.metric))} />}
-    {error && <Copy style={{ color: COLORS.clay }}>{error}</Copy>}
-    {(needsNext || answered) && <StickyAction><Action wide label="Next" disabled={busy || !valid(step, value)} onPress={onNext} /></StickyAction>}
+    {step.kind === 'metric' && step.metric.type === 'scale' && !isTyped && <Copy style={styles.muted}>{scaleCaption(step.metric)}</Copy>}
+    <CheckinScene step={step} value={value} />
+    <StickyAction>
+      {error && <Copy style={{ color: COLORS.clay }}>{error}</Copy>}
+      {step.kind === 'change'
+        ? <View accessibilityRole="radiogroup" accessibilityLabel="Did you make the change?" style={local.pair}>
+          <View style={local.half}><Radio big label="Yes, I made the change" text="Yes" selected={value === true} disabled={busy} onPress={() => tapped(true)} /></View>
+          <View style={local.half}><Radio big label="Not today" selected={value === false} disabled={busy} onPress={() => tapped(false)} /></View>
+        </View>
+        : <MetricInput big metric={step.metric} value={value} disabled={busy} onChange={next => { if (isTyped) onAnswer(next); else tapped(next); }} />}
+      {(isTyped || arrivedAnswered) && <Action wide label="Next" disabled={busy || !valid(step, value)} onPress={() => { clearTimeout(timer.current); onNext(); }} />}
+      {onBack && <BackLink to="Back" name="Back" disabled={busy} onPress={onBack} />}
+    </StickyAction>
   </>;
 }
 
@@ -106,29 +130,31 @@ function Review({ steps, values, fields, note, onNote, busy, notice, noteCaption
 export function CheckinFlow({ steps, values, onAnswer, fields, note, onNote, busy, offline, notice, noteCaption, alert, top, saveLabel, onSave }: {
   steps: CheckinStep[]; values: Record<string, Answer>; onAnswer: (key: string, value: string | boolean) => void; fields: Record<string, string>; note: string; onNote: (note: string) => void;
   busy: boolean; offline: boolean; notice?: string; noteCaption?: string; alert?: ReactNode; top?: ReactNode; saveLabel: string; onSave: () => void;
-}) { const styles = useStyles();
+}) { const styles = useStyles(); const local = useLocal();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [returning, setReturning] = useState(false); // Changing one answer from the review goes straight back to it.
   const total = steps.length + 1;
   const go = (next: number) => { setDirection(next < index ? -1 : 1); setIndex(next); };
   const forward = () => { if (returning) { setReturning(false); go(steps.length); } else go(index + 1); };
+  const back = () => { setReturning(false); go(index - 1); };
   const step = steps[index];
-  return <View style={styles.stack}>
+  return <View style={[styles.stack, local.fill]}>
     {top}
     <Top step={step} now={index + 1} total={total} />
     <Slide key={step?.key ?? 'review'} direction={direction}>
       {step
         ? <Question step={step} value={values[step.key]} error={fields[step.key]} busy={busy} onNext={forward}
-          onAnswer={(value, advance) => { onAnswer(step.key, value); if (advance) forward(); }} />
+          onAnswer={value => onAnswer(step.key, value)} onBack={index > 0 ? back : undefined} />
         : <Review steps={steps} values={values} fields={fields} note={note} onNote={onNote} busy={busy} notice={notice} noteCaption={noteCaption} alert={alert} offline={offline}
           saveLabel={saveLabel} onSave={onSave} onEdit={next => { setReturning(true); go(next); }} />}
     </Slide>
-    {index > 0 && <BackLink to="Back" name="Back" disabled={busy} onPress={() => { setReturning(false); go(index - 1); }} />}
+    {!step && <BackLink to="Back" name="Back" disabled={busy} onPress={back} />}
   </View>;
 }
 
 const useLocal = themedStyles(COLORS => StyleSheet.create({
+  fill: { flexGrow: 1 },
   top: { gap: SPACING.sm },
   dots: { flexDirection: 'row', gap: SPACING.sm },
   dot: { width: SPACING.sm, height: SPACING.sm, borderRadius: RADII.pill, backgroundColor: COLORS.line },
