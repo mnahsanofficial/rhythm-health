@@ -93,11 +93,13 @@ async function pastFinishFlow() {
   await act(async () => { fireEvent.press(link); });
   await screen.findByRole('header', { name: 'Prediction vs reality' });
 }
+const showDetails = async () => { const row = await screen.findByRole('button', { name: 'Details' }); await act(async () => { fireEvent.press(row); }); };
 async function openReport(report: LabReport = labReport) {
   defaults[COMPLETE] = { body: report };
   defaults[READ] = { body: report };
   await finish();
   await pastFinishFlow();
+  await showDetails();
 }
 
 describe('finish', () => {
@@ -292,6 +294,7 @@ describe('comparison', () => {
     defaults[COMPLETE] = { body: report };
     await finish();
     await pastFinishFlow();
+    await showDetails();
   }
 
   test('reduced motion reveals at once', async () => {
@@ -347,7 +350,7 @@ describe('the result comes first', () => {
   test('the sentence comes before the chart, the chart before the prediction, and both before the details', async () => {
     await openReport();
     const page = JSON.stringify(screen.toJSON());
-    const order = ['Morning energy rose 21%', 'A short personal experiment shows', 'Day 1, ', 'Prediction vs reality', 'How the days went'].map(text => page.indexOf(text));
+    const order = ['Morning energy rose 21%', 'A short personal experiment shows', 'Morning energy by day', 'Prediction vs reality', 'How the days went'].map(text => page.indexOf(text));
     expect(order.every(index => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
@@ -552,7 +555,7 @@ describe('run this experiment', () => {
     expect(count(PROPOSE)).toBe(0);
     defaults[PROPOSE] = { body: { ...proposeResponse, personal_guess_available: true } };
     await press('Design experiment');
-    await screen.findByRole('header', { name: 'What do you think will happen?' });
+    await screen.findByRole('button', { name: 'Next' });
     expect(calls.find(call => call.key === PROPOSE)?.body).toEqual({ question: next });
   });
 
@@ -586,6 +589,7 @@ describe('run this experiment', () => {
     await finish();
     expect(await screen.findByText(description)).toBeVisible();
     await pastFinishFlow();
+    await showDetails();
     expect(await screen.findByRole('header', { name: 'Other experiments at the same time' })).toBeVisible();
     expect(screen.getByText(description)).toBeVisible();
   });
@@ -608,7 +612,6 @@ describe('run this experiment', () => {
 
   test('no narrative still offers your own question', async () => {
     await openReport();
-    expect(screen.getByText('A suggested next question appears once your report is written.')).toBeVisible();
     fireEvent.press(screen.getByRole('button', { name: 'Ask your own question' }));
     expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
     expect(screen.getByLabelText('Your question or goal').props.value).toBe('');

@@ -3,6 +3,7 @@ import { AccessibilityInfo, Animated, AppState, StyleSheet, type AppStateStatus 
 import type { Experiment, ProposeResponse } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile, proposeResponse } from '../../../frontend/tests/support/fixtures';
+import { pressNext } from './support/plan';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 
 const mockAuth = { getSession: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -75,12 +76,12 @@ async function openAsk() {
 function typeQuestion(text = QUESTION) { fireEvent.changeText(screen.getByLabelText('Your question or goal'), text); }
 const design = () => screen.getByRole('button', { name: 'Design experiment' });
 async function submit(text = QUESTION) { typeQuestion(text); await act(async () => { fireEvent.press(design()); }); }
-async function toGuess() { await openAsk(); await submit(); await screen.findByRole('header', { name: 'What do you think will happen?' }); }
+async function toGuess() { await openAsk(); await submit(); await pressNext(); await screen.findByRole('header', { name: 'What will happen?' }); }
 async function reveal(value = '+12') {
   fireEvent.changeText(screen.getByLabelText('Your guess for Morning energy'), value);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
 }
-async function toPlan() { await toGuess(); await reveal(); await screen.findByRole('button', { name: 'Start this experiment' }); }
+async function toPlan() { await toGuess(); await reveal(); await pressNext(); await screen.findByRole('button', { name: 'Start this experiment' }); }
 const startNow = async () => { await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Start this experiment' })); }); };
 
 test('no active experiment opens the native question, not the web', async () => {
@@ -111,7 +112,7 @@ test('sends the trimmed question directly, because the backend checks the limit 
   await openAsk();
   const reads = count(`GET ${ACTIVE}`);
   await submit(`  ${QUESTION}  `);
-  await screen.findByRole('header', { name: 'What do you think will happen?' });
+  await pressNext(); await screen.findByRole('header', { name: 'What will happen?' });
   expect(count(`GET ${ACTIVE}`)).toBe(reads);
   expect(calls.find(call => call.key === PROPOSE)?.body).toEqual({ question: QUESTION });
 });
@@ -143,16 +144,15 @@ test('double taps send one proposal, with no second request while it is in fligh
   expect(await screen.findByRole('header', { name: 'Planning your experiment.' })).toBeVisible();
   expect(count(PROPOSE)).toBe(1);
   await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
-  await screen.findByRole('header', { name: 'What do you think will happen?' });
+  await pressNext(); await screen.findByRole('header', { name: 'What will happen?' });
   expect(count(PROPOSE)).toBe(1);
 });
 
 test('returning to the foreground keeps the proposal and never sends it again', async () => {
   await toPlan();
-  expect(screen.queryByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeNull();
+  expect(screen.queryByText("Rhythm suggested a related habit to test.")).toBeNull();
   await act(async () => { for (const listener of listeners) listener('active'); });
   expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeVisible();
-  expect(screen.getByText('Your guess: +12% change from normal days. Locked before the AI reveal.')).toBeVisible();
   expect(count(PROPOSE)).toBe(1);
 });
 
@@ -198,8 +198,8 @@ test('a review-level question shows the note before the plan', async () => {
   queue(PROPOSE, { body: { ...proposeResponse, safety: { allowed: true, reason: 'Go gently with this one.', suggested_alternative: null },
     classification: { ...proposeResponse.classification, risk: 'review' } } });
   await submit();
-  expect(await screen.findByText('A note before you begin')).toBeVisible();
-  expect(screen.getByText('Go gently with this one.')).toBeVisible();
+  fireEvent.press(await screen.findByRole('button', { name: 'A note before you begin' }));
+  expect(await screen.findByText('Go gently with this one.')).toBeVisible();
 });
 
 test('an incomplete plan is an error, retried only by an explicit tap', async () => {
@@ -254,18 +254,17 @@ test('the forecast stays hidden until the guess is locked', async () => {
   await toGuess();
   expect(screen.queryByText(/\+8% to \+15%/)).toBeNull();
   expect(screen.queryByText('We predict')).toBeNull();
-  expect(screen.getByText(withGuess.proposal!.intervention.action)).toBeVisible();
   await reveal();
   expect(await screen.findByText('We predict')).toBeVisible();
   expect(screen.getByText('+8% to +15%')).toBeVisible();
-  expect(screen.getByText('Your guess: +12% change from normal days. Locked before the AI reveal.')).toBeVisible();
+  expect(screen.getByText('+12%')).toBeVisible();
   expect(screen.queryByLabelText('Your guess for Morning energy')).toBeNull();
 });
 
 test.each([['0', '0%'], ['-5', '-5%'], ['+12', '+12%'], ['7,5', '+7.5%'], ['-100', '-100%'], ['200', '+200%']])('accepts the guess %s', async (value, shown) => {
   await toGuess();
   await reveal(value);
-  expect(await screen.findByText(`Your guess: ${shown} change from normal days. Locked before the AI reveal.`)).toBeVisible();
+  expect((await screen.findAllByText(shown))[0]).toBeVisible();
 });
 
 test.each(['', 'abc', '-101', '201', '1e2', '--2', '1,2,3'])('rejects the guess "%s"', async value => {
@@ -279,34 +278,34 @@ test('when the guess column is missing there is no field, and starting saves no 
   await openAsk();
   queue(PROPOSE, { body: proposeResponse });
   await submit();
-  expect(await screen.findByText('Your own guess is unavailable right now. You can still start without one.')).toBeVisible();
+  await pressNext();
   expect(screen.queryByLabelText('Your guess for Morning energy')).toBeNull();
   expect(screen.getByText('We predict')).toBeVisible();
+  await pressNext();
+  expect(screen.getByText('No guess this time.')).toBeVisible();
   await startNow();
   await waitFor(() => expect(count(START)).toBe(1));
   expect(calls.find(call => call.key === SAVE)?.body).not.toHaveProperty('personal_guess_percent');
 });
 
 test('the plan explains the change, the days, the measures and the success rule', async () => {
-  await toPlan();
+  await openAsk(); await submit();
   const { proposal } = withGuess;
-  expect(screen.getByText(proposal!.intervention.action)).toBeVisible();
-  expect(screen.getByText('3 normal days, then 7 test days')).toBeVisible();
-  expect(screen.getByText('Fixed once you start.')).toBeVisible();
+  expect(await screen.findByRole('header', { name: proposal!.intervention.action })).toBeVisible();
   expect(screen.queryByText(proposal!.hypothesis)).toBeNull();
-  fireEvent.press(screen.getByRole('button', { name: 'Why?' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Details' }));
   expect(screen.getByText(proposal!.hypothesis)).toBeVisible();
   expect(screen.getByText('We track: Morning energy, Sleep quality.')).toBeVisible();
   expect(screen.getByText('We look for a change of at least 10% in Morning energy.')).toBeVisible();
 });
 
 test('Ask something else clears the proposal and guess', async () => {
-  await toPlan();
-  fireEvent.press(screen.getByRole('button', { name: 'Ask something else' }));
+  await openAsk(); await submit();
+  fireEvent.press(await screen.findByRole('button', { name: 'Ask something else' }));
   expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(screen.getByLabelText('Your question or goal').props.value).toBe('');
   expect(screen.queryByText(/Your guess:/)).toBeNull();
-  await submit();
+  await submit(); await pressNext();
   expect(await screen.findByLabelText('Your guess for Morning energy')).toBeVisible();
   expect(screen.getByLabelText('Your guess for Morning energy').props.value).toBe('');
   expect(count(PROPOSE)).toBe(2);
@@ -437,7 +436,7 @@ test('a 401 from the proposal returns to sign-in', async () => {
 test('reduced motion shows the forecast range without animating', async () => {
   (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(true);
   const timing = jest.spyOn(Animated, 'timing');
-  await toPlan();
+  await toGuess(); await reveal();
   await act(async () => { await Promise.resolve(); });
   expect(screen.getByLabelText('Expected change range +8% to +15%')).toBeVisible();
   expect(timing).not.toHaveBeenCalled();
@@ -446,7 +445,7 @@ test('reduced motion shows the forecast range without animating', async () => {
 test('the forecast range animates once without reduced motion', async () => {
   (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
   const timing = jest.spyOn(Animated, 'timing');
-  await toPlan();
+  await toGuess(); await reveal();
   await waitFor(() => expect(timing).toHaveBeenCalledTimes(1));
 });
 
@@ -454,7 +453,7 @@ const TRUST = 'Your question goes to an AI to design the experiment, and the AI 
 
 test('Ask says where the question goes and that the AI does not calculate the result', async () => {
   await openAsk();
-  expect(screen.getByText(TRUST)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'How it works' })); expect(screen.getByText(TRUST)).toBeVisible();
 });
 
 test('You has an About section with the same line', async () => {
@@ -477,13 +476,16 @@ test('examples stay off the question and plan so each has one primary action', a
   fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does a walk after dinner help my energy?');
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
-  await screen.findByText('What do you think will happen?');
+  await pressNext();
+  await screen.findByText('What will happen?');
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
   fireEvent.changeText(screen.getByLabelText(/^Your guess for/), '12');
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
+  await pressNext();
   await screen.findByRole('button', { name: 'Start this experiment' });
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
-  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask something else' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Close' })); });
+  await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Leave' })); });
   expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Try a sample experiment' })).toBeNull();
 });
@@ -522,10 +524,10 @@ describe('a question that is not about a habit', () => {
     queue(PROPOSE, { body: softCheck });
     await submit(OFF_TOPIC);
     await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Continue anyway' })); });
-    expect(await screen.findByRole('header', { name: 'What do you think will happen?' })).toBeVisible();
+    expect(await screen.findByText('Rhythm suggested a related habit to test.')).toBeVisible();
+    await pressNext(); expect(await screen.findByRole('header', { name: 'What will happen?' })).toBeVisible();
     await reveal();
-    expect(screen.getByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeVisible();
-    expect(calls.filter(call => call.key === PROPOSE).map(call => call.body)).toEqual([
+        expect(calls.filter(call => call.key === PROPOSE).map(call => call.body)).toEqual([
       { question: OFF_TOPIC }, { question: OFF_TOPIC, continue_anyway: true },
     ]);
   });
@@ -544,12 +546,14 @@ describe('a question that is not about a habit', () => {
     queue(PROPOSE, { body: softCheck });
     await submit(OFF_TOPIC);
     await act(async () => { fireEvent.press(await screen.findByRole('button', { name: 'Continue anyway' })); });
-    await screen.findByRole('header', { name: 'What do you think will happen?' });
-    await act(async () => { fireEvent.press(screen.getByRole('button', { name: /Ask something else|Back/ })); });
+    await pressNext(); await screen.findByRole('header', { name: 'What will happen?' });
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Back' })); });
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Ask something else' })); });
     await submit(QUESTION);
     expect(calls.filter(call => call.key === PROPOSE).at(-1)?.body).toEqual({ question: QUESTION });
+    await pressNext();
     await reveal();
-    expect(screen.queryByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeNull();
+    expect(screen.queryByText("Rhythm suggested a related habit to test.")).toBeNull();
   });
 });
 
@@ -629,7 +633,7 @@ describe('the planning moment', () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
     expect(count(PROPOSE)).toBe(1);
     await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
-    await screen.findByRole('header', { name: 'What do you think will happen?' });
+    await pressNext(); await screen.findByRole('header', { name: 'What will happen?' });
     expect(count(PROPOSE)).toBe(1);
   });
 
@@ -640,7 +644,7 @@ describe('the planning moment', () => {
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Stay' })); });
     expect(screen.getByRole('header', { name: 'Planning your experiment.' })).toBeVisible();
     await act(async () => { release({ ok: true, status: 200, json: async () => withGuess } as Response); });
-    await screen.findByRole('header', { name: 'What do you think will happen?' });
+    await pressNext(); await screen.findByRole('header', { name: 'What will happen?' });
   });
 
   test('Leave drops the late answer, and the lock holds until it arrives, so nothing is paid for twice', async () => {

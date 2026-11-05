@@ -92,6 +92,70 @@ const radio = (page, name) => page.getByRole('radio', { name, exact: true }).cli
 const button = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
 const GROUPS = {
+  async know(browser, mode) {
+    const run = await open(browser, { mode, list: [] });
+    await run.page.getByRole('tab', { name: 'Ask' }).click();
+    await run.page.getByLabel('Your question or goal', { exact: true }).fill(proposeResponse.proposal.question);
+    await button(run.page, 'Design experiment');
+    await button(run.page, 'Next');
+    await run.page.getByLabel(/^Your guess for/).fill('10');
+    await button(run.page, 'Show prediction');
+    await button(run.page, 'Next');
+    await shoot(run.page, 'know', '1-plan-line', mode);
+    await run.context.close();
+    const report = await open(browser, { mode, list: [] });
+    await report.page.getByRole('tab', { name: 'History' }).click();
+    await report.page.getByRole('button', { name: /^Open Lab Report/ }).click();
+    await report.page.getByRole('button', { name: 'How we know', exact: true }).waitFor();
+    await button(report.page, 'How we know');
+    await shoot(report.page, 'know', '2-how-we-know', mode);
+    if (report.errors.length) throw new Error(report.errors.join('\n'));
+    await report.context.close();
+  },
+  async screens(browser, mode) {
+    const run = await open(browser, { mode, list: [on(4, 'intervention')], recorded: [1, 2, 3] });
+    await run.page.getByRole('tab', { name: 'Ask' }).click();
+    await run.page.getByRole('button', { name: 'How it works', exact: true }).waitFor();
+    await shoot(run.page, 'screens', '1-ask', mode);
+    await run.page.getByRole('tab', { name: 'Progress' }).click();
+    await run.page.getByText('Day by day', { exact: true }).waitFor();
+    await shoot(run.page, 'screens', '2-progress', mode);
+    await run.page.getByRole('tab', { name: 'History' }).click();
+    await run.page.getByRole('button', { name: /^Open Lab Report/ }).waitFor();
+    await shoot(run.page, 'screens', '3-history', mode);
+    await run.page.getByRole('button', { name: /^Open Lab Report/ }).click();
+    await run.page.getByRole('button', { name: 'Compare with the prediction', exact: true }).waitFor();
+    await shoot(run.page, 'screens', '4-report', mode);
+    await button(run.page, 'Compare with the prediction');
+    await shoot(run.page, 'screens', '5-report-compared', mode);
+    await button(run.page, 'Details');
+    await shoot(run.page, 'screens', '6-report-details', mode);
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+  },
+  async plan(browser, mode) {
+    const run = await open(browser, { mode, list: [] });
+    await run.page.getByRole('tab', { name: 'Ask' }).click();
+    await run.page.getByLabel('Your question or goal', { exact: true }).fill(proposeResponse.proposal.question);
+    await button(run.page, 'Design experiment');
+    await run.page.getByRole('button', { name: 'Details', exact: true }).waitFor();
+    await shoot(run.page, 'plan', '1-change', mode);
+    await button(run.page, 'Details');
+    await shoot(run.page, 'plan', '1b-details-sheet', mode);
+    await button(run.page, 'Done');
+    await button(run.page, 'Next');
+    await run.page.getByLabel(/^Your guess for/).waitFor();
+    await run.page.getByLabel(/^Your guess for/).fill('10');
+    await shoot(run.page, 'plan', '2-guess', mode);
+    await button(run.page, 'Show prediction');
+    await shoot(run.page, 'plan', '3-reveal', mode);
+    await button(run.page, 'Next');
+    await shoot(run.page, 'plan', '4-days', mode);
+    const scrolls = await run.page.evaluate(() => [...document.querySelectorAll('*')].some(element => /auto|scroll/.test(getComputedStyle(element).overflowY) && element.clientHeight > 0 && element.scrollHeight > element.clientHeight + 1));
+    if (scrolls) throw new Error('The last plan step needs scrolling');
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+  },
   async today(browser, mode) {
     let run = await open(browser, { mode, list: [on(4, 'intervention')] });
     await shoot(run.page, 'today', '1-due', mode);

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { AppState, ScrollView } from 'react-native';
 import { MobileApp } from '../src/mobile-app';
 import { profile, proposeResponse, writtenLabReport } from '../../../frontend/tests/support/fixtures';
+import { pressNext } from './support/plan';
 import { goTo, openMenu } from './support/nav';
 
 const mockAuth = { getSession: jest.fn(), signInWithPassword: jest.fn(), signUp: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -116,13 +117,14 @@ test('going home keeps a paid proposal, and sends nothing', async () => {
   await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
+  await pressNext();
   fireEvent.changeText(await screen.findByLabelText('Your guess for Morning energy'), '10');
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Show prediction' })); });
+  await pressNext();
   await screen.findByRole('button', { name: 'Start this experiment' });
   await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
 await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
   expect(await screen.findByRole('button', { name: 'Start this experiment' })).toBeVisible();
-  expect(screen.getByText('Your guess: +10% change from normal days. Locked before the AI reveal.')).toBeVisible();
   expect(calls.filter(call => call.endsWith('/propose'))).toHaveLength(1);
 });
 

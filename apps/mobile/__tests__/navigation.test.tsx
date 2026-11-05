@@ -4,6 +4,7 @@ import { LAYOUT } from '@rhythm-health/brand';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile, proposeResponse, writtenLabReport } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
+import { toStart } from './support/plan';
 import { goTo } from './support/nav';
 
 const mockAuth = { getSession: jest.fn(), signInWithPassword: jest.fn(), signUp: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -68,6 +69,7 @@ const withPlan = async () => {
   await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await press('Design experiment');
+  await toStart();
   await screen.findByRole('button', { name: 'Start this experiment' });
 };
 const withRunning = async () => {

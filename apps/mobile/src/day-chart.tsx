@@ -17,7 +17,7 @@ type Plotted = ChartPoint & { value: number };
  * line and every planned day keeps its place. The rows below are the text alternative and the
  * screen-reader route, so the narrow columns over the plot stay touch-only.
  */
-export function DayChart({ chart }: { chart: ChartData }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
+export function DayChart({ chart , part = 'plot' }: { chart: ChartData ; part?: 'plot' | 'days' }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const [width, setWidth] = useState(300);
   const [open, setOpen] = useState<number | null>(null);
   const metric = chart.primary_metric;
@@ -55,9 +55,23 @@ export function DayChart({ chart }: { chart: ChartData }) { const COLORS = useCo
   const selected = open === null ? undefined : byDay.get(open);
   const toggle = (day: number) => setOpen(current => current === day ? null : day);
 
-  return <View style={ui.divider}>
+  if (part === 'days') return <View style={ui.stack}>
     <Copy accessibilityRole="header" style={ui.sectionTitle}>Day by day</Copy>
-    <Copy style={ui.muted}>{metric.label}</Copy>
+    {points.length > 0 && <View style={local.legend}>
+      <Legend dot={<View style={[local.key, { backgroundColor: COLORS.night }]} />} text="Baseline day" />
+      <Legend dot={<View style={[local.key, { backgroundColor: COLORS.moss }]} />} text="Made the change" />
+      <Legend dot={<View style={[local.key, local.keyHollow]} />} text="Skipped the change" />
+      {mean !== null && <Legend dot={<View style={local.keyLine} />} text={`Baseline average: ${fmt(mean)}`} />}
+      {band && <Legend dot={<View style={local.keyBand} />} text={`Predicted range: ${fmt(band.expected_value_min)}–${fmt(band.expected_value_max)}`} />}
+    </View>}
+    {missed.length > 0 && <Copy style={local.small}>{`Missed: ${listDays(missed)}.`}</Copy>}
+    {notReached.length > 0 && <Copy style={local.small}>{`Not reached before you finished: ${listDays(notReached)}.`}</Copy>}
+    {selected && <DayDetails chart={chart} point={selected} />}
+    <View>
+      {days.map(day => <DayRow key={day} chart={chart} day={day} point={byDay.get(day)} missed={missed.includes(day)} open={open === day} onPress={() => toggle(day)} />)}
+    </View>
+  </View>;
+  return <View style={ui.stack}>
     {points.length === 0 ? <Copy>Nothing was recorded for this measure, so there&apos;s no line to draw.</Copy> : <View accessible accessibilityRole="image" accessibilityLabel={summary} style={local.plotRow}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={local.axis}>
         <Copy maxFontSizeMultiplier={1.2} style={local.tick}>{fmt(hi)}</Copy>
@@ -94,19 +108,6 @@ export function DayChart({ chart }: { chart: ChartData }) { const COLORS = useCo
         </View>
       </View>
     </View>}
-    {points.length > 0 && <View style={local.legend}>
-      <Legend dot={<View style={[local.key, { backgroundColor: COLORS.night }]} />} text="Baseline day" />
-      <Legend dot={<View style={[local.key, { backgroundColor: COLORS.moss }]} />} text="Made the change" />
-      <Legend dot={<View style={[local.key, local.keyHollow]} />} text="Skipped the change" />
-      {mean !== null && <Legend dot={<View style={local.keyLine} />} text={`Baseline average: ${fmt(mean)}`} />}
-      {band && <Legend dot={<View style={local.keyBand} />} text={`Predicted range: ${fmt(band.expected_value_min)}–${fmt(band.expected_value_max)}`} />}
-    </View>}
-    {missed.length > 0 && <Copy style={local.small}>{`Missed: ${listDays(missed)}.`}</Copy>}
-    {notReached.length > 0 && <Copy style={local.small}>{`Not reached before you finished: ${listDays(notReached)}.`}</Copy>}
-    {selected && <DayDetails chart={chart} point={selected} />}
-    <View>
-      {days.map(day => <DayRow key={day} chart={chart} day={day} point={byDay.get(day)} missed={missed.includes(day)} open={open === day} onPress={() => toggle(day)} />)}
-    </View>
   </View>;
 }
 

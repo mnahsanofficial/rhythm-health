@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
+import { useEffect, useState, type ComponentRef, type Ref } from 'react';
+import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Metric, Prediction } from '@rhythm-health/contract';
 import { signedPercent } from './lib/proposals';
@@ -47,14 +47,18 @@ function PredictionRange({ min, max }: { min: number; max: number }) { const loc
 }
 
 /** The original forecast, shown as a range with its confidence level and never as a single number. */
-export function Forecast({ prediction, metrics }: { prediction: Prediction; metrics: Metric[] }) { const local = useLocal(); const ui = useStyles();
+export function Forecast({ prediction, metrics, guess = null, headingRef }: { prediction: Prediction; metrics: Metric[]; guess?: number | null; headingRef?: Ref<ComponentRef<typeof Text>> }) { const local = useLocal(); const ui = useStyles();
   const label = metrics.find(metric => metric.key === prediction.target_metric)?.label ?? prediction.target_metric;
   return <View style={local.card}>
+    {guess !== null && <View>
+      <Copy style={local.eyebrow}>Your guess</Copy>
+      <Copy style={local.value}>{signedPercent(guess)}</Copy>
+    </View>}
     <Copy style={local.eyebrow}>We predict</Copy>
-    <Copy accessibilityRole="header" style={ui.sectionTitle}>{label} is {DIRECTION[prediction.direction]}</Copy>
+    <Copy ref={headingRef} accessibilityRole="header" style={ui.sectionTitle}>{label} is {DIRECTION[prediction.direction]}</Copy>
     <Copy style={local.value}>{signedPercent(prediction.expected_change_min)} to {signedPercent(prediction.expected_change_max)}</Copy>
     <PredictionRange min={prediction.expected_change_min} max={prediction.expected_change_max} />
-    <Copy>Confidence: {prediction.confidence.charAt(0).toUpperCase() + prediction.confidence.slice(1)}</Copy>
+    <Copy style={local.end}>Confidence: {prediction.confidence.charAt(0).toUpperCase() + prediction.confidence.slice(1)}</Copy>
   </View>;
 }
 
