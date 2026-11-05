@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { AppState, type AppStateStatus } from 'react-native';
 import type { Experiment } from '@rhythm-health/contract';
 import { Reminders } from '../src/lib/reminders';
+import { goTo } from './support/nav';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
@@ -117,16 +118,49 @@ describe('your lab with several experiments', () => {
     expect(screen.getByText(second.question)).toBeVisible();
   });
 
-  test('two experiments both on day 1 keep their own keys, on Today and in the combined check-in', async () => {
+  test.each([2, 3])('%i experiments on day 1 have stable keys across every experiment screen', async count => {
     const warn = jest.spyOn(console, 'error');
-    install([running('first-id', 1), running('second-id', 1)]);
+    const noDuplicateKeys = () => expect(warn.mock.calls.filter(args => /same key|unique.*key/i.test(args.map(String).join(' ')))).toEqual([]);
+    const list = Array.from({ length: count }, (_, index) => running(`same-day-${index}`, 1, { question: 'Same question?' }));
+    install(list);
+    const today = { ...dueToday(list), experiments: dueToday(list).experiments.map(item => ({ ...item, day_number: 1, phase: 'baseline', change_required: false })) };
+    routes['GET /api/checkins/today'] = { body: today };
+    routes['POST /api/checkins/today'] = { body: { ...today, all_recorded: true } };
+    routes['GET /api/experiments/progress-summary'] = { body: { kept: [], metrics: [], example: null } };
+    routes['GET /api/experiments?status=completed'] = { body: list.map(item => ({ ...item, status: 'completed' })) };
+    routes['GET /api/experiments/calibration'] = { body: { points: [], average_off_by_points: null, trend: null, example: null } };
+    for (const item of list) routes[`GET /api/experiments/${item.id}/report`] = { status: 404, body: { detail: 'No report yet' } };
     render(<MobileApp />);
-    expect(await screen.findByText('Also running')).toBeVisible();
-    expect(screen.getByText('Question first-id?')).toBeVisible();
-    expect(screen.getByText('Question second-id?')).toBeVisible();
+    await screen.findByText('Also running');
+    expect(screen.getAllByText('Same question?')).toHaveLength(count);
+    noDuplicateKeys();
+    // Open every experiment, including the hero, so each detail day strip renders.
+    await press('See your experiment');
+    await screen.findByText('Your timeline');
+    noDuplicateKeys();
+    await press('Back to today');
+    for (let index = 1; index < count; index++) {
+      await act(async () => { fireEvent.press(screen.getByTestId(`also-same-day-${index}`)); });
+      await screen.findByText('Your timeline');
+      noDuplicateKeys();
+      await press('Back to today');
+    }
+    await goTo('Progress');
+    await screen.findAllByText('Day by day');
+    noDuplicateKeys();
+    await goTo('History');
+    expect(await screen.findAllByTestId('history-row')).toHaveLength(count);
+    noDuplicateKeys();
+    await goTo('Today');
     await press('Check in for today');
-    expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
-    expect(warn.mock.calls.filter(([message]) => String(message).includes('same key'))).toEqual([]);
+    await screen.findByRole('header', { name: "Today's check-in." });
+    noDuplicateKeys();
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    await press('Save check-in');
+    await screen.findByText(`${count} check-ins recorded`);
+    expect(screen.getAllByText('Day 1 of 10').length).toBeGreaterThanOrEqual(count);
+    noDuplicateKeys();
   });
 
   test('one check-in saves everything due today in one request', async () => {

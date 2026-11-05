@@ -52,7 +52,7 @@ export function Observations({ data: { experiment, timeline }, title, token, off
     {testDays.length > 0 && <Copy style={local.small}>{`Change made on ${followed} of ${testDays.length} test days`}</Copy>}
     {experiment.is_seeded && <Copy style={local.small}>Sample check-ins for demonstration. These answers are excluded from your real experiment history.</Copy>}
     <View style={local.grid}>
-      {timeline.days.map(item => <DayCell key={item.day_number} item={item} isToday={item.state === 'current' || (progress.state === 'in_progress' && item.day_number === progress.day_number)} open={day === item.day_number} onPress={() => setSelected(item.day_number)} />)}
+      {timeline.days.map(item => <DayCell key={`${experiment.id}:${item.day_number}`} item={item} isToday={item.state === 'current' || (progress.state === 'in_progress' && item.day_number === progress.day_number)} open={day === item.day_number} onPress={() => setSelected(item.day_number)} />)}
     </View>
     <View style={local.legend}>
       <View style={local.legendItem}><View style={[local.key, { backgroundColor: COLORS.night }]} /><Copy style={local.small}>Baseline</Copy></View>
