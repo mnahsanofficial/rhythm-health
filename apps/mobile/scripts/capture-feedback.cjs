@@ -134,6 +134,10 @@ const GROUPS = {
     run = await edit({ ...answers, morning_energy: 9 });
     await next(run.page, 'Morning energy');
     await shoot(run.page, 'scenes', '4-energy-9', mode);
+    await radio(run.page, 'Morning energy: 3');
+    await run.page.waitForTimeout(1500);
+    await heading(run.page, 'Morning energy');
+    console.log(`${mode}: while editing, a tap stayed on the question`);
     await run.context.close();
     // A first answer on a new day: the resting scene, Not today, then the real wait in a real browser.
     run = await open(browser, { mode, list });

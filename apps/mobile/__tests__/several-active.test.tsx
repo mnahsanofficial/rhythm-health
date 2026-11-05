@@ -210,9 +210,10 @@ describe('your lab with several experiments', () => {
     render(<MobileApp />);
     await press2('Edit answers');
     expect(await screen.findByTestId('checkin-step')).toBeVisible();
-    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
-    fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
-    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    for (const name of ['Morning energy: 7', 'Focus: 6', 'Yes, I made the change']) {
+      fireEvent.press(screen.getByRole('radio', { name }));
+      fireEvent.press(screen.getByRole('button', { name: 'Next' }));
+    }
     await press('Update check-in');
     expect(await screen.findByText('2 check-ins recorded')).toBeVisible();
   });
