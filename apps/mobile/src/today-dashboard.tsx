@@ -5,7 +5,7 @@ import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { DayData } from './today';
-import { isLastBaselineDay } from './lib/experiments';
+import { displayDayTime, isLastBaselineDay, testStartWhen } from './lib/experiments';
 import { allDaysDone } from './finish';
 import { Action, Copy, ForwardLink, Title, useScreenEnter } from './ui';
 import { themedStyles, useColors, useTheme } from './theme-core';
@@ -22,7 +22,8 @@ export function weeklyCount({ timeline }: DayData) {
   if (current === null || timeline.progress.state !== 'in_progress') return null;
   return timeline.days.filter(day => day.day_number <= current && day.day_number > current - 7 && day.state === 'recorded').length;
 }
-const deadline = (entry: DayData) => entry.timeline.next_day_at ? Date.parse(entry.timeline.next_day_at) : Number.POSITIVE_INFINITY;
+const closesAt = (entry: DayData) => entry.timeline.next_day_at ?? entry.timeline.progress.ends_at;
+const deadline = (entry: DayData) => { const close = closesAt(entry); return close ? Date.parse(close) : Number.POSITIVE_INFINITY; };
 const recorded = ({ timeline }: DayData) => timeline.days.some(day => day.day_number === timeline.progress.day_number && day.state === 'recorded');
 function priority(entry: DayData) {
   if (entry.timeline.progress.state === 'in_progress' && !recorded(entry)) return 0;
@@ -91,14 +92,15 @@ export function TodayDashboard({ entries, disabled, onCheckin, onDetail, onResul
   const sorted = [...entries].sort((a, b) => priority(a) - priority(b) || (deadline(a) === deadline(b) ? 0 : deadline(a) - deadline(b)));
   const hero = sorted[0]; const p = hero?.timeline.progress;
   const due = sorted.find(entry => priority(entry) < 2 || entry.timeline.progress.state === 'completed');
-  const dueTitle = due && priority(due) === 0 ? `Check-in due${due.timeline.next_day_at ? ` · closes ${new Date(due.timeline.next_day_at).toLocaleString('en-GB', { weekday: 'long', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/am|pm/, value => value.toUpperCase())}` : ''}`
-    : due && priority(due) === 1 ? 'Baseline done · your test starts tomorrow'
+  const dueClose = due ? closesAt(due) : null;
+  const dueTitle = due && priority(due) === 0 ? `Check-in due${dueClose ? ` · closes ${displayDayTime(dueClose)}` : ''}`
+    : due && priority(due) === 1 ? `Baseline done · your test starts ${testStartWhen(due.timeline.next_day_at, now)}`
     : due?.timeline.progress.state === 'completed' ? 'Your results are ready' : null;
   const results = Boolean(hero && (p?.state === 'completed' || allDaysDone(hero.timeline)) && !hero.experiment.is_seeded);
   const label = results ? 'See your results' : p?.state === 'not_started' ? 'Check-in not open' : hero?.experiment.is_seeded && p?.state !== 'in_progress' ? 'See example details' : hero && recorded(hero) ? "Edit today's answers" : 'Check in now';
   return <View style={local.page}>
     <View style={local.header}><View style={local.greeting}><Copy style={local.caption}>{`${now.toLocaleDateString('en-GB', { weekday: 'long' })}, ${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`}</Copy><Title>{greeting(now)}</Title></View><WeeklyRing count={hero ? weeklyCount(hero) : null} /></View>
-    {due && dueTitle && <View style={local.due}><CardLink label={dueTitle} disabled={disabled} onPress={() => due.timeline.progress.state === 'completed' ? onResults(due) : onDetail(due)}><View style={local.greeting}><Copy style={local.dueTitle}>{dueTitle}</Copy><Copy style={local.caption}>{priority(due) === 0 ? 'A short check-in, whenever you’re ready.' : priority(due) === 1 ? 'Keep your usual routine for the rest of today.' : 'Compare your prediction with your observations.'}</Copy></View></CardLink></View>}
+    {due && dueTitle && <View style={local.due}><CardLink label={dueTitle} disabled={disabled} onPress={() => due.timeline.progress.state === 'completed' ? onResults(due) : onDetail(due)}><View style={local.greeting}><Copy style={local.dueTitle}>{dueTitle}</Copy><Copy style={local.caption}>{priority(due) === 0 ? 'A short check-in, whenever you’re ready.' : priority(due) === 1 ? 'Keep your routine until the test opens.' : 'Compare your prediction with your observations.'}</Copy></View></CardLink></View>}
     <View style={local.hero}>
       <View style={local.heroCopy}><Copy style={local.caption}>Up next{hero?.experiment.is_seeded ? ' · Example experiment' : ''}</Copy>
         {hero ? <CardLink label="See your experiment" hint={hero.experiment.question} onPress={() => onDetail(hero)}><View style={local.greeting}><Copy numberOfLines={2} accessibilityRole="header" accessibilityLabel={hero.experiment.question} style={local.heroTitle}>{hero.experiment.question}</Copy></View></CardLink> : <Title small>Ask your first question</Title>}

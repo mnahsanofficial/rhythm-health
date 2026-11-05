@@ -206,7 +206,8 @@ describe('question flow', () => {
 describe('the last baseline day', () => {
   const MOMENT = 'Your test starts tomorrow: Walk for 20 minutes.';
   const lastBaseline = running({ day_number: 3, phase: 'baseline', phase_day: 3, phase_days: 3, days_remaining: 7 });
-  const nextDayAt = '2027-11-05T06:30:00Z';
+  const opening = new Date(); opening.setDate(opening.getDate() + 1); opening.setHours(12, 30, 0, 0);
+  const nextDayAt = opening.toISOString();
   async function saveDay(current: Experiment, day: number, before: number[]) {
     routes['GET /api/experiments?status=active'] = { body: [current] };
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(current, { recorded: before, nextDayAt }) };

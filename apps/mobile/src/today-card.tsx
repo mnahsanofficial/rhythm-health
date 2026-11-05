@@ -41,7 +41,7 @@ export function TodayCard({ data: { experiment, timeline }, disabled, token, off
   if (done) return <View style={styles.decision}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>{`Day ${day} recorded`}</Copy>
     <Copy>{counts}</Copy>
-    {isLastBaselineDay(timeline) && <Copy>{`Baseline done. ${testStartsLine(experiment.intervention.action)}`}</Copy>}
+    {isLastBaselineDay(timeline) && <Copy>{`Baseline done. ${testStartsLine(experiment.intervention.action, timeline.next_day_at)}`}</Copy>}
     <Copy>{opens && progress.days_remaining ? `Day ${day + 1} opens ${opens}.` : "That was the last day. Finish when you're ready."}</Copy>
     <Action label="Edit answers" secondary disabled={disabled} onPress={onCheckin} />
   </View>;
