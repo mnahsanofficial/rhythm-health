@@ -4,6 +4,7 @@ import { LAYOUT, MOTION_DURATION_MS, MOTION_EASE, NATIVE_TYPOGRAPHY, RADII, SPAC
 import type { Experiment, LabReport, PersonalGuessComparison, PredictionComparison, ReportNarrative, SignalClass } from '@rhythm-health/contract';
 import { DayChart } from './day-chart';
 import { DetailsRow } from './details-sheet';
+import { HowWeKnow } from './how-we-know';
 import { ApiError } from './lib/api';
 import { getCapacity } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, resultSentence, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
@@ -77,7 +78,6 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
       <Copy style={ui.muted}>{`This report is based on seeded example check-ins${analysis.personal_guess ? ' and an invented guess' : ''}.`}</Copy>
     </View>}
     <View style={ui.stack}>
-      <Copy style={local.eyebrow}>Lab Report</Copy>
       <Title small textRef={heading}>{experiment.question}</Title>
     </View>
     {offline && <Notice>You&apos;re offline. These results are the last ones loaded.</Notice>}
@@ -103,6 +103,8 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
     {!narrative && !experiment.is_seeded && <Learning nextStep={nextStep} id={experiment.id} token={token} offline={offline} seeded={false} narrative={null} onExpired={onExpired} onWritten={written => setLoad({ kind: 'ready', report: written })} />}
     <NextExperiment nextStep={nextStep} token={token} offline={offline} narrative={narrative} onExpired={onExpired} onAsk={onAsk} onToday={onToday} />
 
+    <View>
+    <HowWeKnow />
     <DetailsRow label="Details" title="Your report in full">
       {narrative && <Learning nextStep={nextStep} id={experiment.id} token={token} offline={offline} seeded={experiment.is_seeded} narrative={narrative} onExpired={onExpired} onWritten={written => setLoad({ kind: 'ready', report: written })} />}
       {experiment.is_seeded && <Copy>This sample has no written report.</Copy>}
@@ -146,6 +148,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
       </View>}
       {primary && <DayChart chart={report.chart} part="days" />}
     </DetailsRow>
+    </View>
   </View>;
 }
 
@@ -285,7 +288,6 @@ const MARK = SPACING.md;
 const useLocal = themedStyles((COLORS, mode) => { const ui = useStyles.forMode(mode); return StyleSheet.create({
   page: { gap: SPACING.xl },
   sample: { gap: SPACING.xs, borderLeftWidth: LAYOUT.focusWidth, borderColor: COLORS.night, paddingLeft: SPACING.md },
-  eyebrow: { color: COLORS.moss },
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   card: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line, backgroundColor: COLORS.paper },
   comparison: { padding: SPACING.lg, gap: SPACING.md, borderRadius: RADII.card, borderTopWidth: SPACING.xs, borderColor: COLORS.night, backgroundColor: COLORS.paper },

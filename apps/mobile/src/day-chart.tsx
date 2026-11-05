@@ -72,7 +72,6 @@ export function DayChart({ chart , part = 'plot' }: { chart: ChartData ; part?: 
     </View>
   </View>;
   return <View style={ui.stack}>
-    <Copy style={ui.muted}>{metric.label}</Copy>
     {points.length === 0 ? <Copy>Nothing was recorded for this measure, so there&apos;s no line to draw.</Copy> : <View accessible accessibilityRole="image" accessibilityLabel={summary} style={local.plotRow}>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={local.axis}>
         <Copy maxFontSizeMultiplier={1.2} style={local.tick}>{fmt(hi)}</Copy>

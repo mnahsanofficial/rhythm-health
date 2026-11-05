@@ -54,6 +54,7 @@ describe('the plan, one step per screen', () => {
     fireEvent.changeText(screen.getByLabelText(/^Your guess for/), '10');
     await press('Show prediction'); await press('Next');
     expect(screen.getByTestId('plan-days')).toBeVisible();
+    expect(screen.getByText("We'll compare your 3 normal days with your 7 test days. Your check-ins decide, not the AI.")).toBeVisible();
     expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeVisible();
   });
 

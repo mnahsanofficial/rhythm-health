@@ -92,6 +92,26 @@ const radio = (page, name) => page.getByRole('radio', { name, exact: true }).cli
 const button = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
 const GROUPS = {
+  async know(browser, mode) {
+    const run = await open(browser, { mode, list: [] });
+    await run.page.getByRole('tab', { name: 'Ask' }).click();
+    await run.page.getByLabel('Your question or goal', { exact: true }).fill(proposeResponse.proposal.question);
+    await button(run.page, 'Design experiment');
+    await button(run.page, 'Next');
+    await run.page.getByLabel(/^Your guess for/).fill('10');
+    await button(run.page, 'Show prediction');
+    await button(run.page, 'Next');
+    await shoot(run.page, 'know', '1-plan-line', mode);
+    await run.context.close();
+    const report = await open(browser, { mode, list: [] });
+    await report.page.getByRole('tab', { name: 'History' }).click();
+    await report.page.getByRole('button', { name: /^Open Lab Report/ }).click();
+    await report.page.getByRole('button', { name: 'How we know', exact: true }).waitFor();
+    await button(report.page, 'How we know');
+    await shoot(report.page, 'know', '2-how-we-know', mode);
+    if (report.errors.length) throw new Error(report.errors.join('\n'));
+    await report.context.close();
+  },
   async screens(browser, mode) {
     const run = await open(browser, { mode, list: [on(4, 'intervention')], recorded: [1, 2, 3] });
     await run.page.getByRole('tab', { name: 'Ask' }).click();

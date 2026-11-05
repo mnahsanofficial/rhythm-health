@@ -297,8 +297,7 @@ describe('reading order', () => {
   test('the plan leads with the change, the days and the range; the reasons wait behind Why?', async () => {
     await openPlan();
     const { proposal, prediction } = proposeResponse;
-    expect(screen.getByText(`${proposal!.baseline_days} normal days, then ${proposal!.intervention_days} test days`)).toBeVisible();
-    expect(screen.getByText('Fixed once you start.')).toBeVisible();
+    expect(screen.getByText(new RegExp(`^We'll compare your ${proposal!.baseline_days} normal days with your ${proposal!.intervention_days} test days`))).toBeVisible();
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Back' })); });
     expect(screen.getByText(/^Confidence:/)).toBeVisible();
     expect(screen.queryByText(prediction!.reasoning)).toBeNull();
