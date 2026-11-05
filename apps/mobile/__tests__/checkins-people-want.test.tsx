@@ -141,9 +141,10 @@ describe('updating a check-in', () => {
     const edit = await screen.findByRole('button', { name: "Edit today's answers" });
     await act(async () => { fireEvent.press(edit); });
     await screen.findByTestId('checkin-step');
-    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
-    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
-    fireEvent.press(screen.getByRole('radio', { name: 'Sleep quality: 7' }));
+    for (const name of ['Yes, I made the change', 'Morning energy: 7', 'Sleep quality: 7']) {
+      fireEvent.press(screen.getByRole('radio', { name }));
+      fireEvent.press(screen.getByRole('button', { name: 'Next' }));
+    }
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Update check-in' })); });
     expect(await screen.findByText('6 days left')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();

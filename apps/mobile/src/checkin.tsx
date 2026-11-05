@@ -92,7 +92,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {!ready ? readError ? <><Alert>{readError}</Alert><Action label="Try again" disabled={offline} onPress={() => { setReadError(undefined); setAttempt(value => value + 1); }} /></>
       : offline ? <Copy>Reconnect to load your previous answers.</Copy> : <Loading message="Loading your answers…" />
-      : <CheckinFlow steps={steps} values={{ ...values, intervention_completed: intervention }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
+      : <CheckinFlow editing={already} steps={steps} values={{ ...values, intervention_completed: intervention }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
         onAnswer={(key, value) => { clearField(key); if (key === 'intervention_completed') setIntervention(value as boolean); else setValues(current => ({ ...current, [key]: value })); }}
         notice={already ? "Replaces today's answers." : undefined} alert={error && <Alert>{error}</Alert>}
         saveLabel={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? 'Update check-in' : 'Save check-in'} onSave={() => void save()} />}

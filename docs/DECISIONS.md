@@ -164,3 +164,5 @@ This is one exception, not a change to the rule: agents still never merge PRs, a
 ## Check-in scenes merge — 5 Nov 2026
 
 Nazmul authorized session `7ef914cd` to merge its own check-in scenes PR with a merge commit once CI, including the Browser suite, is green and its screenshots look right, with his iPhone check on the morning of 6 Nov. One exception, like the one above: agents still never merge PRs.
+
+The same session may merge its check-in advance fix (#110) the same way: authorized by Nazmul after his iPhone test found the steps moving on while editing.

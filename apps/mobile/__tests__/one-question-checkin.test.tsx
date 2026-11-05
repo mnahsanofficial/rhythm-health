@@ -121,6 +121,8 @@ describe('the review', () => {
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Change Sleep quality, 6' })); });
     expect(heading('Sleep quality')).toBeVisible();
     await tap('Sleep quality: 8');
+    expect(heading('Sleep quality')).toBeVisible();
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Next' })); });
     expect(screen.getByRole('button', { name: 'Change Sleep quality, 8' })).toBeVisible();
   });
 

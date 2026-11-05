@@ -82,7 +82,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack, on
   }
   return <View style={[styles.stack, { flexGrow: 1 }]}>
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
-    <CheckinFlow key={today.revision} steps={steps} values={{ ...values, ...Object.fromEntries(Object.entries(changes).map(([id, made]) => [`change:${id}`, made])) }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
+    <CheckinFlow key={today.revision} editing={recorded} steps={steps} values={{ ...values, ...Object.fromEntries(Object.entries(changes).map(([id, made]) => [`change:${id}`, made])) }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
       onAnswer={(key, value) => { if (key.startsWith('change:')) setChanges(current => ({ ...current, [key.slice('change:'.length)]: value as boolean })); else setValues(current => ({ ...current, [key]: value })); }}
       notice={recorded ? "Replaces today's answers." : undefined} noteCaption="Saved with every experiment here."
       alert={<>{error && <Alert>{error}</Alert>}{stale && <Action label="Reload today's check-in" secondary disabled={busy || offline} onPress={() => void reload()} />}</>}

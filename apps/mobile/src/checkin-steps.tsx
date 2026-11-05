@@ -57,22 +57,24 @@ function Top({ step, now, total }: { step?: CheckinStep; now: number; total: num
 
 /**
  * One question fills the phone without scrolling: the words at the top, the scene in the middle, and the answers in
- * the bottom bar, where the thumb is. A tap lets the scene move to the answer and hold, then goes on. Reduce Motion goes on at once.
+ * the bottom bar, where the thumb is. On a first answer, a tap lets the scene move to it and hold, then goes on; Reduce Motion
+ * goes on at once. Nothing else moves on by itself: while editing, or back on an answered step, only Next does.
  */
-function Question({ step, value, error, busy, onAnswer, onNext, onBack }: { step: CheckinStep; value: Answer; error?: string; busy: boolean; onAnswer: (value: string | boolean) => void; onNext: () => void; onBack?: () => void }) {
+function Question({ step, value, editing, error, busy, onAnswer, onNext, onBack }: { step: CheckinStep; value: Answer; editing: boolean; error?: string; busy: boolean; onAnswer: (value: string | boolean) => void; onNext: () => void; onBack?: () => void }) {
   const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const heading = useStepFocus(step.key);
   const reduce = useReducedMotion();
   useFillScreen();
   const isTyped = step.kind === 'metric' && typed(step.metric);
-  // Decided on arrival: a new tap goes on by itself, so Next appearing under it would only move the buttons.
-  const [arrivedAnswered] = useState(value !== undefined && value !== '');
+  // Decided on arrival, so the answer itself can't change it: a first tap goes on by itself, and Next appearing under it would only move the buttons.
+  const [waitsForNext] = useState(editing || isTyped || (value !== undefined && value !== ''));
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
   const tapped = (next: string | boolean) => {
     clearTimeout(timer.current);
     onAnswer(next);
     try { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined); } catch { /* A phone without haptics still moves on. */ }
+    if (waitsForNext) return;
     if (reduce) onNext();
     else timer.current = setTimeout(onNext, CHECKIN_ADVANCE_MS);
   };
@@ -90,7 +92,7 @@ function Question({ step, value, error, busy, onAnswer, onNext, onBack }: { step
           <View style={local.half}><Radio big label="Not today" selected={value === false} disabled={busy} onPress={() => tapped(false)} /></View>
         </View>
         : <MetricInput big metric={step.metric} value={value} disabled={busy} onChange={next => { if (isTyped) onAnswer(next); else tapped(next); }} />}
-      {(isTyped || arrivedAnswered) && <Action wide label="Next" disabled={busy || !valid(step, value)} onPress={() => { clearTimeout(timer.current); onNext(); }} />}
+      {waitsForNext && <Action wide label="Next" disabled={busy || !valid(step, value)} onPress={() => { clearTimeout(timer.current); onNext(); }} />}
       {onBack && <BackLink to="Back" name="Back" disabled={busy} onPress={onBack} />}
     </StickyAction>
   </>;
@@ -127,8 +129,8 @@ function Review({ steps, values, fields, note, onNote, busy, notice, noteCaption
 }
 
 /** Each question on its own screen, then a short review, then Save. Editing an existing check-in is the same flow, prefilled. */
-export function CheckinFlow({ steps, values, onAnswer, fields, note, onNote, busy, offline, notice, noteCaption, alert, top, saveLabel, onSave }: {
-  steps: CheckinStep[]; values: Record<string, Answer>; onAnswer: (key: string, value: string | boolean) => void; fields: Record<string, string>; note: string; onNote: (note: string) => void;
+export function CheckinFlow({ steps, values, editing = false, onAnswer, fields, note, onNote, busy, offline, notice, noteCaption, alert, top, saveLabel, onSave }: {
+  steps: CheckinStep[]; values: Record<string, Answer>; /** Changing a saved check-in: no step moves on until Next. */ editing?: boolean; onAnswer: (key: string, value: string | boolean) => void; fields: Record<string, string>; note: string; onNote: (note: string) => void;
   busy: boolean; offline: boolean; notice?: string; noteCaption?: string; alert?: ReactNode; top?: ReactNode; saveLabel: string; onSave: () => void;
 }) { const styles = useStyles(); const local = useLocal();
   const [index, setIndex] = useState(0);
@@ -144,7 +146,7 @@ export function CheckinFlow({ steps, values, onAnswer, fields, note, onNote, bus
     <Top step={step} now={index + 1} total={total} />
     <Slide key={step?.key ?? 'review'} direction={direction}>
       {step
-        ? <Question step={step} value={values[step.key]} error={fields[step.key]} busy={busy} onNext={forward}
+        ? <Question step={step} value={values[step.key]} editing={editing} error={fields[step.key]} busy={busy} onNext={forward}
           onAnswer={value => onAnswer(step.key, value)} onBack={index > 0 ? back : undefined} />
         : <Review steps={steps} values={values} fields={fields} note={note} onNote={onNote} busy={busy} notice={notice} noteCaption={noteCaption} alert={alert} offline={offline}
           saveLabel={saveLabel} onSave={onSave} onEdit={next => { setReturning(true); go(next); }} />}
