@@ -29,7 +29,7 @@ export function ReminderNotice({ feedbackOnly = false }: { feedbackOnly?: boolea
   return <>
     {state.error && <><Alert>{state.error}</Alert><Action label="Try again" secondary disabled={state.busy} onPress={() => void service.retry()} /></>}
     {!feedbackOnly && !onlySamples(state.data) && state.ready && state.choice === null && state.data?.some(item => !item.experiment.is_seeded && item.timeline.recorded_days > 0) && Platform.OS !== 'web' && <View style={styles.decision}>
-      <Copy>A reminder when the next day opens can help you keep a small daily record. It shows only the day on your lock screen.</Copy>
+      <Copy>A reminder when the next day opens?</Copy>
       <Action label="Enable daily reminders" disabled={state.busy} onPress={() => void service.choose(true)} />
       <Action label="Not now" secondary disabled={state.busy} onPress={() => void service.choose(false)} />
     </View>}

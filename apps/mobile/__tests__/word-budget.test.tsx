@@ -10,10 +10,10 @@ import { visibleLines, wordsOn } from './support/word-budget';
  * If this fails, cut words or move them behind a tap: raising a number is a design decision, not a fix.
  */
 const BUDGET = {
-  'today, recorded': 31,
-  'today, due': 40,
-  'today, two running': 54,
-  'experiment screen': 137,
+  'today, recorded': 23,
+  'today, due': 26,
+  'today, two running': 42,
+  'experiment screen': 35,
   'check-in, the change': 15,
   'check-in, a question': 12,
   'check-in, review': 20,

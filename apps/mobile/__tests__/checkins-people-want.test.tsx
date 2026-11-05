@@ -155,16 +155,16 @@ describe('the detailed Today card', () => {
   test('leads with the day and one action, and says when the day closes', async () => {
     render(<MobileApp />);
     fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-    expect(await screen.findByRole('header', { name: 'Day 4 of 10' })).toBeVisible();
+    expect(await screen.findByText('Day 4 of 10 · Test')).toBeVisible();
     expect(screen.getByText('Check in now')).toBeVisible();
-    expect(screen.getByText(/^Closes .+\. About 30 seconds\.$/)).toBeVisible();
+    expect(screen.getByText(/^Closes .+/)).toBeVisible();
     expect(screen.queryByText(/tonight/i)).toBeNull();
   });
 
   test('shows missed days truthfully, without shame', async () => {
     render(<MobileApp />);
     fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-    expect(await screen.findByText('2 logged, 1 missed')).toBeVisible();
+    expect(await screen.findByLabelText('Day 2, baseline, missed')).toBeVisible();
     expect(screen.queryByText(/streak|don't break|oops|sorry|behind/i)).toBeNull();
   });
 
@@ -172,14 +172,14 @@ describe('the detailed Today card', () => {
     routes[`GET /api/experiments/${running.id}/progress`] = { body: timelineFixture(running as never, { recorded: [1, 2, 3], nextDayAt: '2026-11-05T10:00:00Z' }) };
     render(<MobileApp />);
     fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-    expect(await screen.findByText('3 logged')).toBeVisible();
+    expect(screen.queryByLabelText(/missed$/)).toBeNull();
   });
 
   test('once recorded, it says so and when the next day opens', async () => {
     routes[`GET /api/experiments/${running.id}/progress`] = { body: timelineFixture(running as never, { recorded: [1, 3, 4], missed: [2], nextDayAt: '2026-11-05T10:00:00Z' }) };
     render(<MobileApp />);
     fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-    expect(await screen.findByRole('header', { name: 'Day 4 recorded' })).toBeVisible();
+    expect((await screen.findAllByLabelText('Day 4 recorded'))[0]).toBeVisible();
     expect(screen.getByText(/^Day 5 opens /)).toBeVisible();
     expect(screen.queryByText('Check in now')).toBeNull();
   });

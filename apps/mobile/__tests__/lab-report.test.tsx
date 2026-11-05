@@ -166,7 +166,7 @@ describe('finish', () => {
     const baselineDay = withProgress('in_progress', { day_number: 2, phase: 'baseline', phase_day: 2, phase_days: 3, days_remaining: 8 });
     setActive(baselineDay, timelineFixture(baselineDay, { recorded: [1] }));
     await openFinish();
-    await screen.findByText('Day 2 of 10 · Baseline day 2 of 3');
+    await screen.findByText('Day 2 of 10 · Normal');
     expect(screen.queryByRole('button', { name: 'See results' })).toBeNull();
   });
 

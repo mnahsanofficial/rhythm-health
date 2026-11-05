@@ -249,7 +249,7 @@ describe('your lab with several experiments', () => {
     routes['GET /api/experiments/first-id/progress'] = { body: timelineFixture(first, { recorded: [2] }) };
     routes['GET /api/experiments/second-id/progress'] = { body: timelineFixture(second, { recorded: [5] }) };
     render(<MobileApp />);
-    expect(await screen.findByText('Day 2 recorded')).toBeVisible();
+    expect(await screen.findByLabelText('Day 2 recorded')).toBeVisible();
     expect(screen.getByRole('button', { name: "Edit today's answers" })).toBeVisible();
   });
 

@@ -17,8 +17,7 @@ const shown = (value: MetricValue) => typeof value === 'boolean' ? value ? 'Yes'
 export function Observations({ data: { experiment, timeline }, title, token, offline, onExpired }: {
   data: DayData; title: string; token: string; offline: boolean; onExpired: () => void;
 }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
-  const latest = [...timeline.days].reverse().find(day => day.state === 'recorded')?.day_number;
-  const [selected, setSelected] = useState(latest);
+  const [selected, setSelected] = useState<number>();
   const [answers, setAnswers] = useState<Checkin[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -41,32 +40,26 @@ export function Observations({ data: { experiment, timeline }, title, token, off
   }, [load, attempt, timeline]);
 
   const { progress } = timeline;
-  const day = timeline.days.find(value => value.day_number === selected && value.state === 'recorded')?.day_number ?? latest;
+  const day = timeline.days.find(value => value.day_number === selected && value.state === 'recorded')?.day_number;
   const recorded = answers?.find(value => value.day_number === day);
-  const testDays = answers?.filter(value => value.phase === 'intervention') ?? [];
-  const followed = testDays.filter(value => value.intervention_completed).length;
   return <View style={styles.divider}>
     <Copy accessibilityRole="header" style={styles.sectionTitle}>{title}</Copy>
     <CountUp value={timeline.recorded_days} suffix={` of ${progress.total_days} days recorded`} style={[styles.number, { color: COLORS.ink }]} />
-    {progress.state === 'in_progress' && <Copy style={local.small}>{`${progress.phase === 'baseline' ? 'Baseline' : 'Test'} day ${progress.phase_day} of ${progress.phase_days} · ${progress.days_remaining} days remaining`}</Copy>}
-    {testDays.length > 0 && <Copy style={local.small}>{`Change made on ${followed} of ${testDays.length} test days`}</Copy>}
-    {experiment.is_seeded && <Copy style={local.small}>Sample check-ins for demonstration. These answers are excluded from your real experiment history.</Copy>}
+    {experiment.is_seeded && <Copy style={local.small}>Sample check-ins. Never counted.</Copy>}
     <View style={local.grid}>
       {timeline.days.map(item => <DayCell key={`${experiment.id}:${item.day_number}`} item={item} isToday={item.state === 'current' || (progress.state === 'in_progress' && item.day_number === progress.day_number)} open={day === item.day_number} onPress={() => setSelected(item.day_number)} />)}
     </View>
     <View style={local.legend}>
       <View style={local.legendItem}><View style={[local.key, { backgroundColor: COLORS.night }]} /><Copy style={local.small}>Baseline</Copy></View>
       <View style={local.legendItem}><View style={[local.key, { backgroundColor: COLORS.moss }]} /><Copy style={local.small}>Test</Copy></View>
-      <Copy style={local.small}>✓ logged · – missed · tap a logged day to see it</Copy>
     </View>
-    <Copy style={local.small}>Missed days can&apos;t be filled in.</Copy>
     {timeline.days.some(item => item.state === 'not_observed') && <Copy style={local.small}>Not observed: the experiment finished before these days were observed. They are not counted as missed.</Copy>}
     {!hasRecorded ? <Copy style={styles.muted}>No days recorded yet. Your next check-in will start the record.</Copy> : <>
       {offline && answers === null ? <Copy>No connection. Reconnect to load recorded answers.</Copy>
         : answers === null && !error ? <Loading message="Loading recorded answers…" /> : null}
       {error && <><Alert>{error}</Alert><Action label="Try again" secondary disabled={offline || busy} onPress={() => setAttempt(value => value + 1)} /></>}
       {busy && answers !== null && <Status style={local.small}>Refreshing recorded answers…</Status>}
-      {answers !== null && (recorded ? <View accessibilityLabel={`Day ${recorded.day_number} answers`} accessibilityLiveRegion="polite" style={local.panel}>
+      {answers !== null && day !== undefined && (recorded ? <View accessibilityLabel={`Day ${recorded.day_number} answers`} accessibilityLiveRegion="polite" style={local.panel}>
         <Copy style={local.panelTitle}>{`Day ${recorded.day_number} · ${recorded.phase === 'intervention' ? 'Test' : 'Baseline'}`}</Copy>
         {recorded.phase === 'intervention' && <View style={local.answer}><Copy style={styles.muted}>Made the change</Copy><Copy>{recorded.intervention_completed ? 'Yes' : 'No'}</Copy></View>}
         {experiment.metrics.map(metric => {
@@ -90,14 +83,14 @@ function DayCell({ item, isToday, open, onPress }: { item: ExperimentDay; isToda
   const ink = recorded ? COLORS['on-accent'] : missed ? COLORS.muted : COLORS[baseline ? 'night' : 'moss'];
   const circle = <View style={[local.ring, open && recorded ? { borderColor: COLORS.text } : isToday && { borderColor: COLORS.ink }]}>
     <View style={[local.circle, missed ? local.missed : { backgroundColor: recorded ? COLORS[baseline ? 'night' : 'moss'] : COLORS[baseline ? 'night-tint' : 'moss-tint'] }]}>
-      <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.mark, { color: ink }]}>{recorded ? '✓' : missed ? '–' : item.day_number}</Copy>
+      <Copy accessible={false} maxFontSizeMultiplier={1.2} style={[local.mark, { color: ink }]}>{recorded ? '✓' : missed ? '–' : ''}</Copy>
     </View>
   </View>;
   return <View style={local.cell}>
     {recorded
       ? <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: open }} onPress={onPress} style={local.target}>{circle}</Pressable>
       : <View accessible accessibilityLabel={label} style={local.target}>{circle}</View>}
-    <Copy accessibilityElementsHidden importantForAccessibility="no-hide-descendants" maxFontSizeMultiplier={1.2} style={local.dayName}>Day {item.day_number}</Copy>
+    <Copy accessibilityElementsHidden importantForAccessibility="no-hide-descendants" maxFontSizeMultiplier={1.2} style={local.dayName}>{item.day_number}</Copy>
     {isToday && <Copy maxFontSizeMultiplier={1.2} style={local.today}>Today</Copy>}
   </View>;
 }

@@ -106,7 +106,7 @@ describe('check-in', () => {
     await press("Save check-in");
     expect(await screen.findByText('6 days left')).toBeVisible();
     await press('Continue');
-    expect(await screen.findByText('Day 4 recorded')).toBeVisible();
+    expect(await screen.findByLabelText('Day 4 recorded')).toBeVisible();
     expect(screen.getByLabelText('4 of 7 days recorded in this experiment’s last seven days')).toBeVisible();
   });
 
@@ -226,8 +226,8 @@ describe('the last baseline day', () => {
   test('Today keeps saying it once the moment has gone', async () => {
     await saveDay(lastBaseline, 3, [1, 2]);
     await press('Continue');
-    expect(await screen.findByText('Day 3 recorded')).toBeVisible();
-    expect(screen.getByText('Baseline done · your test starts tomorrow')).toBeVisible();
+    expect(await screen.findByLabelText('Day 3 recorded')).toBeVisible();
+    expect(screen.getByText('Test starts tomorrow')).toBeVisible();
     await press('See your experiment');
     expect(screen.getByText(`Baseline done. ${MOMENT}`)).toBeVisible();
   });

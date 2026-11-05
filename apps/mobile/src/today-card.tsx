@@ -5,12 +5,13 @@ import type { LabReport } from '@rhythm-health/contract';
 import { allDaysDone, FinishNow } from './finish';
 import type { DayData } from './today';
 import { Action, Copy, useStyles } from './ui';
-import { themedStyles } from './theme-core';
+import { Icon } from './icons';
+import { themedStyles, useColors } from './theme-core';
 
 /** The one thing to do now: check in, wait for tomorrow, finish, or read the results. */
 export function TodayCard({ data: { experiment, timeline }, disabled, token, offline, onExpired, onCompleted, onCheckin, onOpenReport }: {
   data: DayData; disabled: boolean; token: string; offline: boolean; onExpired: () => void; onCompleted: (report: LabReport) => void; onCheckin: () => void; onOpenReport: () => void;
-}) { const local = useLocal(); const styles = useStyles();
+}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const { progress } = timeline;
   if (experiment.is_seeded && progress.state !== 'in_progress') return <View style={local.plain}><Copy>This sample has ended. Remove it to free up a slot for a real experiment.</Copy></View>;
   if (progress.state === 'completed') return <View style={styles.decision}>
@@ -32,23 +33,18 @@ export function TodayCard({ data: { experiment, timeline }, disabled, token, off
   const day = progress.day_number;
   const done = timeline.days.some(entry => entry.day_number === day && entry.state === 'recorded');
   const opens = timeline.next_day_at ? new Date(timeline.next_day_at).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' }) : null;
-  const missed = timeline.days.filter(entry => entry.state === 'missed').length;
-  const counts = `${timeline.recorded_days} logged${missed ? `, ${missed} missed` : ''}`;
   if (done && !experiment.is_seeded && allDaysDone(timeline)) return <View style={styles.decision}>
     {allDone}
     <Action label="Edit answers" secondary disabled={disabled} onPress={onCheckin} />
   </View>;
   if (done) return <View style={styles.decision}>
-    <Copy accessibilityRole="header" style={styles.sectionTitle}>{`Day ${day} recorded`}</Copy>
-    <Copy>{counts}</Copy>
+    <View testID="recorded-check" accessible accessibilityRole="image" accessibilityLabel={`Day ${day} recorded`} style={local.check}><Icon name="check" color={COLORS.moss} filled /></View>
     {isLastBaselineDay(timeline) && <Copy>{`Baseline done. ${testStartsLine(experiment.intervention.action, timeline.next_day_at)}`}</Copy>}
-    <Copy>{opens && progress.days_remaining ? `Day ${day + 1} opens ${opens}.` : "That was the last day. Finish when you're ready."}</Copy>
+    <Copy style={local.small}>{opens && progress.days_remaining ? `Day ${day + 1} opens ${opens}` : "That was the last day. Finish when you're ready."}</Copy>
     <Action label="Edit answers" secondary disabled={disabled} onPress={onCheckin} />
   </View>;
   return <View style={styles.decision}>
-    <Copy accessibilityRole="header" style={styles.sectionTitle}>{`Day ${day} of ${progress.total_days}`}</Copy>
-    <Copy>{counts}</Copy>
-    <Copy style={local.small}>{opens ? `Closes ${opens}. About 30 seconds.` : 'About 30 seconds.'}</Copy>
+    {opens && <Copy style={local.small}>{`Closes ${opens}`}</Copy>}
     <Action wide label="Check in now" name={`Check in now, day ${day}`} disabled={disabled} onPress={onCheckin} />
   </View>;
 }
@@ -56,4 +52,5 @@ export function TodayCard({ data: { experiment, timeline }, disabled, token, off
 const useLocal = themedStyles(COLORS => StyleSheet.create({
   plain: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
   small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
+  check: { alignSelf: 'flex-start' },
 }));

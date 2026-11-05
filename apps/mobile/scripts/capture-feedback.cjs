@@ -92,6 +92,26 @@ const radio = (page, name) => page.getByRole('radio', { name, exact: true }).cli
 const button = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
 const GROUPS = {
+  async today(browser, mode) {
+    let run = await open(browser, { mode, list: [on(4, 'intervention')] });
+    await shoot(run.page, 'today', '1-due', mode);
+    await button(run.page, "Today's change");
+    await shoot(run.page, 'today', '2-change-sheet', mode);
+    await button(run.page, 'Done');
+    await button(run.page, 'See your experiment');
+    await run.page.getByRole('button', { name: 'Prediction', exact: true }).waitFor();
+    await shoot(run.page, 'today', '3-experiment', mode);
+    await button(run.page, 'Prediction');
+    await shoot(run.page, 'today', '4-prediction-sheet', mode);
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+    run = await open(browser, { mode, list: [on(1, 'baseline')], recorded: [1] });
+    await shoot(run.page, 'today', '5-recorded', mode);
+    await run.context.close();
+    run = await open(browser, { mode, list: [on(4, 'intervention'), second] });
+    await shoot(run.page, 'today', '6-two-running', mode);
+    await run.context.close();
+  },
   async checkin(browser, mode) {
     let run = await open(browser, { mode, list: [on(4, 'intervention')] });
     await button(run.page, 'Check in now, day 4');
