@@ -214,6 +214,16 @@ Rules that follow:
 - No eyebrow above the heading unless you need it, such as "Example".
 - Text never clips. `Copy` doesn't shrink, and rows wrap.
 
+### Text budget
+
+From the 5 Nov feedback ([07-feedback-5-nov](07-feedback-5-nov.md), [ADR 14](../adr/0014-text-budget-and-its-test.md)). Mobile only for now.
+
+- **One heading and one short line per section.** Everything else goes behind a tap: `DetailsRow` and its sheet, or the next screen. No paragraphs on main screens.
+- **Each main-flow screen has a word budget,** in `apps/mobile/__tests__/word-budget.test.tsx`. Raising one is a design decision, not a fix.
+- **Grey is for captions.** `muted` text is caption-sized and at most 8 words. Main content uses `text`. The exceptions are placeholders and a disabled action's label. A test checks caption contrast against AA in both modes.
+- **Icons over sentences.** A check for recorded, a dash for missed and a ring for progress, each with a spoken label. Never colour alone.
+- **One decision per screen.**
+
 ### Form rows
 
 `FormRow`: **icon, label, value, chevron**. It's one button, used on review and settings. This is how a list of six things stops being six buttons.

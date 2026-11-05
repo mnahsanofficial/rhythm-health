@@ -88,3 +88,19 @@ Every piece of feedback from the 8x calls: what we did, where it is, and what's 
 **Not covered:** a real iPhone, VoiceOver, real large text, reminders, and how smooth the animation is on a device.
 
 Everything else is listed in [REMAINING_WORK](REMAINING_WORK.md#after-the-demo).
+
+## 5 Nov demo call (Maham)
+
+Her words and the word counts are in [07-feedback-5-nov](design/07-feedback-5-nov.md). Mobile is changed; web deliberately isn't. **Not checked yet:** Nazmul's iPhone pass on the morning of 6 Nov.
+
+| Feedback | Status | PRs | Mobile | Web | What's left |
+|---|---|---|---|---|---|
+| "Cognitive overload"; too much text in too many places | **Done** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Word budgets, tested | Missing | Outside test with a first-time user |
+| Grey text isn't readable | **Done** | [#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Grey for short captions only, tested | Missing | Check outdoors on a phone |
+| Too many questions on the check-in screen | **Done** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102) | One per screen, with a review | Missing | Whether it stays quick by day 7 |
+| "Day 1 recorded" isn't important | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103) | A check on the day | Missing | |
+| The small change needn't be on screen | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103) | One row and a sheet | Missing | |
+| Too much text on the experiment screen | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103), [#104](https://github.com/mnahsanofficial/rhythm-health/pull/104) | Short screen; 4 plan steps | Missing | |
+| "People are used to skimming" | **Partial** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Budgets and sheets | Missing | Only a first-time user can confirm it |
+| "How are you ensuring the experiments are going to help?" | **Partial** | [#106](https://github.com/mnahsanofficial/rhythm-health/pull/106) | Plan line and How we know | Missing | We explain how it's measured. We can't show or promise that a change helps |
+

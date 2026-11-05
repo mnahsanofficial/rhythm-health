@@ -6,30 +6,32 @@ The Lab Report then says honestly whether it was a signal or noise, so the lesso
 
 Built for **8x Playmakers C2**, track "Health habits", theme "Learning that sticks", by **Team F**.
 
-**Reviewing this?** Start with [Architecture](docs/ARCHITECTURE.md), the [decision records](docs/adr/README.md) and the [8x feedback tracker](docs/FEEDBACK_TRACKER.md). All the docs are listed in the [docs index](docs/README.md).
+**Reviewing this?** Start with the one-page [final status](docs/FINAL_STATUS.md), then [Architecture](docs/ARCHITECTURE.md), the [decision records](docs/adr/README.md) and the [8x feedback tracker](docs/FEEDBACK_TRACKER.md). All the docs are listed in the [docs index](docs/README.md).
 
 ## Screenshots
 
 These are from the mobile app, with labelled sample data.
 
-| | Landing | Today | Day 3 | Lab Report | Day 10 |
+| | Landing | Today | Check-in | The reveal | Lab Report |
 |---|---|---|---|---|---|
-| **Light** | <img src="docs/screenshots/landing-carousel/light/slide-1.png" width="150" alt="Landing, light"> | <img src="docs/screenshots/mobile-baseline-and-samples/raj-day3-01-today-light.jpg" width="150" alt="Today, light"> | <img src="docs/screenshots/mobile-day3-moment/raj-day3-03-celebration-light.jpg" width="150" alt="Day 3 moment, light"> | <img src="docs/screenshots/mobile-report-leads/light.jpg" width="150" alt="Lab Report, light"> | <img src="docs/screenshots/mobile-finish-from-today/mei-08-day10-choice-light.jpg" width="150" alt="Day 10 choice, light"> |
-| **Dark** | <img src="docs/screenshots/landing-carousel/dark/slide-1.png" width="150" alt="Landing, dark"> | <img src="docs/screenshots/mobile-baseline-and-samples/raj-day3-01-today-dark.jpg" width="150" alt="Today, dark"> | <img src="docs/screenshots/mobile-day3-moment/raj-day3-03-celebration-dark.jpg" width="150" alt="Day 3 moment, dark"> | <img src="docs/screenshots/mobile-report-leads/dark.jpg" width="150" alt="Lab Report, dark"> | <img src="docs/screenshots/mobile-finish-from-today/mei-08-day10-choice-dark.jpg" width="150" alt="Day 10 choice, dark"> |
+| **Light** | <img src="docs/screenshots/landing-carousel/light/slide-1.png" width="150" alt="Landing, light"> | <img src="docs/screenshots/mobile-feedback-5-nov/today/1-due-light.png" width="150" alt="Today, light"> | <img src="docs/screenshots/mobile-feedback-5-nov/checkin/2-question-light.png" width="150" alt="Check-in, light"> | <img src="docs/screenshots/mobile-feedback-5-nov/plan/3-reveal-light.png" width="150" alt="The reveal, light"> | <img src="docs/screenshots/mobile-feedback-5-nov/screens/4-report-light.png" width="150" alt="Lab Report, light"> |
+| **Dark** | <img src="docs/screenshots/landing-carousel/dark/slide-1.png" width="150" alt="Landing, dark"> | <img src="docs/screenshots/mobile-feedback-5-nov/today/1-due-dark.png" width="150" alt="Today, dark"> | <img src="docs/screenshots/mobile-feedback-5-nov/checkin/2-question-dark.png" width="150" alt="Check-in, dark"> | <img src="docs/screenshots/mobile-feedback-5-nov/plan/3-reveal-dark.png" width="150" alt="The reveal, dark"> | <img src="docs/screenshots/mobile-feedback-5-nov/screens/4-report-dark.png" width="150" alt="Lab Report, dark"> |
 
 ## Features
 
 **Mobile (the product):**
 - Sign up and seven-question onboarding, with a live scene on each step
 - Ask any habit question in your own words; safety rules and AI check it, and a plan comes back
+- A plan in four short steps: the change, your guess, the reveal, then your 10 days
 - Lock in your own guess before the AI forecast is revealed
 - Run up to 3 experiments at once, with one combined check-in, and see overlap in the report
-- A 30-second daily check-in, using the experiment's own questions
+- A short daily check-in, one question per screen, using the experiment's own questions
 - Local reminders that name the day, never the habit
 - "Your test starts tomorrow" on day 3, and your own normal shown on day 4
-- A Lab Report that opens with one plain sentence, then prediction, reality and your guess, with a day-by-day chart
+- A Lab Report that opens with one plain sentence, the chart and prediction against reality, with "How we know" and the details one tap away
 - A Day 10 choice: keep the habit, try a variation or test something new
 - History, a comparison on Progress, and how close your guesses are getting
+- Word budgets on every main screen, enforced by a test ([why](docs/design/07-feedback-5-nov.md))
 - Light and dark themes, motion that respects Reduce Motion, and clearly labelled samples
 
 **Web:** the same account and core loop. Features were frozen on 2 Nov when mobile became the product ([differences](docs/ARCHITECTURE.md#8-deliberate-web-and-mobile-differences)).
