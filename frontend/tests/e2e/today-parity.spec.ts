@@ -14,6 +14,12 @@ for (const width of [390, 1024, 1440]) {
       const counts = await installApiMocks(page);
       await answerOnboardingWithMouse(page);
       await createAccountAndSaveProfile(page, counts);
+      await page.goto("/");
+      await expect(page.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
+      if (process.env.CAPTURE_WEB_TODAY) {
+        await page.addStyleTag({ content: "nextjs-portal { display:none !important }" });
+        await page.screenshot({ path: `../docs/screenshots/web-parity/today/${width}-${theme}-empty.png`, fullPage: true });
+      }
       const active: Experiment = { ...experiment, status: "active", progress: {
         ...experiment.progress, state: "in_progress", day_number: 4, phase: "intervention", phase_day: 1, phase_days: 7, days_remaining: 6,
       } };
@@ -43,9 +49,14 @@ for (const width of [390, 1024, 1440]) {
         await page.screenshot({ path: `../docs/screenshots/web-parity/today/${width}-${theme}-${name}.png`, fullPage: true });
       };
       await capture("due");
-      await hero.getByText("Details", { exact: true }).focus();
+      await expect(hero.getByText(experiment.question, { exact: true })).toBeHidden();
+      await hero.locator("summary").focus();
       await page.keyboard.press("Enter");
       await expect(hero.getByText(experiment.question, { exact: true })).toBeVisible();
+      const fullQuestion = (await hero.getByText(experiment.question, { exact: true }).boundingBox())!;
+      const checkin = (await hero.getByRole("link", { name: "Check in for day 4" }).boundingBox())!;
+      expect(fullQuestion.y + fullQuestion.height).toBeLessThan(checkin.y);
+      await capture("details");
       await page.keyboard.press("Enter");
       recorded = true;
       await page.reload();
@@ -54,7 +65,7 @@ for (const width of [390, 1024, 1440]) {
       await capture("recorded");
       unavailable = true;
       await page.reload();
-      await expect(page.getByRole("alert")).toContainText("Temporarily unavailable");
+      await expect(page.getByRole("main").getByRole("alert")).toContainText("Temporarily unavailable");
       await capture("error");
       unavailable = false;
       await page.getByRole("button", { name: "Try again" }).click();
@@ -63,4 +74,44 @@ for (const width of [390, 1024, 1440]) {
       expect(errors).toEqual([]);
     });
   }
+}
+
+for (const width of [390, 1440]) for (const reducedMotion of ["reduce", "no-preference"] as const) {
+  test(`Today ring reveal at ${width}px with motion ${reducedMotion}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.emulateMedia({ reducedMotion });
+    const counts = await installApiMocks(page);
+    await answerOnboardingWithMouse(page);
+    await createAccountAndSaveProfile(page, counts);
+    const active: Experiment = { ...experiment, status: "active", progress: {
+      ...experiment.progress, state: "in_progress", day_number: 4, phase: "intervention", phase_day: 1, phase_days: 7, days_remaining: 6,
+    } };
+    await page.route(`${API}/api/experiments?status=active`, route => route.fulfill({ json: [active] }));
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    await page.route(`${API}/api/experiments/${experiment.id}/progress`, async route => {
+      await gate;
+      return route.fulfill({ json: timelineFixture(active, { recorded: [1, 2, 3] }) });
+    });
+    const capture = async (phase: string) => {
+      if (!process.env.CAPTURE_WEB_TODAY || reducedMotion === "reduce") return;
+      await page.addStyleTag({ content: "nextjs-portal { display:none !important }" });
+      await page.screenshot({ path: `../docs/screenshots/web-parity/today/motion-${width}-${phase}.png`, fullPage: true });
+    };
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Loading your lab" })).toBeVisible();
+    await capture("before");
+    release();
+    await page.getByRole("heading", { name: "Evening walk" }).waitFor();
+    await capture("during");
+    const ring = page.getByRole("img", { name: "Evening walk: 3 of 7 days recorded in the last seven experiment days" });
+    await expect(ring).toBeVisible();
+    await expect(ring.locator("circle").nth(1)).toHaveCSS("opacity", "1");
+    await capture("after");
+    if (reducedMotion === "reduce") {
+      expect(await page.getByRole("main").evaluate(el => el.getAnimations({ subtree: true }).filter(animation => animation.playState === "running").length)).toBe(0);
+    }
+    await expect(page.getByRole("link", { name: "Check in for day 4" })).toBeEnabled();
+    expect(counts.proposals).toBe(0);
+  });
 }

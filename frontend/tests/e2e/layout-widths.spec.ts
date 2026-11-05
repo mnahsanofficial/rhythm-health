@@ -30,6 +30,9 @@ async function measure(page: Page, wide: boolean): Promise<Problems> {
   return page.evaluate(({ wide, FRAME_MAX, MAX_LINE }) => {
     const vw = document.documentElement.clientWidth;
     const visible = (el: Element) => {
+      // Native details can retain descendant rectangles while their content is not painted.
+      const closed = el.closest("details:not([open])");
+      if (closed && !closed.querySelector(":scope > summary")?.contains(el)) return false;
       const r = el.getBoundingClientRect();
       const s = getComputedStyle(el);
       return r.width > 1 && r.height > 1 && s.visibility !== "hidden" && s.display !== "none" && el.closest("[aria-hidden=true]") === null;
@@ -173,7 +176,7 @@ test("signed-in pages fill the screen and stay readable at every width", async (
 
   for (const screen of SCREENS) {
     await page.setViewportSize({ width: screen.width, height: screen.height });
-    await check(page, "/", experiment.question, true, screen.label);
+    await check(page, "/", "Evening walk", true, screen.label);
     await check(page, "/experiments/new", "Ask a question.", true, screen.label);
     await check(page, `/experiments/${experiment.id}`, experiment.question, true, screen.label);
     await check(page, `/experiments/${experiment.id}/check-in`, /check-in/i, false, screen.label);

@@ -40,7 +40,9 @@ for (const width of [390, 768, 1440]) for (const reducedMotion of ["reduce", "no
       await page.screenshot({ path: `../docs/screenshots/baseline-context/web-${width}-${state}.png`, fullPage: true });
     };
     for (const path of ["/", `/experiments/${experiment.id}`]) {
-      await page.goto(path); const context = page.getByRole("region", { name: "Your normal, before the change." });
+      await page.goto(path);
+      if (path === "/") await page.getByText("Your normal days", { exact: true }).click();
+      const context = page.getByRole("region", { name: "Your normal, before the change." });
       await expect(context).toBeVisible();
       for (const metric of baseline.metrics) await expect(context.getByText(metric.description, { exact: true })).toBeVisible();
       await expect(page.getByRole("link", { name: "Check in for day 4", exact: true })).toBeVisible();
@@ -48,11 +50,11 @@ for (const width of [390, 768, 1440]) for (const reducedMotion of ["reduce", "no
       await capture(path === "/" ? "home" : "detail");
     }
     logged = []; timeline = { ...timelineFixture(active, { missed: [1, 2, 3] }), baseline_summary: { ...baseline, days_recorded: 0, metrics: [] } };
-    await page.goto("/"); await expect(page.getByText("No normal-day answers recorded.")).toBeVisible(); await capture("empty");
+    await page.goto("/"); await page.getByText("Your normal days", { exact: true }).click(); await expect(page.getByText("No normal-day answers recorded.")).toBeVisible(); await capture("empty");
     logged = normalCheckins; timeline = normalTimeline; fail = true;
     await page.reload(); await expect(page.getByRole("main").getByRole("alert")).toContainText("Progress unavailable");
     await expect(page.getByText(baseline.metrics[0].description)).toHaveCount(0); await capture("error");
-    await page.getByRole("button", { name: "Try again" }).click(); await expect(page.getByText(baseline.metrics[0].description)).toBeVisible();
+    await page.getByRole("button", { name: "Try again" }).click(); await page.getByText("Your normal days", { exact: true }).click(); await expect(page.getByText(baseline.metrics[0].description)).toBeVisible();
     logged = normalCheckins.slice(0, 1); timeline = timelineFixture({ ...active, progress: { ...timeline.progress, day_number: 3, phase: "baseline", phase_day: 3, phase_days: 3 } }, { recorded: [1], missed: [2] });
     await page.reload(); await expect(page.getByRole("link", { name: "Check in for day 3", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Your normal, before the change." })).toHaveCount(0); await capture("baseline");

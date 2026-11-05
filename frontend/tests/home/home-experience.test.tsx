@@ -94,7 +94,7 @@ describe("home session gate", () => {
     render(home());
 
     expect(screen.queryByRole("heading", { name: "Public landing with sample rhythm" })).not.toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
     expect(screen.getByText("Day 4 of 10")).toBeVisible();
     expect(screen.getByRole("link", { name: "Check in for day 4" })).toHaveAttribute(
       "href", `/experiments/${experiment.id}/check-in`,
@@ -106,7 +106,7 @@ describe("home session gate", () => {
     signedIn();
     render(home());
 
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Experiment history" })).not.toBeInTheDocument();
     expect(screen.queryByText("Your lab", { exact: true })).not.toBeInTheDocument();
@@ -136,7 +136,7 @@ describe("home session gate", () => {
     render(home());
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/sign-in?next=/"));
-    expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Evening walk" })).not.toBeInTheDocument();
   });
 
   it("keeps sample content hidden while signed-in data loads", async () => {
@@ -158,7 +158,7 @@ describe("home session gate", () => {
     } finally {
       release();
     }
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
   });
 
   it("shows a load error and retries without falling back to the public landing", async () => {
@@ -176,20 +176,20 @@ describe("home session gate", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Experiments unavailable");
     expect(screen.queryByRole("heading", { name: "Public landing with sample rhythm" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
     expect(calls).toBe(2);
   });
 
   it("discards the previous user's experiment immediately when accounts change", async () => {
     signedIn();
     const { rerender } = render(home());
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
     server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([])));
 
     signedIn("user-2");
     rerender(home());
 
-    expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Evening walk" })).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Loading your lab");
     expect(await screen.findByRole("textbox", { name: "Your question or goal" })).toBeVisible();
   });
@@ -197,12 +197,12 @@ describe("home session gate", () => {
   it("removes the private dashboard immediately on sign-out", async () => {
     signedIn();
     const { rerender } = render(home());
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
 
     sessionState.session = null;
     rerender(home());
 
-    expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Evening walk" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Public landing with sample rhythm" })).toBeVisible();
   });
 });
@@ -281,26 +281,27 @@ describe("ask from Your lab", () => {
     const propose = vi.fn(() => HttpResponse.json(proposeResponse));
     server.use(http.post(`${api}/api/experiments/propose`, propose));
     render(home());
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
     const toggle = screen.getByRole("button", { name: "Test another habit" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    const summary = screen.getByRole("heading", { name: experiment.question });
+    const summary = screen.getByRole("heading", { name: "Evening walk" });
     expect(toggle.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await user.click(toggle);
     const field = screen.getByRole("textbox", { name: "Your question or goal" });
     expect(field).toHaveFocus();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Check in for day 4" })).toBeVisible();
-    expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Evening walk" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "See your experiment" })).not.toBeInTheDocument();
     expect(screen.queryByText("Day 4 of 10")).not.toBeVisible();
     expect(screen.getByRole("heading", { name: "Ask a question.", level: 1 })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Your observations, day by day." })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Your rhythm" })).toBeVisible();
     expect(screen.queryByText("Start with a hunch")).not.toBeInTheDocument();
     await user.type(field, "Does less caffeine improve my focus?");
     await user.click(screen.getByRole("button", { name: "Close question" }));
     expect(screen.getByRole("button", { name: "Test another habit" })).toHaveFocus();
-    expect(screen.getByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Evening walk" })).toBeVisible();
+    await user.click(screen.getByText("Details", { exact: true }));
     expect(screen.getByRole("link", { name: "See your experiment" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Test another habit" }));
     expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue("Does less caffeine improve my focus?");
@@ -324,7 +325,7 @@ describe("ask from Your lab", () => {
     // Already on Your lab, so a link to "/" would do nothing: this has to reload.
     server.use(http.get(`${api}/api/experiments`, () => HttpResponse.json([activeExperiment])));
     await user.click(screen.getByRole("button", { name: "Go to your lab" }));
-    expect(await screen.findByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Evening walk" })).toBeVisible();
   });
 });
 

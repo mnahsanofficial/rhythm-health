@@ -37,9 +37,9 @@ for (const width of [390, 1440]) {
     await page.getByRole('button', { name: 'Try a sample experiment' }).click();
     await expect(page.getByText('Sample experiment', { exact: true })).toBeVisible();
     await expect(page.getByText('Day 5 of 10', { exact: true })).toBeVisible();
-    await expect(page.getByText('Sample check-in: invented answers.')).toBeVisible();
+    await expect(page.getByText(/Sample answers never become your real experiment data/)).toBeVisible();
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
-    await page.screenshot({ path: `../docs/screenshots/active-sample/web-${width}-today.png`, fullPage: true });
+    if (process.env.CAPTURE_WEB_TODAY) await page.screenshot({ path: `../docs/screenshots/web-parity/today/sample-${width}-today.png`, fullPage: true });
     await page.getByRole('link', { name: 'Check in for day 5' }).click();
     await expect(page.getByText('Sample experiment · Sample check-in')).toBeVisible();
     // Reuse the same accessible scale controls as the real daily loop.
@@ -55,7 +55,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Remove this sample experiment?' })).toBeFocused();
     expect(removeCalls).toBe(0);
     await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
-    await page.screenshot({ path: `../docs/screenshots/active-sample/web-${width}-remove.png`, fullPage: true });
+    if (process.env.CAPTURE_WEB_TODAY) await page.screenshot({ path: `../docs/screenshots/web-parity/today/sample-${width}-remove.png`, fullPage: true });
     await page.getByRole('button', { name: 'Keep sample' }).click();
     expect(removeCalls).toBe(0);
     await page.getByRole('button', { name: 'Remove sample', exact: true }).click();

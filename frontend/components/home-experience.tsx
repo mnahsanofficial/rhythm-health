@@ -2,33 +2,29 @@
 
 import { SampleControls } from "@/components/experiments/sample-controls";
 import Link from "next/link";
-import { BaselineContext } from "@/components/experiments/baseline-context";
+import { TodayDashboard } from "@/components/today/dashboard";
+import type { RunningExperiment } from "@/components/today/model";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ExperimentFlow } from "@/components/experiments/experiment-flow";
-import { closeButton, CloseIcon } from "@/components/nav/close-icon";
-import { Timeline, TodayCard } from "@/components/experiments/experiment-progress";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
-import { getTodayCheckin, listCheckins } from "@/lib/data/checkins";
+import { getTodayCheckin } from "@/lib/data/checkins";
 import { getActiveCapacity, getExperimentProgress, listExperiments } from "@/lib/data/experiments";
 import { getProfile } from "@/lib/data/profile";
-import type { ActiveCapacity, Checkin, Experiment, ExperimentTimeline, Profile, TodayCheckin } from "@/lib/types/api";
+import type { ActiveCapacity, Experiment, ExperimentTimeline, Profile, TodayCheckin } from "@/lib/types/api";
 import { button } from "@/components/ui/button";
-import { CountUp } from "@/components/ui/count-up";
 
 type State =
   | { kind: "loading" }
   | { kind: "new" }
   | { kind: "ready"; profile: Profile }
-  | { kind: "active"; profile: Profile; experiment: Experiment; timeline: ExperimentTimeline; checkins: Checkin[] }
+  | { kind: "active"; profile: Profile; experiment: Experiment; timeline: ExperimentTimeline }
   | { kind: "several"; profile: Profile; items: RunningExperiment[]; capacity: ActiveCapacity; today: TodayCheckin }
   | { kind: "error"; message: string };
 
-type RunningExperiment = { experiment: Experiment; timeline: ExperimentTimeline };
 
 const primary = `${button("primary")} text-lead`;
-const textLink = "inline-flex min-h-11 items-center text-body font-medium text-moss underline-offset-4 hover:underline";
 
 /** Resolve auth before showing either the public illustration or private experiment. */
 export function HomeExperience({ children }: { children: React.ReactNode }) {
@@ -78,15 +74,12 @@ function SignedInHome() {
           });
           return;
         }
-        const [checkins, timeline] = await Promise.all([
-          listCheckins(experiment.id), getExperimentProgress(experiment.id),
-        ]);
+        const timeline = await getExperimentProgress(experiment.id);
         if (!cancelled) setState({
           kind: "active",
           profile,
           experiment: { ...experiment, progress: timeline.progress },
           timeline,
-          checkins,
         });
       } catch (error) {
         if (cancelled) return;
@@ -106,18 +99,16 @@ function SignedInHome() {
   return (
     <div className="page-frame pt-8 pb-16 sm:pt-14">
       {state.kind === "active" ? (
-        <ActiveLab
+        <TodayDashboard
           onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }}
           profile={state.profile}
-          experiment={state.experiment}
-          checkins={state.checkins}
-          timeline={state.timeline}
+          entries={[{ experiment: state.experiment, timeline: state.timeline }]}
         />
       ) : state.kind === "several" ? (
-        <SeveralLab
+        <TodayDashboard
           onChanged={() => { setState({ kind: "loading" }); setAttempt(n => n + 1); }}
           profile={state.profile}
-          items={state.items}
+          entries={state.items}
           capacity={state.capacity}
           today={state.today}
         />
@@ -143,7 +134,7 @@ function SignedInHome() {
           <h1 className="font-display text-display-sm tracking-tight sm:text-display">
             Start with your rhythm.
           </h1>
-          <p className="mt-5 max-w-lg text-lead text-muted">
+          <p className="mt-5 max-w-lg text-lead">
             Tell us about your routine so your first experiment fits your day.
           </p>
           <Link href="/onboarding" className={`${primary} mt-8`}>
@@ -152,212 +143,6 @@ function SignedInHome() {
         </section>
       )}
     </div>
-  );
-}
-
-/** The question form replaces the summary in place; daily evidence stays visible. */
-function ActiveLab({ profile, experiment, timeline, checkins, onChanged }: {
-  onChanged: () => void;
-  profile: Profile;
-  experiment: Experiment;
-  timeline: ExperimentTimeline;
-  checkins: Checkin[];
-}) {
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const panel = useRef<HTMLDivElement>(null);
-  const toggle = useRef<HTMLButtonElement>(null);
-
-  function toggleQuestion() {
-    if (open) {
-      setOpen(false);
-      toggle.current?.focus();
-    } else {
-      setOpen(true);
-    }
-  }
-
-  useEffect(() => {
-    if (open) panel.current?.querySelector("textarea")?.focus();
-  }, [open]);
-
-  const { progress } = experiment;
-  const path = `/experiments/${encodeURIComponent(experiment.id)}`;
-  const logged = timeline.recorded_days;
-  const testDays = checkins.filter((day) => day.phase === "intervention");
-  const followed = testDays.filter((day) => day.intervention_completed).length;
-
-  return (
-    <>
-      <SampleControls experiment={experiment} onChanged={onChanged} />
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p hidden={open} className="font-mono text-caption text-moss tabular-nums">
-              {dayLabel(progress)}
-            </p>
-            <button
-              ref={toggle}
-              type="button"
-              aria-expanded={open}
-              aria-controls={panelId}
-              onClick={toggleQuestion}
-              aria-label={open ? "Close question" : undefined}
-              className={open ? `${closeButton} ml-auto` : `${button("secondary")} ml-auto`}
-            >
-              {open ? <CloseIcon /> : "Test another habit"}
-            </button>
-          </div>
-          <section hidden={open}>
-            <h1 className="mt-3 font-display text-headline tracking-tight text-balance sm:text-display-sm">
-              {experiment.question}
-            </h1>
-            <BaselineContext timeline={timeline} />
-            <ChangeSummary experiment={experiment} path={path} />
-          </section>
-          <div ref={panel} id={panelId} hidden={!open}>
-            <ExperimentFlow
-              profile={profile}
-              returnTo="/"
-              showStarters={false}
-              onReloadLab={onChanged}
-            />
-          </div>
-        </div>
-        <TodayCard experiment={experiment} timeline={timeline} path={path} />
-      </div>
-      <section aria-labelledby="lab-progress" className="mt-10 border-t border-line pt-7">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 id="lab-progress" className="font-display text-title">Your observations, day by day.</h2>
-            <p className="mt-2 font-mono text-body tabular-nums"><CountUp value={logged} suffix={` of ${progress.total_days} days recorded`} /></p>
-          </div>
-          <div className="text-caption text-muted sm:text-right">
-            {progress.state === "in_progress" && (
-              <p>{progress.phase === "baseline" ? "Baseline" : "Test"} day {progress.phase_day} of {progress.phase_days} · {progress.days_remaining} days remaining</p>
-            )}
-            {testDays.length > 0 && <p>Change made on {followed} of {testDays.length} test days</p>}
-          </div>
-        </div>
-        <Timeline experiment={experiment} checkins={checkins} timeline={timeline} />
-      </section>
-    </>
-  );
-}
-
-function dayLabel(progress: Experiment["progress"]) {
-  return progress.state === "in_progress"
-    ? `Day ${progress.day_number} of ${progress.total_days}`
-    : progress.state === "ended" ? "Experiment days ended" : progress.state === "completed" ? "Completed" : "Not started";
-}
-
-function ChangeSummary({ experiment, path }: { experiment: Experiment; path: string }) {
-  const { progress } = experiment;
-  return (
-    <>
-      <div className="mt-6 border-l-2 border-moss pl-4">
-        <p className="text-caption text-muted">
-          {progress.phase === "baseline" ? "Keep your usual routine" : "Your small change"}
-        </p>
-        <p className="mt-1 text-lead">{experiment.intervention.action}</p>
-        <p className="mt-1 text-body text-muted">
-          {progress.phase === "baseline"
-            ? `Your change starts on day ${experiment.baseline_days + 1}.`
-            : `${experiment.intervention.timing} · ${experiment.intervention.frequency}`}
-        </p>
-      </div>
-      <Link href={path} className={`${textLink} mt-5`}>
-        {progress.state === "ended" ? "Finish and see results" : "See your experiment"}
-        <span aria-hidden="true" className="ml-2">→</span>
-      </Link>
-    </>
-  );
-}
-
-/** Two or three running: one card each. The day-by-day timeline stays on each experiment's page. */
-function SeveralLab({ profile, items, capacity, today, onChanged }: {
-  onChanged: () => void;
-  profile: Profile;
-  items: RunningExperiment[];
-  capacity: ActiveCapacity;
-  today: TodayCheckin;
-}) {
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const panel = useRef<HTMLDivElement>(null);
-  const toggle = useRef<HTMLButtonElement>(null);
-  const sample = items.find((item) => item.experiment.is_seeded)?.experiment;
-
-  useEffect(() => {
-    if (open) panel.current?.querySelector("textarea")?.focus();
-  }, [open]);
-
-  return (
-    <>
-      {sample && <SampleControls experiment={sample} onChanged={onChanged} />}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-headline tracking-tight sm:text-display-sm">{items.length} experiments running</h1>
-        {capacity.can_start && (
-          <button
-            ref={toggle}
-            type="button"
-            aria-expanded={open}
-            aria-controls={panelId}
-            onClick={() => {
-              if (open) toggle.current?.focus();
-              setOpen(!open);
-            }}
-            aria-label={open ? "Close question" : undefined}
-            className={open ? closeButton : button("secondary")}
-          >
-            {open ? <CloseIcon /> : "Test another habit"}
-          </button>
-        )}
-      </div>
-      {!capacity.can_start && (
-        <p className="mt-3 text-body text-muted">
-          You&apos;re running {capacity.limit} experiments, the most at once. Finish one to start another.
-        </p>
-      )}
-      {capacity.can_start && (
-        <div ref={panel} id={panelId} hidden={!open}>
-          <ExperimentFlow profile={profile} returnTo="/" headingLevel={2} showStarters={false} onReloadLab={onChanged} />
-        </div>
-      )}
-      {today.experiments.length > 1 && (
-        <section aria-label="Today's check-in" className="mt-6 rounded-card bg-moss-tint p-6">
-          {today.all_recorded ? (
-            <>
-              <p className="text-lead">Done for today: all {today.experiments.length} check-ins are recorded.</p>
-              <Link href="/check-in" className={`${textLink} mt-2`}>Change today&apos;s answers</Link>
-            </>
-          ) : (
-            <>
-              <p className="text-lead">One check-in for all {today.experiments.length} experiments.</p>
-              <Link href="/check-in" className={`${primary} mt-4`}>Check in for today</Link>
-            </>
-          )}
-        </section>
-      )}
-      <div className="mt-8 divide-y divide-line">
-        {items.map(({ experiment, timeline }) => <ExperimentCard key={experiment.id} experiment={experiment} timeline={timeline} />)}
-      </div>
-    </>
-  );
-}
-
-function ExperimentCard({ experiment, timeline }: RunningExperiment) {
-  const titleId = useId();
-  const path = `/experiments/${encodeURIComponent(experiment.id)}`;
-  return (
-    <article aria-labelledby={titleId} className="grid gap-6 py-8 first:pt-0 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
-      <div className="min-w-0">
-        <p className="font-mono text-caption text-moss tabular-nums">{dayLabel(experiment.progress)}</p>
-        <h2 id={titleId} className="mt-3 font-display text-title text-balance">{experiment.question}</h2>
-        <ChangeSummary experiment={experiment} path={path} />
-      </div>
-      <TodayCard experiment={experiment} timeline={timeline} path={path} />
-    </article>
   );
 }
 

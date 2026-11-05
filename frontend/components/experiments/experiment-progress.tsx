@@ -18,7 +18,7 @@ function formatValue(value: MetricValue): string {
 }
 
 /** Save a calendar event for when the next day opens, so coming back doesn't rely on memory. */
-function downloadReminder(experiment: Experiment, day: number, opens: Date, checkInPath: string) {
+export function downloadReminder(experiment: Experiment, day: number, opens: Date, checkInPath: string) {
   const { ics, fileName } = checkInReminder({
     experimentId: experiment.id,
     day,

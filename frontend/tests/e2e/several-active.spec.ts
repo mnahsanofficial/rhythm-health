@@ -9,6 +9,7 @@ function running(n: number, day: number): Experiment {
     ...experiment,
     id: `${n}${n}${n}${n}${n}${n}${n}${n}-1111-4111-8111-111111111111`,
     question: `Does habit number ${n} help my morning energy?`,
+    intervention: { ...experiment.intervention, short_name: `Habit ${n}` },
     status: "active",
     started_at: "2026-10-25T10:00:00Z",
     progress: {
@@ -52,16 +53,27 @@ for (const width of [390, 1440]) {
     }
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: "3 experiments running", level: 1 })).toBeVisible();
-    await expect(page.getByRole("article")).toHaveCount(3);
+    await expect(page.getByRole("heading", { name: /Good (morning|afternoon|evening)/, level: 1 })).toBeVisible();
+    await expect(page.getByRole("article")).toHaveCount(2);
     await expect(page.getByText("You're running 3 experiments, the most at once.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Test another habit" })).toHaveCount(0);
-    const second = page.getByRole("article", { name: all[1].question });
-    await expect(second.getByRole("link", { name: "Check in for day 2" })).toHaveAttribute("href", `/experiments/${all[1].id}/check-in`);
+    const second = page.getByRole("article", { name: "Habit 2" });
+    await expect(second.getByRole("link", { name: /Habit 2/ })).toHaveAttribute("href", `/experiments/${all[1].id}`);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await second.scrollIntoViewIfNeeded();
+    const still = (await second.boundingBox())!;
+    await second.hover();
+    await page.mouse.down();
+    const pressed = (await second.boundingBox())!;
+    expect(pressed.y).toBeCloseTo(still.y, 1);
+    expect(pressed.width).toBeCloseTo(still.width, 1);
+    await page.mouse.move(0, 0); // Release outside the link: this is a feedback check, not navigation.
+    await page.mouse.up();
+    await page.evaluate(() => scrollTo(0, 0));
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
     await page.evaluate(() => document.querySelector("nextjs-portal")?.remove()); // Dev-only badge, not the product.
-    await page.screenshot({ path: `../docs/screenshots/several-active/your-lab-${width}.png`, fullPage: true });
+    if (process.env.CAPTURE_WEB_TODAY) await page.screenshot({ path: `../docs/screenshots/web-parity/today/several-${width}.png`, fullPage: true });
 
     await page.getByRole("link", { name: "Check in for today" }).click();
     await expect(page.getByRole("heading", { name: "Today's check-in.", level: 1 })).toBeVisible();
@@ -69,7 +81,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole("radio", { name: "Yes" })).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
     await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
-    await page.screenshot({ path: `../docs/screenshots/several-active/combined-checkin-${width}.png`, fullPage: true });
+    if (process.env.CAPTURE_COMBINED_CHECKIN) await page.screenshot({ path: `../docs/screenshots/several-active/combined-checkin-${width}.png`, fullPage: true });
     await page.getByText("Yes", { exact: true }).click();
     await page.getByRole("group", { name: /Morning energy/ }).getByText("7", { exact: true }).click();
     await page.getByRole("group", { name: /Focus/ }).getByText("6", { exact: true }).click();

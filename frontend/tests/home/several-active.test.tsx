@@ -30,6 +30,7 @@ function running(n: number, day: number, extra: Partial<Experiment> = {}): Exper
     ...experiment,
     id: `${n}${n}${n}${n}${n}${n}${n}${n}-1111-4111-8111-111111111111`,
     question: `Question number ${n}?`,
+    intervention: { ...experiment.intervention, short_name: `Habit ${n}` },
     status: "active",
     started_at: "2026-10-25T10:00:00Z",
     progress: {
@@ -66,14 +67,12 @@ describe("Your lab with several experiments", () => {
     install([first, second]);
     render(home());
 
-    const one = await screen.findByRole("article", { name: first.question });
-    const two = screen.getByRole("article", { name: second.question });
+    const one = await screen.findByRole("region", { name: "Your next action" });
+    const two = screen.getByRole("article", { name: "Habit 2" });
     expect(one).toHaveTextContent("Day 2 of 10");
     expect(two).toHaveTextContent("Day 5 of 10");
-    expect(within(one).getByRole("link", { name: "Check in for day 2" })).toHaveAttribute("href", `/experiments/${first.id}/check-in`);
-    expect(within(two).getByRole("link", { name: "Check in for day 5" })).toHaveAttribute("href", `/experiments/${second.id}/check-in`);
-    expect(within(two).getByRole("link", { name: "See your experiment" })).toHaveAttribute("href", `/experiments/${second.id}`);
-    expect(screen.getByRole("heading", { name: "2 experiments running", level: 1 })).toBeVisible();
+    expect(within(one).getByRole("heading", { name: "Habit 1" })).toBeVisible();
+    expect(within(two).getByRole("link", { name: /Habit 2/ })).toHaveAttribute("href", `/experiments/${second.id}`);
     expect(screen.getByRole("button", { name: "Test another habit" })).toBeVisible();
   });
 
@@ -89,14 +88,14 @@ describe("Your lab with several experiments", () => {
     install(all);
     server.use(http.get(`${api}/api/checkins/today`, () => HttpResponse.json(due(all, true))));
     render(home());
-    expect(await screen.findByText("Done for today: all 2 check-ins are recorded.")).toBeVisible();
+    expect(await screen.findByText("All 2 check-ins are recorded.")).toBeVisible();
     expect(screen.getByRole("link", { name: "Change today's answers" })).toHaveAttribute("href", "/check-in");
   });
 
   it("offers no combined check-in when only one real experiment is due", async () => {
     install([running(1, 2), running(2, 5, { is_seeded: true })]);
     render(home());
-    await screen.findByRole("heading", { name: "2 experiments running", level: 1 });
+    await screen.findByRole("heading", { name: "Habit 1" });
     expect(screen.queryByRole("link", { name: "Check in for today" })).not.toBeInTheDocument();
   });
 
@@ -105,8 +104,8 @@ describe("Your lab with several experiments", () => {
     install(all);
     render(home());
 
-    expect(await screen.findByRole("heading", { name: "3 experiments running", level: 1 })).toBeVisible();
-    expect(screen.getAllByRole("article")).toHaveLength(3);
+    expect(await screen.findByRole("heading", { name: "Habit 1" })).toBeVisible();
+    expect(screen.getAllByRole("article")).toHaveLength(2);
     expect(screen.getByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Test another habit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Your question or goal" })).not.toBeInTheDocument();
