@@ -148,3 +148,21 @@ Still in the logs, by decision: the guide script records Claude Code's automatic
 
 - Codex `01a18219-c8cd-7b30-8246-43f2497fc36a` (28 Oct 10:41 UTC / 16:41 Dhaka, one prompt): Maham (8x) approved backfilling this missing session on 1 Nov 2026 because the Codex hooks were not yet approved on 28 Oct (canary #3). The current Codex extractor generated the log from its original transcript, with the filename and displayed date set to the original session start. Added only `2026-10-28_16-41-30_01a18219-c8cd-7b30-8246-43f2497fc36a.md`, marked with `backfilled: true`, a UTC `backfilled_at`, and the approval reason. No existing log was edited, renamed or deleted as part of this backfill.
 - Shakeb's sessions after 29 Oct 20:09: his newest log ends there, although he worked on #21 and #24 afterwards. His transcripts are on his machine.
+
+## Audit of 5 Nov 2026
+
+Nazmul asked for every Claude Code and Codex session active on 5 Nov (Asia/Dhaka) to have a complete log. Each row was found by scanning the transcripts for entries on that day, not from memory, then regenerated from its transcript with the unmodified scripts and compared with `main`.
+
+| Session | Agent | What it was | Log on `main` before | Now |
+|---|---|---|---|---|
+| `620970ab` | Claude Code | Organising the project (started 4 Nov, ran until 00:12 on 5 Nov) | **Behind:** 12 of 14 exchanges; #97 merged before the last ones | Regenerated. Its `date:` now reads 5 Nov, from its last prompt; the file name keeps the start date |
+| `01a1a891` | Codex | "Continue anyway" fix, [#98](https://github.com/mnahsanofficial/rhythm-health/pull/98) | **Behind:** an earlier reply stood in for the final one | Regenerated |
+| `01a1aa20` | Codex | Calm Today dashboard, [#99](https://github.com/mnahsanofficial/rhythm-health/pull/99) | **Behind:** an earlier reply stood in for the final one | Regenerated |
+| `021286c7` | Claude Code | Scheduled task `mobile-freeze-status-report`, 13:30 (read-only status report) | **Missing:** left untracked in the main checkout | Added |
+| `01a1aaf4` | Codex | Duplicate-key fix, [#100](https://github.com/mnahsanofficial/rhythm-health/pull/100) | Same text; only the reply's timestamp and `generated_at` differ | Regenerated |
+| `7975bf46` | Claude Code | The 5 Nov feedback work | New | In this PR, and updated at the End of session step |
+
+- The stray `021286c7` was expected to be the Codex dashboard session. It isn't: that one is `01a1aa20`, and `021286c7` is a scheduled Claude Code run.
+- Four Codex `guardian` rollouts from that day (`01a1a891-c495`, `01a1aa21`, `01a1aa59`, `01a1aaf4-f5e2`) are approval-reviewer sub-agents. They're skipped on purpose, as described under Per-agent notes.
+- Cursor wasn't checked. It isn't cleared for agent use.
+- **Why they fell behind:** a log can't contain the turn that commits it, so each session's last reply lands only if something commits afterwards. This is the End of session step, and it was missed for these.
