@@ -1,0 +1,78 @@
+"""Monitoring failures must not disclose answers or block successful actions."""
+import json
+from datetime import UTC, datetime
+from unittest.mock import Mock
+
+from fastapi.testclient import TestClient
+
+from app import monitoring
+from app.config import settings
+from app.main import app
+from app.services import app_events, metrics
+
+client = TestClient(app, raise_server_exceptions=False)
+
+
+def test_drill_is_disabled_by_default_and_in_production(monkeypatch):
+    monkeypatch.setattr(settings, "dev_failure_drill", False)
+    assert client.get("/api/dev/failure-drill").status_code == 404
+    monkeypatch.setattr(settings, "dev_failure_drill", True)
+    monkeypatch.setattr(settings, "app_environment", "production")
+    assert client.get("/api/dev/failure-drill").status_code == 404
+
+
+def test_drill_returns_friendly_error_and_correlated_header(monkeypatch, caplog):
+    monkeypatch.setattr(settings, "dev_failure_drill", True)
+    monkeypatch.setattr(settings, "app_environment", "development")
+    report = Mock()
+    monkeypatch.setattr(monitoring, "report_failure", report)
+    response = client.get("/api/dev/failure-drill")
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Something went wrong. Please try again."}
+    request_id = response.headers["x-request-id"]
+    logs = [json.loads(r.message) for r in caplog.records if r.name == "app.request"]
+    assert logs[-1]["request_id"] == request_id
+    assert logs[-1]["status"] == 500
+    assert report.call_args.args[0] == "unhandled_error"
+
+
+def test_sentry_allowlist_removes_secrets_even_in_exception_text():
+    secret = "token-or-health-answer"
+    event = {
+        "event_id": "a" * 32, "platform": "python", "release": "abc123",
+        "environment": "development", "tags": {"request_id": "b" * 32, "answer": secret},
+        "request": {"url": "https://example.com/" + secret + "?token=" + secret},
+        "user": {"id": secret}, "extra": {"answer": secret},
+        "breadcrumbs": [{"message": secret}], "message": secret,
+        "exception": {"values": [{"type": "ValueError", "value": secret,
+            "stacktrace": {"frames": [{"filename": "/private/" + secret, "function": "save", "vars": {"answer": secret}}]}}]},
+    }
+    clean = monitoring.scrub_event(event, {})
+    assert secret not in json.dumps(clean)
+    assert clean["tags"]["request_id"] == "b" * 32
+    assert clean["release"] == "abc123"
+
+
+def test_event_write_failure_is_best_effort(monkeypatch, caplog):
+    def fail(*args, **kwargs):
+        raise RuntimeError("a private database response")
+    monkeypatch.setattr(app_events, "insert", fail)
+    app_events.record("profile", "checkin_saved", "experiment")
+    assert "app_event_not_recorded" in caplog.text
+    assert "private database" not in caplog.text
+
+
+def test_metrics_count_updates_once_and_exclude_samples():
+    now = datetime(2026, 11, 6, 12, tzinfo=UTC)
+    events = [
+        {"profile_id": "p", "event_name": "checkin_saved", "created_at": "2026-11-06T01:00:00+00:00"},
+        {"profile_id": "p", "event_name": "checkin_updated", "created_at": "2026-11-06T02:00:00+00:00"},
+    ]
+    experiments = [{"id": "e", "started_at": "2026-11-04T12:00:00+00:00", "baseline_days": 3, "intervention_days": 7, "status": "active", "is_seeded": False}]
+    checkins = [{"experiment_id": "e", "day_number": 1}, {"experiment_id": "e", "day_number": 1}, {"experiment_id": "e", "day_number": 3}, {"experiment_id": "sample", "day_number": 1}]
+    result = metrics.summarize(events, experiments, checkins, now)
+    assert result["counts"]["checkin_saved"] == 1
+    assert result["daily_active_users"]["2026-11-06"] == 1
+    assert result["checkin_completion"]["days_recorded"] == 2
+    assert result["checkin_completion"]["days_elapsed"] == 3
+    assert result["checkin_completion"]["rate"] == 2 / 3
