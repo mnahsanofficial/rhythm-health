@@ -1,0 +1,112 @@
+[
+  {
+    "scenario": "due",
+    "mode": "light",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "recorded",
+    "mode": "light",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "day10",
+    "mode": "light",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "three",
+    "mode": "light",
+    "viewport": "390x844",
+    "overflow": [
+      {
+        "height": 723,
+        "content": 768
+      }
+    ],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "empty",
+    "mode": "light",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "due",
+    "mode": "dark",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "recorded",
+    "mode": "dark",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "day10",
+    "mode": "dark",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "three",
+    "mode": "dark",
+    "viewport": "390x844",
+    "overflow": [
+      {
+        "height": 723,
+        "content": 768
+      }
+    ],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "empty",
+    "mode": "dark",
+    "viewport": "390x844",
+    "overflow": [],
+    "errors": [],
+    "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "due",
+    "mode": "light",
+    "viewport": "1440x900",
+    "overflow": [],
+    "errors": []
+  },
+  {
+    "scenario": "due",
+    "mode": "dark",
+    "viewport": "1440x900",
+    "overflow": [],
+    "errors": []
+  },
+  {
+    "scenario": "due",
+    "viewport": "390x763 (844 minus 81pt safe areas)",
+    "reducedMotion": true,
+    "overflow": []
+  }
+]

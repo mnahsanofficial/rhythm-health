@@ -62,9 +62,10 @@ const signedOut = async () => {
   render(<MobileApp />);
   await screen.findByRole('header', { name: 'Stop guessing. Test one habit.' });
 };
-const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask a question.' }); };
+const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask your first question' }); };
 const withPlan = async () => {
   await signedIn();
+  await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await press('Design experiment');
   await screen.findByRole('button', { name: 'Start this experiment' });
@@ -105,7 +106,7 @@ describe('the logo in the app', () => {
     await goTo('History');
     await screen.findByRole('header', { name: 'Your history' });
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
-    expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Ask your first question' })).toBeVisible();
   });
 
   test('goes to the landing page when signed out', async () => {
@@ -124,7 +125,7 @@ describe('main sections and detail screens', () => {
     expect(screen.queryByRole('button', { name: /^Back to / })).toBeNull();
     expect(screen.queryByText(/[←‹]/)).toBeNull();
     await hardwareBack();
-    expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+    expect(await screen.findByRole('header', { name: 'Ask your first question' })).toBeVisible();
   });
 
   test('Daily reminders has no back control either', async () => {
@@ -186,6 +187,7 @@ describe('flows close with one ×', () => {
     await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
     await screen.findByRole('header', { name: 'Ask a question.' });
     expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Today' })); });
     expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
@@ -212,6 +214,7 @@ describe('flows close with one ×', () => {
   test('the logo keeps a proposal open and safe, without asking', async () => {
     await withPlan();
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
+await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
     expect(screen.queryByText('Leave without saving?')).toBeNull();
     expect(await screen.findByRole('button', { name: 'Start this experiment' })).toBeVisible();
     expect(proposals()).toBe(1);

@@ -46,11 +46,11 @@ function useFinish({ experiment, token, offline, onExpired, onCompleted }: Finis
 }
 
 /** All days are done, so there's nothing to confirm: one tap finishes and opens the result. */
-export function FinishNow({ disabled = false, ...props }: FinishProps & { disabled?: boolean }) { const styles = useStyles();
+export function FinishNow({ disabled = false, haptic = false, ...props }: FinishProps & { disabled?: boolean; haptic?: boolean }) { const styles = useStyles();
   const { busy, error, finish } = useFinish(props);
   return <>
     {error && <Alert>{error}</Alert>}
-    <Action wide label={busy ? 'Getting your results…' : 'See your results'} disabled={disabled || busy || props.offline} onPress={() => void finish()} />
+    <Action haptic={haptic} wide label={busy ? 'Getting your results…' : 'See your results'} disabled={disabled || busy || props.offline} onPress={() => void finish()} />
     <Copy style={styles.hint}>Finishing locks your answers.</Copy>
   </>;
 }

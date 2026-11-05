@@ -69,7 +69,7 @@ afterEach(() => jest.restoreAllMocks());
 
 async function open() {
   const view = render(<MobileApp />);
-  fireEvent.press(await screen.findByRole('button', { name: /Check in now, day|Edit answers/ }));
+  fireEvent.press(await screen.findByRole('button', { name: /Check in now, day|Edit today's answers/ }));
   await screen.findByText("Today's check-in.");
   await screen.findByLabelText('Breaks');
   return view;
@@ -215,6 +215,9 @@ test('the first saved check-in offers reminders without prompting the OS automat
   await open(); expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: 'Enable daily reminders' })).toBeNull();
   await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
+  await screen.findAllByText(/^Day \d+ recorded$/);
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   expect(await screen.findByRole('button', { name: 'Enable daily reminders' })).toBeVisible();
   expect(notifications.requestPermissionsAsync).not.toHaveBeenCalled();
 });

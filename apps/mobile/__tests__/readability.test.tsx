@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask a question.' }); };
+const signedIn = async () => { render(<MobileApp />); await screen.findByRole('header', { name: 'Ask your first question' }); };
 const tab = (name: string) => screen.getByRole('tab', { name });
 const pressTab = (name: string) => act(async () => { fireEvent.press(tab(name)); });
 const flat = (node: { props: { style?: unknown } }) => StyleSheet.flatten(node.props.style as never) as Record<string, unknown>;
@@ -64,6 +64,7 @@ async function setupAt(step: number, draft: object = answers) {
 }
 async function openPlan() {
   await signedIn();
+  await pressTab('Ask');
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
   await screen.findByRole('button', { name: 'Start this experiment' });
@@ -127,6 +128,7 @@ describe('the tab bar', () => {
     expect(screen.queryByRole('tab', { name: 'Today' })).toBeNull();
     act(() => { keyboard[Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'](); });
     expect(tab('Today')).toBeVisible();
+    await pressTab('Ask');
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
     await screen.findByRole('button', { name: 'Start this experiment' });
@@ -136,6 +138,7 @@ describe('the tab bar', () => {
   test('moving between tabs keeps a paid plan, and Ask brings it back', async () => {
     await openPlan();
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
+await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })); });
     expect(await screen.findByRole('button', { name: 'Start this experiment' })).toBeVisible();
     expect((global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).endsWith('/propose'))).toHaveLength(1);
   });
@@ -155,6 +158,7 @@ describe('the primary action', () => {
 
   test('stays on screen when the keyboard opens on Ask, while the tabs step aside', async () => {
     await signedIn();
+    await pressTab('Ask');
     act(() => { keyboard.keyboardWillShow(); });
     expect(screen.getByRole('button', { name: 'Design experiment' })).toBeVisible();
     expect(within(screen.UNSAFE_getByType(ScrollView)).queryByRole('button', { name: 'Design experiment' })).toBeNull();
@@ -255,6 +259,7 @@ describe('reading order', () => {
 
   test('Ask is a heading, one line and quiet suggestions', async () => {
     await signedIn();
+    await pressTab('Ask');
     expect(screen.getByText('What do you want to test?')).toBeVisible();
     expect(screen.queryByText('A little curiosity, a little evidence')).toBeNull();
     const starter = screen.getByRole('button', { name: 'Does less caffeine improve my focus?' });
@@ -265,7 +270,9 @@ describe('reading order', () => {
 
   test('waiting is a designed moment with one honest line', async () => {
     await signedIn();
+    await pressTab('Ask');
     (global.fetch as jest.Mock).mockImplementationOnce(() => new Promise(() => undefined));
+    await pressTab('Ask');
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
     expect(screen.getByText('Usually 10–30 seconds.')).toBeVisible();
@@ -275,6 +282,7 @@ describe('reading order', () => {
   test('the guess is one line, with the detail behind Why?', async () => {
     routes['POST /api/experiments/propose'] = { body: { ...proposeResponse, personal_guess_available: true } };
     await signedIn();
+    await pressTab('Ask');
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
     expect(await screen.findByText('Change from your normal days. +10 means 10% higher.')).toBeVisible();

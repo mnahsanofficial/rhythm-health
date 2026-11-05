@@ -59,14 +59,15 @@ test('a recorded current day shows Done for today and uses the returned next ope
   render(<MobileApp />);
   expect(await screen.findByText('Day 4 recorded')).toBeVisible();
   const time = new Date(nextDayAt).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' });
-  expect(screen.getByText(`Day 5 opens ${time}.`)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'See your experiment' }));
+  expect(await screen.findByText(`Day 5 opens ${time}.`)).toBeVisible();
   expect(screen.getByRole('button', { name: "Edit answers" })).toBeEnabled();
 });
 
 test('no active experiment offers the native question without fetching progress', async () => {
   list = []; render(<MobileApp />);
-  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Design experiment' })).toBeVisible();
+  expect(await screen.findByRole('button', { name: 'Ask your first question' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'See a completed example' })).toBeVisible();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active']);
 });
 
@@ -126,12 +127,13 @@ test.each(['not_started', 'ended', 'completed'] as const)('handles %s without of
   expect(await screen.findByText(active.question)).toBeVisible();
   expect(screen.queryByRole('button', { name: /Check in now, day/ })).toBeNull();
   expect(screen.queryAllByRole('link').filter(link => link.props.accessibilityLabel !== 'Rhythm, home')).toEqual([]);
-  if (state !== 'not_started') expect(screen.getByRole('button', { name: state === 'completed' ? 'See your Lab Report' : 'See your results' })).toBeVisible();
+  if (state !== 'not_started') expect(screen.getByRole('button', { name: 'See your results' })).toBeVisible();
 });
 
 
 test('Today renders each server baseline description before asking for a test-day check-in', async () => {
   timeline = { ...timeline, baseline_summary: normal }; render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   expect(await screen.findByText('Your normal, before the change.')).toBeVisible();
   expect(screen.getByText('2 of 3 normal days recorded.')).toBeVisible();
   normal.metrics.forEach(metric => expect(screen.getByText(metric.description)).toBeVisible());
@@ -139,6 +141,7 @@ test('Today renders each server baseline description before asking for a test-da
 });
 test('a missing baseline stays honest and does not block Check-in', async () => {
   timeline = { ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } }; render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   expect(await screen.findByText('No normal-day answers recorded.')).toBeVisible();
   expect(screen.queryByText(normal.metrics[0].description)).toBeNull();
   expect(screen.getByRole('button', { name: 'Check in now, day 4' })).toBeEnabled();
@@ -149,6 +152,7 @@ test('before the boundary and older progress responses show no invented normal',
 });
 test('offline retains the labelled last-loaded baseline and disables Check-in', async () => {
   timeline = { ...timeline, baseline_summary: normal }; const view = render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   await screen.findByText(normal.metrics[0].description); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
   expect(screen.getByText(/Offline, last updated/)).toBeVisible(); expect(screen.getByText(normal.metrics[0].description)).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in now, day 4' })).toBeDisabled();
@@ -156,12 +160,14 @@ test('offline retains the labelled last-loaded baseline and disables Check-in', 
 
 test('an empty account offers an explicitly labelled active sample', async () => {
   list = []; render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See a completed example' }));
   expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
   expect(screen.getByText('It never counts as your data.')).toBeVisible();
 });
 
 test('sample Today is labelled and removal asks before making any request', async () => {
   list = [{ ...active, is_seeded: true }]; render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   expect(await screen.findByText('Sample experiment')).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
   expect(screen.getByText('Remove this sample experiment?')).toBeVisible();
@@ -191,12 +197,13 @@ test('starting a sample refreshes Today; confirmed removal returns to the empty 
     return fetch(url, options);
   });
   render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See a completed example' }));
   fireEvent.press(await screen.findByRole('button', { name: 'Try a sample experiment' }));
   expect(await screen.findByText('Sample experiment')).toBeVisible();
   fireEvent.press(screen.getByRole('button', { name: 'Remove sample' }));
   expect(mutations).toHaveLength(1);
   fireEvent.press(screen.getByRole('button', { name: 'Confirm remove sample' }));
-  expect(await screen.findByRole('header', { name: 'Ask a question.' })).toBeVisible();
+  expect(await screen.findByRole('button', { name: 'Try a sample experiment' })).toBeVisible();
   expect(mutations).toHaveLength(2);
 });
 
@@ -211,6 +218,7 @@ test('a failed sample start preserves the empty state and offers retry', async (
   global.fetch = jest.fn(async (url, options) => options?.method === 'POST'
     ? { ok: false, status: 503, json: async () => ({ detail: 'Sample service unavailable. Try again.' }) } as Response : fetch(url, options));
   render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See a completed example' }));
   fireEvent.press(await screen.findByRole('button', { name: 'Try a sample experiment' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Sample service unavailable. Try again.');
   expect(screen.getByRole('button', { name: 'Try a sample experiment' })).toBeEnabled();
@@ -221,6 +229,7 @@ test('removal failure keeps the sample and its confirmation available for retry'
   global.fetch = jest.fn(async (url, options) => options?.method === 'POST'
     ? { ok: false, status: 503, json: async () => ({ detail: 'Could not remove sample. Try again.' }) } as Response : fetch(url, options));
   render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   fireEvent.press(await screen.findByRole('button', { name: 'Remove sample' }));
   fireEvent.press(screen.getByRole('button', { name: 'Confirm remove sample' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove sample. Try again.');
@@ -230,6 +239,7 @@ test('removal failure keeps the sample and its confirmation available for retry'
 
 test('offline sample controls are disabled while cached sample labels remain visible', async () => {
   list = [{ ...active, is_seeded: true }]; const view = render(<MobileApp />);
+  fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
   await screen.findByText('Sample experiment');
   mockNetwork.isConnected = false; view.rerender(<MobileApp />);
   expect(screen.getByText('Sample experiment')).toBeVisible();

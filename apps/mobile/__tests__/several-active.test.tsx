@@ -47,7 +47,8 @@ function install(list: Experiment[], capacity = { active: list.length, limit: 3,
     routes[`GET /api/experiments/${item.id}/checkins`] = { body: [] };
   }
 }
-const press = (name: string) => act(async () => { fireEvent.press(screen.getByRole('button', { name })); });
+const actionName = (name: string): string | RegExp => name === 'Check in for today' ? /^Check in now, day/ : name === 'Edit answers' ? "Edit today's answers" : name;
+const press = (name: string) => act(async () => { fireEvent.press(screen.getByRole('button', { name: actionName(name) })); });
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -69,7 +70,7 @@ beforeEach(() => {
 });
 afterEach(() => jest.restoreAllMocks());
 
-const press2 = async (name: string) => { const node = await screen.findByRole('button', { name }); await act(async () => { fireEvent.press(node); }); };
+const press2 = async (name: string) => { const node = await screen.findByRole('button', { name: actionName(name) }); await act(async () => { fireEvent.press(node); }); };
 
 describe('your lab with several experiments', () => {
   test('one experiment keeps today\'s screen and never reads the limit', async () => {
@@ -83,11 +84,12 @@ describe('your lab with several experiments', () => {
   test('shows each with its own day and check-in, and checks in on the one chosen', async () => {
     install([first, second]);
     render(<MobileApp />);
-    expect(await screen.findByRole('header', { name: '2 experiments running' })).toBeVisible();
+    expect(await screen.findByText('Also running')).toBeVisible();
     expect(screen.getByText(first.question)).toBeVisible();
     expect(screen.getByText(second.question)).toBeVisible();
     expect(screen.getByText('Day 2 of 10')).toBeVisible();
     expect(screen.getByText('Day 5 of 10')).toBeVisible();
+    await press(`Open ${second.question}`);
     await press('Check in now, day 5');
     await waitFor(() => expect(calls).toContain('GET /api/experiments/second-id/checkins'));
     expect(calls).not.toContain('GET /api/experiments/first-id/checkins');
@@ -96,8 +98,8 @@ describe('your lab with several experiments', () => {
   test('See your experiment opens the one chosen', async () => {
     install([first, second]);
     render(<MobileApp />);
-    await screen.findByRole('header', { name: '2 experiments running' });
-    await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'See your experiment' })[1]); });
+    await screen.findByText('Also running');
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: `Open ${second.question}` })); });
     expect(await screen.findByText('Your timeline')).toBeVisible();
     expect(screen.getByText(second.question)).toBeVisible();
     expect(screen.queryByText(first.question)).toBeNull();
@@ -106,8 +108,8 @@ describe('your lab with several experiments', () => {
   test('an open experiment that finishes elsewhere closes, and never turns into the other one', async () => {
     install([first, second]);
     render(<MobileApp />);
-    await screen.findByRole('header', { name: '2 experiments running' });
-    await act(async () => { fireEvent.press(screen.getAllByRole('button', { name: 'See your experiment' })[0]); });
+    await screen.findByText('Also running');
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'See your experiment' })); });
     expect(await screen.findByText('Your timeline')).toBeVisible();
     routes['GET /api/experiments?status=active'] = { body: [second] };
     await act(async () => { listeners.forEach(listener => listener('active')); });
@@ -119,7 +121,7 @@ describe('your lab with several experiments', () => {
     const warn = jest.spyOn(console, 'error');
     install([running('first-id', 1), running('second-id', 1)]);
     render(<MobileApp />);
-    expect(await screen.findByText('One check-in for all 2 experiments.')).toBeVisible();
+    expect(await screen.findByText('Also running')).toBeVisible();
     expect(screen.getByText('Question first-id?')).toBeVisible();
     expect(screen.getByText('Question second-id?')).toBeVisible();
     await press('Check in for today');
@@ -138,7 +140,7 @@ describe('your lab with several experiments', () => {
       return base(url, options);
     });
     render(<MobileApp />);
-    expect(await screen.findByText('One check-in for all 2 experiments.')).toBeVisible();
+    expect(await screen.findByText('Also running')).toBeVisible();
     await press('Check in for today');
     expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
     expect(screen.getByText('For both experiments')).toBeVisible();
@@ -169,6 +171,8 @@ describe('your lab with several experiments', () => {
   test('updating the combined check-in shows the same celebration', async () => {
     install([first, second]);
     routes['GET /api/checkins/today'] = { body: { ...dueToday([first, second], true) } };
+    routes['GET /api/experiments/first-id/progress'] = { body: timelineFixture(first, { recorded: [2] }) };
+    routes['GET /api/experiments/second-id/progress'] = { body: timelineFixture(second, { recorded: [5] }) };
     routes['POST /api/checkins/today'] = { body: { ...dueToday([first, second], true) } };
     render(<MobileApp />);
     await press2('Edit answers');
@@ -183,7 +187,7 @@ describe('your lab with several experiments', () => {
   test('a reminder tap leaves the combined check-in for that experiment', async () => {
     install([first, second]);
     render(<MobileApp />);
-    await screen.findByText('One check-in for all 2 experiments.');
+    await screen.findByText('Also running');
     await press('Check in for today');
     await screen.findByText('For both experiments');
     await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', 'second-id'))); });
@@ -195,7 +199,7 @@ describe('your lab with several experiments', () => {
     install([first, second]);
     routes['POST /api/checkins/today'] = { status: 409, body: { detail: { code: 'checkin_changed', message: "Today's check-in has changed. Reload it to see the current questions." } } };
     render(<MobileApp />);
-    await screen.findByText('One check-in for all 2 experiments.');
+    await screen.findByText('Also running');
     await press('Check in for today');
     await screen.findByRole('header', { name: "Today's check-in." });
     fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
@@ -209,23 +213,25 @@ describe('your lab with several experiments', () => {
   test('when everything is recorded it says so, and answers can still change', async () => {
     install([first, second]);
     routes['GET /api/checkins/today'] = { body: dueToday([first, second], true) };
+    routes['GET /api/experiments/first-id/progress'] = { body: timelineFixture(first, { recorded: [2] }) };
+    routes['GET /api/experiments/second-id/progress'] = { body: timelineFixture(second, { recorded: [5] }) };
     render(<MobileApp />);
-    expect(await screen.findByText('Done for today: all 2 check-ins are recorded.')).toBeVisible();
-    expect(screen.getByRole('button', { name: "Edit answers" })).toBeVisible();
+    expect(await screen.findByText('Day 2 recorded')).toBeVisible();
+    expect(screen.getByRole('button', { name: "Edit today's answers" })).toBeVisible();
   });
 
   test('only one real experiment due means no combined check-in', async () => {
     install([first, running('sample-id', 5, { is_seeded: true })]);
     render(<MobileApp />);
-    await screen.findByRole('header', { name: '2 experiments running' });
+    await screen.findByText('Also running');
     expect(screen.queryByRole('button', { name: 'Check in for today' })).toBeNull();
   });
 
   test('at the limit there is no new question, and it says why', async () => {
     install([first, second, running('third-id', 7)]);
     render(<MobileApp />);
-    expect(await screen.findByRole('header', { name: '3 experiments running' })).toBeVisible();
-    expect(screen.getByText("You're running 3 experiments, the most at once. Finish one to start another.")).toBeVisible();
+    expect(await screen.findByText('Also running')).toBeVisible();
+    expect(screen.getByText('Question third-id?')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Test another habit' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Design experiment' })).toBeNull();
   });
@@ -244,6 +250,7 @@ describe('your lab with several experiments', () => {
   test('a running sample stays labelled and removable, whichever position it is in', async () => {
     install([first, running('sample-id', 5, { is_seeded: true, question: 'Sample: a walk?' })]);
     render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'Open Sample: a walk?' }));
     expect(await screen.findByRole('button', { name: 'Remove sample' })).toBeVisible();
     expect(screen.getByText('It never counts as your data.')).toBeVisible();
   });
@@ -251,7 +258,7 @@ describe('your lab with several experiments', () => {
   test('a reminder tap opens the check-in of the experiment it belongs to', async () => {
     install([first, second]);
     render(<MobileApp />);
-    await screen.findByRole('header', { name: '2 experiments running' });
+    await screen.findByText('Also running');
     await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', 'second-id'))); });
     await waitFor(() => expect(calls).toContain('GET /api/experiments/second-id/checkins'));
     expect(calls).not.toContain('GET /api/experiments/first-id/checkins');
