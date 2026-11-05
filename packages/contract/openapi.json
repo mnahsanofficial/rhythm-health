@@ -2225,6 +2225,32 @@
             "maxLength": 400,
             "minLength": 1,
             "title": "Frequency"
+          },
+          "change_short": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Short"
+          },
+          "short_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name"
           }
         },
         "additionalProperties": false,
@@ -2250,6 +2276,10 @@
             "type": "string",
             "title": "Habit"
           },
+          "short_name": {
+            "type": "string",
+            "title": "Short Name"
+          },
           "completed_at": {
             "anyOf": [
               {
@@ -2266,7 +2296,8 @@
         "required": [
           "experiment_id",
           "question",
-          "habit"
+          "habit",
+          "short_name"
         ],
         "title": "KeptHabit"
       },
@@ -2381,6 +2412,32 @@
               }
             ],
             "title": "Max Label"
+          },
+          "short_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 24,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Label"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           }
         },
         "additionalProperties": false,
@@ -2515,6 +2572,10 @@
             "type": "string",
             "title": "Question"
           },
+          "short_name": {
+            "type": "string",
+            "title": "Short Name"
+          },
           "completed_at": {
             "anyOf": [
               {
@@ -2563,7 +2624,8 @@
         "type": "object",
         "required": [
           "experiment_id",
-          "question"
+          "question",
+          "short_name"
         ],
         "title": "MetricRun",
         "description": "One metric in one finished experiment: your normal days against your test days."
@@ -2577,6 +2639,21 @@
           "label": {
             "type": "string",
             "title": "Label"
+          },
+          "short_label": {
+            "type": "string",
+            "title": "Short Label"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           },
           "type": {
             "type": "string",
@@ -2605,6 +2682,7 @@
         "required": [
           "key",
           "label",
+          "short_label",
           "type",
           "runs"
         ],
@@ -3587,6 +3665,14 @@
             "type": "string",
             "title": "Action"
           },
+          "change_short": {
+            "type": "string",
+            "title": "Change Short"
+          },
+          "short_name": {
+            "type": "string",
+            "title": "Short Name"
+          },
           "timing": {
             "type": "string",
             "title": "Timing"
@@ -3632,6 +3718,8 @@
           "id",
           "question",
           "action",
+          "change_short",
+          "short_name",
           "timing",
           "day_number",
           "total_days",

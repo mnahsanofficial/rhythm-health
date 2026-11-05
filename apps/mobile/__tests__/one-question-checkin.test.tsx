@@ -99,7 +99,7 @@ describe('one question per screen', () => {
   });
 
   test('a typed number waits for Next, and Next waits for a valid number', async () => {
-    const breaks: Experiment['metrics'][number] = { key: 'breaks', label: 'Breaks', type: 'number', min: null, max: null, min_label: null, max_label: null, primary: true };
+    const breaks: Experiment['metrics'][number] = { key: 'breaks', label: 'Breaks', type: 'number', min: null, max: null, min_label: null, max_label: null, short_label: null, unit: null, primary: true };
     install(day(1, 'baseline', [breaks, { ...experiment.metrics[1], primary: false }])); await open(1);
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     fireEvent.changeText(screen.getByLabelText('Breaks'), 'lots');

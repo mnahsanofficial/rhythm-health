@@ -9,6 +9,7 @@ class MetricRun(BaseModel):
     """One metric in one finished experiment: your normal days against your test days."""
     experiment_id: str
     question: str
+    short_name: str
     completed_at: str | None = None
     baseline_mean: float | None = None
     result_mean: float | None = None
@@ -18,6 +19,8 @@ class MetricRun(BaseModel):
 class MetricTrend(BaseModel):
     key: str
     label: str
+    short_label: str
+    unit: str | None = None
     type: str
     # Oldest first.
     runs: list[MetricRun]
@@ -29,6 +32,7 @@ class KeptHabit(BaseModel):
     experiment_id: str
     question: str
     habit: str
+    short_name: str
     completed_at: str | None = None
 
 

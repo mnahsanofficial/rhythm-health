@@ -20,13 +20,13 @@ vi.mock("next/link", () => ({
 vi.mock("motion/react", async () => import("../support/motion-mock"));
 
 const api = "http://api.test.invalid";
-const scale = (key: string, label: string): TodayCheckin["questions"][number]["metric"] => ({ key, label, type: "scale", min: 1, max: 10, primary: false, min_label: "Low point", max_label: "High point" });
+const scale = (key: string, label: string): TodayCheckin["questions"][number]["metric"] => ({ key, label, type: "scale", min: 1, max: 10, primary: false, min_label: "Low point", max_label: "High point", short_label: null, unit: null });
 const A = "aaaaaaaa-1111-4111-8111-111111111111", B = "bbbbbbbb-1111-4111-8111-111111111111";
 const today: TodayCheckin = {
   revision: "rev-1",
   experiments: [
-    { id: A, question: "Does walking help?", action: "Walk after dinner", timing: "After dinner", day_number: 5, total_days: 10, phase: "intervention", change_required: true, change_made: null, recorded: false },
-    { id: B, question: "Does less coffee help?", action: "Skip the second coffee", timing: "Afternoon", day_number: 2, total_days: 10, phase: "baseline", change_required: false, change_made: null, recorded: false },
+    { id: A, question: "Does walking help?", action: "Walk after dinner", change_short: "Walk after dinner", short_name: "Evening walk", timing: "After dinner", day_number: 5, total_days: 10, phase: "intervention", change_required: true, change_made: null, recorded: false },
+    { id: B, question: "Does less coffee help?", action: "Skip the second coffee", change_short: "Skip the second coffee", short_name: "Less coffee", timing: "Afternoon", day_number: 2, total_days: 10, phase: "baseline", change_required: false, change_made: null, recorded: false },
   ],
   questions: [
     { id: `${A}:energy`, metric: scale("energy", "Morning energy"), experiment_ids: [A, B], value: null },

@@ -8,6 +8,19 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 from app.schemas.classification import Category
 from app.schemas.prediction import Prediction
 from app.schemas.progress import ExperimentProgress
+from app.schemas.short_labels import (
+    CHANGE_CHARS,
+    CHANGE_WORDS,
+    NAME_CHARS,
+    NAME_WORDS,
+    ChangeShort,
+    ShortLabel,
+    ShortName,
+    Unit,
+    short_label_for,
+    trim_clause,
+    unit_for,
+)
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=400)]
 MetricKey = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,40}$")]
@@ -31,6 +44,17 @@ class Intervention(BaseModel):
     action: Text
     timing: Text
     frequency: Text
+    # What a phone shows in place of `action`. Worked out from it when the design call or older JSON has none.
+    change_short: ChangeShort | None = None
+    short_name: ShortName | None = None
+
+    @model_validator(mode="after")
+    def _short_words(self) -> Self:
+        if self.change_short is None:
+            self.change_short = trim_clause(self.action, CHANGE_WORDS, CHANGE_CHARS)
+        if self.short_name is None:
+            self.short_name = trim_clause(self.action, NAME_WORDS, NAME_CHARS)
+        return self
 
 
 class Metric(BaseModel):
@@ -46,12 +70,22 @@ class Metric(BaseModel):
     # Words for the actual low/high bounds; absent on older metric JSON.
     min_label: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)] | None = None
     max_label: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)] | None = None
+    # What a phone shows in place of `label`. Worked out from it when the design call or older JSON has none.
+    short_label: ShortLabel | None = None
+    unit: Unit | None = None
 
     @model_validator(mode="after")
     def _scale_bounds(self) -> Self:
         if self.type == "scale":
             if self.min is None or self.max is None or self.min >= self.max:
                 raise ValueError("scale metrics need min < max")
+        return self
+
+    @model_validator(mode="after")
+    def _short_words(self) -> Self:
+        if self.short_label is None:
+            self.short_label = short_label_for(self.key, self.label)
+        self.unit = unit_for(self.type, self.min, self.max, self.key, self.label, self.unit)
         return self
 
 

@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from app.repositories import checkins, experiments
 from app.schemas.checkin import TodayCheckin, TodayCheckinIn, TodayExperiment, TodayQuestion
-from app.schemas.experiment import Metric
+from app.schemas.experiment import Intervention, Metric
 from app.services.checkins import validate_metric_values
 from app.services.progress import with_progress
 
@@ -58,6 +58,10 @@ def read(profile_id: str, now: datetime | None = None) -> TodayCheckin:
     return _today(rows, recorded)
 
 
+def _short(row: dict) -> Intervention:
+    return Intervention.model_validate(row["intervention"])
+
+
 def _today(rows: list[dict], recorded: dict[str, dict | None]) -> TodayCheckin:
     values = {eid: c["metric_values"] for eid, c in recorded.items() if c}
     questions = questions_for(rows, values)
@@ -68,6 +72,8 @@ def _today(rows: list[dict], recorded: dict[str, dict | None]) -> TodayCheckin:
                 id=row["id"],
                 question=row["question"],
                 action=row["intervention"]["action"],
+                change_short=_short(row).change_short,
+                short_name=_short(row).short_name,
                 timing=row["intervention"]["timing"],
                 day_number=row["progress"].day_number,
                 total_days=row["progress"].total_days,
