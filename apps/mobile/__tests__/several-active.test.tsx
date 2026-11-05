@@ -153,7 +153,7 @@ describe('your lab with several experiments', () => {
     noDuplicateKeys();
     await goTo('Today');
     await press('Check in for today');
-    await screen.findByRole('header', { name: "Today's check-in." });
+    await screen.findByTestId('checkin-step');
     noDuplicateKeys();
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
@@ -176,18 +176,17 @@ describe('your lab with several experiments', () => {
     render(<MobileApp />);
     expect(await screen.findByText('Also running')).toBeVisible();
     await press('Check in for today');
-    expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
-    expect(screen.getByText('For both experiments')).toBeVisible();
-    expect(screen.getByText(`For: ${first.question}`)).toBeVisible();
-    expect(screen.getAllByText('Did you make the change today?')).toHaveLength(1);
-    expect(screen.getByText('Change 2')).toBeVisible();
-    await press("Save check-in");
-    expect(await screen.findByText('An answer is missing or needs checking. Review the fields below.')).toBeVisible();
-    expect(body).toBeUndefined();
-    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
-    fireEvent.changeText(screen.getByLabelText('Optional note'), ' late night ');
+    expect(await screen.findByTestId('checkin-step')).toBeVisible();
+    expect(screen.getByText('Counts for both')).toBeVisible();
+    expect(screen.getByText('Change 1')).toBeVisible();
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    expect(screen.getByText('Change 2')).toBeVisible();
+    expect(screen.getByRole('header', { name: 'Did you make the change?' })).toBeVisible();
+    expect(body).toBeUndefined();
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Add a note' }));
+    fireEvent.changeText(screen.getByLabelText('Optional note'), ' late night ');
     await press("Save check-in");
     await waitFor(() => expect(body).toEqual({
       revision: 'rev-1', note: 'late night', changes: { 'second-id': true },
@@ -210,10 +209,10 @@ describe('your lab with several experiments', () => {
     routes['POST /api/checkins/today'] = { body: { ...dueToday([first, second], true) } };
     render(<MobileApp />);
     await press2('Edit answers');
-    expect(await screen.findByRole('header', { name: "Today's check-in." })).toBeVisible();
-    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    expect(await screen.findByTestId('checkin-step')).toBeVisible();
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
     await press('Update check-in');
     expect(await screen.findByText('2 check-ins recorded')).toBeVisible();
   });
@@ -223,9 +222,9 @@ describe('your lab with several experiments', () => {
     render(<MobileApp />);
     await screen.findByText('Also running');
     await press('Check in for today');
-    await screen.findByText('For both experiments');
+    await screen.findByText('Counts for both');
     await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', 'second-id'))); });
-    await waitFor(() => expect(screen.queryByText('For both experiments')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Counts for both')).toBeNull());
     expect(calls).toContain('GET /api/experiments/second-id/checkins');
   });
 
@@ -235,10 +234,10 @@ describe('your lab with several experiments', () => {
     render(<MobileApp />);
     await screen.findByText('Also running');
     await press('Check in for today');
-    await screen.findByRole('header', { name: "Today's check-in." });
-    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
+    await screen.findByTestId('checkin-step');
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Focus: 6' }));
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
     await press("Save check-in");
     expect(await screen.findByText("Today's check-in has changed. Reload it to see the current questions.")).toBeVisible();
     expect(screen.getByRole('button', { name: "Reload today's check-in" })).toBeVisible();

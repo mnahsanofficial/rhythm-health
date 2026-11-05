@@ -18,6 +18,7 @@ const PATHS = {
   example: ['M10 3h4M11 3v6l-5.5 9.5A1.7 1.7 0 0 0 7 21h10a1.7 1.7 0 0 0 1.5-2.5L13 9V3M8 15h8'],
   signOut: ['M10 4H5v16h5M15 8l4 4-4 4M19 12H9'],
   chevron: ['M9 6l6 6-6 6'],
+  check: ['M5 12.5l4.5 4.5L19 7.5'],
   chevronDown: ['M6 9l6 6 6-6'],
   minus: ['M6 12h12'],
   plus: ['M12 6v12M6 12h12'],

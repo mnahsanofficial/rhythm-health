@@ -1,40 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
-import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
-import { MAX_DURATION_MINUTES, MAX_NOTE_LENGTH, MAX_NUMBER, type CheckinInput, type Metric } from '@rhythm-health/contract';
+import { View } from 'react-native';
+import { type CheckinInput } from '@rhythm-health/contract';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
-import { Action, Alert, Copy, Loading, StickyAction, useStyles, Title, Status, Notice } from './ui';
-import { MetricInput, Radio } from './metric-input';
+import { Action, Alert, Copy, Loading, useStyles, Notice } from './ui';
+import { CheckinFlow, type CheckinStep } from './checkin-steps';
 import { ApiError } from './lib/api';
-import { listCheckins, saveCheckin } from './lib/checkins';
+import { listCheckins, metricAnswer, saveCheckin } from './lib/checkins';
 import { getProgress } from './lib/experiments';
 import type { DayData } from './today';
-import { useColors, themedStyles } from './theme-core';
+import { useColors } from './theme-core';
 
-/** Helps the person fix an answer before sending. The backend's validation is the real check. */
-export function metricAnswer(metric: Metric, raw: string | boolean | undefined): { value: boolean | number } | { error: string } {
-  if (metric.type === 'boolean') return typeof raw === 'boolean' ? { value: raw } : { error: 'Choose Yes or No.' };
-  const text = typeof raw === 'string' ? raw.trim().replace(',', '.') : '';
-  const number = /^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) ? Number(text) : NaN;
-  if (!Number.isFinite(number)) return { error: 'Enter an answer as a number.' };
-  if (metric.type === 'scale' && (!Number.isInteger(number) || number < (metric.min ?? 1) || number > (metric.max ?? 10))) return { error: `Choose a whole number from ${metric.min ?? 1} to ${metric.max ?? 10}.` };
-  if (metric.type === 'duration' && (number < 0 || number > MAX_DURATION_MINUTES)) return { error: `Enter minutes from 0 to ${MAX_DURATION_MINUTES}.` };
-  if (Math.abs(number) > MAX_NUMBER) return { error: `Enter a number between -${MAX_NUMBER} and ${MAX_NUMBER}.` };
-  return { value: number };
-}
+export { metricAnswer };
 
 const answersKey = (values: Record<string, string | boolean>, intervention: boolean | undefined, note: string) => JSON.stringify({ values, intervention, note });
 
 export function CheckinForm({ data: { experiment, timeline }, token, offline, onExpired, onSaved, onBack }: {
   data: DayData; token: string; offline: boolean; onExpired: () => void; onSaved: () => void; onBack: () => void;
-}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
+}) { const COLORS = useColors(); const styles = useStyles();
   const day = timeline.progress.day_number;
   const test = timeline.days.find(item => item.day_number === day)?.phase === 'test';
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [intervention, setIntervention] = useState<boolean>();
   const [note, setNote] = useState('');
   const [loadedAnswers, setLoadedAnswers] = useState(() => answersKey({}, undefined, ''));
-  const [noteFocused, setNoteFocused] = useState(false);
   const [ready, setReady] = useState(false);
   const [already, setAlready] = useState(false);
   const [readError, setReadError] = useState<string>();
@@ -78,7 +66,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     }
     if (test && intervention === undefined) errors.intervention_completed = 'Choose whether you made the change.';
     setFields(errors); setRetrySave(false);
-    if (Object.keys(errors).length) { setError('An answer is missing or needs checking. Review the fields below.'); return; }
+    if (Object.keys(errors).length) { setError('An answer is missing or needs checking. Check the answers below.'); return; }
     saving.current = true; setBusy(true); setError(undefined);
     try {
       const fresh = await getProgress(token, experiment.id);
@@ -93,66 +81,20 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
     } finally { saving.current = false; setBusy(false); }
   }
   const metrics = [...experiment.metrics].sort((a, b) => Number(b.primary) - Number(a.primary));
-  const total = metrics.length + Number(test);
-  const answered = metrics.filter(metric => values[metric.key] !== undefined && values[metric.key] !== '').length + Number(test && intervention !== undefined);
+  const caption = `Day ${day} · ${test ? 'Test' : 'Normal'} day`;
+  const steps: CheckinStep[] = [
+    ...(test ? [{ key: 'intervention_completed', kind: 'change' as const, action: experiment.intervention.action, caption }] : []),
+    ...metrics.map(metric => ({ key: metric.key, kind: 'metric' as const, metric, caption })),
+  ];
+  const clearField = (key: string) => setFields(current => { if (!(key in current)) return current; const next = { ...current }; delete next[key]; return next; });
   return <View style={styles.stack}>
-    <Copy style={local.phase}>{`Day ${day} of ${timeline.progress.total_days} · ${test ? 'Test' : 'Baseline'} day ${timeline.progress.phase_day} of ${timeline.progress.phase_days}`}</Copy>
-    {experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample experiment · Sample check-in</Copy>}
-    <Title>Today&apos;s check-in.</Title>
-    <Copy>{test ? 'Test day: tell us how it went.' : 'Normal day: change nothing, just notice.'}</Copy>
+    {experiment.is_seeded && <Copy style={{ color: COLORS.moss }}>Sample check-in</Copy>}
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
     {!ready ? readError ? <><Alert>{readError}</Alert><Action label="Try again" disabled={offline} onPress={() => { setReadError(undefined); setAttempt(value => value + 1); }} /></>
       : offline ? <Copy>Reconnect to load your previous answers.</Copy> : <Loading message="Loading your answers…" />
-      : <>
-        <View style={local.meter}>
-          <View style={local.meterRow}>
-            <Status style={local.count}>{`${answered} of ${total} answered`}</Status>
-          </View>
-          <View accessible accessibilityRole="progressbar" accessibilityLabel="Check-in answers" accessibilityValue={{ min: 0, max: total, now: answered }} style={local.track}>
-            <View style={[local.fill, { width: `${total ? (answered / total) * 100 : 0}%` }]} />
-          </View>
-        </View>
-        {already && <Copy style={local.notice}>You&apos;ve already checked in today. Saving again replaces those answers.</Copy>}
-        {error && <Alert>{error}</Alert>}
-        {test && <View style={styles.stack}>
-          <Copy accessibilityRole="header" style={NATIVE_TYPOGRAPHY.lead}>Did you make the change today?</Copy>
-          <View style={local.change}>
-            <Copy>{experiment.intervention.action}</Copy>
-            <Copy style={local.small}>When: {experiment.intervention.timing}</Copy>
-          </View>
-          <View style={local.pair}>
-            <View style={local.half}><Radio label="Yes, I made the change" text="Yes" selected={intervention === true} onPress={() => setIntervention(true)} disabled={busy} /></View>
-            <View style={local.half}><Radio label="Not today" selected={intervention === false} onPress={() => setIntervention(false)} disabled={busy} /></View>
-          </View>
-          {fields.intervention_completed && <Copy style={{ color: COLORS.clay }}>{fields.intervention_completed}</Copy>}
-        </View>}
-        {metrics.map(metric => <View key={metric.key} style={styles.divider}>
-          <MetricInput metric={metric} value={values[metric.key]} onChange={value => setValues(current => ({ ...current, [metric.key]: value }))} disabled={busy} error={fields[metric.key]} />
-        </View>)}
-        <View style={styles.divider}>
-          <Copy style={NATIVE_TYPOGRAPHY.lead}>Anything unusual? (optional)</Copy>
-          <TextInput accessibilityLabel="Optional note" multiline value={note} onChangeText={setNote} maxLength={MAX_NOTE_LENGTH} editable={!busy}
-            placeholder="Late night, a stressful day, a long run…" placeholderTextColor={COLORS.muted}
-            onFocus={() => setNoteFocused(true)} onBlur={() => setNoteFocused(false)}
-            style={[styles.input, noteFocused && styles.focus, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
-          {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
-        </View>
-        <StickyAction><Action wide label={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? "Update check-in" : "Save check-in"}
-          disabled={busy || offline} onPress={() => void save()} /></StickyAction>
-      </>}
+      : <CheckinFlow steps={steps} values={{ ...values, intervention_completed: intervention }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
+        onAnswer={(key, value) => { clearField(key); if (key === 'intervention_completed') setIntervention(value as boolean); else setValues(current => ({ ...current, [key]: value })); }}
+        notice={already ? "Replaces today's answers." : undefined} alert={error && <Alert>{error}</Alert>}
+        saveLabel={busy ? 'Saving…' : retrySave ? 'Try saving again' : already ? 'Update check-in' : 'Save check-in'} onSave={() => void save()} />}
   </View>;
 }
-
-const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
-  phase: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
-  meter: { gap: SPACING.sm, paddingVertical: SPACING.md, borderTopWidth: LAYOUT.focusWidth / 2, borderBottomWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.line },
-  meterRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: SPACING.sm },
-  count: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption, color: COLORS.ink },
-  small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
-  track: { height: SPACING.xs, overflow: 'hidden', borderRadius: RADII.pill, backgroundColor: COLORS.line },
-  fill: { height: '100%', backgroundColor: COLORS.moss },
-  notice: { padding: SPACING.sm + SPACING.xs, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
-  change: { padding: SPACING.sm + SPACING.xs, gap: SPACING.xs, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
-  pair: { flexDirection: 'row', gap: SPACING.sm },
-  half: { flex: 1 },
-}); });
