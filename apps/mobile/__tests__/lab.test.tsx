@@ -204,3 +204,17 @@ describe('timeline', () => {
     expect(screen.queryByLabelText('Day 3 answers')).toBeNull();
   });
 });
+
+describe('the experiment screen is short', () => {
+  test('the change, the prediction and your normal wait behind rows', async () => {
+    setActive(testDay, { ...timelineFixture(testDay, { recorded: [1, 3], missed: [2] }), baseline_summary: { days_recorded: 2, days_planned: 3, metrics: [{ key: 'energy', label: 'Morning energy', description: 'Your morning energy averaged 6.' }] } } as never);
+    render(<MobileApp />);
+    fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
+    await screen.findByRole('button', { name: 'Prediction' });
+    expect(screen.queryByText('We predict')).toBeNull();
+    expect(screen.queryByText(`When: ${experiment.intervention.timing}`)).toBeNull();
+    expect(screen.queryByText('Your morning energy averaged 6.')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Prediction' }));
+    expect(await screen.findByText('We predict')).toBeVisible();
+  });
+});
