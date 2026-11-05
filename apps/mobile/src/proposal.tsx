@@ -180,7 +180,6 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
     return <View style={ui.stack}>
       <Title textRef={heading}>{`Your ${proposal.baseline_days + proposal.intervention_days} days`}</Title>
       <PlanDays proposal={proposal} />
-      <Copy>Fixed once you start.</Copy>
       {!result.personal_guess_available && <Copy style={local.caption}>No guess this time.</Copy>}
       {offline && <Notice>You&apos;re offline. Your plan is kept; reconnect to start.</Notice>}
       {startError && <Alert>{startError}</Alert>}
@@ -272,7 +271,7 @@ function GuessStep({ heading, proposal, shown, initial, onReveal, onBack }: {
 function PlanDays({ proposal }: { proposal: ExperimentProposal }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const total = proposal.baseline_days + proposal.intervention_days;
   return <View style={ui.stack}>
-    <Copy>{`${proposal.baseline_days} normal days, then ${proposal.intervention_days} test days`}</Copy>
+    <Copy>{`We'll compare your ${proposal.baseline_days} normal days with your ${proposal.intervention_days} test days. Your check-ins decide, not the AI.`}</Copy>
     <View testID="plan-days" accessible accessibilityLabel={`Days 1 to ${proposal.baseline_days} are baseline. Days ${proposal.baseline_days + 1} to ${total} are test days.`} style={local.days}>
       {Array.from({ length: total }, (_, index) => <View key={index} style={[local.day, { backgroundColor: COLORS[index < proposal.baseline_days ? 'chart-1' : 'chart-2'] }]} />)}
     </View>

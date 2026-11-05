@@ -185,7 +185,7 @@ describe('question flow', () => {
     await press('Design experiment');
     await toStart();
     expect(await screen.findByTestId('plan-days')).toBeVisible();
-    expect(screen.getByText('3 normal days, then 7 test days')).toBeVisible();
+    expect(screen.getByText(/^We'll compare your 3 normal days with your 7 test days/)).toBeVisible();
     expect(screen.getByLabelText('Days 1 to 3 are baseline. Days 4 to 10 are test days.')).toBeVisible();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Start this experiment' })).toBeVisible());
   });
