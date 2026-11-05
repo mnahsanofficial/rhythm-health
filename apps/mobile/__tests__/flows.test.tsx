@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import type { Experiment } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile, proposeResponse } from '../../../frontend/tests/support/fixtures';
+import { toStart } from './support/plan';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 
 const mockAuth = { getSession: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -182,6 +183,7 @@ describe('question flow', () => {
     fireEvent.press(await screen.findByRole('button', { name: 'Ask your first question' }));
     fireEvent.changeText(await screen.findByLabelText('Your question or goal'), 'Does less caffeine improve my focus?');
     await press('Design experiment');
+    await toStart();
     expect(await screen.findByTestId('plan-days')).toBeVisible();
     expect(screen.getByText('3 normal days, then 7 test days')).toBeVisible();
     expect(screen.getByLabelText('Days 1 to 3 are baseline. Days 4 to 10 are test days.')).toBeVisible();

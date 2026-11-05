@@ -7,6 +7,7 @@ import type { Experiment } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
 import { goTo } from './support/nav';
 import { completedExperiment, experiment, labReport, profile, proposeResponse, writtenLabReport } from '../../../frontend/tests/support/fixtures';
+import { pressNext } from './support/plan';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
 
 const mockAuth = { getSession: jest.fn(), signInWithPassword: jest.fn(), signUp: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -135,10 +136,12 @@ describe('controls have names and 48pt targets', () => {
     auditControls();
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), 'Does walking after dinner help my mornings?');
     await press('Design experiment');
+    await pressNext();
     const guess = await screen.findByLabelText('Your guess for Morning energy');
     auditControls();
     fireEvent.changeText(guess, '10');
     await press('Show prediction');
+    await pressNext();
     await screen.findByRole('button', { name: 'Start this experiment' });
     auditControls();
   });

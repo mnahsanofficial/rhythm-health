@@ -552,7 +552,7 @@ describe('run this experiment', () => {
     expect(count(PROPOSE)).toBe(0);
     defaults[PROPOSE] = { body: { ...proposeResponse, personal_guess_available: true } };
     await press('Design experiment');
-    await screen.findByRole('header', { name: 'What do you think will happen?' });
+    await screen.findByRole('button', { name: 'Next' });
     expect(calls.find(call => call.key === PROPOSE)?.body).toEqual({ question: next });
   });
 

@@ -5,6 +5,7 @@ import { writeDraft } from '../src/lib/onboarding';
 import { MobileApp } from '../src/mobile-app';
 import { ThemeProvider } from '../src/theme';
 import { Copy, StickyAction, useStyles } from '../src/ui';
+import { pressNext, toStart } from './support/plan';
 import { profile, proposeResponse } from '../../../frontend/tests/support/fixtures';
 
 const mockAuth = { getSession: jest.fn(), signInWithPassword: jest.fn(), signUp: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -67,6 +68,7 @@ async function openPlan() {
   await pressTab('Ask');
   fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
+  await toStart();
   await screen.findByRole('button', { name: 'Start this experiment' });
 }
 
@@ -131,6 +133,7 @@ describe('the tab bar', () => {
     await pressTab('Ask');
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
+    await toStart();
     await screen.findByRole('button', { name: 'Start this experiment' });
     expect(screen.queryByRole('tab', { name: 'Today' })).toBeNull();
   });
@@ -285,7 +288,7 @@ describe('reading order', () => {
     await pressTab('Ask');
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
-    expect(await screen.findByText('Change from your normal days. +10 means 10% higher.')).toBeVisible();
+    await pressNext(); expect(await screen.findByText('Morning energy, change from normal days')).toBeVisible();
     expect(screen.queryByText(/Your guess locks/)).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Why?' }));
     expect(screen.getByText(/It locks when you see the prediction/)).toBeVisible();
@@ -294,16 +297,14 @@ describe('reading order', () => {
   test('the plan leads with the change, the days and the range; the reasons wait behind Why?', async () => {
     await openPlan();
     const { proposal, prediction } = proposeResponse;
-    expect(screen.getByText(proposal!.intervention.action)).toBeVisible();
     expect(screen.getByText(`${proposal!.baseline_days} normal days, then ${proposal!.intervention_days} test days`)).toBeVisible();
-    expect(screen.getByText(/^Confidence:/)).toBeVisible();
     expect(screen.getByText('Fixed once you start.')).toBeVisible();
-    expect(screen.queryByText(proposal!.hypothesis)).toBeNull();
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Back' })); });
+    expect(screen.getByText(/^Confidence:/)).toBeVisible();
     expect(screen.queryByText(prediction!.reasoning)).toBeNull();
     const why = screen.getByRole('button', { name: 'Why?' });
     expect(why.props.accessibilityState).toMatchObject({ expanded: false });
     fireEvent.press(why);
-    expect(screen.getByText(proposal!.hypothesis)).toBeVisible();
     expect(screen.getByText(prediction!.reasoning)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Why?' }).props.accessibilityState).toMatchObject({ expanded: true });
   });

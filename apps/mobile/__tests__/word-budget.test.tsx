@@ -21,8 +21,10 @@ const BUDGET = {
   'combined, a question': 16,
   'combined, review': 25,
   ask: 69,
-  guess: 27,
-  plan: 60,
+  'plan, the change': 12,
+  guess: 15,
+  'plan, the reveal': 16,
+  'plan, the days': 25,
   progress: 101,
   history: 62,
   'lab report': 371,
@@ -133,10 +135,14 @@ describe('main-flow screens stay within their word budget', () => {
     expectWithin('ask', view.toJSON());
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), proposeResponse.proposal!.question);
     await press(screen.getByRole('button', { name: 'Design experiment' })); await settle();
+    expectWithin('plan, the change', view.toJSON());
+    await press(screen.getByRole('button', { name: 'Next' }));
     expectWithin('guess', view.toJSON());
     fireEvent.changeText(screen.getByLabelText(/^Your guess for/), '10');
     await press(screen.getByRole('button', { name: 'Show prediction' })); await settle();
-    expectWithin('plan', view.toJSON());
+    expectWithin('plan, the reveal', view.toJSON());
+    await press(screen.getByRole('button', { name: 'Next' }));
+    expectWithin('plan, the days', view.toJSON());
   });
 
   test('Progress, History and the Lab Report', async () => {
