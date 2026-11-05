@@ -6,7 +6,7 @@ import type { DayData } from '../src/today';
 
 const entry = (id: string, day = 4, recorded: number[] = []): DayData => {
   const exp = { ...experiment, id, question: 'Same question', status: 'active' as const, progress: { ...experiment.progress, state: 'in_progress' as const, day_number: day, total_days: 10, days_remaining: 10 - day, phase: day <= 3 ? 'baseline' as const : 'intervention' as const, phase_day: day <= 3 ? day : day - 3, phase_days: day <= 3 ? 3 : 7 } };
-  return { experiment: exp, timeline: timelineFixture(exp, { recorded, nextDayAt: new Date(2026, 10, 5, 16).toISOString() }) };
+  return { experiment: exp, timeline: timelineFixture(exp, { recorded, nextDayAt: new Date(2026, 10, day === 3 ? 6 : 5, 16).toISOString() }) };
 };
 const checkin = jest.fn(), detail = jest.fn(), results = jest.fn(), ask = jest.fn(), example = jest.fn();
 function show(entries: DayData[]) { return render(<TodayDashboard entries={entries} disabled={false} onCheckin={checkin} onDetail={detail} onResults={results} onAsk={ask} onExample={example} now={new Date(2026, 10, 5, 9)} />); }
@@ -35,4 +35,23 @@ test('a completed report is ready, while an unfinished final day makes no ready 
   show([entry('finished', 10, [10]), completed]);
   fireEvent.press(screen.getByRole('button', { name: 'Your results are ready' }));
   expect(results).toHaveBeenCalledWith(completed);
+});
+
+test('a baseline opening today names the returned time rather than inventing tomorrow', () => {
+  const baseline = entry('baseline', 3, [3]);
+  baseline.timeline.next_day_at = new Date(2026, 10, 5, 16).toISOString();
+  show([baseline]);
+  expect(screen.getByText('Baseline done · your test starts Thursday 4:00 PM')).toBeVisible();
+});
+test('a missing baseline opening does not invent tomorrow', () => {
+  const baseline = entry('baseline', 3, [3]); baseline.timeline.next_day_at = null;
+  show([baseline]);
+  expect(screen.getByText('Baseline done · your test starts on the next experiment day')).toBeVisible();
+});
+test('the last due day closes at the returned experiment end', () => {
+  const last = entry('last', 10);
+  last.timeline.next_day_at = null;
+  last.timeline.progress.ends_at = new Date(2026, 10, 5, 16).toISOString();
+  show([last]);
+  expect(screen.getByText('Check-in due · closes Thursday 4:00 PM')).toBeVisible();
 });
