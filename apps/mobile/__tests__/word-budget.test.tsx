@@ -23,7 +23,7 @@ const BUDGET = {
   ask: 69,
   'plan, the change': 12,
   guess: 15,
-  'plan, the reveal': 15,
+  'plan, the reveal': 16,
   'plan, the days': 25,
   progress: 101,
   history: 62,

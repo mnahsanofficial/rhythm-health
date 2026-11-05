@@ -92,6 +92,29 @@ const radio = (page, name) => page.getByRole('radio', { name, exact: true }).cli
 const button = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
 const GROUPS = {
+  async plan(browser, mode) {
+    const run = await open(browser, { mode, list: [] });
+    await run.page.getByRole('tab', { name: 'Ask' }).click();
+    await run.page.getByLabel('Your question or goal', { exact: true }).fill(proposeResponse.proposal.question);
+    await button(run.page, 'Design experiment');
+    await run.page.getByRole('button', { name: 'Details', exact: true }).waitFor();
+    await shoot(run.page, 'plan', '1-change', mode);
+    await button(run.page, 'Details');
+    await shoot(run.page, 'plan', '1b-details-sheet', mode);
+    await button(run.page, 'Done');
+    await button(run.page, 'Next');
+    await run.page.getByLabel(/^Your guess for/).waitFor();
+    await run.page.getByLabel(/^Your guess for/).fill('10');
+    await shoot(run.page, 'plan', '2-guess', mode);
+    await button(run.page, 'Show prediction');
+    await shoot(run.page, 'plan', '3-reveal', mode);
+    await button(run.page, 'Next');
+    await shoot(run.page, 'plan', '4-days', mode);
+    const scrolls = await run.page.evaluate(() => [...document.querySelectorAll('*')].some(element => /auto|scroll/.test(getComputedStyle(element).overflowY) && element.clientHeight > 0 && element.scrollHeight > element.clientHeight + 1));
+    if (scrolls) throw new Error('The last plan step needs scrolling');
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+  },
   async today(browser, mode) {
     let run = await open(browser, { mode, list: [on(4, 'intervention')] });
     await shoot(run.page, 'today', '1-due', mode);
