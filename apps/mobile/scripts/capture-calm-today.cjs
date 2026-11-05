@@ -104,7 +104,7 @@ async function preview(browser, scenario, mode, height = 844, reducedMotion = 'n
         if (pressed.width >= before.width - 1 || pressed.width < before.width * 0.95) throw new Error('Normal press feedback is missing or excessive');
         if (mode === 'light') await run.page.screenshot({ path: path.join(output, 'due-pressed.png') });
         await run.page.mouse.up();
-        await run.page.getByText("Today's check-in.", { exact: true }).waitFor();
+        await run.page.getByRole('radio', { name: 'Not today', exact: true }).waitFor();
         await run.page.getByRole('button', { name: 'Close', exact: true }).click();
         await run.page.getByText('Up next', { exact: true }).waitFor();
         await run.page.getByRole('button', { name: 'See your experiment', exact: true }).click();
@@ -112,7 +112,7 @@ async function preview(browser, scenario, mode, height = 844, reducedMotion = 'n
       }
       if (scenario === 'recorded') {
         await run.page.getByRole('button', { name: "Edit today's answers", exact: true }).click();
-        await run.page.getByRole('button', { name: 'Update check-in', exact: true }).waitFor();
+        await run.page.getByRole('radio', { name: 'Yes, I made the change', exact: true }).waitFor();
       }
       if (scenario === 'day10') {
         await run.page.getByRole('button', { name: 'See your results', exact: true }).click();

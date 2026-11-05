@@ -94,16 +94,16 @@ test('sign-out cancels owned notifications before removing the native session', 
 test('cold-start tap waits for sign-in then opens the current check-in', async () => {
   notificationState.last = tapReminder('fake-user', active.id); mockAuth.getSession.mockResolvedValue({ data: { session: null }, error: null });
   await renderToForm(); fireEvent.changeText(await screen.findByLabelText('Email'), 'learner@example.invalid'); fireEvent.changeText(screen.getByLabelText('Password'), 'fake-password');
-  fireEvent.press(screen.getByRole('button', { name: 'Sign in' })); expect(await screen.findByText("Today's check-in.")).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'Sign in' })); expect(await screen.findByTestId('checkin-step')).toBeVisible();
   expect(notifications.clearLastNotificationResponse).toHaveBeenCalled();
 });
 
 test('warm tap refreshes progress and opens check-in only for the signed-in owner', async () => {
   render(<MobileApp />); await screen.findByText(active.question);
   await act(async () => { responses.forEach(listener => listener(tapReminder('another-user', active.id))); });
-  expect(screen.queryByText("Today's check-in.")).toBeNull();
+  expect(screen.queryByTestId('checkin-step')).toBeNull();
   await act(async () => { responses.forEach(listener => listener({ ...tapReminder('fake-user', active.id), notification: { ...tapReminder('fake-user', active.id).notification, date: 2 } })); });
-  expect(await screen.findByText("Today's check-in.")).toBeVisible();
+  expect(await screen.findByTestId('checkin-step')).toBeVisible();
 });
 
 test('scheduling failure is visible with retry and Today remains usable', async () => {

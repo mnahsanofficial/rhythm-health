@@ -223,7 +223,7 @@ await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })
   test('the logo asks first when it would lose typed answers', async () => {
     await withRunning();
     await press(/Check in now, day/);
-    await screen.findByRole('header', { name: "Today's check-in." });
+    await screen.findByTestId('checkin-step');
     await act(async () => { fireEvent.press(screen.getAllByRole('radio')[0]); });
     await act(async () => { fireEvent.press(screen.getByRole('link', { name: 'Rhythm, home' })); });
     expect(screen.getByText("Your answers won't be kept.")).toBeVisible();
@@ -234,13 +234,13 @@ await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Ask' })
   test('the check-in closes with ×, asking only once something is answered', async () => {
     await withRunning();
     await press(/Check in now, day/);
-    await screen.findByRole('header', { name: "Today's check-in." });
+    await screen.findByTestId('checkin-step');
     expect(screen.queryByText(/[←‹]/)).toBeNull();
     await press('Close');
     expect(await screen.findByRole('button', { name: /See your experiment/ })).toBeVisible();
     expect(screen.queryByText('Leave without saving?')).toBeNull();
     await press(/Check in now, day/);
-    await screen.findByRole('header', { name: "Today's check-in." });
+    await screen.findByTestId('checkin-step');
     const choice = screen.getAllByRole('radio')[0];
     await act(async () => { fireEvent.press(choice); });
     await press('Close');

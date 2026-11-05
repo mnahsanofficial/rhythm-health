@@ -51,7 +51,7 @@ async function openCheckin(day = 4) {
   render(<MobileApp />);
   const start = await screen.findByRole('button', { name: `Check in now, day ${day}` });
   await act(async () => { fireEvent.press(start); });
-  await screen.findByLabelText('Optional note');
+  await screen.findByTestId('checkin-step');
 }
 const answerAll = () => {
   fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
@@ -62,46 +62,41 @@ const answerAll = () => {
 describe('check-in', () => {
   test('a test day uses the web heading, phase line and lead', async () => {
     await openCheckin();
-    expect(screen.getByText(/Test day 1 of 7$/)).toBeVisible();
-    expect(screen.getByText('Test day: tell us how it went.')).toBeVisible();
-    expect(screen.getByText(`When: ${experiment.intervention.timing}`)).toBeVisible();
+    expect(screen.getByText('Day 4 · Test day')).toBeVisible();
+    expect(screen.getByText(experiment.intervention.action)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Close' })).toBeVisible();
-    expect(screen.getByText('Anything unusual? (optional)')).toBeVisible();
   });
 
   test('a normal day says not to change anything', async () => {
     routes['GET /api/experiments?status=active'] = { body: [baselineDay] };
     routes[`GET /api/experiments/${ID}/progress`] = { body: timelineFixture(baselineDay, {}) };
     await openCheckin(2);
-    expect(screen.getByText(/Baseline day 2 of 3$/)).toBeVisible();
-    expect(screen.getByText('Normal day: change nothing, just notice.')).toBeVisible();
+    expect(screen.getByText('Day 2 · Normal day')).toBeVisible();
   });
 
-  test('counts answers as they are given, including the test-day question', async () => {
+  test('counts steps as they are answered, including the test-day question', async () => {
     await openCheckin();
-    expect(screen.getByText('0 of 3 answered')).toBeVisible();
-    expect(screen.getByRole('progressbar', { name: 'Check-in answers' }).props.accessibilityValue).toMatchObject({ now: 0, max: 3 });
-    fireEvent.press(screen.getByRole('radio', { name: 'Not today' }));
-    expect(screen.getByText('1 of 3 answered')).toBeVisible();
+    expect(screen.getByRole('progressbar', { name: 'Step 1 of 4' }).props.accessibilityValue).toMatchObject({ now: 1, max: 4 });
     answerAll();
-    expect(screen.getByText('3 of 3 answered')).toBeVisible();
-    expect(screen.getByRole('progressbar', { name: 'Check-in answers' }).props.accessibilityValue).toMatchObject({ now: 3, max: 3 });
+    expect(screen.getByRole('progressbar', { name: 'Step 4 of 4' }).props.accessibilityValue).toMatchObject({ now: 4, max: 4 });
   });
 
   test('the main measure comes first', async () => {
     const metrics = [...experiment.metrics].reverse();
     routes['GET /api/experiments?status=active'] = { body: [{ ...testDay, metrics }] };
     await openCheckin();
-    const labels = screen.getAllByTestId('metric-label').map(node => node.props.children);
-    expect(labels).toEqual(['Morning energy', 'Sleep quality']);
+    fireEvent.press(screen.getByRole('radio', { name: 'Not today' }));
+    expect(screen.getByRole('header', { name: 'Morning energy' })).toBeVisible();
+    fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    expect(screen.getByRole('header', { name: 'Sleep quality' })).toBeVisible();
   });
 
   test('saying so before replacing today, and the button says Update', async () => {
     routes[`GET /api/experiments/${ID}/checkins`] = { body: [saved] };
     await openCheckin();
-    expect(screen.getByText("You've already checked in today. Saving again replaces those answers.")).toBeVisible();
+    for (let step = 0; step < 3; step++) await press('Next');
+    expect(screen.getByText("Replaces today's answers.")).toBeVisible();
     expect(screen.getByRole('button', { name: "Update check-in" })).toBeVisible();
-    expect(screen.getByText('3 of 3 answered')).toBeVisible();
   });
 
   test('saving celebrates with server counts, then returns to Today', async () => {
@@ -123,7 +118,7 @@ describe('check-in', () => {
     await screen.findByText('6 days left');
     await press('Continue');
     await press("Edit today's answers");
-    expect(await screen.findByLabelText('Optional note')).toBeVisible();
+    expect(await screen.findByTestId('checkin-step')).toBeVisible();
   });
 
   test('if the refresh fails, the saved check-in stays saved and is not sent again', async () => {

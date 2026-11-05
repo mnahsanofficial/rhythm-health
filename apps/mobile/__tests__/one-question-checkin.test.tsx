@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import * as Reanimated from 'react-native-reanimated';
 import { StyleSheet } from 'react-native';
 import { LAYOUT } from '@rhythm-health/brand';
-import type { Experiment, Metric } from '@rhythm-health/contract';
+import type { Experiment } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, profile } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
@@ -15,7 +15,7 @@ jest.mock('expo-font', () => ({ useFonts: () => [true, null] }));
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 
 const ID = experiment.id;
-const day = (number: number, phase: 'baseline' | 'intervention', metrics: Metric[] = experiment.metrics): Experiment => ({
+const day = (number: number, phase: 'baseline' | 'intervention', metrics: Experiment['metrics'] = experiment.metrics): Experiment => ({
   ...experiment, status: 'active', metrics,
   progress: { ...experiment.progress, state: 'in_progress', day_number: number, phase, phase_day: phase === 'baseline' ? number : number - 3, phase_days: phase === 'baseline' ? 3 : 7, total_days: 10, days_remaining: 10 - number, started_at: '2026-10-01T09:00:00Z' },
 });
@@ -99,7 +99,7 @@ describe('one question per screen', () => {
   });
 
   test('a typed number waits for Next, and Next waits for a valid number', async () => {
-    const breaks: Metric = { key: 'breaks', label: 'Breaks', type: 'number', min: null, max: null, min_label: null, max_label: null, primary: true };
+    const breaks: Experiment['metrics'][number] = { key: 'breaks', label: 'Breaks', type: 'number', min: null, max: null, min_label: null, max_label: null, primary: true };
     install(day(1, 'baseline', [breaks, { ...experiment.metrics[1], primary: false }])); await open(1);
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     fireEvent.changeText(screen.getByLabelText('Breaks'), 'lots');
@@ -135,7 +135,7 @@ describe('the review', () => {
 });
 
 describe('editing', () => {
-  const saved = { id: 'c', experiment_id: ID, day_number: 4, phase: 'intervention', intervention_completed: false, metric_values: { morning_energy: 5, sleep_quality: 0 }, note: 'Earlier', created_at: '2026-10-31T10:00:00Z', updated_at: '2026-10-31T10:00:00Z' };
+  const saved = { id: 'c', experiment_id: ID, day_number: 4, phase: 'intervention', intervention_completed: false, metric_values: { morning_energy: 5, sleep_quality: 6 }, note: 'Earlier', created_at: '2026-10-31T10:00:00Z', updated_at: '2026-10-31T10:00:00Z' };
 
   test('uses the same flow, prefilled, and Next skips without changing an answer', async () => {
     const current = day(4, 'intervention'); install(current, [saved]);

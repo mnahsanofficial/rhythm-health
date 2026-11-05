@@ -117,7 +117,7 @@ describe('the celebration', () => {
   test('a real save shows it, then Today with the refreshed day', async () => {
     render(<MobileApp />);
     fireEvent.press(await screen.findByRole('button', { name: 'Check in now, day 4' }));
-    await screen.findByRole('button', { name: 'Save check-in' });
+    await screen.findByTestId('checkin-step');
     fireEvent.press(screen.getByRole('radio', { name: 'Not today' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Sleep quality: 7' }));
@@ -140,10 +140,11 @@ describe('updating a check-in', () => {
     render(<MobileApp />);
     const edit = await screen.findByRole('button', { name: "Edit today's answers" });
     await act(async () => { fireEvent.press(edit); });
-    const update = await screen.findByRole('button', { name: 'Update check-in' });
+    await screen.findByTestId('checkin-step');
+    fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
     fireEvent.press(screen.getByRole('radio', { name: 'Sleep quality: 7' }));
-    await act(async () => { fireEvent.press(update); });
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Update check-in' })); });
     expect(await screen.findByText('6 days left')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
     expect(Haptics.impactAsync).toHaveBeenCalledTimes(2);

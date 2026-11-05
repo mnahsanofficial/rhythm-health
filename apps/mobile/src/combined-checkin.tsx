@@ -1,14 +1,11 @@
 import { useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
-import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
-import { MAX_NOTE_LENGTH, type TodayCheckin, type TodayCheckinInput } from '@rhythm-health/contract';
-import { metricAnswer } from './checkin';
-import { MetricInput, Radio } from './metric-input';
+import { View } from 'react-native';
+import { type TodayCheckin, type TodayCheckinInput } from '@rhythm-health/contract';
+import { CheckinFlow, type CheckinStep } from './checkin-steps';
 import { ApiError, detailCode } from './lib/api';
-import { getTodayCheckin, saveTodayCheckin } from './lib/checkins';
+import { getTodayCheckin, metricAnswer, saveTodayCheckin } from './lib/checkins';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
-import { Action, Alert, Copy, StickyAction, useStyles, Title, useStepFocus, Notice } from './ui';
-import { useColors, themedStyles } from './theme-core';
+import { Action, Alert, useStyles, Notice } from './ui';
 
 const prefilled = (today: TodayCheckin) => Object.fromEntries(today.questions.filter(question => question.value !== null && question.value !== undefined)
   .map(question => [question.id, typeof question.value === 'boolean' ? question.value : String(question.value)]));
@@ -18,7 +15,7 @@ const madeChanges = (today: TodayCheckin) => Object.fromEntries(today.experiment
 /** One check-in for every experiment due today. The backend decides what combines and saves it all or not at all. */
 export function CombinedCheckin({ initial, token, offline, onExpired, onBack, onSaved }: {
   initial: TodayCheckin; token: string; offline: boolean; onExpired: () => void; onBack: () => void; onSaved: (result: TodayCheckin) => void;
-}) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
+}) { const styles = useStyles();
   const [today, setToday] = useState(initial);
   const [values, setValues] = useState<Record<string, string | boolean>>(() => prefilled(initial));
   const [changes, setChanges] = useState<Record<string, boolean>>(() => madeChanges(initial));
@@ -31,7 +28,6 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack, on
   const [loadedAnswers, setLoadedAnswers] = useState(answersKey);
   useNavScreen({ kind: 'flow', onBack, busy, unsaved: answersKey !== loadedAnswers ? WONT_BE_KEPT.answers : null });
   const saving = useRef(false);
-  const heading = useStepFocus('form');
   const testing = today.experiments.filter(item => item.change_required);
   const recorded = today.experiments.some(item => item.recorded);
 
@@ -61,7 +57,7 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack, on
     }
     for (const item of testing) if (changes[item.id] === undefined) errors[`change:${item.id}`] = 'Choose whether you made the change.';
     setFields(errors); setStale(false);
-    if (Object.keys(errors).length) { setError('An answer is missing or needs checking. Review the fields below.'); return; }
+    if (Object.keys(errors).length) { setError('An answer is missing or needs checking. Check the answers below.'); return; }
     saving.current = true; setBusy(true); setError(undefined);
     try {
       const result = await saveTodayCheckin(token, { revision: today.revision, answers, changes, note: note.trim() || null });
@@ -72,49 +68,24 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack, on
     } finally { saving.current = false; setBusy(false); }
   }
 
+  const steps: CheckinStep[] = [];
+  const asked = new Set<string>();
+  for (const item of today.experiments) {
+    const caption = `Day ${item.day_number} · ${item.change_required ? 'Test' : 'Normal'} day`;
+    if (item.change_required) steps.push({ key: `change:${item.id}`, kind: 'change', action: item.action, name: item.action, caption });
+    for (const question of today.questions) {
+      if (asked.has(question.id) || !question.experiment_ids.includes(item.id)) continue;
+      asked.add(question.id);
+      const shared = question.experiment_ids.length;
+      steps.push({ key: question.id, kind: 'metric', metric: question.metric, name: item.action, caption, audience: shared === 1 ? undefined : shared === 2 ? 'Counts for both' : `Counts for all ${shared}` });
+    }
+  }
   return <View style={styles.stack}>
-    <Title textRef={heading}>Today&apos;s check-in.</Title>
-    <Copy>{`One check-in for your ${today.experiments.length} experiments.`}</Copy>
     {offline && <Notice>You&apos;re offline; your answers are kept</Notice>}
-    {recorded && <Copy style={local.notice}>You&apos;ve already checked in for some of these today. Saving again replaces those answers.</Copy>}
-    {error && <Alert>{error}</Alert>}
-    {stale && <Action label="Reload today's check-in" secondary disabled={busy || offline} onPress={() => void reload()} />}
-    {testing.map(item => <View key={item.id} style={styles.stack}>
-      <Copy accessibilityRole="header" style={NATIVE_TYPOGRAPHY.lead}>Did you make the change today?</Copy>
-      <View style={local.notice}>
-        <Copy>{item.action}</Copy>
-        <Copy style={local.small}>When: {item.timing}</Copy>
-      </View>
-      <View style={local.pair}>
-        <View style={local.half}><Radio label="Yes, I made the change" text="Yes" selected={changes[item.id] === true} onPress={() => setChanges(current => ({ ...current, [item.id]: true }))} disabled={busy} /></View>
-        <View style={local.half}><Radio label="Not today" selected={changes[item.id] === false} onPress={() => setChanges(current => ({ ...current, [item.id]: false }))} disabled={busy} /></View>
-      </View>
-      {fields[`change:${item.id}`] && <Copy style={{ color: COLORS.clay }}>{fields[`change:${item.id}`]}</Copy>}
-    </View>)}
-    {today.questions.map(question => <View key={question.id} style={styles.divider}>
-      <Copy style={local.audience}>{question.experiment_ids.length === 1
-        ? `For: ${today.experiments.find(item => item.id === question.experiment_ids[0])?.question ?? ''}`
-        : question.experiment_ids.length === 2 ? 'For both experiments' : `For all ${question.experiment_ids.length} experiments`}</Copy>
-      <MetricInput metric={question.metric} value={values[question.id]} onChange={value => setValues(current => ({ ...current, [question.id]: value }))} disabled={busy} error={fields[question.id]} />
-    </View>)}
-    <View style={styles.divider}>
-      <Copy style={NATIVE_TYPOGRAPHY.lead}>Anything unusual? (optional)</Copy>
-      <Copy style={local.small}>Saved with every experiment here.</Copy>
-      <TextInput accessibilityLabel="Optional note" multiline value={note} onChangeText={setNote} maxLength={MAX_NOTE_LENGTH} editable={!busy}
-        placeholder="Late night, a stressful day, a long run…" placeholderTextColor={COLORS.muted}
-        style={[styles.input, { minHeight: LAYOUT.primaryAction * 2, textAlignVertical: 'top' }]} />
-      {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
-    </View>
-    <StickyAction><Action wide label={busy ? 'Saving…' : recorded ? "Update check-in" : "Save check-in"} disabled={busy || offline} onPress={() => void save()} /></StickyAction>
+    <CheckinFlow key={today.revision} steps={steps} values={{ ...values, ...Object.fromEntries(Object.entries(changes).map(([id, made]) => [`change:${id}`, made])) }} fields={fields} note={note} onNote={setNote} busy={busy} offline={offline}
+      onAnswer={(key, value) => { if (key.startsWith('change:')) setChanges(current => ({ ...current, [key.slice('change:'.length)]: value as boolean })); else setValues(current => ({ ...current, [key]: value })); }}
+      notice={recorded ? "Replaces today's answers." : undefined} noteCaption="Saved with every experiment here."
+      alert={<>{error && <Alert>{error}</Alert>}{stale && <Action label="Reload today's check-in" secondary disabled={busy || offline} onPress={() => void reload()} />}</>}
+      saveLabel={busy ? 'Saving…' : recorded ? 'Update check-in' : 'Save check-in'} onSave={() => void save()} />
   </View>;
 }
-
-const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
-  notice: { padding: SPACING.sm + SPACING.xs, gap: SPACING.xs, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'] },
-  item: { gap: SPACING.xs },
-  day: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
-  small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
-  audience: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.moss },
-  pair: { flexDirection: 'row', gap: SPACING.sm },
-  half: { flex: 1 },
-}); });

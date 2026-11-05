@@ -70,16 +70,19 @@ afterEach(() => jest.restoreAllMocks());
 async function open() {
   const view = render(<MobileApp />);
   fireEvent.press(await screen.findByRole('button', { name: /Check in now, day|Edit today's answers/ }));
-  await screen.findByText("Today's check-in.");
-  await screen.findByLabelText('Breaks');
+  await screen.findByTestId('checkin-step');
   return view;
 }
+const next = Object.assign(() => fireEvent.press(screen.getByRole('button', { name: 'Next' })), { skipChange: () => fireEvent.press(screen.getByRole('radio', { name: 'Not today' })) });
 async function answer() {
   fireEvent.press(screen.getByRole('radio', { name: 'Yes, I made the change' }));
   fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
   fireEvent.changeText(screen.getByLabelText('Breaks'), '-2.5');
+  next();
   fireEvent.changeText(screen.getByLabelText('Minutes to fall asleep, in minutes'), '20,5');
+  next();
   fireEvent.press(screen.getByRole('radio', { name: 'Screen-free evening: No' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Add a note' }));
   fireEvent.changeText(screen.getByLabelText('Optional note'), '  A quiet evening.  ');
 }
 
@@ -94,21 +97,21 @@ test('scale endpoints use words, including the neutral fallback for an unknown k
   active.metrics[0] = { ...active.metrics[0], key: 'daily_rating', label: 'Daily rating' };
   active.success_criteria = { ...active.success_criteria, primary_metric: 'daily_rating' };
   active.prediction = { ...active.prediction, target_metric: 'daily_rating' };
-  await open();
+  await open(); next.skipChange();
   expect(screen.getByText('1 Low · 10 High')).toBeVisible();
 });
 
 test('server-labelled energy scales name both ends', async () => {
   active.metrics[0] = { ...active.metrics[0], min_label: 'Drained', max_label: 'Full of energy' };
-  await open(); expect(screen.getByText('1 Drained · 10 Full of energy')).toBeVisible();
+  await open(); next.skipChange(); expect(screen.getByText('1 Drained · 10 Full of energy')).toBeVisible();
 });
 
 test('baseline omits the test-day question and sends no intervention answer', async () => {
   serverDay = 1; active.progress = { ...active.progress, day_number: 1, phase: 'baseline', phase_day: 1, phase_days: 3 };
   await open();
-  expect(screen.queryByText('Did you make the change today?')).toBeNull();
+  expect(screen.queryByText('Did you make the change?')).toBeNull();
   fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
-  fireEvent.changeText(screen.getByLabelText('Breaks'), '0'); fireEvent.changeText(screen.getByLabelText('Minutes to fall asleep, in minutes'), '0');
+  fireEvent.changeText(screen.getByLabelText('Breaks'), '0'); next(); fireEvent.changeText(screen.getByLabelText('Minutes to fall asleep, in minutes'), '0'); next();
   fireEvent.press(screen.getByRole('radio', { name: 'Screen-free evening: No' }));
   await act(async () => { fireEvent.press(screen.getByRole('button', { name: "Save check-in" })); });
   await screen.findAllByText(/^Day \d+ recorded$/);
@@ -119,9 +122,12 @@ test('baseline omits the test-day question and sends no intervention answer', as
 test('existing answers prefill from check-ins, including false and zero', async () => {
   logged = [makeCheckin({ intervention_completed: false, metric_values: { morning_energy: 5, breaks: 0, minutes_to_sleep: 10, screen_free: false }, note: 'Earlier note' })];
   await open();
-  expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('0');
   expect(screen.getByRole('radio', { name: 'Not today' })).toBeChecked();
+  next(); next();
+  expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('0');
+  next(); next();
   expect(screen.getByRole('radio', { name: 'Screen-free evening: No' })).toBeChecked();
+  next();
   expect(screen.getByLabelText('Optional note')).toHaveDisplayValue('Earlier note');
 });
 
@@ -129,7 +135,7 @@ test('failed saves keep every answer and retry only when the person asks', async
   failSave = 503; await open(); await answer();
   fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/Save unavailable/);
-  expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('-2.5');
+  expect(screen.getByRole('button', { name: 'Change Breaks, -2.5' })).toBeVisible();
   expect(screen.getByLabelText('Optional note')).toHaveDisplayValue('  A quiet evening.  ');
   expect(posts).toHaveLength(1);
   fireEvent.press(screen.getByRole('button', { name: 'Try saving again' }));
@@ -140,23 +146,22 @@ test('failed saves keep every answer and retry only when the person asks', async
 test('422 messages are placed beside the named field and preserve the answer', async () => {
   failSave = 422; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByText('Check this answer')).toBeVisible();
-  expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('-2.5');
+  expect(screen.getByRole('button', { name: 'Change Breaks, -2.5' })).toBeVisible();
 });
 
 test('missing and invalid answers cannot be submitted', async () => {
   await open();
-  fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
-  expect(await screen.findByText(/answer.*missing/i)).toBeVisible();
-  expect(posts).toHaveLength(0);
-  await answer(); fireEvent.changeText(screen.getByLabelText('Breaks'), 'not a number');
-  fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
+  expect(screen.queryByRole('button', { name: 'Save check-in' })).toBeNull();
+  next.skipChange(); fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+  fireEvent.changeText(screen.getByLabelText('Breaks'), 'not a number');
+  expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   expect(posts).toHaveLength(0);
 });
 
 test('offline keeps answers and disables Save until reconnected', async () => {
   const view = await open(); await answer(); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
   expect(await screen.findByText("You're offline; your answers are kept")).toBeVisible();
-  expect(screen.getByLabelText('Breaks')).toHaveDisplayValue('-2.5');
+  expect(screen.getByRole('button', { name: 'Change Breaks, -2.5' })).toBeVisible();
   expect(screen.getByRole('button', { name: "Save check-in" })).toBeDisabled();
   expect(posts).toHaveLength(0);
 });
@@ -165,9 +170,9 @@ test('check-in read failures have retry and do not display an empty editable for
   failRead = true; render(<MobileApp />);
   fireEvent.press(await screen.findByRole('button', { name: 'Check in now, day 4' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/Check-ins unavailable/);
-  expect(screen.queryByLabelText('Breaks')).toBeNull();
+  expect(screen.queryByTestId('checkin-step')).toBeNull();
   fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByLabelText('Breaks')).toBeVisible();
+  expect(await screen.findByTestId('checkin-step')).toBeVisible();
 });
 
 test('a saved check-in whose progress reload fails is not submitted again', async () => {
@@ -202,7 +207,7 @@ test('a second Save tap is ignored while the first request is pending', async ()
 test('a save with an expired session hides the form and signs out', async () => {
   failSave = 401; await open(); await answer(); fireEvent.press(screen.getByRole('button', { name: "Save check-in" }));
   expect(await screen.findByLabelText('Email')).toBeVisible();
-  expect(screen.queryByLabelText('Breaks')).toBeNull(); expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+  expect(screen.queryByTestId('checkin-step')).toBeNull(); expect(mockAuth.signOut).toHaveBeenCalledWith({ scope: 'local' });
 });
 
 test('save confirmation is immediate', async () => {
@@ -237,7 +242,9 @@ test('a saved check-in reschedules the opted-in reminder from refreshed progress
 test("a next-day notification opens a fresh form without copying yesterday's unsaved answers", async () => {
   await open(); await answer(); serverDay = 5; active.progress = { ...active.progress, phase_day: 2 };
   await act(async () => { responses.forEach(listener => listener(tapReminder('fake-user', active.id))); });
-  expect(await screen.findByText(/^Day 5 of 10 · /)).toBeVisible();
-  await waitFor(() => expect(screen.getByLabelText('Breaks')).toHaveDisplayValue(''));
-  expect(screen.getByLabelText('Optional note')).toHaveDisplayValue(''); expect(posts).toHaveLength(0);
+  expect(await screen.findByText('Day 5 · Test day')).toBeVisible();
+  await screen.findByRole('radio', { name: 'Yes, I made the change' });
+  expect(screen.getByRole('radio', { name: 'Yes, I made the change' })).not.toBeChecked();
+  next.skipChange(); fireEvent.press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+  expect(screen.getByLabelText('Breaks')).toHaveDisplayValue(''); expect(posts).toHaveLength(0);
 });
