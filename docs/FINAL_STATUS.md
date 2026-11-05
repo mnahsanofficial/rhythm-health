@@ -24,6 +24,10 @@ For 8x reviewers. Updated 5 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov
 
 Unit tests, lint, types and CI, plus Expo web screenshots in light and dark with every call mocked. **Real iPhone, VoiceOver and Reduce Motion checks are in Nazmul's pass on the morning of 6 Nov,** after the merges. Anything broken gets a follow-up fix.
 
+## How the 6 Nov short-labels PRs were checked
+
+Unit tests, lint, types and CI, plus Expo web screenshots in light and dark with every call mocked, and an iOS bundle build. No paid call was made. **Not checked:** a real iPhone, VoiceOver and Reduce Motion on a device, and the new prompt against the real model.
+
 ## What's next
 
 1. The iPhone pass, and any fixes from it, by 18:00 on 6 Nov.

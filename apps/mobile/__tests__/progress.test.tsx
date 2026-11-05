@@ -34,10 +34,10 @@ beforeEach(() => {
 });
 const tapDay = async (day: number, phase = 'baseline') => { const cell = await screen.findByRole('button', { name: `Day ${day}, ${phase}, logged` }); await act(async () => { fireEvent.press(cell); }); };
 const openDay = async (day: number, phase = 'baseline') => { await tapDay(day, phase); return screen.findByLabelText(`Day ${day} answers`); };
-async function open() { const view = render(<MobileApp />); const tab = await screen.findByRole('tab', { name: 'Progress' }); await act(async () => { fireEvent.press(tab); }); await screen.findByText('Day by day'); return view; }
+async function open() { const view = render(<MobileApp />); const tab = await screen.findByRole('tab', { name: 'Progress' }); await act(async () => { fireEvent.press(tab); }); await screen.findByTestId('day-dots'); return view; }
 
 test('shows endpoint counts and labelled day states despite the cached experiment summary', async () => {
-  await open(); expect(screen.getByText('2 of 10 days recorded')).toBeVisible();
+  await open(); expect(screen.getByLabelText('2 of 10 days recorded')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Day 1, baseline, logged' })).toBeVisible();
   expect(screen.getByLabelText('Day 2, baseline, missed')).toBeVisible(); expect(screen.getByLabelText('Day 4, test, today, not logged yet')).toBeVisible();
   expect(screen.getByLabelText('Day 5, test, upcoming')).toBeVisible();
@@ -56,13 +56,13 @@ test('answers have loading and error/retry states without hiding the authoritati
   const fetch = global.fetch; let release!: () => void; const gate = new Promise<void>(resolve => { release = resolve; });
   global.fetch = jest.fn(async (...args) => { if (String(args[0]).endsWith('/checkins')) await gate; return fetch(...args); });
   readStatus = 503; await open(); expect(await screen.findByText('Loading recorded answers…')).toBeVisible();
-  expect(screen.getByText('2 of 10 days recorded')).toBeVisible(); await act(async () => { release(); });
+  expect(screen.getByLabelText('2 of 10 days recorded')).toBeVisible(); await act(async () => { release(); });
   expect(await screen.findByRole('alert')).toHaveTextContent(/Answers unavailable/); expect(screen.queryByLabelText('Day 3 answers')).toBeNull();
   readStatus = 200; fireEvent.press(screen.getByRole('button', { name: 'Try again' })); expect(await openDay(3)).toBeVisible();
 });
 
 test('an expired answers session hides private progress and returns to sign-in', async () => {
-  readStatus = 401; render(<MobileApp />); const tab = await screen.findByRole('tab', { name: 'Progress' }); await act(async () => { fireEvent.press(tab); }); expect(await screen.findByLabelText('Email')).toBeVisible(); expect(screen.queryByText('2 of 10 days recorded')).toBeNull();
+  readStatus = 401; render(<MobileApp />); const tab = await screen.findByRole('tab', { name: 'Progress' }); await act(async () => { fireEvent.press(tab); }); expect(await screen.findByLabelText('Email')).toBeVisible(); expect(screen.queryByLabelText('2 of 10 days recorded')).toBeNull();
 });
 
 test('offline keeps cached progress and answers labelled without another read', async () => {
@@ -73,7 +73,7 @@ test('offline keeps cached progress and answers labelled without another read', 
 
 test('no recorded days is a useful empty state, without an unnecessary answers read', async () => {
   timeline = timelineFixture({ ...active, progress: timeline.progress }); await open();
-  expect(screen.getByText('0 of 10 days recorded')).toBeVisible(); expect(screen.getByText('No days recorded yet. Your next check-in will start the record.')).toBeVisible();
+  expect(screen.getByLabelText('0 of 10 days recorded')).toBeVisible();
   expect(requests.some(path => path.endsWith('/checkins'))).toBe(false);
 });
 

@@ -20,6 +20,15 @@ export const PLAN_DAYS = Array.from({ length: 10 }, (_, day) => {
   const gap = 0.006;
   return { phase: day < 3 ? 'baseline' as const : 'test' as const, d: `M ${point(day / 10 + gap)} A ${RING.r} ${RING.r} 0 0 1 ${point((day + 1) / 10 - gap)}` };
 });
+/** One day of a plan of any length, on the same ring. */
+export function dayArc(index: number, total: number) {
+  const point = (share: number) => {
+    const angle = share * Math.PI * 2;
+    return `${(RING.cx + RING.r * Math.sin(angle)).toFixed(2)} ${(RING.cy - RING.r * Math.cos(angle)).toFixed(2)}`;
+  };
+  const gap = 0.06 / total;
+  return `M ${point(index / total + gap)} A ${RING.r} ${RING.r} 0 0 1 ${point((index + 1) / total - gap)}`;
+}
 export const arcFraction = (minutes: number) => Math.min(Math.max(minutes / DAY, 0), 1);
 export const stepDirection = (from: number, to: number) => Math.sign(to - from);
 

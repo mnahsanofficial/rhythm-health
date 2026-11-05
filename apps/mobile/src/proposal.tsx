@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { ExperimentProposal, Profile, ProposeResponse } from '@rhythm-health/contract';
 import { DetailsRow } from './details-sheet';
 import { Disclosure } from './form-rows';
-import { Forecast, ForecastReasons } from './forecast';
+import { CheckinScene } from './checkin-scene';
+import { ChangeBar, Forecast, ForecastReasons } from './forecast';
 import { ApiError, detailCode } from './lib/api';
 import { listActiveExperiments } from './lib/experiments';
-import { parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, startExperiment, TRUST_LINE } from './lib/proposals';
+import { GUESS_MAX, GUESS_MIN, parseGuess, proposeExperiment, QUESTION_MAX, QUESTION_MIN, questionStarters, saveExperiment, signedPercent, startExperiment, TRUST_LINE } from './lib/proposals';
+import { metricName } from './lib/short-labels';
 import { useNavScreen, WONT_BE_KEPT } from './nav';
 import { PlanningMoment } from './planning-moment';
-import { Action, Alert, BackLink, Copy, StickyAction, useStyles, Title, useStepFocus, Status, Notice } from './ui';
+import { PlanRing } from './plan-ring';
+import { Action, Alert, BackLink, Copy, StickyAction, TextLink, useFillScreen, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
 type Failure = { status: number; message: string };
@@ -25,6 +28,7 @@ type Props = {
   /** Tells Today a plan is open, so nothing unrelated sits under it. */
   onPlanOpen?: (open: boolean) => void;
 };
+const GUESS_STEP = 5;
 const message = (cause: unknown, fallback: string) => cause instanceof Error && cause.message ? cause.message : fallback;
 
 function failureTitle({ status }: Failure) {
@@ -154,12 +158,13 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
 
   if (planReady && result?.proposal && result.prediction) {
     const { proposal, prediction } = result;
-    if (step === 'change') return <View style={ui.stack}>
+    if (step === 'change') return <PlanFill>
       <Copy style={local.caption}>The change</Copy>
-      <Title textRef={heading}>{proposal.intervention.action}</Title>
+      <Title oneLine textRef={heading}>{proposal.intervention.change_short ?? proposal.intervention.action}</Title>
       {continued && <Copy>Rhythm suggested a related habit to test.</Copy>}
       <View>
         <DetailsRow label="Details">
+          <Copy>{proposal.intervention.action}</Copy>
           <Copy>{proposal.question}</Copy>
           <Copy>{proposal.hypothesis}</Copy>
           <Copy>When: {proposal.intervention.timing}</Copy>
@@ -168,17 +173,19 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
         </DetailsRow>
         {result.classification.risk === 'review' && <DetailsRow label="A note before you begin"><Copy>{result.safety.reason}</Copy></DetailsRow>}
       </View>
-      <Action label="Ask something else" secondary onPress={() => reset('')} />
+      <CheckinScene step={{ kind: 'change', action: proposal.intervention.action }} value={undefined} />
+      <TextLink label="Ask something else" onPress={() => reset('')} />
       {shown && <StickyAction><Action wide label="Next" onPress={() => setPlanStep(result.personal_guess_available ? 'guess' : 'reveal')} /></StickyAction>}
-    </View>;
+    </PlanFill>;
     if (step === 'guess') return <GuessStep heading={heading} proposal={proposal} shown={shown} initial={guess} onReveal={value => { setGuess(value); setPlanStep('reveal'); }} onBack={() => setPlanStep('change')} />;
-    if (step === 'reveal') return <View style={ui.stack}>
+    if (step === 'reveal') return <PlanFill>
       <Forecast headingRef={heading} prediction={prediction} metrics={proposal.metrics} guess={guess} />
       <Disclosure><ForecastReasons prediction={prediction} /></Disclosure>
+      <CheckinScene step={{ kind: 'metric', metric: proposal.metrics.find(item => item.key === prediction.target_metric) ?? proposal.metrics[0] }} value={undefined} />
       {shown && <StickyAction><Action wide label="Next" onPress={() => setPlanStep('days')} /></StickyAction>}
-    </View>;
-    return <View style={ui.stack}>
-      <Title textRef={heading}>{`Your ${proposal.baseline_days + proposal.intervention_days} days`}</Title>
+    </PlanFill>;
+    return <PlanFill>
+      <Title oneLine textRef={heading}>{`Your ${proposal.baseline_days + proposal.intervention_days} days`}</Title>
       <PlanDays proposal={proposal} />
       {!result.personal_guess_available && <Copy style={local.caption}>No guess this time.</Copy>}
       {offline && <Notice>You&apos;re offline. Your plan is kept; reconnect to start.</Notice>}
@@ -188,7 +195,7 @@ export function ProposalFlow({ token, offline, profile, initialQuestion = '', hi
       {startError && <Action label="Try again" secondary disabled={starting || offline} onPress={() => void begin()} />}
       <BackLink to="Back" name="Back" disabled={starting} onPress={() => setPlanStep('reveal')} />
       {shown && !startError && <StickyAction><Action wide label={starting ? 'Saving your experiment…' : 'Start this experiment'} disabled={starting || offline} onPress={() => void begin()} /></StickyAction>}
-    </View>;
+    </PlanFill>;
   }
 
   if (proposing) return <PlanningMoment heading={heading} question={question.trim()} />;
@@ -248,33 +255,52 @@ function GuessStep({ heading, proposal, shown, initial, onReveal, onBack }: {
   const [focused, setFocused] = useState(false);
   const metric = proposal.metrics.find(item => item.primary) ?? proposal.metrics[0];
   const value = parseGuess(answer);
+  const name = metric ? metricName(metric) : '';
   const reveal = () => { if (value !== null) onReveal(value); };
-  return <View style={ui.stack}>
-    <Title textRef={heading}>What will happen?</Title>
-    <Copy>{`${metric?.label}, change from normal days`}</Copy>
+  const step = (by: number) => setAnswer(String(Math.min(Math.max((value ?? 0) + by, GUESS_MIN), GUESS_MAX)));
+  return <PlanFill>
+    <Title oneLine textRef={heading}>Your guess</Title>
+    <Copy>{`${name}, % change from normal`}</Copy>
     <View>
       <View style={local.guessRow}>
-        <TextInput accessibilityLabel={`Your guess for ${metric?.label}`} accessibilityHint="Percent change from your normal days, between -100 and +200." value={answer} onChangeText={setAnswer}
+        <Stepper label="Lower guess by 5" text="−" onPress={() => step(-GUESS_STEP)} />
+        <TextInput accessibilityLabel={`Your guess for ${name}`} accessibilityHint="Percent change from your normal days, between -100 and +200." value={answer} onChangeText={setAnswer}
           keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'} autoComplete="off" autoCorrect={false} returnKeyType="done" onSubmitEditing={reveal}
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} style={[ui.input, local.guessInput, focused && ui.focus]} />
         <Copy accessible={false} style={ui.number}>%</Copy>
+        <Stepper label="Raise guess by 5" text="+" onPress={() => step(GUESS_STEP)} />
       </View>
       {answer.trim() !== '' && value === null && <Status style={local.helpText}>Choose between -100 and +200.</Status>}
     </View>
+    <ChangeBar low={GUESS_MIN} high={GUESS_MAX} from={value === null ? null : Math.min(value, 0)} to={value === null ? null : Math.max(value, 0)} label={value === null ? 'No guess yet' : `Your guess: ${signedPercent(value)}`} />
     <Disclosure><Copy>+10 means 10% higher. It locks when you see the prediction, so your report can compare both with what happens.</Copy></Disclosure>
+    {metric && <CheckinScene step={{ kind: 'metric', metric }} value={undefined} />}
     <BackLink to="Back" name="Back" onPress={onBack} />
     {shown && <StickyAction><Action wide label="Show prediction" disabled={value === null} onPress={reveal} /></StickyAction>}
-  </View>;
+  </PlanFill>;
+}
+
+function Stepper({ label, text, onPress }: { label: string; text: string; onPress: () => void }) { const COLORS = useColors(); const local = useLocal();
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [local.stepper, pressed && { backgroundColor: COLORS['accent-tint'] }]}>
+    <Copy accessible={false} style={NATIVE_TYPOGRAPHY.lead}>{text}</Copy>
+  </Pressable>;
+}
+
+/** A plan step that takes the whole screen, so its picture can fill what the words leave. */
+function PlanFill({ children }: { children: ReactNode }) { const ui = useStyles();
+  useFillScreen();
+  return <View style={[ui.stack, { flexGrow: 1 }]}>{children}</View>;
 }
 
 /** The shape of the experiment: normal days, then test days. */
 function PlanDays({ proposal }: { proposal: ExperimentProposal }) { const COLORS = useColors(); const local = useLocal(); const ui = useStyles();
   const total = proposal.baseline_days + proposal.intervention_days;
-  return <View style={ui.stack}>
+  return <View style={[ui.stack, { flexGrow: 1 }]}>
     <Copy>{`We'll compare your ${proposal.baseline_days} normal days with your ${proposal.intervention_days} test days. Your check-ins decide, not the AI.`}</Copy>
     <View testID="plan-days" accessible accessibilityLabel={`Days 1 to ${proposal.baseline_days} are baseline. Days ${proposal.baseline_days + 1} to ${total} are test days.`} style={local.days}>
       {Array.from({ length: total }, (_, index) => <View key={index} style={[local.day, { backgroundColor: COLORS[index < proposal.baseline_days ? 'chart-1' : 'chart-2'] }]} />)}
     </View>
+    <PlanRing baselineDays={proposal.baseline_days} testDays={proposal.intervention_days} />
   </View>;
 }
 
@@ -298,5 +324,6 @@ const useLocal = themedStyles(COLORS => StyleSheet.create({
   chip: { maxWidth: '100%', minHeight: LAYOUT.primaryAction, justifyContent: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADII.control, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control, backgroundColor: COLORS.surface },
   day: { flex: 1, height: SPACING.sm, borderRadius: RADII.pill },
   guessRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  guessInput: { flex: 1, ...NATIVE_TYPOGRAPHY.lead },
+  guessInput: { flex: 1, minWidth: 0, ...NATIVE_TYPOGRAPHY.lead },
+  stepper: { minWidth: LAYOUT.primaryAction, minHeight: LAYOUT.primaryAction, alignItems: 'center', justifyContent: 'center', borderRadius: RADII.pill, borderWidth: LAYOUT.focusWidth / 2, borderColor: COLORS.control },
 }));

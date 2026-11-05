@@ -4,7 +4,7 @@ import Animated, { Easing, ReduceMotion, useAnimatedStyle, useReducedMotion, use
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 import { LAYOUT, MOTION_DURATION_MS, MOTION_EASE, RADII, SPACING, THEMES } from '@rhythm-health/brand';
 import type { Metric } from '@rhythm-health/contract';
-import { SCENE_MOVE_MS, sceneFor, sceneLevel, type ChangeIcon } from './lib/checkin-scene';
+import { SCENE_MOVE_MS, sceneFor, sceneLevel, type ChangeIcon, type CheckinSceneChoice } from './lib/checkin-scene';
 import { PLAN_DAYS } from './lib/scene';
 import { themedStyles, useColors, useTheme } from './theme-core';
 
@@ -23,6 +23,7 @@ const ICONS: Record<ChangeIcon, string[]> = {
   shoe: ['M3 17v-4.6c0-.8.8-1.2 1.5-.9l2 1 3-5c.3-.5 1-.6 1.4-.2l1.6 1.5 2.2 3.2c.5.7 1.2 1.2 2 1.4l2.4.6c1.1.3 1.9 1.3 1.9 2.5V17H3Z', 'M3 20.5h18', 'M11.2 10.2l-1.6 1.4', 'M12.9 12.3l-1.6 1.4'],
   cup: ['M5 9h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9Z', 'M17 11h1.5a2.5 2.5 0 0 1 0 5H17', 'M8 3v3', 'M12 3v3'],
   window: ['M5 3h14v18H5V3Z', 'M5 15h14', 'M8 15a4 4 0 0 1 8 0', 'M12 6.5v2', 'M8.2 8l1.2 1.2', 'M15.8 8l-1.2 1.2'],
+  moon: ['M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z', 'M16 5v3', 'M14.5 6.5h3'],
   ring: ['M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16Z', 'M12 8.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7Z'],
 };
 const STARS = [
@@ -194,9 +195,9 @@ function DaysScene({ day, progress, drift, size }: Motion & { day?: number | nul
 }
 
 /** The picture on a check-in question. Decorative: the buttons carry every label, and it holds no answer of its own. */
-export function CheckinScene({ step, value }: { step: SceneStep; value: string | boolean | undefined }) { const local = useLocal();
+export function CheckinScene({ step, value, scene }: { step: SceneStep; value: string | boolean | undefined; /** A calm picture of its own, where no one question is on screen. */ scene?: CheckinSceneChoice }) { const local = useLocal();
   const reduce = useReducedMotion();
-  const choice = sceneFor(step);
+  const choice = scene ?? sceneFor(step);
   const answered = value !== undefined && value !== '';
   const level = sceneLevel(step, value);
   const resting = choice.kind === 'days' ? !answered : level === null;

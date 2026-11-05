@@ -104,3 +104,15 @@ Her words and the word counts are in [07-feedback-5-nov](design/07-feedback-5-no
 | "People are used to skimming" | **Partial** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Budgets and sheets | Missing | Only a first-time user can confirm it |
 | "How are you ensuring the experiments are going to help?" | **Partial** | [#106](https://github.com/mnahsanofficial/rhythm-health/pull/106) | Plan line and How we know | Missing | We explain how it's measured. We can't show or promise that a change helps |
 
+## 5 Nov iPhone test (Nazmul)
+
+Before and after are in [07-feedback-5-nov](design/07-feedback-5-nov.md#nazmuls-iphone-test-the-evening-of-5-nov). Mobile is changed; web deliberately isn't.
+
+| Feedback | Status | PRs | Mobile | Web | What's left |
+|---|---|---|---|---|---|
+| The AI's long sentences are everywhere | **Done** | [#111](https://github.com/mnahsanofficial/rhythm-health/pull/111), [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Short labels on Progress, the plan, check-in and the Lab Report | Keeps the long text | Today, the experiment screen and History still show the full question |
+| Progress repeats the question and uses a big grid | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | One-line rows, a row of small dots, "1/10" | Missing | |
+| The plan steps are mostly empty | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Scenes, a live bar, a stepper and the ring | Missing | |
+| Your guess and the prediction are hard to compare | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | A marker on the same bar | Missing | |
+| Scenes on every check-in step, on a real build | **Partial** | [#108](https://github.com/mnahsanofficial/rhythm-health/pull/108), [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Tested on every step, new and edit | n/a | Needs Nazmul's iPhone check: no simulator on the machine that built this |
+

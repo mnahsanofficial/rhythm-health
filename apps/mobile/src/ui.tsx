@@ -16,7 +16,7 @@ export function Copy(props: TextProps & { ref?: Ref<ComponentRef<typeof Text>> }
   const available = useContext(FontAvailability);
   return <Text {...props} style={[styles.body, props.style, !available && { fontFamily: undefined }]} />;
 }
-export function Title({ children, textRef, small = false }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>>; small?: boolean }) { const styles = useStyles(); return <Copy ref={textRef} accessibilityRole="header" style={[styles.title, small && NATIVE_TYPOGRAPHY.headline]}>{children}</Copy>; }
+export function Title({ children, textRef, small = false, oneLine = false }: { children: ReactNode; textRef?: Ref<ComponentRef<typeof Text>>; small?: boolean; /** Never wraps: a long one shrinks a little on a phone. */ oneLine?: boolean }) { const styles = useStyles(); return <Copy ref={textRef} accessibilityRole="header" {...(oneLine ? { numberOfLines: 1, adjustsFontSizeToFit: true, minimumFontScale: 0.7 } : null)} style={[styles.title, small && NATIVE_TYPOGRAPHY.headline]}>{children}</Copy>; }
 /** A new step in a flow starts at its heading: back to the top, keyboard away, screen reader on the title. */
 export function useStepFocus(step: string) {
   const heading = useRef<ComponentRef<typeof Text>>(null);
@@ -104,6 +104,12 @@ export function BackLink({ to, name, onPress, disabled = false }: { to: string; 
   return <Pressable accessibilityRole="button" accessibilityLabel={name ?? `Back to ${to.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }, disabled && styles.disabled]}>
     <Copy style={{ color: COLORS.moss }}>‹ {to}</Copy>
+  </Pressable>;
+}
+/** A small way out that shouldn't compete with the screen's action. */
+export function TextLink({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) { const COLORS = useColors(); const styles = useStyles();
+  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={styles.backLink}>
+    <Copy style={{ color: COLORS.moss }}>{label}</Copy>
   </Pressable>;
 }
 export function ForwardLink({ label, onPress }: { label: string; onPress: () => void }) { const COLORS = useColors(); const styles = useStyles();

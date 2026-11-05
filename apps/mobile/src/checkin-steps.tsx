@@ -9,23 +9,25 @@ import { Icon } from './icons';
 import { MetricInput, Radio, scaleCaption } from './metric-input';
 import { CHECKIN_ADVANCE_MS } from './lib/checkin-scene';
 import { metricAnswer } from './lib/checkins';
+import { metricName, metricValue } from './lib/short-labels';
 import { themedStyles, useColors } from './theme-core';
 import { Action, BackLink, Copy, StickyAction, Title, useFillScreen, useStepFocus, useStyles } from './ui';
 
 export type CheckinStep = { key: string; caption?: string; name?: string; audience?: string; day?: number | null } & (
-  | { kind: 'change'; action: string }
+  | { kind: 'change'; action: string; /** What the person reads. `action` chooses the scene. */ short?: string | null }
   | { kind: 'metric'; metric: Metric }
 );
 export type Answer = string | boolean | undefined;
 
 const typed = (metric: Metric) => metric.type === 'number' || metric.type === 'duration' || (metric.type === 'scale' && (metric.max ?? 10) - (metric.min ?? 1) > 20);
 const valid = (step: CheckinStep, value: Answer) => step.kind === 'change' ? typeof value === 'boolean' : !('error' in metricAnswer(step.metric, value));
-const stepLabel = (step: CheckinStep) => step.kind === 'metric' ? step.metric.label : step.name ?? 'Made the change';
+const stepLabel = (step: CheckinStep) => step.kind === 'metric' ? metricName(step.metric) : step.name ?? 'Made the change';
 const shown = (step: CheckinStep, value: Answer) => {
   if (value === undefined || value === '') return 'Not answered';
   if (step.kind === 'change') return value ? 'Yes' : 'Not today';
-  return typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value);
+  return metricValue(step.metric, value);
 };
+const isNumber = (step: CheckinStep) => step.kind === 'metric' && step.metric.type !== 'boolean';
 
 /** One step at a time. A step slides in from the side it comes from; Reduce Motion only swaps it. */
 function Slide({ direction, children }: { direction: 1 | -1; children: ReactNode }) {
@@ -79,8 +81,9 @@ function Question({ step, value, editing, error, busy, onAnswer, onNext, onBack 
     else timer.current = setTimeout(onNext, CHECKIN_ADVANCE_MS);
   };
   return <>
-    <Title textRef={heading}>{step.kind === 'change' ? 'Did you make the change?' : step.metric.label}</Title>
-    {step.kind === 'change' && !step.name && <Copy>{step.action}</Copy>}
+    <Title oneLine textRef={heading}>{step.kind === 'change' ? 'Did you make the change?' : metricName(step.metric)}</Title>
+    {step.kind === 'change' && !step.name && <Copy>{step.short ?? step.action}</Copy>}
+    {step.kind === 'metric' && metricName(step.metric) !== step.metric.label && <Copy style={NATIVE_TYPOGRAPHY.caption}>{step.metric.label}</Copy>}
     {step.audience && <Copy style={local.caption}>{step.audience}</Copy>}
     {step.kind === 'metric' && step.metric.type === 'scale' && !isTyped && <Copy style={styles.muted}>{scaleCaption(step.metric)}</Copy>}
     <CheckinScene step={step} value={value} />
@@ -103,9 +106,10 @@ function Review({ steps, values, fields, note, onNote, busy, notice, noteCaption
   notice?: string; noteCaption?: string; alert?: ReactNode; offline: boolean; saveLabel: string; onEdit: (index: number) => void; onSave: () => void;
 }) { const COLORS = useColors(); const local = useLocal(); const styles = useStyles();
   const heading = useStepFocus('review');
+  useFillScreen();
   const [noting, setNoting] = useState(note !== '');
   return <>
-    <Title textRef={heading}>Review</Title>
+    <Title oneLine textRef={heading}>Review</Title>
     {notice && <Copy style={local.caption}>{notice}</Copy>}
     {alert}
     <View>
@@ -113,7 +117,7 @@ function Review({ steps, values, fields, note, onNote, busy, notice, noteCaption
         <Pressable accessibilityRole="button" accessibilityLabel={`Change ${label}, ${shown(step, value)}`} disabled={busy} onPress={() => onEdit(index)} style={({ pressed }) => [local.row, pressed && { backgroundColor: COLORS['moss-tint'] }]}>
           {done ? <Icon name="check" size={SPACING.lg} color={COLORS.moss} filled /> : <View style={local.missing} />}
           <Copy numberOfLines={1} style={local.rowLabel}>{label}</Copy>
-          <Copy style={styles.number}>{done ? shown(step, value) : '–'}</Copy>
+          <Copy style={done && !isNumber(step) ? undefined : styles.number}>{done ? shown(step, value) : '–'}</Copy>
         </Pressable>
         {fields[step.key] && <Copy style={{ color: COLORS.clay }}>{fields[step.key]}</Copy>}
       </View>; })}
@@ -124,6 +128,7 @@ function Review({ steps, values, fields, note, onNote, busy, notice, noteCaption
       {noteCaption && <Copy style={local.caption}>{noteCaption}</Copy>}
       {fields.note && <Copy style={{ color: COLORS.clay }}>{fields.note}</Copy>}
     </View> : <Pressable accessibilityRole="button" accessibilityLabel="Add a note" onPress={() => setNoting(true)} style={local.addNote}><Copy>Add a note ›</Copy></Pressable>}
+    {steps[0] && <CheckinScene step={steps[0]} value={undefined} scene={{ kind: 'days' }} />}
     <StickyAction><Action wide label={saveLabel} disabled={busy || offline} onPress={onSave} /></StickyAction>
   </>;
 }

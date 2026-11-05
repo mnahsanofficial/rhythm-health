@@ -219,6 +219,7 @@ Rules that follow:
 From the 5 Nov feedback ([07-feedback-5-nov](07-feedback-5-nov.md), [ADR 14](../adr/0014-text-budget-and-its-test.md)). Mobile only for now.
 
 - **One heading and one short line per section.** Everything else goes behind a tap: `DetailsRow` and its sheet, or the next screen. No paragraphs on main screens.
+- **Short words come from the backend.** A heading is one line at 390 wide, and never a metric's full question. Monospace is for raw numbers, never sentences. Tested in `apps/mobile/__tests__/short-labels.test.tsx`.
 - **Each main-flow screen has a word budget,** in `apps/mobile/__tests__/word-budget.test.tsx`. Raising one is a design decision, not a fix.
 - **Grey is for captions.** `muted` text is caption-sized and at most 8 words. Main content uses `text`. The exceptions are placeholders and a disabled action's label. A test checks caption contrast against AA in both modes.
 - **Icons over sentences.** A check for recorded, a dash for missed and a ring for progress, each with a spoken label. Never colour alone.

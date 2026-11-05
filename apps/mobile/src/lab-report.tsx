@@ -9,6 +9,7 @@ import { ApiError } from './lib/api';
 import { getCapacity } from './lib/experiments';
 import { getExperiment, getReport, reasonText, reportPercent, resultSentence, SIGNAL_COPY, writeErrorText, writeReport } from './lib/reports';
 import { useNavScreen } from './nav';
+import { metricName } from './lib/short-labels';
 import { Action, Alert, BackLink, Copy, Loading, useStyles, Title, useStepFocus, Status, Notice } from './ui';
 import { useColors, themedStyles } from './theme-core';
 
@@ -65,6 +66,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
   const { analysis, experiment, narrative } = report;
   const primary = analysis.metrics.find(metric => metric.key === analysis.primary_metric) ?? analysis.metrics[0];
   const others = analysis.metrics.filter(metric => metric.key !== primary?.key);
+  const nameOf = (metric: { key: string; label: string }) => { const saved = experiment.metrics.find(item => item.key === metric.key); return saved ? metricName(saved) : metric.label; };
   const signal = SIGNAL_COPY[analysis.signal.classification];
   const a = analysis.adherence;
   // Revealing comes first, so the later steps take the primary look only once they're next.
@@ -83,7 +85,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
     {offline && <Notice>You&apos;re offline. These results are the last ones loaded.</Notice>}
 
     {primary && <View style={ui.stack}>
-      <Copy accessibilityRole="header" style={local.headline}>{resultSentence(primary.label, primary.percent_change, analysis.signal.classification, analysis.signal.reasons)}</Copy>
+      <Copy accessibilityRole="header" style={local.headline}>{resultSentence(nameOf(primary), primary.percent_change, analysis.signal.classification, analysis.signal.reasons)}</Copy>
       <Copy style={NATIVE_TYPOGRAPHY.caption}>A short personal experiment shows a pattern, not proof.</Copy>
       <View style={[local.pill, pill[analysis.signal.classification].box]}>
         <Copy accessibilityRole="header" style={[ui.sectionTitle, pill[analysis.signal.classification].text]}>{signal.label}</Copy>
@@ -114,7 +116,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
         <Copy>{narrative.next_experiment.reason}</Copy>
       </View>}
       {analysis.prediction && primary && <View style={ui.divider}>
-        <Copy style={ui.muted}>{primary.label} · change from baseline</Copy>
+        <Copy style={ui.muted}>{nameOf(primary)} · change from baseline</Copy>
         {analysis.personal_guess ? <Copy>Locked before you saw the AI forecast.</Copy> : <Copy>No guess was recorded for this experiment.</Copy>}
         <Copy>The prediction was recorded before your experiment began. What you saw is measured from your recorded days.</Copy>
         <Copy style={ui.muted}>Prediction accuracy</Copy>
@@ -128,7 +130,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
       <View style={ui.divider}>
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Signal or noise</Copy>
         <Copy style={NATIVE_TYPOGRAPHY.lead}>{signal.summary}</Copy>
-        {primary && primary.percent_change !== null && <Copy>{`${primary.label}: ${reportPercent(primary.percent_change)} on test days compared with your baseline${primary.baseline.mean !== null && primary.intervention.mean !== null ? ` (${primary.baseline.mean.toFixed(1)} → ${primary.intervention.mean.toFixed(1)} on average)` : ''}.`}</Copy>}
+        {primary && primary.percent_change !== null && <Copy>{`${nameOf(primary)}: ${reportPercent(primary.percent_change)} on test days compared with your baseline${primary.baseline.mean !== null && primary.intervention.mean !== null ? ` (${primary.baseline.mean.toFixed(1)} → ${primary.intervention.mean.toFixed(1)} on average)` : ''}.`}</Copy>}
         {analysis.signal.reasons.map(reason => <Copy key={reason}>{reasonText(reason, analysis.success_criteria_percent)}</Copy>)}
       </View>
       <View style={ui.divider}>
@@ -141,7 +143,7 @@ export function LabReportScreen({ id, token, offline, initial, backTo = 'Today',
       {others.length > 0 && <View style={ui.divider}>
         <Copy accessibilityRole="header" style={ui.sectionTitle}>The other things you tracked</Copy>
         {others.map(metric => <View key={metric.key} style={local.stat}>
-          <Copy>{metric.label}</Copy>
+          <Copy>{nameOf(metric)}</Copy>
           <Copy style={local.statValue}>{`${pair(metric.baseline.mean, metric.intervention.mean)}${metric.percent_change !== null ? ` ${reportPercent(metric.percent_change)}` : ''}`}</Copy>
         </View>)}
         <Copy style={local.small}>Baseline average → test average. Only the main measure decides the result.</Copy>

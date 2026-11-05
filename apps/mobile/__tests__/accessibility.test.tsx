@@ -125,7 +125,7 @@ describe('controls have names and 48pt targets', () => {
     auditControls();
     await press('Close');
     await act(async () => { fireEvent.press(await screen.findByRole('tab', { name: 'Progress' })); });
-    await screen.findByText('Day by day');
+    await screen.findByTestId('day-dots');
     auditControls();
   });
 
