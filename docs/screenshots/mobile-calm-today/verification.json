@@ -30,7 +30,7 @@
     "overflow": [
       {
         "height": 723,
-        "content": 768
+        "content": 752
       }
     ],
     "errors": [],
@@ -75,7 +75,7 @@
     "overflow": [
       {
         "height": 723,
-        "content": 768
+        "content": 752
       }
     ],
     "errors": [],
@@ -88,6 +88,18 @@
     "overflow": [],
     "errors": [],
     "externalRequestsBlocked": 0
+  },
+  {
+    "scenario": "baseline",
+    "viewport": "390x763",
+    "overflow": [],
+    "errors": []
+  },
+  {
+    "scenario": "baseline-tomorrow",
+    "viewport": "390x763",
+    "overflow": [],
+    "errors": []
   },
   {
     "scenario": "due",

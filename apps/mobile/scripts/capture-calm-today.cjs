@@ -29,9 +29,10 @@ const fakeJwt = [
 const user = { id: profile.id, email: 'example@example.invalid', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-11-01T00:00:00Z' };
 function fixture(scenario, mode) {
   const last = scenario === 'day10';
-  const active = { ...experiment, status: 'active', progress: { ...experiment.progress, state: 'in_progress', day_number: last ? 10 : 4, phase: 'intervention', phase_day: last ? 7 : 1, phase_days: 7, days_remaining: last ? 0 : 6, started_at: '2026-11-02T10:00:00Z' } };
+  const baseline = scenario.startsWith('baseline');
+  const active = { ...experiment, status: 'active', progress: { ...experiment.progress, state: 'in_progress', day_number: last ? 10 : baseline ? 3 : 4, phase: baseline ? 'baseline' : 'intervention', phase_day: last ? 7 : baseline ? 3 : 1, phase_days: baseline ? 3 : 7, days_remaining: last ? 0 : baseline ? 7 : 6, started_at: '2026-11-02T10:00:00Z' } };
   const list = scenario === 'empty' ? [] : scenario === 'three' ? [active, { ...active, id: 'second-id', question: 'Does morning light help my focus?' }, { ...active, id: 'third-id', question: 'Does an earlier bedtime help my energy?' }] : [active];
-  return { list, timeline: timelineFixture(active, { recorded: last ? [1, 2, 3, 4, 6, 7, 8, 9, 10] : scenario === 'recorded' ? [1, 3, 4] : [1, 3], missed: last ? [5] : [2], nextDayAt: mode === 'dark' ? '2026-11-06T10:00:00Z' : '2026-11-05T10:00:00Z' }) };
+  return { list, timeline: timelineFixture(active, { recorded: last ? [1, 2, 3, 4, 6, 7, 8, 9, 10] : scenario === 'recorded' ? [1, 3, 4] : [1, 3], missed: last ? [5] : [2], nextDayAt: mode === 'dark' || scenario === 'baseline-tomorrow' ? '2026-11-06T10:00:00Z' : '2026-11-05T10:00:00Z' }) };
 }
 async function preview(browser, scenario, mode, height = 844, reducedMotion = 'no-preference', width = 390) {
   const context = await browser.newContext({ viewport: { width, height }, timezoneId: 'Asia/Dhaka', colorScheme: mode, reducedMotion });
@@ -130,6 +131,15 @@ async function preview(browser, scenario, mode, height = 844, reducedMotion = 'n
       if (run.errors.length || run.blocked.length) throw new Error(JSON.stringify({ errors: run.errors, blocked: run.blocked }));
       evidence.push({ scenario, mode, viewport: '390x844', overflow: run.overflow, errors: run.errors, externalRequestsBlocked: run.blocked.length });
       await run.context.close();
+    }
+    for (const scenario of ['baseline', 'baseline-tomorrow']) {
+      const baseline = await preview(browser, scenario, 'light', 763, 'reduce');
+      const expected = scenario === 'baseline' ? 'Baseline done · your test starts Thursday 4:00 PM' : 'Baseline done · your test starts tomorrow';
+      await baseline.page.getByRole('button', { name: expected, exact: true }).waitFor();
+      await baseline.page.screenshot({ path: path.join(output, `${scenario}-light.png`) });
+      evidence.push({ scenario, viewport: '390x763', overflow: baseline.overflow, errors: baseline.errors });
+      if (baseline.errors.length || baseline.blocked.length) throw new Error('Baseline preview failed');
+      await baseline.context.close();
     }
     for (const mode of ['light', 'dark']) {
       const desktop = await preview(browser, 'due', mode, 900, 'reduce', 1440);

@@ -22,7 +22,7 @@ export function weeklyCount({ timeline }: DayData) {
   if (current === null || timeline.progress.state !== 'in_progress') return null;
   return timeline.days.filter(day => day.day_number <= current && day.day_number > current - 7 && day.state === 'recorded').length;
 }
-const closesAt = (entry: DayData) => entry.timeline.next_day_at ?? entry.timeline.progress.ends_at;
+const closesAt = ({ timeline }: DayData) => timeline.next_day_at ?? (timeline.progress.day_number === timeline.progress.total_days ? timeline.progress.ends_at : null);
 const deadline = (entry: DayData) => { const close = closesAt(entry); return close ? Date.parse(close) : Number.POSITIVE_INFINITY; };
 const recorded = ({ timeline }: DayData) => timeline.days.some(day => day.day_number === timeline.progress.day_number && day.state === 'recorded');
 function priority(entry: DayData) {
@@ -115,7 +115,7 @@ export function TodayDashboard({ entries, disabled, onCheckin, onDetail, onResul
   </View>;
 }
 const useLocal = themedStyles(colors => StyleSheet.create({
-  page: { gap: SPACING.sm + SPACING.xs, marginTop: -SPACING.sm }, header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }, greeting: { flex: 1, gap: SPACING.xs },
+  page: { gap: SPACING.sm + SPACING.xs, marginTop: -SPACING.lg }, header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }, greeting: { flex: 1, gap: SPACING.xs },
   caption: { ...NATIVE_TYPOGRAPHY.caption, color: colors.muted }, week: { alignItems: 'center' }, ring: { width: 48, height: 48 }, ringLabel: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   due: { backgroundColor: colors['moss-tint'], borderRadius: RADII.card, paddingHorizontal: SPACING.md }, dueTitle: { ...NATIVE_TYPOGRAPHY.caption, color: colors.text },
   link: { minHeight: LAYOUT.primaryAction, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.sm },
