@@ -31,7 +31,7 @@ const scale = { type: 'scale', min: 1, max: 10, primary: false, min_label: 'Low 
 function dueToday(list: Experiment[], all_recorded = false) {
   return {
     revision: 'rev-1', note: null, all_recorded,
-    experiments: list.map((item, index) => ({ id: item.id, question: item.question, action: `Change ${index + 1}`, timing: 'After dinner', day_number: index + 1, total_days: 10, phase: index === 1 ? 'intervention' : 'baseline', change_required: index === 1, change_made: null, recorded: all_recorded })),
+    experiments: list.map((item, index) => ({ id: item.id, question: item.question, action: `Change ${index + 1}`, change_short: `Change ${index + 1}`, short_name: `Change ${index + 1}`, timing: 'After dinner', day_number: index + 1, total_days: 10, phase: index === 1 ? 'intervention' : 'baseline', change_required: index === 1, change_made: null, recorded: all_recorded })),
     questions: list.length ? [
       { id: `${list[0].id}:energy`, experiment_ids: list.map(item => item.id), value: null, metric: { key: 'energy', label: 'Morning energy', ...scale } },
       { id: `${list[0].id}:focus`, experiment_ids: [list[0].id], value: null, metric: { key: 'focus', label: 'Focus', ...scale } },
@@ -146,7 +146,7 @@ describe('your lab with several experiments', () => {
       await press('Back to today');
     }
     await goTo('Progress');
-    await screen.findAllByText('Day by day');
+    await screen.findAllByTestId('day-dots');
     noDuplicateKeys();
     await goTo('History');
     expect(await screen.findAllByTestId('history-row')).toHaveLength(count);

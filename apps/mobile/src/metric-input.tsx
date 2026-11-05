@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import type { Metric } from '@rhythm-health/contract';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { metricName } from './lib/short-labels';
 import { Copy, useStyles } from './ui';
 import { useColors } from './theme-core';
 
@@ -33,13 +34,13 @@ export function MetricInput({ metric, value, onChange, disabled, error, big = fa
   const [focused, setFocused] = useState(false);
   const min = metric.min ?? 1, max = metric.max ?? 10;
   return <View style={styles.stack}>
-    {!big && <Copy testID="metric-label" accessibilityRole="header" style={styles.sectionTitle}>{metric.label}</Copy>}
+    {!big && <Copy testID="metric-label" accessibilityRole="header" numberOfLines={1} style={styles.sectionTitle}>{metricName(metric)}</Copy>}
     {!big && metric.type === 'scale' && <Copy style={styles.muted}>{scaleCaption(metric)}</Copy>}
     {metric.type === 'boolean' ? <View accessibilityRole="radiogroup" accessibilityLabel={metric.label} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-      {[true, false].map(choice => <Radio key={String(choice)} label={`${metric.label}: ${choice ? 'Yes' : 'No'}`} text={choice ? 'Yes' : 'No'} big={big} cell={big}
+      {[true, false].map(choice => <Radio key={String(choice)} label={`${metricName(metric)}: ${choice ? 'Yes' : 'No'}`} text={choice ? 'Yes' : 'No'} big={big} cell={big}
         selected={value === choice} onPress={() => onChange(choice)} disabled={disabled} />)}
     </View> : metric.type === 'scale' && max - min <= 20 ? <View accessibilityRole="radiogroup" accessibilityLabel={metric.label} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm }}>
-      {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(choice => <Radio key={choice} cell big={big} label={`${metric.label}: ${choice}`} text={String(choice)}
+      {Array.from({ length: max - min + 1 }, (_, i) => min + i).map(choice => <Radio key={choice} cell big={big} label={`${metricName(metric)}: ${choice}`} text={String(choice)}
         selected={value === String(choice)} onPress={() => onChange(String(choice))} disabled={disabled} />)}
     </View> : <TextInput accessibilityLabel={metric.type === 'duration' ? `${metric.label}, in minutes` : metric.label}
       value={typeof value === 'string' ? value : ''} onChangeText={onChange} editable={!disabled}

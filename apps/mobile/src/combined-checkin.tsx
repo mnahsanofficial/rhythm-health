@@ -72,12 +72,12 @@ export function CombinedCheckin({ initial, token, offline, onExpired, onBack, on
   const asked = new Set<string>();
   for (const item of today.experiments) {
     const caption = `Day ${item.day_number} · ${item.change_required ? 'Test' : 'Normal'} day`;
-    if (item.change_required) steps.push({ key: `change:${item.id}`, kind: 'change', action: item.action, name: item.action, caption, day: item.day_number });
+    if (item.change_required) steps.push({ key: `change:${item.id}`, kind: 'change', action: item.action, short: item.change_short, name: item.short_name, caption, day: item.day_number });
     for (const question of today.questions) {
       if (asked.has(question.id) || !question.experiment_ids.includes(item.id)) continue;
       asked.add(question.id);
       const shared = question.experiment_ids.length;
-      steps.push({ key: question.id, kind: 'metric', metric: question.metric, name: item.action, caption, day: item.day_number, audience: shared === 1 ? undefined : shared === 2 ? 'Counts for both' : `Counts for all ${shared}` });
+      steps.push({ key: question.id, kind: 'metric', metric: question.metric, name: item.short_name, caption, day: item.day_number, audience: shared === 1 ? undefined : shared === 2 ? 'Counts for both' : `Counts for all ${shared}` });
     }
   }
   return <View style={[styles.stack, { flexGrow: 1 }]}>

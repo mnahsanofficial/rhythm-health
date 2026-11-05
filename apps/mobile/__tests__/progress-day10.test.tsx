@@ -13,7 +13,7 @@ jest.mock('react-native-safe-area-context', () => jest.requireActual('react-nati
 
 const session = { access_token: 'fake-token', user: { id: 'fake-user', email: 'learner@example.invalid' } };
 const SUMMARY = 'GET /api/experiments/progress-summary';
-const run = (id: string, question: string, baseline: number | null, result: number | null, percent: number | null) => ({ experiment_id: id, question, completed_at: '2026-10-20T10:00:00Z', baseline_mean: baseline, result_mean: result, percent_change: percent });
+const run = (id: string, question: string, baseline: number | null, result: number | null, percent: number | null) => ({ experiment_id: id, question, short_name: question, completed_at: '2026-10-20T10:00:00Z', baseline_mean: baseline, result_mean: result, percent_change: percent });
 const empty = { metrics: [], kept: [], example: null };
 const ID = experiment.id;
 const ended = { ...experiment, status: 'active', started_at: '2026-10-25T10:00:00Z', progress: { state: 'ended', day_number: null, phase: null, phase_day: null, phase_days: null, total_days: 10, days_remaining: 0, started_at: '2026-10-25T10:00:00Z', ends_at: '2026-11-04T10:00:00Z' } };
@@ -55,10 +55,11 @@ describe('the Progress tab', () => {
     const card = await screen.findByTestId('metric-energy');
     expect(within(card).getByText('Morning energy')).toBeVisible();
     expect(within(card).getByText('Does a walk help?')).toBeVisible();
-    expect(within(card).getByText('Normal 5 → with the change 6 (+20%)')).toBeVisible();
-    expect(within(card).getByText('Normal 6.3 → with the change 7.5 (+20%)')).toBeVisible();
+    expect(within(card).getByText('5 → 6')).toBeVisible();
+    expect(within(card).getByText('6.3 → 7.5')).toBeVisible();
+    expect(within(card).getAllByText('+20%')).toHaveLength(2);
     expect(within(card).getByText('Your normal has moved +1.3 since your first experiment.')).toBeVisible();
-    expect(screen.getByText('Changing several things over time means this shows trends, not proof.')).toBeVisible();
+    expect(screen.getByText('This shows trends, not proof.')).toBeVisible();
   });
 
   test('with one experiment it makes no claim about movement', async () => {
@@ -71,13 +72,14 @@ describe('the Progress tab', () => {
   test('a missing number stays missing', async () => {
     routes[SUMMARY] = { body: { ...empty, metrics: [{ key: 'energy', label: 'Energy', type: 'scale', normal_change: null, runs: [run('a', 'Walk?', null, 6, null)] }] } };
     await openProgress();
-    expect(await screen.findByText('Normal not enough data → with the change 6')).toBeVisible();
+    expect(await screen.findByText('– → 6')).toBeVisible();
   });
 
   test('yes-or-no metrics read as a share of days', async () => {
     routes[SUMMARY] = { body: { ...empty, metrics: [{ key: 'walked', label: 'Walked', type: 'boolean', normal_change: null, runs: [run('a', 'Walk?', 0.25, 0.75, 200)] }] } };
     await openProgress();
-    expect(await screen.findByText('Normal 25% of days → with the change 75% of days (+200%)')).toBeVisible();
+    expect(await screen.findByText('25% → 75%')).toBeVisible();
+    expect(screen.getByLabelText('Walk?: normal 25%, with the change 75%, +200%')).toBeVisible();
   });
 
   test('the sample is a labelled Example, kept apart, and gone once there are real numbers', async () => {
@@ -86,7 +88,7 @@ describe('the Progress tab', () => {
     const panel = await screen.findByTestId('progress-example');
     expect(within(panel).getByText('Example')).toBeVisible();
     expect(within(panel).getByText('Invented check-ins. Never counted.')).toBeVisible();
-    expect(within(panel).getByText('Normal 5 → with the change 6 (+20%)')).toBeVisible();
+    expect(within(panel).getByText('5 → 6')).toBeVisible();
     expect(screen.queryByTestId('metric-energy')).toBeNull();
     screen.unmount();
     routes[SUMMARY] = { body: { ...empty, metrics: [{ key: 'real', label: 'Real', type: 'scale', normal_change: null, runs: [run('a', 'Real?', 1, 2, 100)] }] } };

@@ -57,7 +57,7 @@ describe('one question per screen', () => {
   test('a test day asks about the change first, alone, with Yes and Not today', async () => {
     install(day(4, 'intervention')); await open(4);
     expect(heading('Did you make the change?')).toBeVisible();
-    expect(screen.getByText(experiment.intervention.action)).toBeVisible();
+    expect(screen.getByText(experiment.intervention.change_short!)).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Yes, I made the change' })).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Not today' })).toBeVisible();
     expect(screen.queryByRole('radio', { name: 'Morning energy: 7' })).toBeNull();
@@ -117,13 +117,13 @@ describe('the review', () => {
   test('shows answers as values, and a tap on one goes back to it', async () => {
     install(day(4, 'intervention')); await open(4); await finish();
     expect(heading('Review')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Change Morning energy, 7' })).toBeVisible();
-    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Change Sleep quality, 6' })); });
+    expect(screen.getByRole('button', { name: 'Change Morning energy, 7/10' })).toBeVisible();
+    await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Change Sleep quality, 6/10' })); });
     expect(heading('Sleep quality')).toBeVisible();
     await tap('Sleep quality: 8');
     expect(heading('Sleep quality')).toBeVisible();
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Next' })); });
-    expect(screen.getByRole('button', { name: 'Change Sleep quality, 8' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Change Sleep quality, 8/10' })).toBeVisible();
   });
 
   test('the note stays behind a tap, and is saved', async () => {

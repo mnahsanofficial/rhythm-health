@@ -64,7 +64,7 @@ describe('check-in', () => {
   test('a test day uses the web heading, phase line and lead', async () => {
     await openCheckin();
     expect(screen.getByText('Day 4 · Test day')).toBeVisible();
-    expect(screen.getByText(experiment.intervention.action)).toBeVisible();
+    expect(screen.getByText(experiment.intervention.change_short!)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Close' })).toBeVisible();
   });
 

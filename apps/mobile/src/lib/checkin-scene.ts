@@ -2,7 +2,7 @@ import { MOTION_DURATION_MS } from '@rhythm-health/brand';
 import type { Metric } from '@rhythm-health/contract';
 import { metricAnswer } from './checkins';
 
-export type ChangeIcon = 'shoe' | 'cup' | 'window' | 'ring';
+export type ChangeIcon = 'shoe' | 'cup' | 'window' | 'moon' | 'ring';
 export type CheckinSceneChoice = { kind: 'sun' | 'night' | 'moon-arc' | 'ring' | 'days' } | { kind: 'change'; icon: ChangeIcon };
 type SceneStep = { kind: 'change'; action: string } | { kind: 'metric'; metric: Metric };
 
@@ -21,6 +21,7 @@ const SLEEP = /\b(sleep|rest|rested|restful|restfulness)\b/;
 const FOCUS = /\b(focus|focused|concentration|attention|clarity|mood)\b/;
 const SHOE = /\b(walk\w*|steps?|stairs|run|running|jog\w*|stroll\w*|hike\w*)\b/;
 const CUP = /\b(coffee|caffeine|tea|cups?|espresso|water|drink\w*)\b/;
+const BEDTIME = /\b(bed|bedtime|sleep\w*|asleep|nap\w*|wind down)\b/;
 const WINDOW = /\b(sunrise|sunlight|sun|daylight|light|window|curtains?|outside|outdoors)\b/;
 
 const words = (metric: Metric) => `${metric.key} ${metric.label}`.toLowerCase().replace(/_/g, ' ');
@@ -29,7 +30,7 @@ const words = (metric: Metric) => `${metric.key} ${metric.label}`.toLowerCase().
 export function sceneFor(step: SceneStep): CheckinSceneChoice {
   if (step.kind === 'change') {
     const action = step.action.toLowerCase();
-    return { kind: 'change', icon: SHOE.test(action) ? 'shoe' : CUP.test(action) ? 'cup' : WINDOW.test(action) ? 'window' : 'ring' };
+    return { kind: 'change', icon: SHOE.test(action) ? 'shoe' : CUP.test(action) ? 'cup' : WINDOW.test(action) ? 'window' : BEDTIME.test(action) ? 'moon' : 'ring' };
   }
   const { metric } = step;
   const text = words(metric);

@@ -6,27 +6,36 @@ import { DetailsRow } from './details-sheet';
 import { ApiError } from './lib/api';
 import { getProgressSummary } from './lib/progress-summary';
 import { reportPercent } from './lib/reports';
+import { metricName } from './lib/short-labels';
 import { Observations } from './progress';
 import type { DayData } from './today';
 import { Action, Alert, Copy, Status, Title, useStepFocus, useStyles } from './ui';
 import { themedStyles } from './theme-core';
 
 const shown = (value: number | null | undefined, type: string) => {
-  if (value === null || value === undefined) return 'not enough data';
-  return type === 'boolean' ? `${Math.round(value * 100)}% of days` : String(Number(value.toFixed(1)));
+  if (value === null || value === undefined) return '–';
+  return type === 'boolean' ? `${Math.round(value * 100)}%` : String(Number(value.toFixed(1)));
 };
+const TRENDS = 'This shows trends, not proof.';
 const moved = (change: number) => change === 0
   ? 'Your normal has stayed the same since your first experiment.'
   : `Your normal has moved ${change > 0 ? '+' : ''}${Number(change.toFixed(1))} since your first experiment.`;
 
-/** Every number here comes from the server. This only puts words around them. */
+/** Every number here comes from the server. This only lays them out: one line each. */
 function MetricCard({ metric, example = false }: { metric: MetricTrend; example?: boolean }) { const local = useLocal(); const ui = useStyles();
-  return <View testID={`${example ? 'example' : 'metric'}-${metric.key}`} style={local.card}>
-    <Copy style={ui.sectionTitle}>{metric.label}</Copy>
-    {metric.runs.map(run => <View key={run.experiment_id} style={local.run}>
-      <Copy style={local.caption}>{run.question}</Copy>
-      <Copy>{`Normal ${shown(run.baseline_mean, metric.type)} → with the change ${shown(run.result_mean, metric.type)}${run.percent_change === null || run.percent_change === undefined ? '' : ` (${reportPercent(run.percent_change)})`}`}</Copy>
-    </View>)}
+  const name = metricName(metric);
+  const row = (run: MetricTrend['runs'][number], words: string) => {
+    const change = run.percent_change === null || run.percent_change === undefined ? null : reportPercent(run.percent_change);
+    return <View key={run.experiment_id} accessible accessibilityLabel={`${words}: normal ${shown(run.baseline_mean, metric.type)}, with the change ${shown(run.result_mean, metric.type)}${change ? `, ${change}` : ''}`} style={local.row}>
+      <Copy numberOfLines={1} style={local.rowName}>{words}</Copy>
+      <Copy style={ui.number}>{`${shown(run.baseline_mean, metric.type)} → ${shown(run.result_mean, metric.type)}`}</Copy>
+      {change && <Copy style={ui.number}>{change}</Copy>}
+    </View>;
+  };
+  if (example) return <View testID={`example-${metric.key}`}>{metric.runs.map(run => row(run, name))}</View>;
+  return <View testID={`metric-${metric.key}`} style={local.card}>
+    <Copy accessibilityRole="header" numberOfLines={1} style={ui.sectionTitle}>{name}</Copy>
+    {metric.runs.map(run => row(run, run.short_name))}
     {metric.normal_change !== null && metric.normal_change !== undefined && <Copy>{moved(metric.normal_change)}</Copy>}
   </View>;
 }
@@ -60,29 +69,31 @@ export function ProgressScreen({ entries, updatedAt, token, offline, onExpired, 
     {error && <><Alert>{error}</Alert><Action label="Try again" secondary disabled={offline} onPress={() => { setError(null); setAttempt(n => n + 1); }} /></>}
     {!!summary?.kept.length && <View style={ui.stack}>
       <Copy accessibilityRole="header" style={ui.sectionTitle}>Habits I kept</Copy>
-      {summary.kept.map(item => <View key={item.experiment_id} style={local.card}><Copy>{item.habit}</Copy></View>)}
+      {summary.kept.map(item => <View key={item.experiment_id} style={local.card}><Copy numberOfLines={1}>{item.short_name ?? item.habit}</Copy></View>)}
     </View>}
     {!!summary?.metrics.length && <DetailsRow label="Your experiments compared">
       {summary.metrics.map(metric => <MetricCard key={`${metric.key}:${metric.type}`} metric={metric} />)}
-      <Copy>Changing several things over time means this shows trends, not proof.</Copy>
+      <Copy style={local.caption}>{TRENDS}</Copy>
     </DetailsRow>}
     {summary?.example && <View testID="progress-example" style={local.example}>
-      <Copy accessibilityRole="header" style={ui.sectionTitle}>Example</Copy>
+      <Copy accessibilityRole="header" numberOfLines={1} style={ui.sectionTitle}>Example</Copy>
       <Copy>Invented check-ins. Never counted.</Copy>
-      <Copy style={local.caption}>{summary.example.question}</Copy>
+      <Copy numberOfLines={2} style={NATIVE_TYPOGRAPHY.caption}>{summary.example.question}</Copy>
       {summary.example.metrics.map(metric => <MetricCard key={`${metric.key}:${metric.type}`} metric={metric} example />)}
+      <Copy style={local.caption}>{TRENDS}</Copy>
     </View>}
-    {summary?.example && !summary.metrics.length && <Copy>Changing several things over time means this shows trends, not proof.</Copy>}
     {entries?.map(entry => <View key={entry.experiment.id} style={ui.stack}>
-      <Copy style={ui.sectionTitle}>{entry.experiment.question}</Copy>
-      <Observations data={entry} title="Day by day" token={token} offline={offline} onExpired={onExpired} />
+      <Copy accessibilityRole="header" numberOfLines={1} style={ui.sectionTitle}>{entry.experiment.intervention.short_name ?? entry.experiment.question}</Copy>
+      <Observations compact data={entry} token={token} offline={offline} onExpired={onExpired} />
+      <DetailsRow label="The question"><Copy>{entry.experiment.question}</Copy></DetailsRow>
     </View>)}
   </View>;
 }
 
 const useLocal = themedStyles(COLORS => StyleSheet.create({
   card: { padding: SPACING.md, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.surface },
-  run: { gap: SPACING.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.xs },
+  rowName: { flex: 1 },
   caption: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   example: { padding: SPACING.md, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS['night-tint'] },
 }));

@@ -15,7 +15,7 @@ const press = (name: string) => act(async () => { fireEvent.press(screen.getByRo
 async function toPlan() {
   render(<ProposalFlow token="fake" offline={false} profile={profile} initialQuestion={proposal.question} onExpired={jest.fn()} onStarted={jest.fn()} />);
   await press('Design experiment');
-  await screen.findByRole('header', { name: proposal.intervention.action });
+  await screen.findByRole('header', { name: proposal.intervention.change_short! });
 }
 
 describe('the plan, one step per screen', () => {
@@ -35,7 +35,7 @@ describe('the plan, one step per screen', () => {
     expect(screen.getByLabelText(`Your guess for ${proposal.metrics[0].label}`)).toBeVisible();
     expect(screen.queryByText('We predict')).toBeNull();
     await press('Back');
-    expect(screen.getByRole('header', { name: proposal.intervention.action })).toBeVisible();
+    expect(screen.getByRole('header', { name: proposal.intervention.change_short! })).toBeVisible();
   });
 
   test('3: the reveal puts your guess beside the range, with confidence as a caption', async () => {

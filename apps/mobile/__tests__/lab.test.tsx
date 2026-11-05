@@ -99,8 +99,8 @@ describe('your lab with an experiment', () => {
     render(<MobileApp />);
     await screen.findByLabelText('Day 4 recorded');
     await act(async () => { fireEvent.press(screen.getByRole('tab', { name: 'Progress' })); });
-    expect(await screen.findByText('Day by day')).toBeVisible();
-    expect(screen.getByText('3 of 10 days recorded')).toBeVisible();
+    expect(await screen.findByTestId('day-dots')).toBeVisible();
+    expect(screen.getByLabelText('3 of 10 days recorded')).toBeVisible();
   });
 
   test('the Ask tab designs a second experiment, and the limit leads back to Today', async () => {
@@ -184,7 +184,7 @@ describe('timeline', () => {
     expect(screen.getByLabelText('Day 5, test, upcoming')).toBeVisible();
     expect(screen.getAllByText('✓')).toHaveLength(2);
     expect(screen.getByText('–')).toBeVisible();
-    expect(screen.getAllByText('Today')).toHaveLength(2); // The day, and the tab.
+    expect(screen.getAllByText('Today')).toHaveLength(1); // The tab: a small dot marks today by its ring and spoken name.
     expect(screen.queryByRole('button', { name: /^Day 5/ })).toBeNull();
     
   });

@@ -288,7 +288,7 @@ describe('reading order', () => {
     await pressTab('Ask');
     fireEvent.changeText(screen.getByLabelText('Your question or goal'), QUESTION);
     await act(async () => { fireEvent.press(screen.getByRole('button', { name: 'Design experiment' })); });
-    await pressNext(); expect(await screen.findByText('Morning energy, change from normal days')).toBeVisible();
+    await pressNext(); expect(await screen.findByText('Morning energy, % change from normal')).toBeVisible();
     expect(screen.queryByText(/Your guess locks/)).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Why?' }));
     expect(screen.getByText(/It locks when you see the prediction/)).toBeVisible();

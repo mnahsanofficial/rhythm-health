@@ -83,7 +83,7 @@ export function CheckinForm({ data: { experiment, timeline }, token, offline, on
   const metrics = [...experiment.metrics].sort((a, b) => Number(b.primary) - Number(a.primary));
   const caption = `Day ${day} · ${test ? 'Test' : 'Normal'} day`;
   const steps: CheckinStep[] = [
-    ...(test ? [{ key: 'intervention_completed', kind: 'change' as const, action: experiment.intervention.action, caption, day }] : []),
+    ...(test ? [{ key: 'intervention_completed', kind: 'change' as const, action: experiment.intervention.action, short: experiment.intervention.change_short, caption, day }] : []),
     ...metrics.map(metric => ({ key: metric.key, kind: 'metric' as const, metric, caption, day })),
   ];
   const clearField = (key: string) => setFields(current => { if (!(key in current)) return current; const next = { ...current }; delete next[key]; return next; });

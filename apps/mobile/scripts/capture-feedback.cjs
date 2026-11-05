@@ -190,7 +190,7 @@ const GROUPS = {
     await run.page.getByRole('button', { name: 'How it works', exact: true }).waitFor();
     await shoot(run.page, 'screens', '1-ask', mode);
     await run.page.getByRole('tab', { name: 'Progress' }).click();
-    await run.page.getByText('Day by day', { exact: true }).waitFor();
+    await run.page.getByRole('button', { name: 'The question', exact: true }).first().waitFor();
     await shoot(run.page, 'screens', '2-progress', mode);
     await run.page.getByRole('tab', { name: 'History' }).click();
     await run.page.getByRole('button', { name: /^Open Lab Report/ }).waitFor();

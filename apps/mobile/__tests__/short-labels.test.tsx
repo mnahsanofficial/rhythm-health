@@ -164,6 +164,7 @@ describe('the guess step', () => {
     expect(screen.getByRole('header', { name: 'Your guess' })).toBeTruthy();
     expect(screen.getByText('Morning energy, % change from normal')).toBeTruthy();
     expect(screen.queryByText(new RegExp(ENERGY_QUESTION.slice(0, 20)))).toBeNull();
+    expectDecorativeScene('checkin-scene');
     expectOneLineHeadings(view.toJSON());
   });
 
@@ -218,7 +219,7 @@ describe('the reveal', () => {
 
   test('a guess outside the range widens the bar, so it still shows', async () => {
     await toReveal('-50');
-    expect(screen.getByText('-50%')).toBeTruthy();
+    expect(screen.getAllByText('-50%').length).toBe(2); // The guess, and the end of the bar.
     expect(screen.getByText('+50%')).toBeTruthy();
     expect(percent(flatten(screen.getByTestId('guess-marker', hidden)).left)).toBeCloseTo(0, 1);
   });
@@ -291,7 +292,7 @@ describe('every check-in page', () => {
       expect(screen.getByText(question)).toBeTruthy();
       expectDecorativeScene('checkin-scene');
       expectOneLineHeadings(view.toJSON());
-      await press(within(screen.getByRole('radiogroup')).getAllByRole('radio')[6]);
+      await press(screen.getByRole('radio', { name: `${title}: 7` }));
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 900)); });
     }
     expect(screen.getByRole('header', { name: 'Minutes to fall asleep' })).toBeTruthy();
@@ -323,11 +324,18 @@ describe('every check-in page', () => {
     install([a, b]);
     routes['GET /api/checkins/today'] = {
       revision: 'r', note: null, all_recorded: false,
-      experiments: [{ ...b, action: LONG_ACTION, change_short: 'Walk 5 km after dinner', short_name: 'Evening walk', timing: 'Evening', day_number: 5, total_days: 10, phase: 'intervention', change_required: true, change_made: null, recorded: false }],
-      questions: [{ id: 'q1', experiment_ids: ['second-id'], value: null, metric: metrics[2] }],
+      experiments: [
+        { id: 'first-id', question: a.question, action: 'Get daylight', change_short: 'Get daylight', short_name: 'Morning light', timing: 'Morning', day_number: 2, total_days: 10, phase: 'baseline', change_required: false, change_made: null, recorded: false },
+        { id: 'second-id', question: b.question, action: LONG_ACTION, change_short: 'Walk 5 km after dinner', short_name: 'Evening walk', timing: 'Evening', day_number: 5, total_days: 10, phase: 'intervention', change_required: true, change_made: null, recorded: false },
+      ],
+      questions: [{ id: 'q0', experiment_ids: ['first-id'], value: null, metric: metrics[0] }, { id: 'q1', experiment_ids: ['second-id'], value: null, metric: metrics[2] }],
     } as unknown as TodayCheckin;
     render(<MobileApp />); await settle(); await settle();
     await press(screen.getAllByRole('button', { name: /^Check in now, day/ })[0]); await settle();
+    expect(screen.getByText('Morning light')).toBeTruthy();
+    expectDecorativeScene('checkin-scene');
+    await press(screen.getByRole('radio', { name: 'Morning energy: 7' }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 900)); });
     expect(screen.getByText('Evening walk')).toBeTruthy();
     expect(screen.queryByText(LONG_ACTION)).toBeNull();
     expectDecorativeScene('checkin-scene');

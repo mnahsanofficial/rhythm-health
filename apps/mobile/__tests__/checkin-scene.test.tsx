@@ -322,10 +322,11 @@ describe('the question step', () => {
     expect(bottom.getByRole('radio', { name: 'Not today' })).toBeVisible();
   });
 
-  test('the review has no scene', () => {
+  test('the review has a calm scene of the days, and no answer moves it', () => {
     render(<Flow steps={[energy]} />);
     tap('Morning energy: 7');
     expect(heading('Review')).toBeTruthy();
-    expect(screen.queryByTestId('checkin-scene', hidden)).toBeNull();
+    expect(screen.getAllByTestId('scene-day-baseline', hidden)).toHaveLength(3);
+    expect(screen.queryByTestId('scene-sun', hidden)).toBeNull();
   });
 });
