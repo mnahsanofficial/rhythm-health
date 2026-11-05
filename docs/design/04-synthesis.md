@@ -54,6 +54,53 @@ The earlier audits checked the phone app from source and Expo web, and it passed
 
 One person, who built it and knows the flows, so problems are probably understated. No screen reader or large text. The Strava screenshots set a quality bar; they aren't evidence about our users.
 
+## Round 3: the 8x demo call (n=1, outside reviewer)
+
+**Method:** live demo on the 8x call, reviewer's comments as relayed by Nazmul | **Participants:** 1, Maham (8x), not a target user | **Date:** 5 Nov 2026
+
+This is the first reaction from someone who didn't build the app. She watched a demo rather than using it alone, and she reviews for 8x, so this tells us what's wrong, not how many people it affects. No round 2 is recorded in this file; the number follows the name used for this round.
+
+**Her summary:** "The main thing with the whole application is cognitive overload."
+
+### Themes
+
+| Theme | Her words | What we measured | Implication |
+|---|---|---|---|
+| **Too much text, everywhere** | "There's too much text written in too many different places." "People are used to skimming." | Lab Report 371 words, experiment screen 135, Progress 95, check-in on a test day 55 | A word budget per screen, enforced by a test |
+| **Grey isn't readable, though it passes** | "A lot of it is not readable because it's grey." | `muted` passes AA in both modes (light 5.37 on background and 4.81 on night tint; dark 8.26 and 6.23). Yet 42–58% of the words on Today, Ask, History and Lab Report are grey | Passing an audit again didn't mean easy to use, as in round 1. Change where grey is used, not the token |
+| **Too many decisions at once** | "The today check-in screen is asking you so many questions on one screen." | A test-day check-in with 2 measures asks 3 required questions and offers a note, all on one screen | One question per screen |
+| **Sentences where a mark would do** | "'Day 1 recorded'. Not important. Maybe just a check somewhere." | Today has "Day 1 of 10 · Baseline" and "Day 1 recorded" as two grey lines | Icons for state |
+| **Details shown before they're wanted** | "We don't need it on the screen. You can click it and see it on the next screen." "The screen which shows you the experiment, there was too much text there." | The experiment screen repeats the day status, change, timing and forecast. The timeline alone repeats "Day" 10 times | Tap to open |
+| **No visible answer to "does this help?"** | "How are you ensuring the experiments are actually going to help someone?" | The method is only on the Lab Report, spread across several sections | Say it in one line on the plan, and behind "How we know ›" on the report. We can't promise that a change helps |
+
+### Insights and opportunities
+
+| # | Insight | Opportunity | Basis | Impact | Effort |
+|---|---|---|---|---|---|
+| F-A | A first-time user can't skim the app | One heading and one short line per section; the rest behind a tap | **Feedback**, **Measured** | High | High: touches tests that look up strings |
+| F-B | A check-in feels like a form | One question per screen with auto-advance | **Feedback**; **Assumption** that it stays near 30 seconds, because it adds taps | High | Med |
+| F-C | Contrast ratios don't capture reading effort | Grey for captions only, tested | **Feedback**, **Measured** | High | Low |
+| F-D | State is written out as sentences | Check, dot and ring | **Feedback** | Med | Low |
+| F-E | The method is invisible | "Your check-ins decide, not the AI." | **Feedback**; **Source** | High for trust | Low |
+| F-F | Text creeps back after each cut (round 1's R-C cut words, and this round found the same problem) | A test that fails over budget | **Measured**; **Judgement** on the cause | Med | Low |
+
+### Recommendations
+
+1. **Check-in first (F-B).** It's the daily loop, and she named it directly.
+2. **Then Today and the experiment screen (F-A, F-D).** Everyone sees them every day.
+3. **Then the plan and the remaining screens (F-A, F-C).**
+4. **Answer her question in the product (F-E)** without any promise that a change will help.
+5. **Keep the budget test (F-F)** so this doesn't return.
+
+### Still unknown
+
+- Whether one question per screen stays quick by day 7, when the extra taps may start to feel slow.
+- Whether people miss details once they're behind a tap. Only the hallway test or real use can show this.
+
+### Limits of round 3
+
+One reviewer, reacting to a demo instead of using the app, with her words relayed by Nazmul. There's no transcript in the repo. The word counts come from rendering each screen in the test suite with fixture data, so real AI text will change them. They count words containing a letter and leave out the tab bar and the brand name.
+
 ## Summary (from the 4 Nov review, before round 1)
 
 The basics are sound: text contrast, tap sizes, labels and error states pass. What's missing is confidence and hierarchy. Screens have competing primary buttons and long full-width controls, headings are similar in weight to the sections below them, and there's no dark mode. Mobile lags the web: nearly every button is full-width. The redesign should raise the craft and keep the structure, because the flows and the honest copy are already the product's best asset.
