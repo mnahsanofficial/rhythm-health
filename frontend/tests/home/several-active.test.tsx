@@ -131,3 +131,20 @@ describe("Your lab with several experiments", () => {
     expect(controls).toHaveTextContent("Remove the sample to free up a slot");
   });
 });
+
+
+it("puts the soonest due real experiment first, before a recorded one or a sample", async () => {
+  const done = running(1, 2, { intervention: { ...experiment.intervention, short_name: "Recorded walk" } });
+  const dueSoon = running(2, 5, { intervention: { ...experiment.intervention, short_name: "Daylight break" } });
+  const sample = running(3, 7, { is_seeded: true, intervention: { ...experiment.intervention, short_name: "Example stretch" } });
+  install([done, sample, dueSoon]);
+  server.use(
+    http.get(`${api}/api/experiments/${done.id}/progress`, () => HttpResponse.json(timelineFixture(done, { recorded: [2] }))),
+    http.get(`${api}/api/experiments/${dueSoon.id}/progress`, () => HttpResponse.json(timelineFixture(dueSoon, { nextDayAt: "2026-10-29T10:00:00Z" }))),
+  );
+  render(home());
+  const hero = await screen.findByRole("region", { name: "Your next action" });
+  expect(within(hero).getByRole("heading", { name: "Daylight break" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Also running" })).toBeVisible();
+  expect(screen.getAllByRole("list", { name: /10-day timeline/ })).toHaveLength(3);
+});

@@ -335,3 +335,34 @@ it('labels a running sample separately from real observations', async () => {
   expect(await screen.findByText('Sample experiment')).toBeVisible();
   expect(screen.getByText(/Sample answers never become your real experiment data/)).toBeVisible();
 });
+
+
+describe("desktop Today parity", () => {
+  it("uses short names, a greeting and a weekly ring without repeating the full question", async () => {
+    signedIn();
+    server.use(http.get(`${api}/api/experiments/${experiment.id}/progress`, () => HttpResponse.json(
+      timelineFixture(activeExperiment, { recorded: [1, 3], missed: [2], nextDayAt: "2026-10-29T10:00:00Z" }),
+    )));
+    render(home());
+    expect(await screen.findByRole("heading", { name: /Good (morning|afternoon|evening)/, level: 1 })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Evening walk" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: experiment.question })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Evening walk: 2 of 7 days recorded in the last seven experiment days" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Up next" })).toBeVisible();
+    expect(screen.getByRole("list", { name: "Evening walk: 10-day timeline" })).toBeVisible();
+    await userEvent.click(screen.getByText("Details", { exact: true }));
+    expect(screen.getByText(experiment.question, { exact: true })).toBeVisible();
+  });
+
+  it("makes finishing available when the server says all days have ended", async () => {
+    signedIn();
+    const ended: Experiment = { ...activeExperiment, progress: { ...activeExperiment.progress, state: "ended", day_number: null, phase: null } };
+    server.use(
+      http.get(`${api}/api/experiments`, () => HttpResponse.json([ended])),
+      http.get(`${api}/api/experiments/${experiment.id}/progress`, () => HttpResponse.json(timelineFixture(ended))),
+    );
+    render(home());
+    expect(await screen.findByRole("link", { name: "Finish and see results" })).toHaveAttribute("href", `/experiments/${experiment.id}`);
+    expect(screen.queryByRole("link", { name: /Check in for day/ })).not.toBeInTheDocument();
+  });
+});
