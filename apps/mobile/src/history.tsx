@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { LAYOUT, NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
 import type { Experiment, LabReport } from '@rhythm-health/contract';
 import { CalibrationCard } from './calibration-card';
+import { DetailsRow } from './details-sheet';
 import { Disclosure } from './form-rows';
 import { ApiError } from './lib/api';
 import { listCompletedExperiments, resetDemo } from './lib/history';
@@ -47,7 +48,6 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
   return <View style={local.page}>
     <View style={ui.stack}>
       <Title textRef={heading}>Your history</Title>
-      <Copy>What your experiments found.</Copy>
     </View>
     {offline && (at
       ? <Status style={ui.muted}>{`Offline, last updated ${at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.`}</Status>
@@ -59,17 +59,15 @@ export function HistoryScreen({ token, offline, cache, onExpired, onOpen, onAsk 
     {list === null ? (!offline && !error && <Loading message="Loading your history…" />)
       : list.length === 0 ? <View style={local.empty}>
         <Copy accessibilityRole="header" style={ui.sectionTitle}>Nothing finished yet.</Copy>
-        <Copy style={ui.muted}>Completed experiments will appear here.</Copy>
         <Action label="Test a new question" onPress={onAsk} />
       </View> : <View style={ui.stack}>
-        <Status style={local.count}>{`${ordered.length} completed ${ordered.length === 1 ? 'experiment' : 'experiments'} · ${order} first`}</Status>
         <View style={local.sort}>
           <Action label="Newest first" secondary={order !== 'newest'} selected={order === 'newest'} onPress={() => setOrder('newest')} />
           <Action label="Oldest first" secondary={order !== 'oldest'} selected={order === 'oldest'} onPress={() => setOrder('oldest')} />
         </View>
         {ordered.map(item => <HistoryRow key={item.id} experiment={item} token={token} offline={offline} cache={cache} onExpired={onExpired} onOpen={onOpen} />)}
       </View>}
-    {list !== null && <CalibrationCard token={token} offline={offline} onExpired={onExpired} />}
+    {list !== null && !(offline && !at) && <DetailsRow label="How close your guesses were" title="Your guesses"><CalibrationCard token={token} offline={offline} onExpired={onExpired} /></DetailsRow>}
   </View>;
 }
 
@@ -110,16 +108,15 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
 
   const report = state.kind === 'ready' ? state.report : null;
   const primary = report?.analysis.metrics.find(metric => metric.key === report.analysis.primary_metric);
-  const forecastLabel = experiment.metrics.find(metric => metric.key === experiment.prediction.target_metric)?.label ?? experiment.prediction.target_metric;
   const finished = experiment.completed_at ? new Date(experiment.completed_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : null;
   const low = reportPercent(experiment.prediction.expected_change_min).replace(/%$/, '');
   const high = reportPercent(experiment.prediction.expected_change_max).replace(/^\+/, '');
   return <View testID="history-row" style={ui.divider}>
-    <Copy style={local.count}>{finished ? `Finished ${finished}` : 'Completed experiment'}</Copy>
+    <Copy style={local.count}>{finished ?? 'Completed experiment'}</Copy>
     {experiment.is_seeded && <Copy style={local.sample}>Sample experiment</Copy>}
     <Copy accessibilityRole="header" style={ui.sectionTitle}>{experiment.question}</Copy>
     <View style={local.fact}>
-      <Copy style={ui.muted}>{`Prediction · ${forecastLabel}`}</Copy>
+      <Copy style={ui.muted}>Predicted</Copy>
       <Copy style={[ui.number, { color: COLORS.night }]}>{`${low}–${high}`}</Copy>
     </View>
     {state.kind === 'loading' && <Status style={ui.muted}>Loading report…</Status>}
@@ -130,11 +127,10 @@ function HistoryRow({ experiment, token, offline, cache, onExpired, onOpen }: {
     {state.kind === 'ready' && !report && <Copy style={ui.muted}>Report not available yet.</Copy>}
     {report && <>
       <View style={local.fact}>
-        <Copy style={ui.muted}>{`Observed · ${primary?.label ?? forecastLabel}`}</Copy>
+        <Copy style={ui.muted}>You saw</Copy>
         <Copy style={[ui.number, { color: COLORS.ink }]}>{primary?.percent_change === null || primary?.percent_change === undefined ? 'Not enough data' : reportPercent(primary.percent_change)}</Copy>
       </View>
       <View style={local.fact}>
-        <Copy style={ui.muted}>Signal</Copy>
         <Copy>{SIGNAL_COPY[report.analysis.signal.classification].label}</Copy>
       </View>
     </>}

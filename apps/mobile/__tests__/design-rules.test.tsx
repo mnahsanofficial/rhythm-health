@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
-import { LAYOUT, THEMES } from '@rhythm-health/brand';
+import { LAYOUT, NATIVE_TYPOGRAPHY, THEMES } from '@rhythm-health/brand';
 import { Action, CountUp, Notice, useStyles } from '../src/ui';
 import { AuthForm } from '../src/auth-form';
 import { DayRail, StepRail, STEP_NAMES } from '../src/rails';
@@ -31,6 +31,22 @@ describe('the rules in docs/design/05-design-system.md', () => {
     render(<Action label="Continue" disabled onPress={() => undefined} />);
     const label = StyleSheet.flatten(screen.getByText('Continue').props.style);
     expect(label.color).toBe(THEMES.light.muted);
+  });
+});
+
+describe('grey is for captions', () => {
+  const luminance = (hex: string) => { const [r, g, b] = [1, 3, 5].map(at => parseInt(hex.slice(at, at + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const contrast = (a: string, b: string) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+
+  test.each(MODES)('the muted style is caption-sized in %s', mode => {
+    const { muted } = useStyles.forMode(mode);
+    expect(muted.color).toBe(THEMES[mode].muted);
+    expect(muted.fontSize).toBe(NATIVE_TYPOGRAPHY.caption.fontSize);
+  });
+
+  test.each(MODES)('a caption passes WCAG AA on every surface it sits on in %s', mode => {
+    const theme = THEMES[mode] as Record<string, string>;
+    for (const surface of ['background', 'surface', 'night-tint']) expect(contrast(theme.muted, theme[surface])).toBeGreaterThanOrEqual(4.5);
   });
 });
 

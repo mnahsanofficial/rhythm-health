@@ -92,6 +92,27 @@ const radio = (page, name) => page.getByRole('radio', { name, exact: true }).cli
 const button = (page, name) => page.getByRole('button', { name, exact: true }).click();
 
 const GROUPS = {
+  async screens(browser, mode) {
+    const run = await open(browser, { mode, list: [on(4, 'intervention')], recorded: [1, 2, 3] });
+    await run.page.getByRole('tab', { name: 'Ask' }).click();
+    await run.page.getByRole('button', { name: 'How it works', exact: true }).waitFor();
+    await shoot(run.page, 'screens', '1-ask', mode);
+    await run.page.getByRole('tab', { name: 'Progress' }).click();
+    await run.page.getByText('Day by day', { exact: true }).waitFor();
+    await shoot(run.page, 'screens', '2-progress', mode);
+    await run.page.getByRole('tab', { name: 'History' }).click();
+    await run.page.getByRole('button', { name: /^Open Lab Report/ }).waitFor();
+    await shoot(run.page, 'screens', '3-history', mode);
+    await run.page.getByRole('button', { name: /^Open Lab Report/ }).click();
+    await run.page.getByRole('button', { name: 'Compare with the prediction', exact: true }).waitFor();
+    await shoot(run.page, 'screens', '4-report', mode);
+    await button(run.page, 'Compare with the prediction');
+    await shoot(run.page, 'screens', '5-report-compared', mode);
+    await button(run.page, 'Details');
+    await shoot(run.page, 'screens', '6-report-details', mode);
+    if (run.errors.length) throw new Error(run.errors.join('\n'));
+    await run.context.close();
+  },
   async plan(browser, mode) {
     const run = await open(browser, { mode, list: [] });
     await run.page.getByRole('tab', { name: 'Ask' }).click();

@@ -201,7 +201,7 @@ export const useStyles = themedStyles(COLORS => StyleSheet.create({
   number: { fontFamily: FONT_FAMILIES.mono, ...NATIVE_TYPOGRAPHY.body, color: COLORS.text },
   sectionTitle: { fontFamily: FONT_FAMILIES.display, ...NATIVE_TYPOGRAPHY.title },
   decision: { padding: SPACING.lg, borderRadius: RADII.card, backgroundColor: COLORS['moss-tint'], gap: SPACING.md },
-  muted: { color: COLORS.muted },
+  muted: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
   label: { marginBottom: SPACING.sm },
   input: { fontFamily: FONT_FAMILIES.sans, ...NATIVE_TYPOGRAPHY.body, color: COLORS.ink,
     minHeight: LAYOUT.primaryAction, backgroundColor: COLORS.paper, borderWidth: LAYOUT.focusWidth / 2,

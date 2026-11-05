@@ -46,7 +46,7 @@ const pressTab = async (name: string) => {
   const tab = await screen.findByRole('tab', { name });
   await act(async () => { fireEvent.press(tab); });
 };
-const openProgress = async () => { render(<MobileApp />); await pressTab('Progress'); };
+const openProgress = async () => { render(<MobileApp />); await pressTab('Progress'); if ((routes[SUMMARY]?.body as { metrics?: unknown[] } | undefined)?.metrics?.length) { const row = await screen.findByRole('button', { name: 'Your experiments compared' }); await act(async () => { fireEvent.press(row); }); } };
 
 describe('the Progress tab', () => {
   test('compares normal and result, experiment by experiment, and how normal has moved', async () => {

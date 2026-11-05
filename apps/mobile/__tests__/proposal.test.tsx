@@ -453,7 +453,7 @@ const TRUST = 'Your question goes to an AI to design the experiment, and the AI 
 
 test('Ask says where the question goes and that the AI does not calculate the result', async () => {
   await openAsk();
-  expect(screen.getByText(TRUST)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: 'How it works' })); expect(screen.getByText(TRUST)).toBeVisible();
 });
 
 test('You has an About section with the same line', async () => {

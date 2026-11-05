@@ -3,7 +3,7 @@ import type { Experiment } from '@rhythm-health/contract';
 import { MobileApp } from '../src/mobile-app';
 import { experiment, labReport, profile, proposeResponse, writtenLabReport } from '../../../frontend/tests/support/fixtures';
 import { timelineFixture } from '../../../frontend/tests/support/timeline-fixture';
-import { visibleLines, wordsOn } from './support/word-budget';
+import { greyBody, visibleLines, wordsOn } from './support/word-budget';
 
 /**
  * The text budget (docs/design/05-design-system.md). Each screen's count, measured with fixture data.
@@ -20,14 +20,15 @@ const BUDGET = {
   'combined, the change': 16,
   'combined, a question': 16,
   'combined, review': 25,
-  ask: 69,
+  ask: 41,
   'plan, the change': 12,
   guess: 15,
   'plan, the reveal': 16,
   'plan, the days': 25,
-  progress: 101,
-  history: 62,
-  'lab report': 371,
+  progress: 40,
+  history: 30,
+  'lab report': 50,
+  'lab report, compared': 62,
 } as const;
 
 const mockAuth = { getSession: jest.fn(), onAuthStateChange: jest.fn(), signOut: jest.fn(), startAutoRefresh: jest.fn(), stopAutoRefresh: jest.fn() };
@@ -76,6 +77,7 @@ const tab = async (name: string) => press(await screen.findByRole('tab', { name 
 function expectWithin(name: keyof typeof BUDGET, tree: unknown) {
   const words = wordsOn(tree);
   if (words > BUDGET[name]) throw new Error(`${name}: ${words} words, budget ${BUDGET[name]}\n${visibleLines(tree).map(line => line.text).join('\n')}`);
+  expect(greyBody(tree)).toEqual([]);
 }
 const openToday = async () => { const view = render(<MobileApp />); await screen.findByText(experiment.question); await settle(); return view; };
 
@@ -153,5 +155,7 @@ describe('main-flow screens stay within their word budget', () => {
     expectWithin('history', view.toJSON());
     await press(screen.getByRole('button', { name: `Open Lab Report for ${labReport.experiment.question}` })); await settle();
     expectWithin('lab report', view.toJSON());
+    await press(screen.getByRole('button', { name: 'Compare with the prediction' }));
+    expectWithin('lab report, compared', view.toJSON());
   });
 });
