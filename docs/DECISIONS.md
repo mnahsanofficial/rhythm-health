@@ -166,3 +166,11 @@ This is one exception, not a change to the rule: agents still never merge PRs, a
 Nazmul authorized session `7ef914cd` to merge its own check-in scenes PR with a merge commit once CI, including the Browser suite, is green and its screenshots look right, with his iPhone check on the morning of 6 Nov. One exception, like the one above: agents still never merge PRs.
 
 The same session may merge its check-in advance fix (#110) the same way: authorized by Nazmul after his iPhone test found the steps moving on while editing.
+
+## Short labels — 6 Nov 2026
+
+The phone was showing the AI's long sentences as headings. The backend now gives every metric a `short_label` and `unit`, and every experiment an `intervention.change_short` and `intervention.short_name`. They sit in the existing `metrics` and `intervention` JSON, so there's no migration. The design call writes them for new experiments, inside Pydantic limits. Older experiments get them from a deterministic fallback in `backend/app/schemas/short_labels.py` each time they're read, with no paid call and nothing written back. A scale's unit always comes from its own top bound, even if the model wrote something else.
+
+`short_label` allows 4 words, not 3, because the agreed "Minutes to fall asleep" has 4. The prompt asks for 1 to 3, and allows 4 only for how long something takes.
+
+Nazmul authorized session `d8600536` to merge its two short-labels PRs (A: backend and contract, B: mobile screens) with a merge commit once CI is green. One exception, like the ones above: agents still never merge PRs.

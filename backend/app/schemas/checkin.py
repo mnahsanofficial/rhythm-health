@@ -50,6 +50,8 @@ class TodayExperiment(BaseModel):
     id: str
     question: str
     action: str
+    change_short: str
+    short_name: str
     timing: str
     day_number: int
     total_days: int

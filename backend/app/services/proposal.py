@@ -31,12 +31,14 @@ def running_questions(profile_id: str) -> list[dict]:
     except SupabaseUnavailable:
         return []
     fields = ("key", "label", "type", "min", "max", "min_label", "max_label")
+    short = ("short_label", "unit")  # Older rows have none, and the designer writes its own.
     seen = {}
     for row in rows:
         if row.get("is_seeded"):
             continue
         for metric in row["metrics"]:
             item = {field: metric.get(field) for field in fields}
+            item.update({field: metric[field] for field in short if metric.get(field) is not None})
             seen.setdefault(tuple(item.values()), item)
     return list(seen.values())
 

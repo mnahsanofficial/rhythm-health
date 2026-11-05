@@ -34,12 +34,14 @@ export const proposal: ExperimentProposal = {
     action: "Walk for 20 minutes",
     timing: "Within one hour after dinner",
     frequency: "daily",
+    change_short: "Walk 20 minutes after dinner",
+    short_name: "Evening walk",
   },
   baseline_days: 3,
   intervention_days: 7,
   metrics: [
-    { key: "morning_energy", label: "Morning energy", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: true },
-    { key: "sleep_quality", label: "Sleep quality", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: false },
+    { key: "morning_energy", label: "Morning energy", short_label: "Morning energy", unit: "/10", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: true },
+    { key: "sleep_quality", label: "Sleep quality", short_label: "Sleep quality", unit: "/10", type: "scale", min: 1, max: 10, min_label: null, max_label: null, primary: false },
   ],
   success_criteria: { primary_metric: "morning_energy", minimum_change_percent: 10 },
 };
@@ -54,9 +56,11 @@ export const prediction: Prediction = {
   uncertainty_factors: ["bedtime consistency", "caffeine timing"],
 };
 
+const serializedIntervention = { ...proposal.intervention, change_short: proposal.intervention.change_short ?? null, short_name: proposal.intervention.short_name ?? null };
+
 export const proposeResponse: ProposeResponse = {
   personal_guess_available: false,
-  proposal: { ...proposal, metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null })) },
+  proposal: { ...proposal, intervention: serializedIntervention, metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null, short_label: metric.short_label ?? null, unit: metric.unit ?? null })) },
   prediction,
   safety: { allowed: true, reason: null, suggested_alternative: null, suggested_question: null },
   habit_check: null,
@@ -72,7 +76,8 @@ export const saveExperimentRequest: SaveExperimentRequest = {
 export const experiment: Experiment = {
   personal_guess_percent: null,
   ...proposal,
-  metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null })),
+  intervention: serializedIntervention,
+  metrics: proposal.metrics.map(metric => ({ ...metric, min_label: metric.min_label ?? null, max_label: metric.max_label ?? null, short_label: metric.short_label ?? null, unit: metric.unit ?? null })),
   id: "33333333-3333-3333-3333-333333333333",
   status: "proposed",
   category: "energy",

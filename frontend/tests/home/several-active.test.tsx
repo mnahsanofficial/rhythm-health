@@ -41,7 +41,7 @@ function running(n: number, day: number, extra: Partial<Experiment> = {}): Exper
 }
 
 function due(items: Experiment[], all_recorded = false): TodayCheckin {
-  return { revision: "r", experiments: items.map(item => ({ id: item.id, question: item.question, action: "a", timing: "t", day_number: 1, total_days: 10, phase: "baseline", change_required: false, change_made: null, recorded: all_recorded })), questions: [], note: null, all_recorded };
+  return { revision: "r", experiments: items.map(item => ({ id: item.id, question: item.question, action: "a", change_short: "a", short_name: "a", timing: "t", day_number: 1, total_days: 10, phase: "baseline", change_required: false, change_made: null, recorded: all_recorded })), questions: [], note: null, all_recorded };
 }
 
 function install(experiments: Experiment[], capacity = { active: experiments.length, limit: 3, can_start: experiments.length < 3 }) {

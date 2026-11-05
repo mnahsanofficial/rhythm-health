@@ -813,6 +813,10 @@ export interface components {
             timing: string;
             /** Frequency */
             frequency: string;
+            /** Change Short */
+            change_short?: string | null;
+            /** Short Name */
+            short_name?: string | null;
         };
         /** KeptHabit */
         KeptHabit: {
@@ -822,6 +826,8 @@ export interface components {
             question: string;
             /** Habit */
             habit: string;
+            /** Short Name */
+            short_name: string;
             /** Completed At */
             completed_at?: string | null;
         };
@@ -861,6 +867,10 @@ export interface components {
             min_label?: string | null;
             /** Max Label */
             max_label?: string | null;
+            /** Short Label */
+            short_label?: string | null;
+            /** Unit */
+            unit?: string | null;
         };
         /** MetricAnalysis */
         MetricAnalysis: {
@@ -901,6 +911,8 @@ export interface components {
             experiment_id: string;
             /** Question */
             question: string;
+            /** Short Name */
+            short_name: string;
             /** Completed At */
             completed_at?: string | null;
             /** Baseline Mean */
@@ -916,6 +928,10 @@ export interface components {
             key: string;
             /** Label */
             label: string;
+            /** Short Label */
+            short_label: string;
+            /** Unit */
+            unit?: string | null;
             /** Type */
             type: string;
             /** Runs */
@@ -1273,6 +1289,10 @@ export interface components {
             question: string;
             /** Action */
             action: string;
+            /** Change Short */
+            change_short: string;
+            /** Short Name */
+            short_name: string;
             /** Timing */
             timing: string;
             /** Day Number */

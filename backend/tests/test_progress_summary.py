@@ -24,7 +24,7 @@ def metric(key, label, baseline, result, percent, kind="scale"):
 
 def finished(number, metrics, outcome=None):
     row = {"id": f"exp-{number}", "question": f"Question {number}?", "completed_at": f"2026-10-{number:02d}T10:00:00Z",
-           "intervention": {"action": f"Habit {number}"}, "is_seeded": False}
+           "intervention": {"action": f"Habit {number}", "timing": "Evening", "frequency": "Daily"}, "is_seeded": False}
     if outcome:
         row["outcome"] = outcome
     return row, {"experiment_id": row["id"], "analysis": {"metrics": metrics}}
