@@ -1,9 +1,9 @@
 import { StyleSheet, View } from 'react-native';
-import { NATIVE_TYPOGRAPHY, RADII, SPACING } from '@rhythm-health/brand';
+import { NATIVE_TYPOGRAPHY, SPACING } from '@rhythm-health/brand';
 import type { LabReport } from '@rhythm-health/contract';
 import { BaselineContext } from './baseline-context';
 import { FinishCard } from './finish';
-import { Disclosure } from './form-rows';
+import { DetailsRow } from './details-sheet';
 import { Forecast, ForecastReasons } from './forecast';
 import { Observations } from './progress';
 import { TodayCard } from './today-card';
@@ -21,7 +21,7 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
   const { progress } = timeline;
   const heading = useStepFocus('experiment');
   const status = progress.state === 'in_progress'
-    ? `Day ${progress.day_number} of ${progress.total_days} · ${progress.phase === 'intervention' ? 'Test' : 'Baseline'} day ${progress.phase_day} of ${progress.phase_days}`
+    ? `Day ${progress.day_number} of ${progress.total_days} · ${progress.phase === 'intervention' ? 'Test' : 'Normal'}`
     : progress.state === 'completed' ? 'Completed' : progress.state === 'ended' ? 'All days done' : 'Not started';
   return <View style={local.page}>
     <View style={styles.stack}>
@@ -29,25 +29,26 @@ export function ExperimentDetail({ data, token, offline, disabled, onExpired, on
       <Copy style={local.status}>{status}</Copy>
       <Title small textRef={heading}>{experiment.question}</Title>
     </View>
-    <BaselineContext timeline={timeline} />
     <TodayCard data={data} disabled={disabled} token={token} offline={offline} onExpired={onExpired} onCompleted={onCompleted} onCheckin={onCheckin} onOpenReport={onOpenReport} />
     <FinishCard experiment={experiment} timeline={timeline} token={token} offline={offline} onExpired={onExpired} onCompleted={onCompleted} />
     <Observations data={data} title="Your timeline" token={token} offline={offline} onExpired={onExpired} />
-    <View style={local.change}>
-      <Copy style={local.status}>The small change</Copy>
-      <Copy accessibilityRole="header" style={styles.sectionTitle}>{experiment.intervention.action}</Copy>
-      <Copy style={styles.muted}>When: {experiment.intervention.timing}</Copy>
-      <Copy style={styles.muted}>How often: {experiment.intervention.frequency}</Copy>
-      <Copy style={local.small}>{`Baseline days come first: keep your routine as it is. The change starts on day ${experiment.baseline_days + 1}.`}</Copy>
+    <View>
+      <DetailsRow label="The change">
+        <Copy style={NATIVE_TYPOGRAPHY.lead}>{experiment.intervention.action}</Copy>
+        <Copy>When: {experiment.intervention.timing}</Copy>
+        <Copy>How often: {experiment.intervention.frequency}</Copy>
+        <Copy>{`Normal days come first: keep your routine as it is. The change starts on day ${experiment.baseline_days + 1}.`}</Copy>
+      </DetailsRow>
+      <DetailsRow label="Prediction">
+        <Forecast prediction={experiment.prediction} metrics={experiment.metrics} />
+        <ForecastReasons prediction={experiment.prediction} />
+      </DetailsRow>
+      {timeline.baseline_summary && progress.phase === 'intervention' && progress.state === 'in_progress' && <DetailsRow label="Your normal"><BaselineContext timeline={timeline} /></DetailsRow>}
     </View>
-    <Forecast prediction={experiment.prediction} metrics={experiment.metrics} />
-    <Disclosure><ForecastReasons prediction={experiment.prediction} /></Disclosure>
   </View>;
 }
 
-const useLocal = themedStyles((COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
+const useLocal = themedStyles((_COLORS, mode) => { const styles = useStyles.forMode(mode); return StyleSheet.create({
   page: { gap: SPACING.xl },
   status: { ...styles.number, ...NATIVE_TYPOGRAPHY.caption },
-  small: { ...NATIVE_TYPOGRAPHY.caption, color: COLORS.muted },
-  change: { padding: SPACING.lg, gap: SPACING.sm, borderRadius: RADII.card, backgroundColor: COLORS.paper },
 }); });

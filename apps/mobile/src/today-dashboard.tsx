@@ -7,6 +7,8 @@ import { FONT_FAMILIES, LAYOUT, MOTION_DURATION_MS, NATIVE_TYPOGRAPHY, RADII, SP
 import type { DayData } from './today';
 import { displayDayTime, isLastBaselineDay, testStartWhen } from './lib/experiments';
 import { allDaysDone } from './finish';
+import { DetailsRow } from './details-sheet';
+import { Icon } from './icons';
 import { Action, Copy, ForwardLink, Title, useScreenEnter } from './ui';
 import { themedStyles, useColors, useTheme } from './theme-core';
 
@@ -59,7 +61,7 @@ function WeeklyRing({ count }: { count: number | null }) {
       <Svg width={48} height={48}><Circle cx={24} cy={24} r={19} stroke={colors.line} strokeWidth={SPACING.xs} fill="none" /></Svg>
       {Array.from({ length: 7 }, (_, index) => <WeeklySegment key={index} index={index} progress={progress} />)}
       <View style={local.ringLabel}><Copy style={local.caption}>{count === null ? '—/7' : `${count}/7`}</Copy></View>
-    </View><Copy style={local.caption}>last 7 days</Copy><Copy style={local.caption}>{count === null ? 'not available' : 'this experiment'}</Copy>
+    </View><Copy style={local.caption}>last 7 days</Copy>
   </View>;
 }
 function TodayScene({ entry, evening }: { entry?: DayData; evening: boolean }) {
@@ -88,27 +90,32 @@ function TodayScene({ entry, evening }: { entry?: DayData; evening: boolean }) {
 export function TodayDashboard({ entries, disabled, onCheckin, onDetail, onResults, onAsk, onExample, renderResults, now = new Date() }: {
   entries: DayData[]; disabled: boolean; onCheckin: (entry: DayData) => void; onDetail: (entry: DayData) => void; onResults: (entry: DayData) => void; onAsk: () => void; onExample: () => void; now?: Date; renderResults?: (entry: DayData) => ReactNode;
 }) {
-  const local = useLocal(); useScreenEnter('today-dashboard');
+  const local = useLocal(); const colors = useColors(); useScreenEnter('today-dashboard');
   const sorted = [...entries].sort((a, b) => priority(a) - priority(b) || (deadline(a) === deadline(b) ? 0 : deadline(a) - deadline(b)));
   const hero = sorted[0]; const p = hero?.timeline.progress;
-  const due = sorted.find(entry => priority(entry) < 2 || entry.timeline.progress.state === 'completed');
-  const dueClose = due ? closesAt(due) : null;
-  const dueTitle = due && priority(due) === 0 ? `Check-in due${dueClose ? ` · closes ${displayDayTime(dueClose)}` : ''}`
-    : due && priority(due) === 1 ? `Baseline done · your test starts ${testStartWhen(due.timeline.next_day_at, now)}`
-    : due?.timeline.progress.state === 'completed' ? 'Your results are ready' : null;
+  const heroClose = hero ? closesAt(hero) : null;
+  // The one thing to know about the next action; everything else waits behind a tap.
+  const nextLine = hero && priority(hero) === 0 ? (heroClose ? `Closes ${displayDayTime(heroClose)}` : null)
+    : hero && priority(hero) === 1 ? `Test starts ${testStartWhen(hero.timeline.next_day_at, now)}` : null;
+  const change = hero?.experiment.intervention;
+  const baselineNow = p?.phase === 'baseline';
   const results = Boolean(hero && (p?.state === 'completed' || allDaysDone(hero.timeline)) && !hero.experiment.is_seeded);
   const label = results ? 'See your results' : p?.state === 'not_started' ? 'Check-in not open' : hero?.experiment.is_seeded && p?.state !== 'in_progress' ? 'See example details' : hero && recorded(hero) ? "Edit today's answers" : 'Check in now';
   return <View style={local.page}>
-    <View style={local.header}><View style={local.greeting}><Copy style={local.caption}>{`${now.toLocaleDateString('en-GB', { weekday: 'long' })}, ${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`}</Copy><Title>{greeting(now)}</Title></View><WeeklyRing count={hero ? weeklyCount(hero) : null} /></View>
-    {due && dueTitle && <View style={local.due}><CardLink label={dueTitle} disabled={disabled} onPress={() => due.timeline.progress.state === 'completed' ? onResults(due) : onDetail(due)}><View style={local.greeting}><Copy style={local.dueTitle}>{dueTitle}</Copy><Copy style={local.caption}>{priority(due) === 0 ? 'A short check-in, whenever you’re ready.' : priority(due) === 1 ? 'Keep your routine until the test opens.' : 'Compare your prediction with your observations.'}</Copy></View></CardLink></View>}
-    <View style={local.hero}>
-      <View style={local.heroCopy}><Copy style={local.caption}>Up next{hero?.experiment.is_seeded ? ' · Example experiment' : ''}</Copy>
-        {hero ? <CardLink label="See your experiment" hint={hero.experiment.question} onPress={() => onDetail(hero)}><View style={local.greeting}><Copy numberOfLines={2} accessibilityRole="header" accessibilityLabel={hero.experiment.question} style={local.heroTitle}>{hero.experiment.question}</Copy></View></CardLink> : <Title small>Ask your first question</Title>}
-        {hero && <><Copy style={local.caption}>{p?.day_number === null ? p.state === 'completed' ? 'Completed' : p.state === 'ended' ? 'All days done' : 'Not started' : <><Text>{`Day ${p?.day_number} of ${p?.total_days}`}</Text>{` · ${p?.phase === 'baseline' ? 'Baseline' : 'Test'}`}</>}</Copy>{recorded(hero) && <Copy style={local.caption}>{`Day ${p?.day_number} recorded`}</Copy>}<Copy numberOfLines={1} accessibilityLabel={`Small change: ${hero.experiment.intervention.action}`}>“<Text>{hero.experiment.intervention.action}</Text>”</Copy></>}
+    <View style={local.header}><View style={local.greeting}><Title>{greeting(now)}</Title></View><WeeklyRing count={hero ? weeklyCount(hero) : null} /></View>
+    <View testID="today-card" style={local.hero}>
+      <View style={local.heroCopy}>{hero?.experiment.is_seeded && <Copy style={local.caption}>Example experiment</Copy>}
+        {hero ? <CardLink label="See your experiment" hint={hero.experiment.question} onPress={() => onDetail(hero)}><View style={local.greeting}><Copy numberOfLines={3} accessibilityRole="header" accessibilityLabel={hero.experiment.question} style={local.heroTitle}>{hero.experiment.question}</Copy></View></CardLink> : <Title small>Ask your first question</Title>}
+        {hero && <><View style={local.dayLine}><Copy style={local.dayText}>{p?.day_number === null ? p.state === 'completed' ? 'Completed' : p.state === 'ended' ? 'All days done' : 'Not started' : <><Text>{`Day ${p?.day_number} of ${p?.total_days}`}</Text>{` · ${p?.phase === 'baseline' ? 'Normal' : 'Test'}`}</>}</Copy>{recorded(hero) && p?.day_number !== null && <View testID="recorded-check" accessible accessibilityRole="image" accessibilityLabel={`Day ${p?.day_number} recorded`}><Icon name="check" size={SPACING.md + SPACING.xs} color={colors.moss} filled /></View>}</View>
+          {change && <DetailsRow label={baselineNow ? 'The change' : "Today's change"}>
+            <Copy style={local.lead}>{change.action}</Copy>
+            <Copy>{`${change.timing} · ${change.frequency}`}</Copy>
+            {baselineNow && <Copy>{`Starts on day ${hero.experiment.baseline_days + 1}. Keep your routine until then.`}</Copy>}
+          </DetailsRow>}</>}
         {!hero && <Copy>Turn a habit question into a small personal experiment.</Copy>}
       </View>
       <TodayScene entry={hero} evening={now.getHours() >= 18 || now.getHours() < 5} />
-      <View style={local.heroCopy}>{hero ? results && renderResults ? renderResults(hero) : <Action haptic wide label={label} name={label === 'Check in now' && p?.state === 'in_progress' ? `Check in now, day ${p?.day_number}` : label} disabled={disabled || p?.state === 'not_started'} onPress={() => { if (results) onResults(hero); else if (hero.experiment.is_seeded && p?.state !== 'in_progress') onDetail(hero); else onCheckin(hero); }} /> : <Action haptic wide label="Ask your first question" onPress={onAsk} />}</View>
+      <View style={local.heroCopy}>{nextLine && <Copy style={local.caption}>{nextLine}</Copy>}{hero ? results && renderResults ? renderResults(hero) : <Action haptic wide label={label} name={label === 'Check in now' && p?.state === 'in_progress' ? `Check in now, day ${p?.day_number}` : label} disabled={disabled || p?.state === 'not_started'} onPress={() => { if (results) onResults(hero); else if (hero.experiment.is_seeded && p?.state !== 'in_progress') onDetail(hero); else onCheckin(hero); }} /> : <Action haptic wide label="Ask your first question" onPress={onAsk} />}</View>
     </View>
     {sorted.length > 1 && <View><Copy style={local.caption}>Also running</Copy>{sorted.slice(1).map(entry => <CardLink key={entry.experiment.id} testID={`also-${entry.experiment.id}`} label={`Open ${entry.experiment.question}`} onPress={() => onDetail(entry)}><View style={local.greeting}><Copy numberOfLines={1} accessibilityLabel={entry.experiment.question}>{entry.experiment.is_seeded ? 'Example · ' : ''}{entry.experiment.question}</Copy><Copy style={local.caption}>{entry.timeline.progress.day_number === null ? entry.timeline.progress.state : `Day ${entry.timeline.progress.day_number} of ${entry.timeline.progress.total_days}`}</Copy></View></CardLink>)}</View>}
     {!hero && <ForwardLink label="See a completed example" onPress={onExample} />}
@@ -117,7 +124,7 @@ export function TodayDashboard({ entries, disabled, onCheckin, onDetail, onResul
 const useLocal = themedStyles(colors => StyleSheet.create({
   page: { gap: SPACING.sm + SPACING.xs, marginTop: -SPACING.lg }, header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }, greeting: { flex: 1, gap: SPACING.xs },
   caption: { ...NATIVE_TYPOGRAPHY.caption, color: colors.muted }, week: { alignItems: 'center' }, ring: { width: 48, height: 48 }, ringLabel: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  due: { backgroundColor: colors['moss-tint'], borderRadius: RADII.card, paddingHorizontal: SPACING.md }, dueTitle: { ...NATIVE_TYPOGRAPHY.caption, color: colors.text },
+  dayLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs }, dayText: { ...NATIVE_TYPOGRAPHY.body }, lead: { ...NATIVE_TYPOGRAPHY.lead },
   link: { minHeight: LAYOUT.primaryAction, flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.sm },
   hero: { backgroundColor: colors.paper, borderRadius: RADII.card, overflow: 'hidden', borderWidth: LAYOUT.focusWidth / 2, borderColor: colors.line },
   heroCopy: { padding: SPACING.sm + SPACING.xs, gap: SPACING.xs }, heroTitle: { ...NATIVE_TYPOGRAPHY.title, fontFamily: FONT_FAMILIES.display }, scene: { height: LAYOUT.primaryAction * 2 },

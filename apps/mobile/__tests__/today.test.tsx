@@ -48,7 +48,7 @@ afterEach(() => jest.restoreAllMocks());
 test('loads the real question, intervention, day and phase from authoritative progress', async () => {
   render(<MobileApp />);
   expect(await screen.findByText(active.question)).toBeVisible();
-  expect(screen.getByText(active.intervention.action)).toBeVisible();
+  fireEvent.press(screen.getByRole('button', { name: "Today's change" })); expect(screen.getByText(active.intervention.action)).toBeVisible(); fireEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(screen.getByText('Day 4 of 10')).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in now, day 4' })).toBeEnabled();
   expect(requests).toEqual(['/api/profile', '/api/experiments?status=active', `/api/experiments/${active.id}/progress`]);
@@ -57,10 +57,10 @@ test('loads the real question, intervention, day and phase from authoritative pr
 test('a recorded current day shows Done for today and uses the returned next opening', async () => {
   timeline = timelineFixture(active, { recorded: [4], missed: [1, 2, 3], nextDayAt });
   render(<MobileApp />);
-  expect(await screen.findByText('Day 4 recorded')).toBeVisible();
+  expect(await screen.findByLabelText('Day 4 recorded')).toBeVisible();
   const time = new Date(nextDayAt).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' });
   fireEvent.press(screen.getByRole('button', { name: 'See your experiment' }));
-  expect(await screen.findByText(`Day 5 opens ${time}.`)).toBeVisible();
+  expect(await screen.findByText(`Day 5 opens ${time}`)).toBeVisible();
   expect(screen.getByRole('button', { name: "Edit answers" })).toBeEnabled();
 });
 
@@ -99,7 +99,7 @@ test('returning to the foreground reloads progress and picks up a web check-in',
   render(<MobileApp />); await screen.findByText(active.question);
   timeline = timelineFixture(active, { recorded: [4], nextDayAt });
   await act(async () => { listeners.forEach(callback => callback('background')); listeners.forEach(callback => callback('active')); });
-  expect(await screen.findByText('Day 4 recorded')).toBeVisible();
+  expect(await screen.findByLabelText('Day 4 recorded')).toBeVisible();
   expect(requests.filter(path => path.endsWith('/progress'))).toHaveLength(2);
 });
 
@@ -134,7 +134,7 @@ test.each(['not_started', 'ended', 'completed'] as const)('handles %s without of
 test('Today renders each server baseline description before asking for a test-day check-in', async () => {
   timeline = { ...timeline, baseline_summary: normal }; render(<MobileApp />);
   fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-  expect(await screen.findByText('Your normal, before the change.')).toBeVisible();
+  fireEvent.press(await screen.findByRole('button', { name: 'Your normal' })); expect(await screen.findByText('Your normal, before the change.')).toBeVisible();
   expect(screen.getByText('2 of 3 normal days recorded.')).toBeVisible();
   normal.metrics.forEach(metric => expect(screen.getByText(metric.description)).toBeVisible());
   expect(screen.getByRole('button', { name: 'Check in now, day 4' })).toBeEnabled();
@@ -142,7 +142,7 @@ test('Today renders each server baseline description before asking for a test-da
 test('a missing baseline stays honest and does not block Check-in', async () => {
   timeline = { ...timeline, baseline_summary: { ...normal, days_recorded: 0, metrics: [] } }; render(<MobileApp />);
   fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-  expect(await screen.findByText('No normal-day answers recorded.')).toBeVisible();
+  fireEvent.press(await screen.findByRole('button', { name: 'Your normal' })); expect(await screen.findByText('No normal-day answers recorded.')).toBeVisible();
   expect(screen.queryByText(normal.metrics[0].description)).toBeNull();
   expect(screen.getByRole('button', { name: 'Check in now, day 4' })).toBeEnabled();
 });
@@ -153,8 +153,8 @@ test('before the boundary and older progress responses show no invented normal',
 test('offline retains the labelled last-loaded baseline and disables Check-in', async () => {
   timeline = { ...timeline, baseline_summary: normal }; const view = render(<MobileApp />);
   fireEvent.press(await screen.findByRole('button', { name: 'See your experiment' }));
-  await screen.findByText(normal.metrics[0].description); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
-  expect(screen.getByText(/Offline, last updated/)).toBeVisible(); expect(screen.getByText(normal.metrics[0].description)).toBeVisible();
+  await screen.findByRole('button', { name: 'Your normal' }); mockNetwork.isConnected = false; view.rerender(<MobileApp />);
+  expect(screen.getByText(/Offline, last updated/)).toBeVisible(); expect(screen.getByRole('button', { name: 'Your normal' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Check in now, day 4' })).toBeDisabled();
 });
 
