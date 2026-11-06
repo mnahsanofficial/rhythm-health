@@ -21,6 +21,10 @@ Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration and live drill are pendin
 
 **Alerts:** this repo configures no Sentry notification rules, uptime scheduler, on-call routing or retention policy. Existing dashboard rules and notification delivery are unverified. Until configured, manually check Sentry and `/api/health`.
 
+## Local verification, 6 Nov
+
+557 backend tests and 272 web tests pass; root tests (including 707 mobile tests), lint, types, contract/brand freshness, web production build and both native bundle exports pass. All disposable migration scripts pass, including explicit client denial/service-role grant checks for `app_events`. Redacted Gitleaks scans found no leaks. The browser suite passed 82 tests before its shared Chromium cache was removed; a worktree-local browser reran the remaining 81: 80 passed, one existing keyboard-navigation skip. The disabled web drill page was also checked by hand and returned 404. Further browser checks are left to CI at Nazmul's request. No paid AI calls or shared database writes were made. CI and the live drill below are still pending.
+
 ## Failure drill, 6 Nov
 
 **Pending: not run and not Sentry-confirmed.** Final attribution, only after evidence: “run by the agent, Sentry confirmed by Nazmul”.
