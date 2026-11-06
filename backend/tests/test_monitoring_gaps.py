@@ -121,3 +121,12 @@ def test_real_sentry_transport_receives_only_scrubbed_correlated_event(monkeypat
         assert "private" not in json.dumps(event)
     finally:
         sentry_sdk.init(dsn=None, default_integrations=False)
+
+
+def test_web_can_read_the_request_id_even_on_an_unhandled_500(monkeypatch):
+    monkeypatch.setattr(settings, "dev_failure_drill", True)
+    monkeypatch.setattr(settings, "app_environment", "development")
+    response = client.get("/api/dev/failure-drill", headers={"Origin": "http://localhost:3000"})
+    assert response.status_code == 500
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+    assert "x-request-id" in response.headers["access-control-expose-headers"].lower()
