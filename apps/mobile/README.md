@@ -229,4 +229,4 @@ Check first: `git log -1` and `ls src/tab-bar.tsx` in the served folder, and mak
 
 Optional `EXPO_PUBLIC_SENTRY_DSN` enables scrubbed JavaScript error reports via Expo's pinned `@sentry/react-native`. No DSN means no initialization. Expo Go disables native capture; native crashes need a development build. Environment comes from `EXPO_PUBLIC_APP_ENVIRONMENT`, and app config embeds the git SHA. No usage analytics, answers, tokens, request bodies or breadcrumbs go to Sentry. Source maps/replay are not uploaded.
 
-Development plus `EXPO_PUBLIC_DEV_TOOLS=1` shows **Trigger monitoring test error** in Settings. Leave it off normally, and only tap during the coordinated [failure drill](../../docs/MONITORING.md). Do not point the drill at an existing server or make a paid AI call.
+Development plus `EXPO_PUBLIC_DEV_TOOLS=1` shows **Trigger monitoring test error** under **You → Daily reminders**. Leave it off normally, and only tap during the coordinated [failure drill](../../docs/MONITORING.md). Do not point the drill at an existing server or make a paid AI call.

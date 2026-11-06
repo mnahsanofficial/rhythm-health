@@ -1,6 +1,6 @@
 # Monitoring
 
-Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration applied on 6 Nov; live drill and Sentry confirmations pending.** Source code is not evidence of live delivery.
+Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration and failure drill verified on 6 Nov; Sentry confirmed by Nazmul.** Source code is not evidence of live delivery.
 
 | Signal | Where to look | Data |
 |---|---|---|
@@ -29,34 +29,144 @@ Read-only SQL verification: `public.app_events` exists; RLS enabled; zero client
 
 ## Local verification, 6 Nov
 
-557 backend tests and 272 web tests pass; root tests (including 707 mobile tests), lint, types, contract/brand freshness, web production build and both native bundle exports pass. All disposable migration scripts pass, including explicit client denial/service-role grant checks for `app_events`. Redacted Gitleaks scans found no leaks. The browser suite passed 82 tests before its shared Chromium cache was removed; a worktree-local browser reran the remaining 81: 80 passed, one existing keyboard-navigation skip. The disabled web drill page was also checked by hand and returned 404. Further browser checks are left to CI at Nazmul's request. No paid AI calls or shared database writes were made. CI and the live drill below are still pending.
+559 backend tests and 273 web tests pass; root tests (including 707 mobile tests), lint, types, contract/brand freshness, web production build and both native bundle exports pass. All disposable migration scripts pass, including explicit client denial/service-role grant checks for `app_events`. Redacted Gitleaks scans found no leaks. The browser suite passed 82 tests before its shared Chromium cache was removed; a worktree-local browser reran the remaining 81: 80 passed, one existing keyboard-navigation skip. The disabled web drill page was also checked by hand and returned 404. Further browser checks are left to CI at Nazmul's request. No paid AI calls or shared database writes were made. The live drill below is complete. The PR browser/CI checks remain the final merge gate.
 
 ## Failure drill, 6 Nov
 
-**Pending: not run and not Sentry-confirmed.** Final attribution, only after evidence: “run by the agent, Sentry confirmed by Nazmul”.
+**run by the agent, Sentry confirmed by Nazmul**. Nazmul performed the physical Expo Go tap. All nine cases passed; the intentional Expo Go red error screen is the expected JS failure, not a new regression.
 
-After explicit migration approval/application and sign-up/sign-in by Nazmul to a clearly named test account, launch only our own backend:
+Live release: `440772474ff39e76c835f7db3dbbdaca7b77633d`; environment `development`. The agent used its own worktree backend on **8106**, web on **3106**, and Expo/Metro on **8107**. Flags were child-process environment variables only. No existing server or env file was changed. Every provider request went to an ephemeral loopback stub with a fake provider key; **0 paid AI calls**. The migration was approved and applied before the drill. All subsequent writes were normal signed-in test-account application actions. No direct seed/update SQL was used.
 
-```sh
-backend/.venv/bin/python backend/scripts/monitoring_drill.py backend \
-  --env-file <existing-backend-env-file> --port 8106 --case <case>
+The sample is excluded from analytics. A clearly labelled non-sample **Monitoring drill** experiment was therefore proposed using a fixed local-stub reply, then saved and started through normal authenticated endpoints. Check-ins used synthetic values only in that test account. Test-account identifiers below are aliases; no answers or personal identifiers are included.
+
+| Case / trigger | User-facing result | Request ID(s) | New usage rows | Sentry result, confirmed by Nazmul |
+|---|---|---|---|---|
+| 1. GET `/api/dev/failure-drill` | 500 — Something went wrong. Please try again. | `0e073c6951534a708c48dad170acf8f8` | No AI/event rows | **Unhandled backend error** |
+| 2. Propose; local stub returns 500 | 503 — AI service unavailable, please try again | `207a717bf0024fabb07fdd28a5ba8485` | 4 AI rows: `error`; no events | **AI provider unavailable** |
+| 3. Propose; local stub exceeds 250 ms | 503 — same friendly retry message | `165e20c2a2864282bad196aff613ae8c` | 2 AI rows: `timeout`; no events | **AI provider timeout** |
+| 4. Propose; local stub returns invalid JSON | 502 — Could not generate a valid experiment, please try again | `24c5e1d1a4d14d539e59f9d7f76c2b8f` | 2 AI rows: `invalid`; no events | **AI output invalid** |
+| 5. Bad DB URL in own process; health + protected read | 503; health `db: down`; protected read: Database unavailable | `3862e1877f804777b99bffb9c93caf6f` / `171b16be98b5485bbc3515251ceb0b23` | No AI/event rows | **Database unavailable**, both IDs |
+| 6a. Invalid check-in JSON | 422 — Some answers need another look. | `7f9b880301e94c9999f25ac230d14da5` | No rows; no provider call | **No event**; confirmed absent |
+| 6b. `AI_DAILY_LIMIT_PROPOSE=0` | 429 — daily limit / come back tomorrow | `36bdce79bb99455c9c50efd46fbc0006` | No rows; no provider call | **No event**; confirmed absent |
+| 7. `DEV_EVENT_WRITE_FAILURE=1`; normal check-in POST | 200; check-in persisted despite analytics failure | `b297c4bd00e94aa08b1111fe2bc22d5f` | Day 1 baseline check-in exists; no event/AI row | **No event/crash**; confirmed absent |
+| 8. Web dev-page throw button | Intentional JS error / Next dev issue badge | N/A — client-side error | No rows | **Rhythm web failure drill** |
+| 9. Expo Go: You → Daily reminders → trigger button | Intentional Uncaught Error red screen, `failure-drill.tsx:7:19` | N/A — device JS error | No rows | **Rhythm mobile failure drill** |
+| Happy path: normal web review → Update check-in | 200; **Day 1 recorded.** | `a6f8768dc97c416c93997ebdd09ad251` | 1 `checkin_updated` event; no AI row | No error expected; successful normal flow |
+
+Transport retry evidence: provider 500 produced attempt 0 and attempt 1 for classification, then the same for the existing classification fallback (four local calls). Timeouts produced **attempt 0 only** for each of those two logical calls: **no read-timeout retry** and no second retry. Invalid provider JSON was recorded as invalid for each logical call. Model names in `ai_calls` came from configuration; they do not imply a paid provider was contacted.
+
+### Matching logs (redacted)
+
+Only safe diagnostic fields are shown; route parameters are templates, never raw experiment/profile IDs. Backend error events were confirmed with the same request IDs, environment and release, and without bodies, tokens or health answers.
+
+**1:**
+
+```json
+{"event": "request", "request_id": "0e073c6951534a708c48dad170acf8f8", "method": "GET", "route": "/api/dev/failure-drill", "status": 500, "latency_ms": 6, "profile_hash": null, "level": "warning"}
 ```
 
-The launcher reads env values into its child process, never edits files or stops other servers, replaces the OpenRouter key with a fake value, and routes every provider call to an ephemeral loopback stub. Cases: `ai-down` (500), `ai-timeout` (250 ms timeout), `ai-invalid` (invalid JSON), `db-down`, `cap`, `event-fail`, `happy`. Provider 500 gets at most one transport retry per logical call; read timeout gets none. Jev's existing fallback is an additional logical call, distinguishable by task logs. No paid AI call is needed or permitted.
+**2:**
 
-Use `web --env-file <existing-web-env-file> --port 3106` and visit `/dev/failure-drill`. Mobile: `mobile --env-file <existing-mobile-env-file> --port 8107 --api-url http://<Mac-Wi-Fi-address>:8106`, then open this worktree's Expo Go bundle. Tap Settings → **Trigger monitoring test error** only when instructed. The backend/web gate requires development and `DEV_FAILURE_DRILL=1`; off returns 404. The mobile button requires development and `EXPO_PUBLIC_DEV_TOOLS=1`. Close only our drill processes afterwards.
+```json
+{"event": "ai_http_error", "message": "ai_http_error task=classification model=typesafe/jev-1.14 status=500 attempt=0", "level": "error", "request_id": "207a717bf0024fabb07fdd28a5ba8485"}
+{"event": "request", "request_id": "207a717bf0024fabb07fdd28a5ba8485", "method": "POST", "route": "/api/experiments/propose", "status": 503, "latency_ms": 4254, "profile_hash": "6945d1588299081743d1367e", "level": "warning"}
+```
 
-| Failure / trigger | User result | Matching redacted log / request_id | ai_calls / app_events | Sentry title / confirmation |
+**3:**
+
+```json
+{"event": "ai_timeout", "message": "ai_timeout task=classification attempt=0", "level": "error", "request_id": "165e20c2a2864282bad196aff613ae8c"}
+{"event": "request", "request_id": "165e20c2a2864282bad196aff613ae8c", "method": "POST", "route": "/api/experiments/propose", "status": 503, "latency_ms": 1609, "profile_hash": "8151d792bf51edb6b7c7e8c7", "level": "warning"}
+```
+
+**4:**
+
+```json
+{"event": "ai_invalid_output", "message": "ai_invalid_output task=classification attempt=0", "level": "error", "request_id": "24c5e1d1a4d14d539e59f9d7f76c2b8f"}
+{"event": "request", "request_id": "24c5e1d1a4d14d539e59f9d7f76c2b8f", "method": "POST", "route": "/api/experiments/propose", "status": 502, "latency_ms": 3243, "profile_hash": "360c5ee8a94740c514a9d9c7", "level": "warning"}
+```
+
+**5:**
+
+```json
+{"event": "request", "request_id": "3862e1877f804777b99bffb9c93caf6f", "route": "/api/health", "status": 503, "latency_ms": 16, "profile_hash": null, "level": "warning"}
+{"event": "request", "request_id": "171b16be98b5485bbc3515251ceb0b23", "method": "GET", "route": "/api/profile", "status": 503, "latency_ms": 111, "profile_hash": null, "level": "warning"}
+```
+
+**6a:**
+
+```json
+{"event": "request", "request_id": "7f9b880301e94c9999f25ac230d14da5", "method": "POST", "route": "/api/checkins/today", "status": 422, "latency_ms": 276, "profile_hash": null, "level": "info"}
+```
+
+**6b:**
+
+```json
+{"event": "request", "request_id": "36bdce79bb99455c9c50efd46fbc0006", "method": "POST", "route": "/api/experiments/propose", "status": 429, "latency_ms": 860, "profile_hash": "2a94c19172ddd2457d8dc9b8", "level": "info"}
+```
+
+**7:**
+
+```json
+{"event": "app_event_not_recorded", "message": "app_event_not_recorded event_name=checkin_saved", "level": "warning", "request_id": "b297c4bd00e94aa08b1111fe2bc22d5f"}
+{"event": "request", "request_id": "b297c4bd00e94aa08b1111fe2bc22d5f", "method": "POST", "route": "/api/experiments/{experiment_id}/checkins", "status": 200, "latency_ms": 707, "profile_hash": "6b0b4d2c40c4cb0f7f5a2eb2", "level": "info"}
+```
+
+**Happy:**
+
+```json
+{"event": "request", "request_id": "a6f8768dc97c416c93997ebdd09ad251", "method": "POST", "route": "/api/experiments/{experiment_id}/checkins", "status": 200, "latency_ms": 861, "profile_hash": "12b77eb2bc5c3099581c545a", "level": "info"}
+```
+
+**8 — browser console:** `Error: Rhythm web failure drill`, 6 Nov 10:49:23 UTC, in the dev page's click handler. No backend request was involved.
+
+**9 — Expo Go / Metro console:** `ERROR [Error: Rhythm mobile failure drill]`. Nazmul also observed `Uncaught Error` at `apps/mobile/src/monitoring/failure-drill.tsx:7:19` and confirmed the matching React Native Sentry issue with the correct release/environment and no sensitive data. Native crash capture remains untested and requires a development build.
+
+### Event rows and metrics after the happy path
+
+Read-only verification found the following test-account `app_events` rows:
+
+| Alias | Profile | Event | Experiment | created_at (UTC) |
 |---|---|---|---|---|
-| 1. GET `/api/dev/failure-drill` | Pending | Pending | No writes expected | Unhandled backend error — pending |
-| 2. Normal propose, `ai-down` | Pending | `ai_http_error` expected; pending ID | `error` expected | AI provider unavailable — pending |
-| 3. Normal propose, `ai-timeout` | Pending | `ai_timeout` expected; pending ID | `timeout` expected | AI provider timeout — pending |
-| 4. Normal propose, `ai-invalid` | Pending | `ai_invalid_output` expected; pending ID | `invalid` expected | AI output invalid — pending |
-| 5. `db-down`, health + protected read | Pending | Pending | No writes expected | Database unavailable — pending |
-| 6. Bad check-in; `cap` propose | 422/429 expected; pending | Info/warn request logs; pending IDs | No provider/event rows expected | No issue expected; pending |
-| 7. Normal check-in, `event-fail` | Successful save expected; pending | `app_event_not_recorded`; pending ID | Check-in saved; event absent expected | No crash expected; pending |
-| 8. Web dev page → button | Pending | Client event, no backend ID | No writes expected | Rhythm web failure drill — pending |
-| 9. Mobile Settings → button | Awaiting phone tap | Client event, no backend ID | No writes expected | Rhythm mobile failure drill — pending |
-| Happy path: one normal check-in | Pending | Pending | saved/updated; possibly baseline_completed | No issue expected |
+| E1 | test-profile | `experiment_started` | monitoring-test | 2026-11-06T10:47:05.026152+00:00 |
+| E2 | test-profile | `checkin_updated` | monitoring-test | 2026-11-06T10:52:53.366681+00:00 |
 
-Actual log lines, request IDs, scalar usage rows with identity aliases, metrics output and Nazmul's dashboard confirmations will replace the pending entries. Fake-DB/in-memory-Sentry tests do not count as the live drill.
+The first check-in in case 7 persisted, while its `checkin_saved` event was deliberately lost. Re-saving through the normal UI therefore correctly produced **checkin_updated**, not a second saved-day count. The monitoring test has one recorded baseline day; the sample's invented days are excluded. Existing pre-drill AI attempts were left intact; per-case row deltas above do not count those earlier attempts.
+
+Actual `npm run metrics:summary` output (global non-sample completion, not just this test account):
+
+```json
+{
+  "window_start": "2026-10-30T10:54:01.161937+00:00",
+  "window_end": "2026-11-06T10:54:01.161937+00:00",
+  "counts": {
+    "experiment_started": 1,
+    "checkin_saved": 0,
+    "checkin_updated": 1,
+    "baseline_completed": 0,
+    "experiment_completed": 0,
+    "report_written": 0,
+    "outcome_chosen": 0,
+    "soft_check_shown": 0,
+    "safety_blocked": 0
+  },
+  "daily_active_users": {
+    "2026-10-31": 0,
+    "2026-11-01": 0,
+    "2026-11-02": 0,
+    "2026-11-03": 0,
+    "2026-11-04": 0,
+    "2026-11-05": 0,
+    "2026-11-06": 1
+  },
+  "checkin_completion": {
+    "days_recorded": 12,
+    "days_elapsed": 21,
+    "rate": 0.5714285714285714
+  }
+}
+```
+
+This is 1 active profile today, 1 experiment start, 1 check-in update, and a **12/21 = 57.1%** global completion rate. Other event counts are zero. These seven-day aggregates contain no individual answers or identifiers.
+
+To repeat safely, use `backend/.venv/bin/python backend/scripts/monitoring_drill.py <backend|web|mobile> --env-file <existing-file> --port <isolated-port> --case <case>`. The backend cases are `crash`, `ai-down`, `ai-timeout`, `ai-invalid`, `db-down`, `cap`, `event-fail`, `happy`; `plan` returns the fixed synthetic design. Web uses port 3106 and `/dev/failure-drill`; mobile uses port 8107 plus `--api-url http://<Mac-Wi-Fi-address>:8106`. The phone control is under **You → Daily reminders**. Backend/web require development and `DEV_FAILURE_DRILL=1` (otherwise 404); the mobile button requires development and `EXPO_PUBLIC_DEV_TOOLS=1`. No direct SQL writes or paid provider calls are part of a repeat.
