@@ -33,28 +33,39 @@ it("starts with the short change, then a guess that can be revisited before the 
   expect(screen.getByText(proposal.hypothesis)).not.toBeVisible();
   await user.click(screen.getByText("Details"));
   expect(screen.getByText(proposal.hypothesis)).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Next", exact: true }));
+  await user.click(screen.getByRole("button", { name: "Next" }));
   const input = screen.getByRole("textbox", { name: "Your guess for Morning energy" });
   expect(screen.getByRole("button", { name: "Show prediction" })).toBeDisabled();
   await user.type(input, "25");
   expect(screen.getByRole("status")).toHaveTextContent("+25%");
-  await user.click(screen.getByRole("button", { name: "Back", exact: true }));
-  await user.click(screen.getByRole("button", { name: "Next", exact: true }));
+  await user.click(screen.getByRole("button", { name: "Back" }));
+  await user.click(screen.getByRole("button", { name: "Next" }));
   expect(screen.getByRole("textbox", { name: /^Your guess for/ })).toHaveValue("25");
   await user.click(screen.getByRole("button", { name: "Show prediction" }));
   expect(screen.getByText("The original forecast")).toBeVisible();
   expect(screen.getByText("Your guess")).toBeVisible();
   expect(screen.queryByRole("textbox", { name: /^Your guess for/ })).toBeNull();
   expect(screen.queryByRole("button", { name: "Start this experiment" })).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Next", exact: true }));
+  await user.click(screen.getByRole("button", { name: "Next" }));
   expect(screen.getByText(/Your check-ins decide, not the AI/)).toBeVisible();
   expect(screen.getByRole("button", { name: "Start this experiment" })).toBeVisible();
 });
 it("skips the unavailable guess without inventing one", async () => {
   server.use(http.post(`${api}/api/experiments/propose`, () => HttpResponse.json({ ...available, personal_guess_available: false })));
   const user = userEvent.setup(); await plan(user);
-  await user.click(screen.getByRole("button", { name: "Next", exact: true }));
+  await user.click(screen.getByRole("button", { name: "Next" }));
   expect(screen.getByText("The original forecast")).toBeVisible();
   expect(screen.queryByText("Your guess")).toBeNull();
   expect(screen.queryByRole("textbox", { name: /^Your guess for/ })).toBeNull();
+});
+it("keeps a legacy change understandable without using a long question as its heading", async () => {
+  server.use(http.post(`${api}/api/experiments/propose`, () => HttpResponse.json({ ...available, proposal: {
+    ...proposal, intervention: { ...proposal.intervention, change_short: null },
+  } })));
+  const user = userEvent.setup(); render(<NewExperiment />);
+  await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), proposal.question);
+  await user.click(screen.getByRole("button", { name: "Design experiment" }));
+  expect(await screen.findByRole("heading", { name: "Your small change.", level: 1 })).toBeVisible();
+  expect(screen.getAllByText(proposal.intervention.action)[0]).toBeVisible();
+  expect(screen.queryByRole("heading", { name: proposal.question })).toBeNull();
 });
