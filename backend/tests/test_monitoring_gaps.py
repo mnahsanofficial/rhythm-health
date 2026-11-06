@@ -130,3 +130,18 @@ def test_web_can_read_the_request_id_even_on_an_unhandled_500(monkeypatch):
     assert response.status_code == 500
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
     assert "x-request-id" in response.headers["access-control-expose-headers"].lower()
+
+
+def test_profile_requests_log_only_a_profile_hash(monkeypatch, caplog):
+    from app.auth.supabase import get_current_user
+    from app.repositories import profiles
+    from tests.test_propose import PROFILE_ROW
+    monkeypatch.setattr(profiles, "get_by_user_id", lambda _: PROFILE_ROW)
+    app.dependency_overrides[get_current_user] = lambda: "test-user"
+    try:
+        assert client.get("/api/profile").status_code == 200
+        entries = [json.loads(r.message) for r in caplog.records if r.name == "app.request"]
+        assert len(entries[-1]["profile_hash"]) == 24
+        assert str(PROFILE_ROW["id"]) not in caplog.text
+    finally:
+        app.dependency_overrides.clear()
