@@ -224,3 +224,9 @@ Cause: Metro serves the folder it was started in, and merging on GitHub doesn't 
 Fix: stop Metro, run `git pull` in that checkout, run `npm ci` from the repo root if `package-lock.json` changed, then start `npx expo start --go --clear --host lan`. To try an unmerged PR, start Metro from a worktree on its branch, with the `EXPO_PUBLIC_*` settings in that shell or a local `.env.local`.
 On the phone: fully close Expo Go, reopen it and scan the new QR code rather than a recent entry.
 Check first: `git log -1` and `ls src/tab-bar.tsx` in the served folder, and make sure only one Metro is running with `lsof -nP -iTCP:8081 -sTCP:LISTEN`.
+
+## Error monitoring
+
+Optional `EXPO_PUBLIC_SENTRY_DSN` enables scrubbed JavaScript error reports via Expo's pinned `@sentry/react-native`. No DSN means no initialization. Expo Go disables native capture; native crashes need a development build. Environment comes from `EXPO_PUBLIC_APP_ENVIRONMENT`, and app config embeds the git SHA. No usage analytics, answers, tokens, request bodies or breadcrumbs go to Sentry. Source maps/replay are not uploaded.
+
+Development plus `EXPO_PUBLIC_DEV_TOOLS=1` shows **Trigger monitoring test error** in Settings. Leave it off normally, and only tap during the coordinated [failure drill](../../docs/MONITORING.md). Do not point the drill at an existing server or make a paid AI call.

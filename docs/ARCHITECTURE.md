@@ -142,6 +142,13 @@ erDiagram
         jsonb next_experiment "AI wording, nullable"
         timestamptz created_at
     }
+    APP_EVENTS {
+        uuid id PK
+        uuid profile_id FK
+        text event_name "fixed allowlist, no answers"
+        uuid experiment_id FK "nullable"
+        timestamptz created_at
+    }
     AI_CALLS {
         uuid id PK
         uuid profile_id FK
@@ -317,7 +324,7 @@ flowchart LR
 | **Auth** | [`auth/supabase.py`](../backend/app/auth/supabase.py) checks each token against Supabase's public keys. The user id comes only from the token, never a request body | Acting as someone else |
 | **Ownership** | [`api/deps.py`](../backend/app/api/deps.py) and the repositories scope every query to the verified profile | Reading someone else's experiment |
 | **Service role** | Backend only. It bypasses row-level security, so the two checks above are what protect data on this path. CI and the apps never hold it | The whole database |
-| **Row-level security** | On all five tables. People can read only their own rows; `ai_calls` has no policy at all, so only the service role reads it | Direct use of the public anon key |
+| **Row-level security** | On all six tables. People can read only their own rows; `ai_calls` has no policy at all, so only the service role reads it | Direct use of the public anon key |
 | **Grants** | **Known gap:** Supabase's default grants leave `anon` and `authenticated` with wide table privileges (checked on `experiments`; `ai_calls` is already fixed), and row-level security is what blocks them. Tightening is [deferred](adr/0011-rls-and-deferred-grants.md) | Defence in depth |
 | **Paid-call cap** | [`services/ai_limit.py`](../backend/app/services/ai_limit.py), before `/propose` and `POST /report` do paid work | Spending |
 | **Safety** | [`services/safety.py`](../backend/app/services/safety.py) checks the question, the classification, the generated plan, and the plan again on save | Unsafe experiments |

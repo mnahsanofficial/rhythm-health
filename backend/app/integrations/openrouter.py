@@ -183,7 +183,7 @@ async def _post(task: str, model: str, url: str, payload: dict, timeout: float) 
         url = base + url.removeprefix("https://openrouter.ai")
         timeout = min(timeout, settings.openrouter_timeout_seconds)
     limits = httpx.Timeout(timeout, connect=CONNECT_TIMEOUT_SECONDS)
-    async with httpx.AsyncClient(timeout=limits) as client:
+    async with httpx.AsyncClient(timeout=limits, trust_env=base == "https://openrouter.ai") as client:
         for attempt in (0, 1):
             started = time.monotonic()
             try:

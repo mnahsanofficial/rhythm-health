@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import db_error, owned_experiment, profile_id_for
+from app.monitoring import identify_profile
 from app.auth.supabase import get_current_user
 from app.integrations import ai_usage
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
@@ -33,6 +34,7 @@ async def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_cu
     if row is None:
         raise HTTPException(status_code=409, detail="Create your profile first")
 
+    identify_profile(str(row["id"]))
     try:
         # Before any paid AI work: a plan that couldn't be started is money wasted.
         capacity = await asyncio.to_thread(experiment_limit.capacity, str(row["id"]))
