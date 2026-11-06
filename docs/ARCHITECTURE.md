@@ -20,7 +20,7 @@ How Rhythm Health Lab is built, checked against `main` on **4 Nov 2026**. This d
 flowchart TB
     subgraph Clients["Clients: public keys and the user's own session only"]
         M["Expo app: the product<br/>apps/mobile, session in SecureStore, local reminders"]
-        W["Next.js web app<br/>frontend, features frozen on 2 Nov"]
+        W["Next.js web app<br/>frontend, desktop parity in progress"]
     end
     subgraph Shared["Shared packages"]
         C["packages/contract<br/>types generated from FastAPI"]
@@ -367,19 +367,19 @@ Indexes aren't the first worry: reads are per person, and each person has a few 
 
 ## 8. Deliberate web and mobile differences
 
-**8x said daily tracking doesn't belong on a website, so mobile is the product.** Web features were frozen on 2 Nov, with bug fixes only ([MOBILE_PLAN](MOBILE_PLAN.md#full-app)). Both apps use the same API, so this is about screens, not rules.
+**Mobile remains the focused daily product.** On 6 Nov, Nazmul requested desktop web parity with useful context beside each decision. Both clients still use the same API, brand tokens and server day rules. Today and stepped check-ins are merged; plan and question-choice work is prepared for review. See [ADR 15](adr/0015-content-rich-web-focused-mobile.md) and [current status](FINAL_STATUS.md#web-parity-handover--6-nov).
 
 | Mobile only | On web instead |
 |---|---|
 | Local reminders | A calendar file for the next day |
-| First-run guide and check-in celebration | Saved confirmation |
+| First-run guide | Existing onboarding; a neutral check-in celebration now waits for explicit Continue |
 | Day 3 "your test starts tomorrow" | Today shows the day and phase |
 | Day 10 choice and "Habits I kept" | Finish opens the Lab Report |
 | Lab Report opens with one plain sentence | Prediction versus reality comes first |
 | Verdicts worded against normal ups and downs | Earlier verdict wording |
 | "Where a question goes" trust line | None |
 
-The web landing keeps its scrolling day story, and mobile has its own carousel. Bringing web level with mobile is [after the demo](REMAINING_WORK.md#after-the-demo).
+The web landing keeps its existing scrolling day story, and mobile has its own carousel. The remaining report, outcome, Progress and landing redesigns are after the demo. New web presentation components live under `components/today/`, `components/checkins/` and `components/experiments/`; their loaders retain API, auth and write ownership. The proposed plan and question-result components contain presentation and step state, not backend day calculations or AI requests.
 
 ## 9. Tests
 
