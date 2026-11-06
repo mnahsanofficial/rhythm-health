@@ -18,7 +18,7 @@ Every piece of feedback from the 8x calls: what we did, where it is, and what's 
 | A landing page unique to the app | **Done** | #18, #54, #64, #67, #92 | Carousel | Scrolling day story | Signed out. [`landing.tsx`](../apps/mobile/src/landing.tsx), [`day-story.tsx`](../frontend/components/landing/day-story.tsx) | |
 | Retention | **Partial** | #29, #37, #38, #79, #85, #87 | Yes | Calendar file | Reminders, Day 3 "your test starts tomorrow", celebration, first-run guide, "your normal" on day 4 | Two-week follow-up isn't built. Most of this is mobile only, on purpose |
 | "You can't cover every habit; let users set their own, with AI validation" | **Done** | #4, #13, #45, #46, #93 | Yes | Simple version | Any free-text question on Ask; add-your-own habits and goals in onboarding. AI classification and safety rules first, then a [soft check](../backend/app/services/habit_check.py) when a question isn't about a habit | Plans can't be edited before starting (F10, after the demo) |
-| "What does a user learn after 10 days?" | **Partial** | #39, #75, #80, #83, #86 | Yes | Report and guess history | Lab Report's first sentence, the guess against the prediction, Day 10 choice, "Habits I kept", guess history | The Day 10 choice and "Habits I kept" are mobile only, on purpose |
+| "What does a user learn after 10 days?" | **Partial** | #39, #75, #80, #83, #86 | Yes | Report and guess history | Lab Report's first sentence, the guess against the prediction, Day 10 choice, "Habits I kept", guess history | Web Day 10 and kept-habit parity is after the demo |
 | Multiple experiments | **Done** | #55, #58, #80 | Yes | Yes | Up to 3 active, overlap in the report, one combined check-in, comparison on Progress. [Decision](DECISIONS.md#several-active-experiments--4-nov-2026) | No warning when two experiments test the same thing |
 | Top-notch UI, in light and dark, with motion | **Partial** | #59–64, #67, #78–88, #92 | Yes | Yes | [Review](design/06-product-review.md), [screenshots](screenshots/), [motion rules](rules/ui-motion.md) | Finding 10 and the scene treatment are [after the demo](REMAINING_WORK.md#after-the-demo). VoiceOver and real large text need an iPhone |
 | No long buttons | **Done** | #60–64 | Yes | Yes | 320px maximum, in [DESIGN.md](../DESIGN.md#buttons), with design tests on both | Deliberate exception: form actions and sticky actions may fill the width on a phone (#64) |
@@ -91,28 +91,43 @@ Everything else is listed in [REMAINING_WORK](REMAINING_WORK.md#after-the-demo).
 
 ## 5 Nov demo call (Maham)
 
-Her words and the word counts are in [07-feedback-5-nov](design/07-feedback-5-nov.md). Mobile is changed; web deliberately isn't. **Not checked yet:** Nazmul's iPhone pass on the morning of 6 Nov.
+Her words and the word counts are in [07-feedback-5-nov](design/07-feedback-5-nov.md). Mobile is changed; the web is now partially updated. See the 6 Nov web handover below. **Not checked yet:** Nazmul's iPhone pass on the morning of 6 Nov.
 
 | Feedback | Status | PRs | Mobile | Web | What's left |
 |---|---|---|---|---|---|
-| "Cognitive overload"; too much text in too many places | **Done** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Word budgets, tested | Missing | Outside test with a first-time user |
-| Grey text isn't readable | **Done** | [#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Grey for short captions only, tested | Missing | Check outdoors on a phone |
-| Too many questions on the check-in screen | **Done** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102) | One per screen, with a review | Missing | Whether it stays quick by day 7 |
-| "Day 1 recorded" isn't important | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103) | A check on the day | Missing | |
-| The small change needn't be on screen | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103) | One row and a sheet | Missing | |
+| "Cognitive overload"; too much text in too many places | **Done** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Word budgets, tested | Today/check-in shortened; web word budgets not ported | Outside test with a first-time user |
+| Grey text isn't readable | **Done** | [#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Grey for short captions only, tested | Today/check-in updated; plan and question entry in review | Check outdoors on a phone |
+| Too many questions on the check-in screen | **Done** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102) | One per screen, with a review | Merged in #115 | Whether it stays quick by day 7 |
+| "Day 1 recorded" isn't important | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103) | A check on the day | Web keeps a saved-day confirmation and Continue | |
+| The small change needn't be on screen | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103) | One row and a sheet | Today/check-in Details; plan in review | |
 | Too much text on the experiment screen | **Done** | [#103](https://github.com/mnahsanofficial/rhythm-health/pull/103), [#104](https://github.com/mnahsanofficial/rhythm-health/pull/104) | Short screen; 4 plan steps | Missing | |
-| "People are used to skimming" | **Partial** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Budgets and sheets | Missing | Only a first-time user can confirm it |
+| "People are used to skimming" | **Partial** | [#102](https://github.com/mnahsanofficial/rhythm-health/pull/102)–[#105](https://github.com/mnahsanofficial/rhythm-health/pull/105) | Budgets and sheets | Today/check-in merged; plan in review | Only a first-time user can confirm it |
 | "How are you ensuring the experiments are going to help?" | **Partial** | [#106](https://github.com/mnahsanofficial/rhythm-health/pull/106) | Plan line and How we know | Missing | We explain how it's measured. We can't show or promise that a change helps |
 
 ## 5 Nov iPhone test (Nazmul)
 
-Before and after are in [07-feedback-5-nov](design/07-feedback-5-nov.md#nazmuls-iphone-test-the-evening-of-5-nov). Mobile is changed; web deliberately isn't.
+Before and after are in [07-feedback-5-nov](design/07-feedback-5-nov.md#nazmuls-iphone-test-the-evening-of-5-nov). Mobile is changed; the web is now partially updated. See the 6 Nov web handover below.
 
 | Feedback | Status | PRs | Mobile | Web | What's left |
 |---|---|---|---|---|---|
-| The AI's long sentences are everywhere | **Done** | [#111](https://github.com/mnahsanofficial/rhythm-health/pull/111), [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Short labels on Progress, the plan, check-in and the Lab Report | Keeps the long text | Today, the experiment screen and History still show the full question |
+| The AI's long sentences are everywhere | **Done** | [#111](https://github.com/mnahsanofficial/rhythm-health/pull/111), [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Short labels on Progress, the plan, check-in and the Lab Report | Today/check-in merged; plan in review | Report, experiment detail and History still need parity |
 | Progress repeats the question and uses a big grid | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | One-line rows, a row of small dots, "1/10" | Missing | |
-| The plan steps are mostly empty | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Scenes, a live bar, a stepper and the ring | Missing | |
-| Your guess and the prediction are hard to compare | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | A marker on the same bar | Missing | |
+| The plan steps are mostly empty | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Scenes, a live bar, a stepper and the ring | Four-step plan in review | |
+| Your guess and the prediction are hard to compare | **Done** | [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | A marker on the same bar | Web marker in plan review | |
 | Scenes on every check-in step, on a real build | **Partial** | [#108](https://github.com/mnahsanofficial/rhythm-health/pull/108), [#112](https://github.com/mnahsanofficial/rhythm-health/pull/112) | Tested on every step, new and edit | n/a | Needs Nazmul's iPhone check: no simulator on the machine that built this |
 
+
+## 6 Nov web handover
+
+| Feature | Web status | Evidence / remaining work |
+|---|---|---|
+| Today hierarchy, weekly context and running experiments | Merged #114 | Desktop columns; phone action first |
+| One-question check-in, keyboard, review and saved confirmation | Merged #115 | Single and combined flows; explicit Continue on web |
+| Four-step plan, live guess and planning wait | Prepared for review | Independent branch; not counted as merged |
+| Full soft-habit message and safety suggestion in the real field | Prepared for review | No automatic submit when using a suggestion |
+| Lab Report copy and side panel | After the demo | Existing report remains |
+| Day 3 / Day 10 and Habits I kept | After the demo | Existing baseline information remains |
+| Dedicated Progress comparison/calibration | After the demo | Existing history/calibration remains |
+| Remote-worker landing redesign | After the demo | Existing landing remains |
+
+Work stopped at Nazmul’s request before the web cutoff. [Screenshots and parity](design/08-web-parity.md), [final status](FINAL_STATUS.md#web-parity-handover--6-nov), [desktop decision](adr/0015-content-rich-web-focused-mobile.md). All new verification used mocked authentication and API responses, without paid calls or shared database writes.

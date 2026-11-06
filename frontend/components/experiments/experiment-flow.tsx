@@ -4,16 +4,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
-import { signedPercent } from "@/lib/report/copy";
 import type { Profile, ProposeResponse } from "@rhythm-health/contract";
 import { closeButton, CloseIcon } from "@/components/nav/close-icon";
 import { useLeaveGuard, useNav } from "@/components/nav/navigation";
-import { PersonalGuess } from "@/components/experiments/personal-guess";
-import { ProposalPreview } from "@/components/experiments/proposal-preview";
+import { PlanSteps } from "@/components/experiments/plan-steps";
 import { ProposalSkeleton } from "@/components/experiments/proposal-skeleton";
 import { starters } from "@/components/experiments/starters";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
 import { QuestionForm } from "@/components/experiments/question-form";
+import { QuestionResult } from "@/components/experiments/question-result";
 import { button } from "@/components/ui/button";
 
 const secondary = button("secondary");
@@ -80,10 +79,10 @@ export function ExperimentFlow({
     : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to your lab</Link>;
 
   useEffect(() => {
-    if (result) output.current?.focus();
+    if (result && !(result.safety.allowed && result.proposal && result.prediction)) output.current?.focus();
     else if (hasShownResult.current) input.current?.focus();
     hasShownResult.current = Boolean(result);
-  }, [result, personalGuess]);
+  }, [result]);
 
   async function submit(continueAnyway = false) {
     const text = question.trim();
@@ -195,7 +194,7 @@ export function ExperimentFlow({
       )}
       <div className="mt-5 grid gap-10">
         <div className="min-w-0">
-          {(!result?.safety.allowed || result.habit_check) && <>
+          {!busy && (!result?.safety.allowed || result.habit_check) && <>
           <QuestionForm
             inputRef={input}
             question={question}
@@ -211,9 +210,10 @@ export function ExperimentFlow({
             }}
             onSubmit={() => void submit()}
             busy={busy}
-            blocked={Boolean(limitMessage) || result?.safety.allowed === false}
+            blocked={Boolean(limitMessage) || result?.safety.allowed === false || Boolean(result?.habit_check)}
+            hideSubmit={Boolean(result?.habit_check)}
             headingLevel={headingLevel}
-            suggestions={showStarters ? starters(profile) : []}
+            suggestions={showStarters && !result ? starters(profile) : []}
             onSuggestion={chooseQuestion}
           />
           </>}
@@ -232,50 +232,13 @@ export function ExperimentFlow({
           )}
 
           {busy && <ProposalSkeleton />}
-      {result?.habit_check && <section ref={output} tabIndex={-1} aria-label="Question result" className="mt-8 rounded-card border border-line p-5">
-        <p className="font-display text-title">{result.habit_check.message}</p>
-        <p className="mt-3">{result.habit_check.suggested_question}</p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <button type="button" className={secondary} onClick={() => chooseQuestion(result.habit_check!.suggested_question)}>Use this instead</button>
-          <button type="button" className={secondary} onClick={() => void submit(true)}>Continue anyway</button>
-        </div>
-      </section>}
-      {result && !result.safety.allowed && <section ref={output} tabIndex={-1} aria-label="Question result" className="mt-8 rounded-card border border-line bg-paper p-6 sm:p-8">
-            <>
-              <p className="font-display text-title">Let&apos;s find a gentler experiment.</p>
-              <p className="mt-3 text-muted">{result.safety.reason || "This question isn’t suitable for a small habit experiment."}</p>
-              {result.safety.suggested_question ? <div className="mt-5 border-t border-line pt-5"><p>{result.safety.suggested_question}</p><button type="button" className={`${secondary} mt-4`} onClick={() => chooseQuestion(result.safety.suggested_question!)}>Use this instead</button></div> : result.safety.suggested_alternative && <p className="mt-5 border-t border-line pt-5">{result.safety.suggested_alternative}</p>}
-            </>
-      </section>}
+      {result && (result.habit_check || !result.safety.allowed) && <QuestionResult result={result} headingRef={output}
+        onUseSuggestion={chooseQuestion} onContinue={() => void submit(true)} />}
       {result?.safety.allowed && result.proposal && result.prediction && (
         <div ref={output as React.RefObject<HTMLDivElement>} tabIndex={-1}>
           {continued && <p role="note" className="mb-4 border-l-2 border-line pl-4 text-caption text-muted">Your question wasn&apos;t about a habit, so Rhythm suggested a related habit experiment instead.</p>}
-          {result.personal_guess_available && personalGuess === null ? (
-            <PersonalGuess
-              headingLevel={headingLevel}
-              proposal={result.proposal}
-              onReveal={setPersonalGuess}
-              onBack={() => chooseQuestion("")}
-            />
-          ) : (<>
-            {!result.personal_guess_available && (
-              <p role="note" className="mt-4 border-l-2 border-line pl-4 text-caption text-muted">
-                Your own guess is unavailable right now. You can still start without one.
-              </p>
-            )}
-            {personalGuess !== null && (
-              <p className="mt-4 border-l-2 border-moss pl-4 text-body">
-                Your guess: <span className="font-mono">{signedPercent(personalGuess, 2)}</span> change from normal days. Locked before the AI reveal.
-              </p>
-            )}
-            <ProposalPreview
-              result={result}
-              headingLevel={headingLevel}
-              onStart={() => void beginExperiment()}
-              onAskSomethingElse={() => chooseQuestion("")}
-              starting={starting}
-            />
-          </>)}
+          <PlanSteps result={result} guess={personalGuess} onGuess={setPersonalGuess} headingLevel={headingLevel}
+            onStart={() => void beginExperiment()} onAskSomethingElse={() => chooseQuestion("")} starting={starting} />
           {startError && (
             <div role="alert" className="mt-4 rounded-card bg-clay-tint p-5 text-clay">
               <p>{startError}</p>

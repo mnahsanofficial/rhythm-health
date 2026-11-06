@@ -156,31 +156,37 @@ describe("new experiment flow", () => {
     await firstRequestStarted;
 
     expect(screen.getByRole("region", { name: "Preparing your experiment" })).toBeVisible();
-    expect(screen.getByRole("status")).toHaveTextContent("Finding a small change you can test");
+    expect(screen.getByRole("status")).toHaveTextContent("Your plan and forecast arrive together");
     releaseFirstResponse();
     expect(await screen.findByRole("alert")).toHaveTextContent("The service is unavailable right now.");
     await user.click(screen.getByRole("button", { name: "Retry" }));
 
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
     expect(screen.queryByRole("textbox", { name: "Your question or goal" })).not.toBeInTheDocument();
-    expect(within(preview).getByRole("heading", { name: proposalQuestion(), level: 1 })).toBeVisible();
-    expect(within(preview).getByRole("heading", { name: proposalQuestion() })).toBeVisible();
+    expect(within(preview).getByRole("heading", { name: proposeResponse.proposal!.intervention.change_short!, level: 1 })).toBeVisible();
+    await user.click(within(preview).getByText("Details", { exact: true }));
+    expect(within(preview).getByText(proposalQuestion())).toBeVisible();
     expect(within(preview).getByText("Light evening activity may improve next-morning energy.")).toBeVisible();
     expect(within(preview).getByText("Walk for 20 minutes")).toBeVisible();
-    expect(within(preview).getByText("Within one hour after dinner")).toBeVisible();
-    expect(within(preview).getByText("daily")).toBeVisible();
-    expect(within(preview).getByRole("heading", { name: "A 10-day timeline" })).toBeVisible();
-    expect(within(preview).getAllByText("Baseline", { exact: true })).toHaveLength(3);
-    expect(within(preview).getAllByText("Test", { exact: true })).toHaveLength(7);
-    expect(within(preview).getByText("Morning energy")).toBeVisible();
-    expect(within(preview).getByText("Sleep quality")).toBeVisible();
+    expect(within(preview).getByText(/When: Within one hour after dinner/)).toBeVisible();
+    expect(within(preview).getByText(/How often: daily/)).toBeVisible();
+    await user.click(within(preview).getByText("A note before you begin"));
     expect(within(preview).getByRole("note")).toHaveTextContent("Keep the walk gentle and comfortable.");
-    expect(within(preview).getByRole("heading", { name: "Morning energy is likely to go up" })).toBeVisible();
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
+    expect(within(preview).getByText("Morning energy is likely to go up.")).toBeVisible();
     expect(within(preview).getByText("+8% to +15%")).toBeVisible();
     expect(within(preview).getByText("moderate", { exact: true })).toBeVisible();
+    await user.click(within(preview).getByText("Why this range"));
     expect(within(preview).getByText("Adds light movement without reducing sleep.")).toBeVisible();
     expect(within(preview).getByText("bedtime consistency")).toBeVisible();
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
+    expect(within(preview).getAllByText("Normal", { exact: true })).toHaveLength(3);
+    expect(within(preview).getAllByText("Test", { exact: true })).toHaveLength(7);
+    await user.click(within(preview).getByText("What you’ll record"));
+    expect(within(preview).getByText("Sleep quality")).toBeVisible();
     expect(within(preview).getByText("This plan and prediction become fixed once you start.")).toBeVisible();
+    await user.click(within(preview).getByRole("button", { name: "Back" }));
+    await user.click(within(preview).getByRole("button", { name: "Back" }));
     expect(proposalCalls).toBe(2);
 
     await user.click(within(preview).getByRole("button", { name: "Ask something else" }));
@@ -216,9 +222,11 @@ describe("new experiment flow", () => {
 
     await submitQuestion(user);
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
     await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
     await startRequestStarted;
-    expect(within(preview).getByRole("button", { name: "Saving your experiment…" })).toBeDisabled();
+    expect(within(preview).getByRole("button", { name: "Starting…" })).toBeDisabled();
     releaseStart();
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
@@ -247,6 +255,8 @@ describe("new experiment flow", () => {
 
     await submitQuestion(user);
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
     await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
 
     const alert = await screen.findByRole("alert");
@@ -271,6 +281,8 @@ describe("new experiment flow", () => {
 
     await submitQuestion(user);
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
     await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
@@ -304,6 +316,8 @@ describe("new experiment flow", () => {
 
     await submitQuestion(user);
     const preview = await screen.findByRole("region", { name: "Experiment and prediction preview" });
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
+    await user.click(within(preview).getByRole("button", { name: "Next" }));
     await user.click(within(preview).getByRole("button", { name: "Start this experiment" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your experiment was saved, but it couldn’t be started");
     await user.click(screen.getByRole("button", { name: "Try again" }));
@@ -334,6 +348,7 @@ it("keeps the AI forecast hidden until a valid personal guess is committed, then
   );
   render(<NewExperiment />);
   await submitQuestion(user);
+  await user.click(await screen.findByRole("button", { name: "Next" }));
   const guess = await screen.findByRole("textbox", { name: "Your guess for Morning energy" });
   expect(screen.queryByText("The original forecast")).not.toBeInTheDocument();
   const reveal = screen.getByRole("button", { name: "Show prediction" });
@@ -345,6 +360,7 @@ it("keeps the AI forecast hidden until a valid personal guess is committed, then
   await user.click(reveal);
   expect(await screen.findByText("The original forecast")).toBeVisible();
   expect(screen.queryByRole("textbox", { name: "Your guess for Morning energy" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Next" }));
   await user.click(screen.getByRole("button", { name: "Start this experiment" }));
   await waitFor(() => expect(savedBody).toMatchObject({ personal_guess_percent: 0 }));
 });
@@ -357,7 +373,9 @@ it("explains when guesses are unavailable and still lets an old database start n
   );
   render(<NewExperiment />);
   await submitQuestion(user);
+  await user.click(await screen.findByRole("button", { name: "Next" }));
   expect(await screen.findByText(/Your own guess is unavailable right now/)).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Next" }));
   expect(screen.getByRole("button", { name: "Start this experiment" })).toBeEnabled();
 });
 
@@ -378,8 +396,10 @@ it("keeps a committed guess on save failure and requires explicit consent to omi
   );
   render(<NewExperiment />);
   await submitQuestion(user);
+  await user.click(await screen.findByRole("button", { name: "Next" }));
   await user.type(await screen.findByRole("textbox", { name: "Your guess for Morning energy" }), "-12,5");
   await user.click(screen.getByRole("button", { name: "Show prediction" }));
+  await user.click(screen.getByRole("button", { name: "Next" }));
   await user.click(screen.getByRole("button", { name: "Start this experiment" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("No experiment was saved");
   expect(screen.getByText("-12.5%", { exact: true })).toBeVisible();
@@ -435,6 +455,8 @@ describe("a question that is not about a habit", () => {
     const bodies: unknown[] = [];
     const user = await askOffTopic(bodies);
     await user.click(screen.getByRole("button", { name: "Continue anyway" }));
+    await user.click(await screen.findByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await screen.findByRole("button", { name: /start this experiment/i });
     expect(screen.getByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeVisible();
     expect(bodies[1]).toEqual({ question: "What is the capital of France?", continue_anyway: true });

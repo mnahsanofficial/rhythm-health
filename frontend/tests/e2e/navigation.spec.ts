@@ -206,7 +206,7 @@ test.describe("flows close with one ×", () => {
     await openAskFrom(page, "/history");
     await page.getByLabel(/question or goal/i).fill(QUESTION);
     await page.getByRole("button", { name: "Design experiment" }).click();
-    await page.getByRole("button", { name: /Start this experiment|Show prediction|Reveal/ }).first().waitFor();
+    await page.getByRole("button", { name: /Start this experiment|Show prediction|Reveal|Next/ }).first().waitFor();
     expect(counts.proposals).toBe(1);
 
     const sheet = page.getByRole("dialog");
@@ -220,7 +220,7 @@ test.describe("flows close with one ×", () => {
     await expect(sheet).toContainText("Your proposal won't be kept.");
     await expect(page).toHaveURL(/\/experiments\/new/);
     await sheet.getByRole("button", { name: "Stay" }).click();
-    await expect(page.getByRole("button", { name: /Start this experiment|Show prediction|Reveal/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Start this experiment|Show prediction|Reveal|Next/ }).first()).toBeVisible();
 
     await page.getByRole("link", { name: "Rhythm, home" }).click();
     await expect(sheet).toBeVisible();
@@ -240,12 +240,13 @@ test.describe("flows close with one ×", () => {
     await openAskFrom(page, "/history");
     await page.getByLabel(/question or goal/i).fill(QUESTION);
     await page.getByRole("button", { name: "Design experiment" }).click();
-    await page.getByRole("button", { name: "Show prediction" }).click({ timeout: 3000 }).catch(() => undefined);
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: "Start this experiment" }).click();
     await page.waitForURL(/\/experiments\/[^/]+$|\/$/);
     await page.goto(`/experiments/${experiment.id}/check-in`);
     await hideBadge(page);
-    await page.getByRole("heading", { name: /check-in/i }).first().waitFor();
+    await page.getByRole("main").getByRole("heading", { level: 1 }).waitFor();
     await page.getByRole("radio").first().check({ force: true });
     await page.getByRole("button", { name: "Close" }).click();
     await expect(page.getByRole("dialog")).toContainText("Your answers won't be kept.");

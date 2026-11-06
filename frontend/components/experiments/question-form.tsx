@@ -8,6 +8,7 @@ type Props = {
   onSubmit: () => void;
   busy: boolean;
   blocked: boolean;
+  hideSubmit?: boolean;
   headingLevel: 1 | 2;
   suggestions?: string[];
   onSuggestion?: (question: string) => void;
@@ -21,6 +22,7 @@ export function QuestionForm({
   onSubmit,
   busy,
   blocked,
+  hideSubmit = false,
   headingLevel,
   suggestions = [],
   onSuggestion,
@@ -31,11 +33,11 @@ export function QuestionForm({
 
   return (
     <>
-      <p className="font-mono text-caption text-moss">A little curiosity, a little evidence</p>
+      <p className="text-caption text-moss">A little curiosity, a little evidence</p>
       <Heading className="mt-3 font-display text-display-sm tracking-tight sm:text-display">
         Ask a question.
       </Heading>
-      <p className="mt-4 text-lead text-muted">
+      <p className="mt-4 text-lead text-ink">
         What have you been wondering about your daily habits? Let&apos;s turn it into something you can test.
       </p>
       <form
@@ -79,13 +81,13 @@ export function QuestionForm({
             ))}
           </div>
         )}
-        <button
+        {!hideSubmit && <button
           type="submit"
           disabled={busy || blocked || length < 5 || length > 500}
           className={`${button("primary")} mt-6`}
         >
           {busy ? "Shaping your experiment…" : "Design experiment"}
-        </button>
+        </button>}
       </form>
     </>
   );
