@@ -13,7 +13,7 @@ describe("web error reporting", () => {
     await expect(startErrorReporting("https://public@example.invalid/1", async () => ({ init }))).resolves.toBe(true);
     expect(init).toHaveBeenCalledWith(expect.objectContaining({
       dsn: "https://public@example.invalid/1",
-      sendDefaultPii: false,
+      dataCollection: expect.objectContaining({ userInfo: false, httpBodies: [], cookies: false }),
       tracesSampleRate: 0,
     }));
   });
@@ -34,4 +34,12 @@ it("scrubs answers, URLs, tokens and exception messages before sending", async (
   });
   expect(JSON.stringify(clean)).not.toContain(secret);
   expect(clean.release).toBe("abc123");
+});
+
+it("disables Sentry usage sessions and browser tracing", async () => {
+  const init = vi.fn();
+  await startErrorReporting("https://public@example.invalid/1", async () => ({ init }));
+  const options = init.mock.calls[0][0];
+  const integrations = [{ name: "GlobalHandlers" }, { name: "BrowserSession" }, { name: "BrowserTracing" }];
+  expect(options.integrations(integrations)).toEqual([{ name: "GlobalHandlers" }]);
 });
