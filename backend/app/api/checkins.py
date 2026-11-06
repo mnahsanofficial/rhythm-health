@@ -8,7 +8,7 @@ from app.integrations.supabase import SupabaseUnavailable
 from app.repositories import checkins
 from app.schemas.checkin import CheckinIn, CheckinOut, TodayCheckin, TodayCheckinIn
 from app.schemas.experiment import Metric
-from app.services import today_checkin
+from app.services import today_checkin, app_events
 from app.services.checkins import validate_metric_values
 from app.services.progress import with_progress
 
@@ -66,7 +66,8 @@ def submit_checkin(
         raise HTTPException(status_code=422, detail=errors)
 
     try:
-        return checkins.upsert(
+        previous = app_events.previous_checkins(str(experiment_id))
+        saved = checkins.upsert(
             str(experiment_id),
             progress.day_number,
             {
@@ -76,6 +77,8 @@ def submit_checkin(
                 "note": body.note or None,
             },
         )
+        app_events.checkin_recorded(row["profile_id"], row, progress.day_number, previous)
+        return saved
     except SupabaseUnavailable:
         raise db_error()
 

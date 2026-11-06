@@ -6,7 +6,7 @@ from app.integrations.supabase import SupabaseConflict
 from app.repositories import checkins, experiments, reports
 from app.schemas.lab_report import LabReport
 from app.schemas.rows import ExperimentRow
-from app.services import analysis
+from app.services import analysis, app_events
 from app.services.lab_report import build_lab_report
 
 ALREADY_COMPLETED = "This experiment is already completed"
@@ -59,4 +59,6 @@ async def complete_experiment(row: ExperimentRow, profile_id: str, experiment_id
         raise CompletionConflict(ALREADY_COMPLETED)
     if done is None:  # lost a race: no longer active
         raise CompletionConflict(ALREADY_COMPLETED)
+    if not row.get("is_seeded"):
+        await asyncio.to_thread(app_events.record, profile_id, "experiment_completed", experiment_id)
     return build_lab_report(done, saved, logged)

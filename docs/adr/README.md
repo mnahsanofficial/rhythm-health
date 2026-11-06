@@ -20,4 +20,6 @@ One short record for each real decision: the situation, what we chose, what else
 | [14](0014-text-budget-and-its-test.md) | A text budget, enforced by a test |
 | [15](0015-content-rich-web-focused-mobile.md) | Content-rich web, focused mobile |
 
+| [16](0016-private-monitoring-and-product-events.md) | Private error reporting and in-house product events (acceptance pending) |
+
 The system they add up to is in [ARCHITECTURE.md](../ARCHITECTURE.md). Smaller product decisions are in [DECISIONS.md](../DECISIONS.md).

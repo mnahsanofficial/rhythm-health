@@ -1,3 +1,4 @@
+import asyncio
 from pydantic import BaseModel
 
 from app.integrations import jev
@@ -9,7 +10,7 @@ from app.schemas.experiment import ExperimentProposal
 from app.schemas.prediction import Prediction
 from app.schemas.profile import ProfileOut
 from app.schemas.safety import HabitCheck, SafetyDecision
-from app.services import experiment_designer, habit_check, history, safety
+from app.services import app_events, experiment_designer, habit_check, history, safety
 
 
 class ProposeResponse(BaseModel):
@@ -49,11 +50,13 @@ async def propose(question: str, profile: ProfileOut, continue_anyway: bool = Fa
 
     decision = safety.evaluate(question, classification)
     if not decision.allowed:
+        await asyncio.to_thread(app_events.record, str(profile.id), "safety_blocked")
         return ProposeResponse(safety=decision, classification=classification)
 
     if not continue_anyway:
         check = habit_check.check(classification)
         if check:
+            await asyncio.to_thread(app_events.record, str(profile.id), "soft_check_shown")
             return ProposeResponse(safety=decision, classification=classification, habit_check=check)
 
     profile_id = str(profile.id)
@@ -67,6 +70,7 @@ async def propose(question: str, profile: ProfileOut, continue_anyway: bool = Fa
     # The model's own output goes through the same rules before the user sees it.
     generated = safety.check_text(proposal.model_dump_json())
     if not generated.allowed:
+        await asyncio.to_thread(app_events.record, str(profile.id), "safety_blocked")
         return ProposeResponse(safety=generated, classification=classification)
 
     return ProposeResponse(

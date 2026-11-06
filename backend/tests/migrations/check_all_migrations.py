@@ -113,9 +113,23 @@ def check(psql_base):
     checked(["-c", f"""INSERT INTO auth.users VALUES ('{USER}');
         INSERT INTO public.profiles(user_id, age_range, usual_sleep_hours, usual_sleep_schedule, activity_level)
         VALUES ('{USER}', '25-34', 8, '{{}}', 'lightly_active');"""], "adding a profile")
+    # The new analytics table must resist direct client access even with Supabase defaults.
+    columns = checked(["-c", "SELECT string_agg(column_name, ',' ORDER BY ordinal_position) FROM information_schema.columns WHERE table_schema='public' AND table_name='app_events'"], "event columns")
+    assert columns == "id,profile_id,event_name,experiment_id,created_at", columns
+    assert checked(["-c", "SELECT relrowsecurity FROM pg_class WHERE oid='public.app_events'::regclass"], "event RLS") == "t"
+    for role in ("anon", "authenticated"):
+        for operation in ("SELECT * FROM public.app_events", "TRUNCATE public.app_events",
+                          "INSERT INTO public.app_events(profile_id,event_name) SELECT id,'checkin_saved' FROM public.profiles"):
+            assert run(["-c", f"SET ROLE {role}; {operation}"]).returncode != 0
+    checked(["-c", "SET ROLE service_role; INSERT INTO public.app_events(profile_id,event_name) SELECT id,'checkin_saved' FROM public.profiles"], "service-role event insert")
+    assert checked(["-c", "SET ROLE service_role; SELECT count(*) FROM public.app_events"], "event count") == "1"
+    assert run(["-c", "SET ROLE service_role; UPDATE public.app_events SET event_name='checkin_updated'"]).returncode != 0
+    checked(["-c", "SET ROLE service_role; INSERT INTO public.ai_calls(profile_id,kind,model,status,latency_ms) SELECT id,'propose','local-test','timeout',1 FROM public.profiles"], "timeout status")
     if run(["-f", str(ROLLBACKS / INITIAL_ROLLBACK)]).returncode == 0:
         raise SystemExit(f"FAIL: {INITIAL_ROLLBACK} ran while a profile existed")
     checked(["-c", f"DELETE FROM auth.users WHERE id = '{USER}'"], "removing the profile")
+
+    assert checked(["-c", "SELECT count(*) FROM public.app_events"], "profile cascade") == "0"
 
     before = first
     for name in rollbacks:

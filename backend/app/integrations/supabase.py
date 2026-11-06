@@ -9,11 +9,12 @@ def check_connection() -> bool:
         return False
     try:
         res = httpx.get(
-            f"{settings.supabase_url.rstrip('/')}/rest/v1/",
+            f"{settings.supabase_url.rstrip('/')}/rest/v1/profiles",
             headers={
                 "apikey": settings.supabase_service_role_key,
                 "Authorization": f"Bearer {settings.supabase_service_role_key}",
             },
+            params={"select": "id", "limit": "1"},
             timeout=5,
         )
     except httpx.HTTPError:
@@ -73,4 +74,4 @@ def rest_request(
         raise SupabaseUnavailable(type(exc).__name__) from exc
     except httpx.HTTPError as exc:
         raise SupabaseUnavailable(type(exc).__name__) from exc
-    return res.json()
+    return res.json() if res.content else []

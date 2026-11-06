@@ -20,6 +20,8 @@ _profile_id: ContextVar[str | None] = ContextVar("ai_usage_profile_id", default=
 @contextmanager
 def for_profile(profile_id: str) -> Iterator[None]:
     """Attribute the OpenRouter calls made inside this block to one person."""
+    from app.monitoring import identify_profile
+    identify_profile(profile_id)
     token = _profile_id.set(profile_id)
     try:
         yield

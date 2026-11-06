@@ -102,8 +102,8 @@ def test_propose_at_the_limit_is_refused_before_any_paid_call(db, paid):
 def test_propose_below_the_limit_reaches_the_designer(db, paid, monkeypatch):
     monkeypatch.setattr(profiles, "get_by_user_id", lambda _uid: PROFILE_ROW)
     monkeypatch.setattr(experiments, "list_for_profile", lambda *_a: [{}, {}])
-    with pytest.raises(AssertionError, match="No AI call"):
-        client.post(PROPOSE, json=QUESTION)
+    # Monitoring catches the deliberately raised error and returns a friendly 500.
+    assert client.post(PROPOSE, json=QUESTION).status_code == 500
     paid.assert_called_once()
 
 

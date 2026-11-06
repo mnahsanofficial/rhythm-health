@@ -37,6 +37,12 @@ flowchart TB
         J["Jev safety model<br/>category, intent, risk"]
         R["Reasoning model<br/>design, forecast, report wording"]
     end
+    Sentry["Sentry: scrubbed errors<br/>environment, release, request ID"]
+    Logs["JSON request logs + Python metrics<br/>ai_calls and app_events, service role only"]
+    API -.-> Sentry
+    W -.-> Sentry
+    M -.-> Sentry
+    API -.-> Logs
     CI["GitHub Actions CI<br/>no secrets, no network to Supabase or OpenRouter"]
     M -->|"email and password"| A
     W -->|"email and password"| A
@@ -74,6 +80,8 @@ erDiagram
     AUTH_USERS ||--o| PROFILES : "owns"
     PROFILES ||--o{ EXPERIMENTS : "has"
     PROFILES ||--o{ AI_CALLS : "spends"
+    PROFILES ||--o{ APP_EVENTS : "uses"
+    EXPERIMENTS ||--o{ APP_EVENTS : "optional"
     EXPERIMENTS ||--o{ DAILY_CHECKINS : "records"
     EXPERIMENTS ||--o| EXPERIMENT_REPORTS : "has"
 
@@ -139,7 +147,7 @@ erDiagram
         uuid profile_id FK
         text kind "propose report other"
         text model
-        text status "ok retry invalid error"
+        text status "ok retry invalid error timeout"
         integer latency_ms
         timestamptz created_at
     }
@@ -348,7 +356,7 @@ The cap counts finished attempts, per person per UTC day. Timeouts and retries a
 | Two report requests at once | Both can pass the check and both pay | No lock; the buttons guard against double taps |
 | Two proposals at once at the cap | Both can pass | At most one extra call |
 | Phone offline | Today shows the last loaded data, marked as such. Answers stay in memory and saving is disabled | Lost if the app is closed |
-| App crashes on a phone | Nothing is reported | Mobile has no error reporting yet |
+| App crashes on a phone | Optional Sentry reports scrubbed JavaScript errors | Expo Go cannot capture native crashes; live verification pending |
 
 ### What we'd change at 10x users
 
@@ -396,3 +404,11 @@ CI runs on every PR and on `main` ([workflow](../.github/workflows/ci.yml)), wit
 | Migrations | [`check_all_migrations.py`](../backend/tests/migrations/check_all_migrations.py) in CI, and the per-migration scripts beside it by hand | Supabase's roles and defaults, as far as modelled |
 
 **CI can't cover:** real sign-in, real AI output, VoiceOver, real large text, reminders, and the installed app's splash. Those are checked by hand on an iPhone; each PR says what was checked. Rules: [testing](rules/testing.md).
+
+## 10. Monitoring
+
+[Runbook and drill](MONITORING.md), [ADR 16](adr/0016-private-monitoring-and-product-events.md). Backend, web and mobile report allowlisted error events when DSNs are set. Environment and release identify the build; backend request IDs match `X-Request-ID` and JSON logs. No bodies, tokens, answers, user fields, arbitrary exception text or breadcrumbs leave the process. Profile hashes are process-local; expected 422/429 responses stay in logs.
+
+`/api/health` queries the DB and reports AI configuration presence only. `ai_calls` records provider attempts including timeout. Backend `app_events` counts actions without answers; best-effort inserts cannot break the primary action. `npm run metrics:summary` computes seven-day counts, active profiles and check-in completion in Python from paged scalar columns. Both tracking tables have RLS, no client policies and service-role-only grants.
+
+No external uptime scheduler, alert routing, replay, source-map upload or native Expo Go crash capture is configured. Shared migration and live Sentry/phone confirmations remain pending; source implementation alone does not establish deployment.

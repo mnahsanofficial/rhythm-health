@@ -36,7 +36,7 @@ Every piece of feedback from the 8x calls: what we did, where it is, and what's 
 | Gap | Status | PRs | Where to see it | What's left |
 |---|---|---|---|---|
 | CI | **Done** | #70, #91 | [`ci.yml`](../.github/workflows/ci.yml): lint with no warnings, types, tests, build, browser suite, secret scan over all of history, migration check and commit messages | The check models Supabase on plain Postgres |
-| Monitoring | **Partial** | #72 | [`monitoring.py`](../backend/app/monitoring.py): request logs, `/api/health`, optional Sentry on backend and web | Mobile has no error reporting (after the demo) |
+| Monitoring | **In progress — live verification pending** | #72 + monitoring gaps branch | All-app Sentry, correlated JSON logs, DB health, backend events and Python metrics; [runbook](MONITORING.md) | Awaiting migration approval, live drill, dashboard confirmations and Expo Go tap |
 | AI cost cap | **Done** | #71 | [`ai_limit.py`](../backend/app/services/ai_limit.py), [ADR 7](adr/0007-ai-calls-and-daily-cap.md) | |
 | Async | **Done** | #73 | [`openrouter.py`](../backend/app/integrations/openrouter.py), [ADR 8](adr/0008-async-openrouter-client.md) | Database reads still use worker threads |
 | Large files | **Done** | #74 | Largest backend file is 196 lines; [`file-size.test.ts`](../frontend/tests/architecture/file-size.test.ts), [`test_code_standards.py`](../backend/tests/test_code_standards.py) | Web `lab-report.tsx` is 486 lines |

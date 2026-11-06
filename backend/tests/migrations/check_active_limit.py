@@ -72,7 +72,9 @@ def main():
                 GRANT USAGE ON SCHEMA auth TO authenticated;
                 GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;""")
             for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
-                if path != MIGRATION:
+                # This script tests the historical active-limit rollout; later tables
+                # have their own rollbacks and are covered by check_all_migrations.
+                if path.name < MIGRATION.name:
                     file(path)
             sql(f"""INSERT INTO auth.users VALUES ('11111111-1111-1111-1111-111111111111'), ('11111111-1111-1111-1111-222222222222');
                 INSERT INTO public.profiles(id, user_id, age_range, usual_sleep_hours, usual_sleep_schedule, activity_level) VALUES
@@ -210,7 +212,8 @@ def main():
             assert sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'") == "0"
             assert sql("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'") == "0"
             for path in sorted((ROOT / "supabase/migrations").glob("*.sql")):
-                file(path)
+                if path.name <= MIGRATION.name:
+                    file(path)
             assert sql("SELECT count(*) FROM pg_tables WHERE schemaname='public'") == "4"
         finally:
             checked([binary("pg_ctl"), "-D", str(data), "-m", "immediate", "stop"])

@@ -16,6 +16,7 @@
     "@rhythm-health/brand": "*",
     "@rhythm-health/contract": "*",
     "@sentry/browser": "^11.10.0",
+    "@sentry/nextjs": "^11.11.0",
     "@supabase/supabase-js": "^2.118.0",
     "motion": "^14.7.1",
     "next": "16.4.3",

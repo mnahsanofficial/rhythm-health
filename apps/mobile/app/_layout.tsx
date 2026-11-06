@@ -1,3 +1,4 @@
+import '../src/monitoring/init';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';

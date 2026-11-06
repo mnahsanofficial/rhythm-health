@@ -1,3 +1,4 @@
+import { FailureDrillButton } from './monitoring/failure-drill';
 import { useState } from 'react';
 import { Linking, Platform, Switch, View } from 'react-native';
 import { LAYOUT, SPACING } from '@rhythm-health/brand';
@@ -11,6 +12,7 @@ export function Settings() { const COLORS = useColors(); const styles = useStyle
   const { service, state } = useReminders();
   const [error, setError] = useState(false);
   return <View style={styles.stack}>
+    <FailureDrillButton />
     <Title>Daily reminders.</Title><Copy>When the next day opens. The lock screen never shows your question.</Copy>
     {Platform.OS === 'web' && <Copy>Reminders are available in the phone app.</Copy>}
     <FormRows><FormRow icon="bell" label="Daily reminders" trailing={<Switch style={{ minHeight: LAYOUT.primaryAction, minWidth: LAYOUT.primaryAction }} hitSlop={SPACING.sm} accessibilityLabel="Daily reminders" value={!onlySamples(state.data) && state.choice === 'on' && state.permission} disabled={onlySamples(state.data) || !state.ready || state.busy || Platform.OS === 'web'}

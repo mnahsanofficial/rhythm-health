@@ -2,12 +2,14 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from app.monitoring import identify_profile, report_failure
 from app.integrations.supabase import SupabaseUnavailable
 from app.repositories import experiments, profiles
 from app.schemas.rows import ExperimentRow
 
 
 def db_error() -> HTTPException:
+    report_failure("database_unavailable")
     return HTTPException(status_code=503, detail="Database unavailable")
 
 
@@ -19,6 +21,7 @@ def profile_id_for(user_id: str) -> str:
         raise db_error()
     if row is None:
         raise HTTPException(status_code=409, detail="Create your profile first")
+    identify_profile(row["id"])
     return row["id"]
 
 
