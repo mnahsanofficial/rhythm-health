@@ -2,19 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLeaveGuard } from "@/components/nav/navigation";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
-import { AnswerProgress } from "@/components/checkins/answer-progress";
-import { ChangeQuestion } from "@/components/checkins/change-question";
+import { CheckinSteps } from "./checkin-steps";
+import { type CheckinStep } from "./step-model";
 import { CheckinSkeleton, primaryButton, secondaryButton, Shell, without } from "@/components/checkins/checkin-chrome";
 import { CheckinSaved } from "@/components/checkins/checkin-saved";
-import { MetricInput } from "@/components/checkins/metric-input";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { listCheckins, submitCheckin } from "@/lib/data/checkins";
-import { getExperiment } from "@/lib/data/experiments";
-import { MAX_NOTE_LENGTH, type Checkin, type Experiment, type MetricValue } from "@/lib/types/api";
+import { getExperiment, getExperimentProgress } from "@/lib/data/experiments";
+import { type Checkin, type Experiment, type MetricValue } from "@/lib/types/api";
 
 type Load =
   | { kind: "loading" }
@@ -58,7 +57,8 @@ export function CheckinForm({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Checkin | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
-  const noteId = useId();
+  const inFlight = useRef(false);
+  const [dayChanged, setDayChanged] = useState(false);
   useLeaveGuard(!saved && !saving && JSON.stringify(answers) !== JSON.stringify(loadedAnswers) ? WONT_BE_KEPT.answers : null);
   const signInPath = `/sign-in?next=${encodeURIComponent(`/experiments/${id}/check-in`)}`;
 
@@ -69,8 +69,9 @@ export function CheckinForm({ id }: { id: string }) {
       return;
     }
     let cancelled = false;
-    Promise.all([getExperiment(id), listCheckins(id)])
-      .then(([experiment, checkins]) => {
+    Promise.all([getExperiment(id), listCheckins(id), getExperimentProgress(id)])
+      .then(([snapshot, checkins, timeline]) => {
+        const experiment = { ...snapshot, progress: timeline.progress };
         if (cancelled) return;
         setLoad({ kind: "ready", experiment, checkins });
         const existing = answersFrom(checkins.find((c) => c.day_number === experiment.progress.day_number));
@@ -150,12 +151,13 @@ export function CheckinForm({ id }: { id: string }) {
   const alreadyToday = checkins.some((c) => c.day_number === day);
   const metrics = [...experiment.metrics].sort((a, b) => Number(b.primary) - Number(a.primary));
 
-  const answerTotal = metrics.length + Number(testDay);
-  const answered = metrics.filter((m) => answers.values[m.key] !== undefined).length
-    + Number(testDay && answers.interventionDone !== undefined);
+  const steps: CheckinStep[] = [
+    ...(testDay ? [{ key: "intervention_completed", kind: "change" as const, name: "Made the change", action: experiment.intervention.action, short: experiment.intervention.change_short, timing: experiment.intervention.timing }] : []),
+    ...metrics.map(metric => ({ key: metric.key, kind: "metric" as const, metric })),
+  ];
 
   if (saved) {
-    return <CheckinSaved experiment={experiment} checkins={checkins} day={day} experimentPath={experimentPath} onEdit={() => setSaved(null)} />;
+    return <CheckinSaved items={[{ id, day: saved.day_number, total: progress.total_days, name: experiment.intervention.short_name || "Your experiment", sample: experiment.is_seeded }]} onEdit={() => setSaved(null)} />;
   }
 
   const setValue = (key: string, value: MetricValue | undefined, text: string) => {
@@ -164,6 +166,7 @@ export function CheckinForm({ id }: { id: string }) {
   };
 
   async function handleSubmit() {
+    if (inFlight.current || dayChanged) return;
     const missing: Record<string, string> = {};
     for (const m of metrics) {
       if (answers.values[m.key] === undefined) {
@@ -177,9 +180,14 @@ export function CheckinForm({ id }: { id: string }) {
       return;
     }
 
+    inFlight.current = true;
     setSaving(true);
     setFormError(null);
     try {
+      const fresh = await getExperimentProgress(id);
+      if (fresh.progress.state !== "in_progress" || fresh.progress.day_number !== day) {
+        setDayChanged(true); setFormError("Today has changed. Go back to Today to load the current day before saving."); return;
+      }
       const metric_values: Record<string, MetricValue> = {};
       for (const m of metrics) metric_values[m.key] = answers.values[m.key] as MetricValue;
       const result = await submitCheckin(id, {
@@ -188,6 +196,7 @@ export function CheckinForm({ id }: { id: string }) {
         note: answers.note.trim() || null,
       });
       setSaved(result);
+      setLoadedAnswers(answers);
       // Today now has a check-in: editing again should say so and replace it.
       setLoad((l) =>
         l.kind === "ready"
@@ -206,90 +215,21 @@ export function CheckinForm({ id }: { id: string }) {
           : "Couldn't reach the server. Your answers are still here, so try again.",
       );
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   }
 
-  return (
-    <Shell>
-      <p className="font-mono text-caption text-moss tabular-nums">
-        Day {day} of {progress.total_days} · {testDay ? "Test" : "Baseline"} day {progress.phase_day} of {progress.phase_days}
-      </p>
-      {experiment.is_seeded && <p className="mb-3 font-medium text-moss">Sample experiment · Sample check-in</p>}
-      <h1 className="mt-2 font-display text-display-sm tracking-tight">Today&apos;s check-in.</h1>
-      <p className="mt-3 text-lead text-muted">
-        {testDay
-          ? "A test day. Tell us whether you made the change, then how it went."
-          : "A normal day. Don't change anything yet, just notice how it went."}
-      </p>
-      <AnswerProgress answered={answered} total={answerTotal} />
-      {alreadyToday && (
-        <p className="mt-4 rounded-card bg-moss-tint p-3 text-body text-ink">
-          You&apos;ve already checked in today. Saving again replaces those answers.
-        </p>
-      )}
-
-      <form
-        noValidate
-        className="mt-8 flex flex-col gap-8"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void handleSubmit();
-        }}
-      >
-        {formError && (
-          <div ref={alertRef} tabIndex={-1} role="alert" className="rounded-card bg-clay-tint p-4 text-clay outline-none">
-            <p className="font-medium">{formError}</p>
-          </div>
-        )}
-
-        {testDay && (
-          <ChangeQuestion
-            name="intervention_completed"
-            action={experiment.intervention.action}
-            timing={experiment.intervention.timing}
-            value={answers.interventionDone}
-            error={fieldErrors.intervention_completed}
-            onChange={(v) => {
-              setAnswers((a) => ({ ...a, interventionDone: v }));
-              setFieldErrors((e) => without(e, "intervention_completed"));
-            }}
-          />
-        )}
-
-        {metrics.map((m) => (
-          <MetricInput
-            key={m.key}
-            metric={m}
-            value={answers.values[m.key]}
-            text={answers.texts[m.key] ?? ""}
-            onChange={(v, t) => setValue(m.key, v, t)}
-            error={fieldErrors[m.key]}
-          />
-        ))}
-
-        <div>
-          <label htmlFor={noteId} className="text-lead font-medium text-ink">
-            Anything unusual yesterday? <span className="text-body font-normal text-muted">(optional)</span>
-          </label>
-          <textarea
-            id={noteId}
-            rows={3}
-            maxLength={MAX_NOTE_LENGTH}
-            value={answers.note}
-            onChange={(e) => setAnswers((a) => ({ ...a, note: e.target.value }))}
-            placeholder="Late night, a stressful day, a long run…"
-            className="mt-3 w-full resize-y rounded-control border border-control bg-paper p-4 text-body text-ink placeholder:text-muted/70 focus-visible:border-moss"
-          />
-          {fieldErrors.note && <p className="mt-2 text-caption font-medium text-clay">{fieldErrors.note}</p>}
-        </div>
-
-        <div className="sticky bottom-0 -mx-[var(--gutter)] border-t border-line bg-oat px-[var(--gutter)] py-4 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
-          <button type="submit" disabled={saving} aria-busy={saving} className={`${primaryButton} w-full max-w-none sm:w-fit`}>
-            {saving ? "Saving…" : alreadyToday ? "Update check-in" : "Save check-in"}
-          </button>
-        </div>
-      </form>
-    </Shell>
-  );
+  return <Shell wide>
+    {experiment.is_seeded && <p className="mb-3 text-caption">Sample experiment · Sample check-in</p>}
+    <CheckinSteps steps={steps} values={{ ...answers.values, intervention_completed: answers.interventionDone }} texts={answers.texts}
+      fields={fieldErrors} note={answers.note} onNote={note => setAnswers(a => ({ ...a, note }))} busy={saving} editing={alreadyToday}
+      context={`Day ${day} of ${progress.total_days} · ${testDay ? "Test" : "Normal"}`} notice={alreadyToday ? "Saving replaces today's answers." : undefined}
+      blocked={dayChanged} saveLabel={saving ? "Saving…" : alreadyToday ? "Update check-in" : "Save check-in"} onSave={() => void handleSubmit()}
+      onAnswer={(key, value, text) => {
+        if (key === "intervention_completed") { setAnswers(a => ({ ...a, interventionDone: value as boolean | undefined })); setFieldErrors(e => without(e, key)); }
+        else setValue(key, value, text);
+      }}
+      alert={formError && <div ref={alertRef} tabIndex={-1} role="alert" className="rounded-card bg-clay-tint p-4 text-clay"><p>{formError}</p>{dayChanged && <Link href="/" className={`${secondaryButton} mt-3`}>Go to Today</Link>}</div>} />
+  </Shell>;
 }

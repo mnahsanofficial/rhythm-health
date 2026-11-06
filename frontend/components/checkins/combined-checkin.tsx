@@ -1,17 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLeaveGuard } from "@/components/nav/navigation";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
-import { ChangeQuestion } from "@/components/checkins/change-question";
-import { CheckinSkeleton, Shell, primaryButton, secondaryButton, without } from "@/components/checkins/checkin-chrome";
-import { MetricInput } from "@/components/checkins/metric-input";
+import { CheckinSteps } from "./checkin-steps";
+import { CheckinSaved } from "./checkin-saved";
+import type { CheckinStep } from "./step-model";
+import { CheckinSkeleton, Shell, secondaryButton, without } from "@/components/checkins/checkin-chrome";
 import { ApiError } from "@/lib/api/client";
 import { useSession } from "@/lib/auth/session";
 import { getTodayCheckin, saveTodayCheckin } from "@/lib/data/checkins";
-import { MAX_NOTE_LENGTH, type MetricValue, type TodayCheckin } from "@/lib/types/api";
+import { type MetricValue, type TodayCheckin } from "@/lib/types/api";
 
 type Load = { kind: "loading" } | { kind: "ready"; today: TodayCheckin } | { kind: "error"; message: string };
 type Answers = {
@@ -39,7 +39,7 @@ function answersFrom(today: TodayCheckin): Answers {
 }
 
 function audience(ids: string[], today: TodayCheckin) {
-  if (ids.length === 1) return `For: ${today.experiments.find((item) => item.id === ids[0])?.question ?? ""}`;
+  if (ids.length === 1) return `For ${today.experiments.find((item) => item.id === ids[0])?.short_name ?? "one experiment"}`;
   return ids.length === 2 ? "For both experiments" : `For all ${ids.length} experiments`;
 }
 
@@ -59,8 +59,7 @@ export function CombinedCheckin() {
   useLeaveGuard(!saved && !saving && JSON.stringify(answers) !== JSON.stringify(loadedAnswers) ? WONT_BE_KEPT.answers : null);
   const inFlight = useRef(false);
   const alertRef = useRef<HTMLDivElement>(null);
-  const savedRef = useRef<HTMLHeadingElement>(null);
-  const noteId = useId();
+  const [hasSaved, setHasSaved] = useState(false);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -94,11 +93,9 @@ export function CombinedCheckin() {
   useEffect(() => {
     if (formError) alertRef.current?.focus();
   }, [formError]);
-  useEffect(() => {
-    if (saved) savedRef.current?.focus();
-  }, [saved]);
 
   const reload = () => {
+    setHasSaved(false);
     setLoad({ kind: "loading" });
     setSaved(false);
     setAttempt((n) => n + 1);
@@ -125,22 +122,7 @@ export function CombinedCheckin() {
       </Shell>
     );
   }
-  if (saved) {
-    return (
-      <Shell>
-        <h1 ref={savedRef} tabIndex={-1} className="font-display text-display-sm tracking-tight">Today&apos;s check-ins are recorded.</h1>
-        <ul className="mt-5 space-y-2 text-body">
-          {today.experiments.map((experiment) => (
-            <li key={experiment.id}><span className="font-mono text-caption text-moss tabular-nums">Day {experiment.day_number} of {experiment.total_days}</span><br />{experiment.question}</li>
-          ))}
-        </ul>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link href="/" className={primaryButton}>Go to your lab</Link>
-          <button type="button" onClick={() => setSaved(false)} className={secondaryButton}>Change today&apos;s answers</button>
-        </div>
-      </Shell>
-    );
-  }
+  if (saved) return <CheckinSaved items={today.experiments.map(item => ({ id: item.id, day: item.day_number, total: item.total_days, name: item.short_name || "Your experiment" }))} onEdit={() => setSaved(false)} />;
 
   const testing = today.experiments.filter((experiment) => experiment.change_required);
 
@@ -171,6 +153,8 @@ export function CombinedCheckin() {
       });
       setLoad({ kind: "ready", today: result });
       setSaved(true);
+      setHasSaved(true);
+      setLoadedAnswers(answers);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         router.replace(SIGN_IN);
@@ -185,81 +169,21 @@ export function CombinedCheckin() {
     }
   }
 
-  return (
-    <Shell>
-      <h1 className="font-display text-display-sm tracking-tight">Today&apos;s check-in.</h1>
-      <p className="mt-3 text-lead text-muted">One check-in for your {today.experiments.length} experiments. Shared questions are asked once.</p>
-      {today.experiments.some((experiment) => experiment.recorded) && (
-        <p className="mt-4 rounded-card bg-moss-tint p-3 text-body">You&apos;ve already checked in for some of these today. Saving again replaces those answers.</p>
-      )}
-      <form
-        noValidate
-        className="mt-8 space-y-8"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void handleSubmit();
-        }}
-      >
-        {testing.map((experiment) => {
-          const field = `change:${experiment.id}`;
-          return (
-            <ChangeQuestion
-              key={experiment.id}
-              name={field}
-              action={experiment.action}
-              timing={experiment.timing}
-              value={answers.changes[experiment.id]}
-              error={fieldErrors[field]}
-              onChange={(v) => {
-                setAnswers((a) => ({ ...a, changes: { ...a.changes, [experiment.id]: v } }));
-                setFieldErrors((e) => without(e, field));
-              }}
-            />
-          );
-        })}
-
-        {today.questions.map((question) => (
-          <div key={question.id}>
-            <p className="mb-2 text-caption text-moss">{audience(question.experiment_ids, today)}</p>
-            <MetricInput
-              metric={question.metric}
-              value={answers.values[question.id]}
-              text={answers.texts[question.id] ?? ""}
-              error={fieldErrors[question.id]}
-              onChange={(value, text) => {
-                setAnswers((a) => ({ ...a, values: { ...a.values, [question.id]: value }, texts: { ...a.texts, [question.id]: text } }));
-                setFieldErrors((e) => without(e, question.id));
-              }}
-            />
-          </div>
-        ))}
-
-        <div>
-          <label htmlFor={noteId} className="text-lead font-medium text-ink">Anything unusual yesterday? (optional)</label>
-          <p className="mt-1 text-caption text-muted">Saved with every experiment here.</p>
-          <textarea
-            id={noteId}
-            value={answers.note}
-            maxLength={MAX_NOTE_LENGTH}
-            rows={3}
-            onChange={(event) => setAnswers((a) => ({ ...a, note: event.target.value }))}
-            placeholder="Late night, a stressful day, a long run…"
-            className="mt-2 w-full rounded-control border border-control bg-paper p-3 text-body text-ink"
-          />
-          {fieldErrors.note && <p className="mt-2 text-caption font-medium text-clay">{fieldErrors.note}</p>}
-        </div>
-
-        {formError && (
-          <div ref={alertRef} tabIndex={-1} role="alert" className="rounded-card bg-clay-tint p-4 text-clay">
-            <p>{formError}</p>
-            {stale && <button type="button" onClick={reload} className={`${secondaryButton} mt-3 text-ink`}>Reload today&apos;s check-in</button>}
-          </div>
-        )}
-
-        <button type="submit" disabled={saving} aria-busy={saving} className={`${primaryButton} w-full sm:w-auto`}>
-          {saving ? "Saving…" : today.experiments.some((experiment) => experiment.recorded) ? "Update check-in" : "Save check-in"}
-        </button>
-      </form>
-    </Shell>
-  );
+  const steps: CheckinStep[] = [
+    ...testing.map(item => ({ key: `change:${item.id}`, kind: "change" as const, name: item.short_name || "Made the change", action: item.action, short: item.change_short, timing: item.timing })),
+    ...today.questions.map(question => ({ key: question.id, kind: "metric" as const, metric: question.metric, audience: audience(question.experiment_ids, today) })),
+  ];
+  const editing = hasSaved || today.experiments.some(item => item.recorded);
+  return <Shell wide>
+    <CheckinSteps steps={steps} values={{ ...answers.values, ...Object.fromEntries(Object.entries(answers.changes).map(([id, value]) => [`change:${id}`, value])) }} texts={answers.texts}
+      fields={fieldErrors} note={answers.note} onNote={note => setAnswers(a => ({ ...a, note }))} busy={saving} editing={editing} blocked={stale}
+      context={`For all ${today.experiments.length} experiments`} notice={editing ? "Saving replaces today's answers." : undefined}
+      saveLabel={saving ? "Saving…" : editing ? "Update check-in" : "Save check-in"} onSave={() => void handleSubmit()}
+      onAnswer={(key, value, text) => {
+        if (key.startsWith("change:")) setAnswers(a => ({ ...a, changes: { ...a.changes, [key.slice(7)]: value as boolean | undefined } }));
+        else setAnswers(a => ({ ...a, values: { ...a.values, [key]: value }, texts: { ...a.texts, [key]: text } }));
+        setFieldErrors(e => without(e, key));
+      }}
+      alert={formError && <div ref={alertRef} tabIndex={-1} role="alert" className="rounded-card bg-clay-tint p-4 text-clay"><p>{formError}</p>{stale && <button type="button" onClick={reload} className={`${secondaryButton} mt-3`}>Reload today&apos;s check-in</button>}</div>} />
+  </Shell>;
 }
