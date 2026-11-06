@@ -123,8 +123,8 @@ Before and after are in [07-feedback-5-nov](design/07-feedback-5-nov.md#nazmuls-
 |---|---|---|
 | Today hierarchy, weekly context and running experiments | Merged #114 | Desktop columns; phone action first |
 | One-question check-in, keyboard, review and saved confirmation | Merged #115 | Single and combined flows; explicit Continue on web |
-| Four-step plan, live guess and planning wait | Prepared for review | Independent branch; not counted as merged |
-| Full soft-habit message and safety suggestion in the real field | Prepared for review | No automatic submit when using a suggestion |
+| Four-step plan, live guess and planning wait | Merged #116 | Plan steps, live guess and planning wait on web |
+| Full soft-habit message and safety suggestion in the real field | Merged #117 | No automatic submit when using a suggestion |
 | Lab Report copy and side panel | After the demo | Existing report remains |
 | Day 3 / Day 10 and Habits I kept | After the demo | Existing baseline information remains |
 | Dedicated Progress comparison/calibration | After the demo | Existing history/calibration remains |

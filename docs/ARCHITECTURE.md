@@ -382,7 +382,7 @@ Indexes aren't the first worry: reads are per person, and each person has a few 
 
 ## 8. Deliberate web and mobile differences
 
-**Mobile remains the focused daily product.** On 6 Nov, Nazmul requested desktop web parity with useful context beside each decision. Both clients still use the same API, brand tokens and server day rules. Today and stepped check-ins are merged; plan and question-choice work is prepared for review. See [ADR 15](adr/0015-content-rich-web-focused-mobile.md) and [current status](FINAL_STATUS.md#web-parity-handover--6-nov).
+**Mobile remains the focused daily product.** On 6 Nov, Nazmul requested desktop web parity with useful context beside each decision. Both clients still use the same API, brand tokens and server day rules. Today, stepped check-ins, the four-step plan and question choices are merged (#114–#117). See [ADR 15](adr/0015-content-rich-web-focused-mobile.md) and [current status](FINAL_STATUS.md#web-parity-handover--6-nov).
 
 | Mobile only | On web instead |
 |---|---|
