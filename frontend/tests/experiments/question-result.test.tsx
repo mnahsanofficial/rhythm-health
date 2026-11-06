@@ -29,6 +29,7 @@ it("shows the whole soft check with one clear suggested action and fills the rea
   const user = userEvent.setup(); await ask(user);
   expect(await screen.findByRole("heading", { name: "Turn it into a habit question.", level: 2 })).toHaveFocus();
   expect(screen.getByText(message)).toBeVisible();
+  expect(screen.queryByRole("group", { name: "Suggestions" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Design experiment" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Use this instead" }));
   expect(screen.getByRole("textbox", { name: "Your question or goal" })).toHaveValue(suggested);
