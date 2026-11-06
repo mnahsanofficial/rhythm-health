@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
 from dotenv import dotenv_values
+from monitoring_stub import response_for
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,7 +23,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("app", choices=["backend", "web", "mobile"])
     parser.add_argument("--env-file", required=True, type=Path)
-    parser.add_argument("--case", choices=["crash", "ai-down", "ai-timeout", "ai-invalid", "db-down", "cap", "event-fail", "happy"], default="crash")
+    parser.add_argument("--case", choices=["crash", "ai-down", "ai-timeout", "ai-invalid", "db-down", "cap", "event-fail", "happy", "plan"], default="crash")
     parser.add_argument("--port", type=int, default=8106)
     parser.add_argument("--api-url", help="Phone-reachable URL of our own backend on port 8106")
     args = parser.parse_args()
@@ -55,10 +56,11 @@ def main():
             if args.case == "ai-timeout":
                 time.sleep(2)
                 return
-            self.send_response(200 if args.case == "ai-invalid" else 500)
+            status, reply = response_for(args.case, self.path)
+            self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(b"not json" if args.case == "ai-invalid" else b'{"error":"local drill"}')
+            self.wfile.write(reply)
     stub = ThreadingHTTPServer(("127.0.0.1", 0), Stub)
     threading.Thread(target=stub.serve_forever, daemon=True).start()
     env["OPENROUTER_BASE_URL"] = f"http://127.0.0.1:{stub.server_port}"
