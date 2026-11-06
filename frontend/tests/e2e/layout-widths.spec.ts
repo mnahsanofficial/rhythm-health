@@ -179,7 +179,7 @@ test("signed-in pages fill the screen and stay readable at every width", async (
     await check(page, "/", "Evening walk", true, screen.label);
     await check(page, "/experiments/new", "Ask a question.", true, screen.label);
     await check(page, `/experiments/${experiment.id}`, experiment.question, true, screen.label);
-    await check(page, `/experiments/${experiment.id}/check-in`, /check-in/i, false, screen.label);
+    await check(page, `/experiments/${experiment.id}/check-in`, "Did you make the change?", false, screen.label);
     await check(page, `/experiments/${completedId}/report`, completed.question, true, screen.label);
     await check(page, "/history", "Your experiment history", true, screen.label);
     await check(page, "/demo", /Explore a sample experiment/, false, screen.label);

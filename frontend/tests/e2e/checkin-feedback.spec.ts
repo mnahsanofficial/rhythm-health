@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Checkin, Experiment } from "@/lib/types/api";
 import { experiment } from "../support/fixtures";
+import { timelineFixture } from "../support/timeline-fixture";
 import { API, answerOnboardingWithMouse, createAccountAndSaveProfile, installApiMocks } from "./helpers";
 
 for (const width of [390, 1440]) {
@@ -21,6 +22,7 @@ for (const width of [390, 1440]) {
       };
       await page.route(`${API}/api/experiments/${experiment.id}`, route => route.fulfill({ json: active }));
       let attempts = 0;
+      await page.route(`${API}/api/experiments/${experiment.id}/progress`, route => route.fulfill({ json: timelineFixture(active, { recorded: attempts > 1 ? [4] : [] }) }));
       await page.route(`${API}/api/experiments/${experiment.id}/checkins`, async route => {
         if (route.request().method() === "GET") return route.fulfill({ json: [] });
         attempts += 1;
@@ -60,14 +62,13 @@ for (const width of [390, 1440]) {
       await expect(page.getByRole("status").filter({ hasText: "3 of 3 answered" })).toBeVisible();
       await page.getByRole("button", { name: "Save check-in" }).click();
       await expect(page.getByRole("main").getByRole("alert")).toContainText("Please try saving again");
-      await expect(page.getByRole("radio", { name: "Not today", exact: true })).toBeChecked();
+      await expect(page.getByRole("button", { name: /Change Made the change/ })).toContainText("Not today");
       await capture("saved", "before");
       await page.getByRole("button", { name: "Save check-in" }).click();
       await expect(page.getByRole("heading", { name: "Day 4 recorded." })).toBeFocused();
       await capture("saved", "during");
       await capture("saved", "after");
-      await expect(page.getByRole("listitem", { name: "Day 4, logged" })).toBeVisible();
-      await expect(page.getByRole("status")).toContainText("1 of 10 days logged");
+      await expect(page.getByRole("status")).toContainText("6 days left");
       if (reducedMotion === "reduce") {
         const animations = await page.locator("main").evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length);
         expect(animations).toBe(0);

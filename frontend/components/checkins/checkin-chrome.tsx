@@ -9,33 +9,27 @@ export function without(errors: Record<string, string>, key: string): Record<str
   return next;
 }
 
-export function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="page-frame flex-1 pt-6 pb-16 sm:pt-10 [--frame:42rem]">
+    <div className={`page-frame flex-1 pt-6 pb-16 sm:pt-10 ${wide ? "[--frame:70rem]" : "[--frame:42rem]"}`}>
       {children}
     </div>
   );
 }
 
-/** Same shape as the form: header, three questions, the save button. */
+/** Reserve the question, scene and choices while the saved answers load. */
 export function CheckinSkeleton() {
-  return (
-    <div aria-hidden="true" className="page-frame pt-6 sm:pt-10 [--frame:42rem]">
-      <div className="h-5 w-32 rounded-pill bg-line" />
-      <div className="mt-8 h-3 w-36 rounded-pill bg-line" />
-      <div className="mt-3 h-10 w-2/3 rounded-pill bg-line" />
-      <div className="mt-3 h-4 w-full rounded-pill bg-line" />
-      {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="mt-8">
-          <div className="h-4 w-40 rounded-pill bg-line" />
-          <div className="mt-3 grid grid-cols-5 gap-2">
-            {Array.from({ length: 5 }, (_, j) => (
-              <div key={j} className="h-12 rounded-card bg-line/70" />
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="mt-10 h-12 w-56 rounded-pill bg-line" />
+  return <div role="status" aria-label="Loading check-in" className="page-frame pt-6 sm:pt-10 [--frame:70rem]">
+    <span className="sr-only">Loading your check-in…</span>
+    <div aria-hidden="true">
+      <div className="h-5 w-36 rounded-pill bg-line" />
+      <div className="mt-6 h-1 rounded-pill bg-line" />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-x-12">
+        <div className="lg:col-start-1 lg:row-start-1"><div className="h-10 w-4/5 rounded-pill bg-line" /><div className="mt-4 h-5 w-full rounded-pill bg-line" /></div>
+        <div className="h-44 rounded-card bg-chart-band/50 sm:h-56 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:h-96" />
+        <div className="grid grid-cols-5 gap-3 lg:col-start-1 lg:row-start-2">{Array.from({ length: 10 }, (_, i) => <div key={i} className="h-16 rounded-control bg-line/60" />)}</div>
+      </div>
+      <div className="mt-8 h-12 w-28 rounded-pill bg-line" />
     </div>
-  );
+  </div>;
 }
