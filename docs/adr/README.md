@@ -18,5 +18,6 @@ One short record for each real decision: the situation, what we chose, what else
 | [12](0012-ci-discipline-no-prettier.md) | Adopt CI checks from the template, but no Prettier on demo day |
 | [13](0013-one-question-per-screen-checkin.md) | One question per screen in the check-in |
 | [14](0014-text-budget-and-its-test.md) | A text budget, enforced by a test |
+| [15](0015-content-rich-web-focused-mobile.md) | Content-rich web, focused mobile |
 
 The system they add up to is in [ARCHITECTURE.md](../ARCHITECTURE.md). Smaller product decisions are in [DECISIONS.md](../DECISIONS.md).

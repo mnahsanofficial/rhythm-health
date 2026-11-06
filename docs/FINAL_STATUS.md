@@ -1,6 +1,6 @@
 # Final status
 
-For 8x reviewers. Updated 5 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov.
+For 8x reviewers. Updated 6 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov.
 
 **Rhythm Health Lab** turns a habit question into a 10-day personal experiment: a prediction first, a short daily check-in, then a Lab Report comparing the two. The phone app is the product.
 
@@ -14,7 +14,7 @@ For 8x reviewers. Updated 5 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov
 
 ## Not done
 
-- **The web app doesn't have the 5 Nov changes.** It keeps the old text-heavy screens; mobile is the product ([why](ARCHITECTURE.md#8-deliberate-web-and-mobile-differences)).
+- **Web parity is partial.** Today (#114) and stepped check-ins (#115) are merged. The four-step plan and full soft-habit/safety presentation are on independent review branches; they are not counted as merged. [Evidence and decisions](design/08-web-parity.md).
 - **No outside user has tested it.** Every usability finding comes from Nazmul on an iPhone or from Maham watching a demo, so we don't know yet whether first-time users find it easier.
 - **We can't say a change helps anyone.** The app shows whether something moved beyond your normal ups and downs in 10 days: a pattern, not proof.
 - **Word budgets guard our copy, not AI text.** A long AI question can still fill a real screen.
@@ -33,3 +33,11 @@ Unit tests, lint, types and CI, plus Expo web screenshots in light and dark with
 1. The iPhone pass, and any fixes from it, by 18:00 on 6 Nov.
 2. The hallway test with someone who isn't us ([plan](design/01-user-research.md)).
 3. If the app continues, the same budgets and flow on web.
+
+## Web parity handover — 6 Nov
+
+Work was wrapped up at Nazmul’s request before the 16:00 web review cutoff. Today and check-in are merged. The four-step plan and question-choice changes are review work, with mocked browser evidence and local checks; a PR is not a merged feature. No mobile, backend or shared-package source was changed. No paid AI calls or shared database writes were used.
+
+**After the demo:** the new Lab Report hierarchy and softened verdicts; the web Day 3 and Day 10 moments and Habits I kept; a dedicated Progress page with comparison/calibration and labelled examples; the new remote-worker landing page. Existing web versions remain available where they already existed. These are deferred, not completed.
+
+Browser automation checked native controls, keyboard focus and reduced motion at desktop and phone sizes. This work does not claim a physical phone or screen-reader test. Screenshots, parity tables and deliberate desktop differences are in [the web notes](design/08-web-parity.md) and [ADR 15](adr/0015-content-rich-web-focused-mobile.md).
