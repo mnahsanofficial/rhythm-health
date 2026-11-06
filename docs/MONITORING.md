@@ -1,6 +1,6 @@
 # Monitoring
 
-Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration and failure drill verified on 6 Nov; Sentry confirmed by Nazmul.** Source code is not evidence of live delivery.
+Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration and failure drill verified on 6 Nov; Sentry confirmed by Nazmul. Merged in #118.** Source code is not evidence of live delivery.
 
 | Signal | Where to look | Data |
 |---|---|---|

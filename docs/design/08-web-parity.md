@@ -36,7 +36,7 @@ The [previous desktop layout](https://github.com/mnahsanofficial/rhythm-health/b
 
 ## Remaining approved work
 
-The four-step plan is on an independent review branch. Report hierarchy; Day 3 and Day 10 moments; a dedicated Progress page; and the remote-worker landing page are after the demo. Current statuses and the stop request are recorded in FINAL_STATUS.
+The four-step plan is merged (#116). Report hierarchy; Day 3 and Day 10 moments; a dedicated Progress page; and the remote-worker landing page are after the demo. Current statuses and the stop request are recorded in FINAL_STATUS.
 
 ## Stepped check-in
 
@@ -119,4 +119,4 @@ Manual review used fake authentication and API routes at 390px and 1440px. The f
 
 ## Wrap-up scope
 
-Nazmul requested that the current work be finished, the latest log pushed, and work stopped before the 16:00 cutoff. Today and check-in are merged. The plan and question-choice work remain review branches until a person merges them. The remaining report, outcome, Progress and landing parity is recorded as after the demo in [FINAL_STATUS](../FINAL_STATUS.md#web-parity-handover--6-nov). The desktop direction is documented in [ADR 15](../adr/0015-content-rich-web-focused-mobile.md).
+Nazmul requested that the current work be finished, the latest log pushed, and work stopped before the 16:00 cutoff. Today, check-in, the plan (#116) and question choices (#117) are merged. The remaining report, outcome, Progress and landing parity is recorded as after the demo in [FINAL_STATUS](../FINAL_STATUS.md#web-parity-handover--6-nov). The desktop direction is documented in [ADR 15](../adr/0015-content-rich-web-focused-mobile.md).

@@ -34,7 +34,7 @@ These are from the mobile app, with labelled sample data.
 - Word budgets on every main screen, enforced by a test ([why](docs/design/07-feedback-5-nov.md))
 - Light and dark themes, motion that respects Reduce Motion, and clearly labelled samples
 
-**Web:** the same account and core loop, with a desktop Today dashboard and stepped daily check-ins now merged. The four-step plan and fuller habit/safety question choices are review work; later report, outcome, Progress and landing parity is deferred. [Current status](docs/FINAL_STATUS.md#web-parity-handover--6-nov) · [Design decisions and screenshots](docs/design/08-web-parity.md) · [Desktop/mobile differences](docs/ARCHITECTURE.md#8-deliberate-web-and-mobile-differences).
+**Web:** the same account and core loop, with a desktop Today dashboard and stepped daily check-ins, the four-step plan and fuller habit/safety question choices merged (#114–#117); later report, outcome, Progress and landing parity is deferred. [Current status](docs/FINAL_STATUS.md#web-parity-handover--6-nov) · [Design decisions and screenshots](docs/design/08-web-parity.md) · [Desktop/mobile differences](docs/ARCHITECTURE.md#8-deliberate-web-and-mobile-differences).
 
 **Under the hood:** AI proposes and Python measures; a daily cap on paid AI calls; shared generated API types and design tokens; CI on every PR.
 

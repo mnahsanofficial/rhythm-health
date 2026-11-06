@@ -14,10 +14,11 @@ For 8x reviewers. Updated 6 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov
 
 ## Not done
 
-- **Web parity is partial.** Today (#114) and stepped check-ins (#115) are merged. The four-step plan and full soft-habit/safety presentation are on independent review branches; they are not counted as merged. [Evidence and decisions](design/08-web-parity.md).
+- **Web parity is partial.** Today (#114), stepped check-ins (#115), the four-step plan (#116) and the soft-habit/safety question choices (#117) are merged. The web Lab Report, Day 3/Day 10, Progress and landing redesigns are after the demo. [Evidence and decisions](design/08-web-parity.md).
 - **No outside user has tested it.** Every usability finding comes from Nazmul on an iPhone or from Maham watching a demo, so we don't know yet whether first-time users find it easier.
 - **We can't say a change helps anyone.** The app shows whether something moved beyond your normal ups and downs in 10 days: a pattern, not proof.
 - **Word budgets guard our copy, not AI text.** A long AI question can still fill a real screen.
+- **No open PRs at the cutoff.** The last Codex log PR (#120) is merged; nothing is left on review.
 - **Post-demo backlog:** editing a plan before starting, the two-week follow-up. ([REMAINING_WORK](REMAINING_WORK.md#after-the-demo))
 
 ## How the 5 Nov PRs were checked
@@ -30,13 +31,12 @@ Unit tests, lint, types and CI, plus Expo web screenshots in light and dark with
 
 ## What's next
 
-1. The iPhone pass, and any fixes from it, by 18:00 on 6 Nov.
-2. The hallway test with someone who isn't us ([plan](design/01-user-research.md)).
-3. If the app continues, the same budgets and flow on web.
+1. The hallway test with someone who isn't us ([plan](design/01-user-research.md)).
+2. If the app continues, the web Lab Report, Day 3/Day 10, Progress and landing redesigns.
 
 ## Web parity handover — 6 Nov
 
-Work was wrapped up at Nazmul’s request before the 16:00 web review cutoff. Today and check-in are merged. The four-step plan and question-choice changes are review work, with mocked browser evidence and local checks; a PR is not a merged feature. No mobile, backend or shared-package source was changed. No paid AI calls or shared database writes were used.
+Work was wrapped up at Nazmul’s request before the 16:00 web review cutoff. Today (#114), check-in (#115), the four-step plan (#116) and question choices (#117) are all merged, with mocked browser evidence and CI. No mobile, backend or shared-package source was changed. No paid AI calls or shared database writes were used.
 
 **After the demo:** the new Lab Report hierarchy and softened verdicts; the web Day 3 and Day 10 moments and Habits I kept; a dedicated Progress page with comparison/calibration and labelled examples; the new remote-worker landing page. Existing web versions remain available where they already existed. These are deferred, not completed.
 
@@ -44,4 +44,4 @@ Browser automation checked native controls, keyboard focus and reduced motion at
 
 ## Monitoring acceptance
 
-The monitoring gaps branch adds backend/web/mobile error reporting, privacy scrubbing, request correlation, DB health, best-effort product events and Python metrics. **Migration applied 6 Nov and verified read-only. All nine failure-drill cases passed**, with Sentry confirmed by Nazmul and the physical Expo Go JS-error tap completed. The normal web check-in and live metrics were also verified. CI remains the PR merge gate. [Evidence and gaps](MONITORING.md). No paid call is needed for the drill.
+The monitoring gaps work (#118, merged 6 Nov) adds backend/web/mobile error reporting, privacy scrubbing, request correlation, DB health, best-effort product events and Python metrics. **Migration applied 6 Nov and verified read-only. All nine failure-drill cases passed**, with Sentry confirmed by Nazmul and the physical Expo Go JS-error tap completed. The normal web check-in and live metrics were also verified. CI remains the PR merge gate. [Evidence and gaps](MONITORING.md). No paid call is needed for the drill.
