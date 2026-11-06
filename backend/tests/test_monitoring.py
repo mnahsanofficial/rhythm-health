@@ -27,7 +27,7 @@ def logs(caplog):
 def test_a_request_logs_its_id_route_status_and_latency(logs):
     response = client.get("/health")
     entry = request_logs(logs)[-1]
-    assert set(entry) == {"event", "request_id", "method", "route", "status", "latency_ms"}
+    assert set(entry) == {"event", "request_id", "method", "route", "status", "latency_ms", "profile_hash"}
     assert entry["event"] == "request"
     assert entry["method"] == "GET"
     assert entry["route"] == "/health"
@@ -81,14 +81,14 @@ def test_api_health_reports_a_working_database(monkeypatch):
     monkeypatch.setattr(supabase, "check_connection", lambda: True)
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "database": "ok"}
+    assert response.json() == {"status": "ok", "database": "ok", "db": "up", "ai_config_present": False}
 
 
 def test_api_health_is_503_when_the_database_is_down(monkeypatch):
     monkeypatch.setattr(supabase, "check_connection", lambda: False)
     response = client.get("/api/health")
     assert response.status_code == 503
-    assert response.json() == {"status": "degraded", "database": "unavailable"}
+    assert response.json() == {"status": "degraded", "database": "unavailable", "db": "down", "ai_config_present": False}
 
 
 def test_sentry_does_nothing_without_a_dsn(monkeypatch):
@@ -119,7 +119,7 @@ def test_sentry_strips_headers_query_and_cookies_before_sending():
     event = {"request": {"url": "http://x/a", "headers": {"Authorization": SECRET}, "query_string": SECRET, "cookies": SECRET, "data": SECRET}}
     cleaned = monitoring.scrub_event(event, {})
     assert SECRET not in json.dumps(cleaned)
-    assert cleaned["request"]["url"] == "http://x/a"
+    assert "request" not in cleaned
 
 
 def test_uvicorns_access_log_is_off_because_it_prints_query_strings():

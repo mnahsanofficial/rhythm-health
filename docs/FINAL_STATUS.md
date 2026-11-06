@@ -18,7 +18,7 @@ For 8x reviewers. Updated 6 Nov 2026 Asia/Dhaka. Changes close at 18:00 on 6 Nov
 - **No outside user has tested it.** Every usability finding comes from Nazmul on an iPhone or from Maham watching a demo, so we don't know yet whether first-time users find it easier.
 - **We can't say a change helps anyone.** The app shows whether something moved beyond your normal ups and downs in 10 days: a pattern, not proof.
 - **Word budgets guard our copy, not AI text.** A long AI question can still fill a real screen.
-- **Post-demo backlog:** editing a plan before starting, mobile error reporting, the two-week follow-up. ([REMAINING_WORK](REMAINING_WORK.md#after-the-demo))
+- **Post-demo backlog:** editing a plan before starting, the two-week follow-up. ([REMAINING_WORK](REMAINING_WORK.md#after-the-demo))
 
 ## How the 5 Nov PRs were checked
 
@@ -41,3 +41,7 @@ Work was wrapped up at Nazmul’s request before the 16:00 web review cutoff. To
 **After the demo:** the new Lab Report hierarchy and softened verdicts; the web Day 3 and Day 10 moments and Habits I kept; a dedicated Progress page with comparison/calibration and labelled examples; the new remote-worker landing page. Existing web versions remain available where they already existed. These are deferred, not completed.
 
 Browser automation checked native controls, keyboard focus and reduced motion at desktop and phone sizes. This work does not claim a physical phone or screen-reader test. Screenshots, parity tables and deliberate desktop differences are in [the web notes](design/08-web-parity.md) and [ADR 15](adr/0015-content-rich-web-focused-mobile.md).
+
+## Monitoring acceptance
+
+The monitoring gaps branch adds backend/web/mobile error reporting, privacy scrubbing, request correlation, DB health, best-effort product events and Python metrics. **Migration applied 6 Nov and verified read-only. All nine failure-drill cases passed**, with Sentry confirmed by Nazmul and the physical Expo Go JS-error tap completed. The normal web check-in and live metrics were also verified. CI remains the PR merge gate. [Evidence and gaps](MONITORING.md). No paid call is needed for the drill.

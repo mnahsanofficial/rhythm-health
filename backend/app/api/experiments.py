@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.deps import db_error, owned_experiment, profile_id_for
+from app.monitoring import identify_profile
 from app.auth.supabase import get_current_user
 from app.integrations import ai_usage
 from app.integrations.openrouter import AIInvalidOutput, AIUnavailable
@@ -16,7 +17,7 @@ from app.schemas.profile import ProfileOut
 from app.schemas.proposal import SaveExperimentRequest
 from app.schemas.progress import ExperimentTimeline
 from app.schemas.progress_summary import OutcomeOut, OutcomeRequest, ProgressSummary
-from app.services import ai_limit, calibration, experiment_limit, progress_summary, safety
+from app.services import app_events, ai_limit, calibration, experiment_limit, progress_summary, safety
 from app.services.progress import with_progress
 from app.services.proposal import ProposeResponse, propose
 from app.services.timeline import experiment_timeline
@@ -33,6 +34,7 @@ async def propose_experiment(body: ProposeRequest, user_id: str = Depends(get_cu
     if row is None:
         raise HTTPException(status_code=409, detail="Create your profile first")
 
+    identify_profile(str(row["id"]))
     try:
         # Before any paid AI work: a plan that couldn't be started is money wasted.
         capacity = await asyncio.to_thread(experiment_limit.capacity, str(row["id"]))
@@ -59,6 +61,7 @@ def save_experiment(body: SaveExperimentRequest, user_id: str = Depends(get_curr
     # re-checked for safety rather than trusted.
     decision = safety.check_text(body.proposal.model_dump_json())
     if not decision.allowed:
+        app_events.record(profile_id, "safety_blocked")
         raise HTTPException(status_code=422, detail=decision.reason)
 
     proposal = body.proposal
@@ -143,6 +146,7 @@ def set_outcome(experiment_id: UUID, body: OutcomeRequest, user_id: str = Depend
             raise HTTPException(status_code=409, detail="Only a finished experiment of your own can have a choice")
     except SupabaseUnavailable:
         raise db_error()
+    app_events.record(profile_id, "outcome_chosen", str(experiment_id))
     return OutcomeOut(experiment_id=str(experiment_id), choice=body.choice)
 
 
@@ -193,4 +197,6 @@ def start_experiment(experiment_id: UUID, user_id: str = Depends(get_current_use
         raise db_error()
     if started is None:  # lost a race: no longer proposed
         raise HTTPException(status_code=409, detail="Experiment is no longer proposed")
+    if not started.get("is_seeded"):
+        app_events.record(profile_id, "experiment_started", str(experiment_id))
     return with_progress(started)

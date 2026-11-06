@@ -8,6 +8,7 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from app.config import settings
+from app.monitoring import report_failure
 from app.integrations import ai_usage
 from app.schemas.rows import DecisionAnswer, DecisionQuestion
 
@@ -29,6 +30,10 @@ class AIError(Exception):
 
 class AIUnavailable(AIError):
     """OpenRouter could not be reached or rejected the request. Retryable."""
+
+
+class AITimeout(AIUnavailable):
+    """Provider timed out; read timeouts are never retried."""
 
 
 class AIInvalidOutput(AIError):
@@ -64,8 +69,11 @@ async def complete(
         started = time.monotonic()
         try:
             content = await _call(task, model, schema, messages, timeout)
-        except AIUnavailable:
-            await _record(task, model, "error", started)
+        except AIUnavailable as exc:
+            await _record(task, model, "timeout" if isinstance(exc, AITimeout) else "error", started)
+            raise
+        except AIInvalidOutput:
+            await _record(task, model, "invalid", started)
             raise
         try:
             result = schema.model_validate_json(content)
@@ -78,6 +86,7 @@ async def complete(
             )
             await _record(task, model, "invalid" if attempt == 1 else "retry", started)
             if attempt == 1:
+                report_failure("ai_invalid_output")
                 raise AIInvalidOutput(task) from exc
             messages += [
                 {"role": "assistant", "content": content},
@@ -121,13 +130,17 @@ async def decide(
     started = time.monotonic()
     try:
         data = await _post(task, model, DECISIONS_URL, {"model": model, "state": state, "questions": questions}, timeout)
-    except AIUnavailable:
-        await _record(task, model, "error", started)
+    except AIUnavailable as exc:
+        await _record(task, model, "timeout" if isinstance(exc, AITimeout) else "error", started)
+        raise
+    except AIInvalidOutput:
+        await _record(task, model, "invalid", started)
         raise
     try:
         answers = data["answers"]
     except (KeyError, TypeError) as exc:
         await _record(task, model, "invalid", started)
+        report_failure("ai_invalid_output")
         raise AIInvalidOutput(task) from exc
     await _record(task, model, "ok", started)
     return answers
@@ -150,7 +163,8 @@ async def _call(task: str, model: str, schema: type[BaseModel], messages: list[d
     try:
         return data["choices"][0]["message"]["content"] or ""
     except (KeyError, IndexError, TypeError) as exc:
-        raise AIUnavailable(task) from exc
+        report_failure("ai_invalid_output")
+        raise AIInvalidOutput(task) from exc
 
 
 async def _post(task: str, model: str, url: str, payload: dict, timeout: float) -> dict:
@@ -159,8 +173,17 @@ async def _post(task: str, model: str, url: str, payload: dict, timeout: float) 
     A read timeout isn't retried: the model probably ran and was paid for, and trying again
     would double a wait that's already long. The person can choose to retry from the screen.
     """
+    base = settings.openrouter_base_url.rstrip("/")
+    if base != "https://openrouter.ai":
+        from urllib.parse import urlsplit
+        parsed = urlsplit(base)
+        if not (settings.dev_failure_drill and settings.app_environment == "development"
+                and parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}):
+            raise AIUnavailable("Custom provider URL requires a local failure drill")
+        url = base + url.removeprefix("https://openrouter.ai")
+        timeout = min(timeout, settings.openrouter_timeout_seconds)
     limits = httpx.Timeout(timeout, connect=CONNECT_TIMEOUT_SECONDS)
-    async with httpx.AsyncClient(timeout=limits) as client:
+    async with httpx.AsyncClient(timeout=limits, trust_env=base == "https://openrouter.ai") as client:
         for attempt in (0, 1):
             started = time.monotonic()
             try:
@@ -175,13 +198,24 @@ async def _post(task: str, model: str, url: str, payload: dict, timeout: float) 
                 status = exc.response.status_code
                 logger.error("ai_http_error task=%s model=%s status=%s attempt=%s", task, model, status, attempt)
                 if attempt == 1 or status not in RETRYABLE_STATUS:
+                    report_failure("ai_http_error")
                     raise AIUnavailable(task) from exc
             except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
                 logger.error("ai_error task=%s model=%s error_type=%s attempt=%s", task, model, type(exc).__name__, attempt)
                 if attempt == 1:
-                    raise AIUnavailable(task) from exc
-            except (httpx.HTTPError, ValueError) as exc:
+                    report_failure("ai_timeout" if isinstance(exc, httpx.ConnectTimeout) else "ai_error")
+                    raise (AITimeout(task) if isinstance(exc, httpx.ConnectTimeout) else AIUnavailable(task)) from exc
+            except httpx.ReadTimeout as exc:
+                logger.error("ai_timeout task=%s attempt=%s", task, attempt)
+                report_failure("ai_timeout")
+                raise AITimeout(task) from exc
+            except ValueError as exc:
+                logger.error("ai_invalid_output task=%s attempt=%s", task, attempt)
+                report_failure("ai_invalid_output")
+                raise AIInvalidOutput(task) from exc
+            except httpx.HTTPError as exc:
                 logger.error("ai_error task=%s model=%s error_type=%s attempt=%s", task, model, type(exc).__name__, attempt)
+                report_failure("ai_error")
                 raise AIUnavailable(task) from exc
             # The caller records how the last try ended, so only a try that's retried is recorded here.
             await _record(task, model, "error", started)

@@ -396,7 +396,7 @@ export interface paths {
         };
         /**
          * Api Health
-         * @description For an uptime monitor: 503 means the app is up but can't reach its database.
+         * @description A cheap table query, plus configuration presence; never values.
          */
         get: operations["api_health_api_health_get"];
         put?: never;

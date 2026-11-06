@@ -22,7 +22,7 @@ Read in `frontend/lib/api/client.ts` and `frontend/lib/auth/supabase.ts`. Next.j
 | `NEXT_PUBLIC_API_URL` | Base URL of the FastAPI backend | `http://localhost:8001` locally, already filled in `.env.example`. Unset, it falls back to the same | No |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL, for sign-in in the browser | Supabase → Project Settings → API | No |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase public anon key, for sign-in in the browser | Supabase → Project Settings → API → anon / public key | No (public by design; RLS protects the data) |
-| `NEXT_PUBLIC_SENTRY_DSN` | Browser error reporting | Optional. Sentry → Project Settings → Client Keys. Blank means nothing is loaded | No (public by design) |
+| `NEXT_PUBLIC_SENTRY_DSN` | Browser error reporting | Optional. Sentry → Project Settings → Client Keys. Blank disables reporting | No (public by design) |
 
 Fill in both Supabase values before signing in. If either is missing or blank, the app still loads and the sign-in page names the variable that needs to be set. Authentication remains unavailable until both values are configured.
 
@@ -60,6 +60,14 @@ To check the backend's values work, without printing them:
 curl http://localhost:8001/health/supabase   # {"status":"ok"} when SUPABASE_URL and the service-role key work
 ```
 
+## Monitoring settings
+
+The three apps use separate Sentry projects. Web server-side errors use optional `SENTRY_DSN` in `frontend/.env.local`, from the same project as `NEXT_PUBLIC_SENTRY_DSN`. Mobile uses optional `EXPO_PUBLIC_SENTRY_DSN` in `apps/mobile/.env.local` (JS errors in Expo Go; native crashes need a dev build). Blank DSNs disable reporting.
+
+Use `APP_ENVIRONMENT` on the backend/web server, `NEXT_PUBLIC_APP_ENVIRONMENT` in the browser and `EXPO_PUBLIC_APP_ENVIRONMENT` on mobile. `SENTRY_RELEASE`/`GITHUB_SHA` can supply the deployed commit SHA; otherwise git HEAD is embedded/resolved locally. No Sentry auth token or source-map upload is configured. No DSN values belong in logs, despite client DSNs being public by design.
+
+`DEV_FAILURE_DRILL=1` enables backend/web failure triggers only with a development environment. `DEV_EVENT_WRITE_FAILURE=1` requires that gate and affects only event inserts. `OPENROUTER_BASE_URL` is accepted only for an opted-in local loopback stub; normal traffic uses OpenRouter. Leave drill flags off. The [runbook](MONITORING.md) launcher sets flags only in its process and substitutes a fake provider key.
+
 ## Test-only variables
 
 | Variable / file | What it's for | Secret? |
@@ -74,6 +82,6 @@ curl http://localhost:8001/health/supabase   # {"status":"ok"} when SUPABASE_URL
 
 ## Mobile public settings
 
-The mobile app uses `apps/mobile/.env.local`, ignored by Git. Set `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_API_URL` locally; never copy a service-role key into the app. Optional: `EXPO_PUBLIC_DEV_TOOLS=1` shows **Send test reminder** in Settings; leave it unset for a demo. Values are not included here. Reuse the web's public Supabase settings. For the API, use the Mac's Wi-Fi hostname/address and port 8001; the phone's localhost is not the Mac. Start the backend with `--host 0.0.0.0`; no backend code or migration changes are required. In this localhost-only setup the web handoff uses the API hostname on port 3000. Restart Expo after setting changes. See [mobile setup and Expo Go instructions](../apps/mobile/README.md).
+The mobile app uses `apps/mobile/.env.local`, ignored by Git. Set `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_API_URL` locally; never copy a service-role key into the app. Optional: `EXPO_PUBLIC_DEV_TOOLS=1` shows **Send test reminder** and a clearly labelled monitoring-error button in development Settings; leave it unset for a demo. Values are not included here. Reuse the web's public Supabase settings. For the API, use the Mac's Wi-Fi hostname/address and port 8001; the phone's localhost is not the Mac. Start the backend with `--host 0.0.0.0`; no backend code or migration changes are required. In this localhost-only setup the web handoff uses the API hostname on port 3000. Restart Expo after setting changes. See [mobile setup and Expo Go instructions](../apps/mobile/README.md).
 
 Local reminders use the phone's notification permission, not an env setting or push token. Enable them from mobile Settings after the in-app explanation. If denied, use **Open phone Settings** to allow Expo Go notifications. The development-only 10-second test is in Settings; production schedules only the returned `next_day_at`. No additional public key, service-role key or notification server is needed.

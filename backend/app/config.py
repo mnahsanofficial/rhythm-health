@@ -21,6 +21,10 @@ class Settings(BaseSettings):
 
     # Optional. Blank means no error reporting.
     sentry_dsn: str = ""
+    app_environment: str = "development"
+    dev_failure_drill: bool = False
+    dev_event_write_failure: bool = False
+    openrouter_base_url: str = "https://openrouter.ai"
 
     # Paid AI actions one person can use per UTC day.
     ai_daily_limit_propose: int = 5

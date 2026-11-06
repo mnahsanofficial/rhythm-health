@@ -32,3 +32,13 @@ def ai_call_rows(monkeypatch):
     monkeypatch.setattr(ai_calls, "insert", fake.insert)
     monkeypatch.setattr(ai_calls, "count_since", fake.count_since)
     return fake
+
+
+@pytest.fixture(autouse=True)
+def app_event_rows(monkeypatch):
+    from app.services import app_events
+    rows = []
+    monkeypatch.setattr(app_events, "insert", lambda profile_id, event_name, experiment_id: rows.append({
+        "profile_id": profile_id, "event_name": event_name, "experiment_id": experiment_id,
+    }))
+    return rows

@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from app.repositories import checkins, experiments
 from app.schemas.checkin import TodayCheckin, TodayCheckinIn, TodayExperiment, TodayQuestion
 from app.schemas.experiment import Intervention, Metric
+from app.services import app_events
 from app.services.checkins import validate_metric_values
 from app.services.progress import with_progress
 
@@ -141,6 +142,9 @@ def save(profile_id: str, body: TodayCheckinIn, now: datetime | None = None) -> 
         }
         for row in rows
     ]
+    previous = {row["id"]: app_events.previous_checkins(row["id"]) for row in rows}
     checkins.upsert_many(written)
+    for row in rows:
+        app_events.checkin_recorded(profile_id, row, row["progress"].day_number, previous[row["id"]])
     # Answered from what was just written: a later read failing must not look like a failed save.
     return _today(rows, {w["experiment_id"]: w for w in written})

@@ -22,4 +22,4 @@ These logs are public. Anything a secret touches (a prompt, a response, a commit
 
 ## Mobile
 
-Expo bundles `EXPO_PUBLIC_…` settings into the app. Only `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_API_URL` belong in `apps/mobile/.env.local`. Never a service-role or OpenRouter key. Check set/not set by name only, never print values, and never commit the file. Native sessions use SecureStore; tests use fake configuration in test setup, never real env files.
+Expo bundles `EXPO_PUBLIC_…` settings into the app. Only public configuration such as `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_APP_ENVIRONMENT` and the dev-only `EXPO_PUBLIC_DEV_TOOLS` belongs in `apps/mobile/.env.local`. Never a service-role or OpenRouter key. Check set/not set by name only, never print values, and never commit the file. Native sessions use SecureStore; tests use fake configuration in test setup, never real env files.

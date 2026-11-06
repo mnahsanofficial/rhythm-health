@@ -12,7 +12,7 @@ from app.integrations.supabase import SupabaseUnavailable
 from app.repositories import checkins, profiles, reports
 from app.schemas.analysis import Analysis
 from app.schemas.lab_report import LabReport
-from app.services import ai_limit, completion
+from app.services import ai_limit, completion, app_events
 from app.services.lab_report import build_lab_report, narrative_from_row, narrative_to_columns
 from app.services.report_writer import write_narrative
 
@@ -96,4 +96,6 @@ async def write_report(
         updated = await asyncio.to_thread(reports.save_narrative, str(experiment_id), narrative_to_columns(narrative))
     except SupabaseUnavailable:
         raise db_error()
+    if updated:
+        await asyncio.to_thread(app_events.record, profile_id, "report_written", str(experiment_id))
     return build_lab_report(row, updated or saved, logged)

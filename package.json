@@ -22,6 +22,7 @@
     "brand:generate": "npm run generate --workspace=@rhythm-health/brand",
     "brand:check": "npm run check --workspace=@rhythm-health/brand",
     "logs:check": "node scripts/check-logs.mjs",
-    "logs:test": "node --test scripts/tests/*.test.mjs && python3 -m unittest discover -s scripts/tests"
+    "logs:test": "node --test scripts/tests/*.test.mjs && python3 -m unittest discover -s scripts/tests",
+    "metrics:summary": "cd backend && uv run python -m app.services.metrics"
   }
 }

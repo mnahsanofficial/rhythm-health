@@ -21,6 +21,7 @@
     "@react-native-community/datetimepicker": "9.2.1",
     "@rhythm-health/brand": "*",
     "@rhythm-health/contract": "*",
+    "@sentry/react-native": "~8.28.0",
     "@supabase/supabase-js": "^2.118.0",
     "expo": "~58.0.22",
     "expo-constants": "~58.0.14",

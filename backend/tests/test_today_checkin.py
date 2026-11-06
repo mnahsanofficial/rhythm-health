@@ -262,3 +262,30 @@ def test_body_cannot_name_a_day_or_owner(db):
     db.rows = [row(A)]
     today = client.get(TODAY).json()
     assert client.post(TODAY, json={**body(today), "day_number": 3}).status_code == 422
+
+
+def test_usage_events_distinguish_first_save_update_and_baseline(db, monkeypatch):
+    from app.services import app_events
+    events = []
+    monkeypatch.setattr(app_events, "insert", lambda p, n, e: events.append({"profile_id": p, "event_name": n, "experiment_id": e}))
+    db.rows = [row(A, days_ago=2)]
+    db.saved[(A, 1)] = {"day_number": 1}
+    db.saved[(A, 2)] = {"day_number": 2}
+    today = client.get(TODAY).json()
+    assert client.post(TODAY, json=body(today)).status_code == 200
+    assert [e["event_name"] for e in events] == ["checkin_saved", "baseline_completed"]
+    assert client.post(TODAY, json=body(today)).status_code == 200
+    assert [e["event_name"] for e in events] == ["checkin_saved", "baseline_completed", "checkin_updated"]
+    assert all(set(e) == {"profile_id", "event_name", "experiment_id"} for e in events)
+
+
+def test_event_insert_failure_does_not_break_checkin(db, monkeypatch, caplog):
+    from app.services import app_events
+    db.rows = [row(A)]
+    today = client.get(TODAY).json()
+    monkeypatch.setattr(app_events, "insert", Mock(side_effect=RuntimeError("private answer")))
+    response = client.post(TODAY, json=body(today))
+    assert response.status_code == 200
+    assert db.saved
+    assert "app_event_not_recorded" in caplog.text
+    assert "private answer" not in caplog.text
