@@ -245,7 +245,7 @@ test.describe("flows close with one ×", () => {
     await page.waitForURL(/\/experiments\/[^/]+$|\/$/);
     await page.goto(`/experiments/${experiment.id}/check-in`);
     await hideBadge(page);
-    await page.getByRole("heading", { name: /check-in/i }).first().waitFor();
+    await page.getByRole("main").getByRole("heading", { level: 1 }).waitFor();
     await page.getByRole("radio").first().check({ force: true });
     await page.getByRole("button", { name: "Close" }).click();
     await expect(page.getByRole("dialog")).toContainText("Your answers won't be kept.");

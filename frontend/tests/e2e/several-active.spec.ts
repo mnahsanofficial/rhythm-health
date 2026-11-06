@@ -76,7 +76,7 @@ for (const width of [390, 1440]) {
     if (process.env.CAPTURE_WEB_TODAY) await page.screenshot({ path: `../docs/screenshots/web-parity/today/several-${width}.png`, fullPage: true });
 
     await page.getByRole("link", { name: "Check in for today" }).click();
-    await expect(page.getByRole("heading", { name: "Today's check-in.", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Did you make the change?", level: 1 })).toBeVisible();
     await expect(page.getByText("For all 3 experiments", { exact: true })).toBeVisible();
     await expect(page.getByRole("radio", { name: "Yes" })).toHaveCount(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
@@ -86,7 +86,7 @@ for (const width of [390, 1440]) {
     await page.getByRole("group", { name: /Morning energy/ }).getByText("7", { exact: true }).click();
     await page.getByRole("group", { name: /Focus/ }).getByText("6", { exact: true }).click();
     await page.getByRole("button", { name: "Save check-in" }).click();
-    await expect(page.getByRole("heading", { name: "Today's check-ins are recorded." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "3 check-ins recorded." })).toBeVisible();
     expect(saved).toEqual({
       revision: "rev-1", note: null, changes: { [all[2].id]: true },
       answers: { [`${all[0].id}:energy`]: 7, [`${all[0].id}:focus`]: 6 },

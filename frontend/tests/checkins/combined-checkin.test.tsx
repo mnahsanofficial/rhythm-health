@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CombinedCheckin } from "@/components/checkins/combined-checkin";
 import type { TodayCheckin } from "@/lib/types/api";
 import { server } from "../support/server";
+import { experiment } from "../support/fixtures";
+import { timelineFixture } from "../support/timeline-fixture";
 
 const { getSession, router, sessionState } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -41,30 +43,35 @@ function install(read: TodayCheckin = today) {
   server.use(http.get(`${api}/api/checkins/today`, () => HttpResponse.json(read)));
 }
 async function fill(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole("radio", { name: "Yes" }));
   const energy = await screen.findByRole("group", { name: /Morning energy/ });
   await user.click(within(energy).getByRole("radio", { name: /^7/ }));
-  const focus = screen.getByRole("group", { name: /Focus/ });
+  const focus = await screen.findByRole("group", { name: /Focus/ });
   await user.click(within(focus).getByRole("radio", { name: /^6/ }));
-  await user.click(screen.getByRole("radio", { name: "Yes" }));
 }
 
 beforeEach(() => {
   sessionState.session = { user: { id: "user-1" } };
   getSession.mockResolvedValue({ data: { session: { access_token: "fake-session-token" } }, error: null });
   router.replace.mockClear();
+  const active = { ...experiment, progress: { ...experiment.progress, state: "in_progress" as const, day_number: 5, days_remaining: 5 } };
+  server.use(http.get(`${api}/api/experiments/:id/progress`, () => HttpResponse.json(timelineFixture(active, { recorded: [1, 2, 3, 4, 5] }))));
 });
 
 describe("today's check-in for several experiments", () => {
   it("asks a shared question once, and the change question only for the experiment testing today", async () => {
     install();
     render(<CombinedCheckin />);
-    expect(await screen.findByRole("heading", { name: "Today's check-in.", level: 1 })).toBeVisible();
-    expect(screen.getAllByRole("group", { name: /Morning energy/ })).toHaveLength(1);
-    expect(screen.getByText("For both experiments")).toBeVisible();
-    expect(screen.getByText("For: Does less coffee help?")).toBeVisible();
-    expect(screen.getByText("Walk after dinner")).toBeVisible();
+    const user = userEvent.setup();
+    expect(await screen.findByRole("heading", { name: "Did you make the change?", level: 1 })).toBeVisible();
+    expect(screen.getAllByText("Walk after dinner")[0]).toBeVisible();
     expect(screen.queryByText("Skip the second coffee")).not.toBeInTheDocument();
     expect(screen.getAllByRole("radio", { name: "Yes" })).toHaveLength(1);
+    await user.click(screen.getByRole("radio", { name: "Yes" }));
+    expect(screen.getAllByRole("group", { name: /Morning energy/ })).toHaveLength(1);
+    expect(screen.getByText("For both experiments")).toBeVisible();
+    await user.click(screen.getByRole("radio", { name: "7" }));
+    expect(screen.getByText("For Less coffee")).toBeVisible();
   });
 
   it("saves everything in one request, without any day or phase", async () => {
@@ -77,11 +84,12 @@ describe("today's check-in for several experiments", () => {
     }));
     render(<CombinedCheckin />);
     await fill(user);
+    await user.click(screen.getByText("Add a note", { exact: true }));
     await user.type(screen.getByRole("textbox", { name: /Anything unusual/ }), " late night ");
     await user.click(screen.getByRole("button", { name: "Save check-in" }));
-    expect(await screen.findByRole("heading", { name: "Today's check-ins are recorded." })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "2 check-ins recorded." })).toBeVisible();
     expect(saved).toEqual({ revision: "rev-1", answers: { [`${A}:energy`]: 7, [`${B}:focus`]: 6 }, changes: { [A]: true }, note: "late night" });
-    expect(screen.getByRole("link", { name: "Go to your lab" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Continue" })).toHaveAttribute("href", "/");
   });
 
   it("prefills what's already recorded and says saving replaces it", async () => {
@@ -92,9 +100,13 @@ describe("today's check-in for several experiments", () => {
       note: "earlier note",
     });
     render(<CombinedCheckin />);
-    const energy = await screen.findByRole("group", { name: /Morning energy/ });
-    expect(within(energy).getByRole("radio", { name: /^8/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Not today" })).toBeChecked();
+    const user = userEvent.setup();
+    expect(await screen.findByRole("radio", { name: "Not today" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("radio", { name: "8" })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("radio", { name: "6" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByRole("textbox", { name: /Anything unusual/ })).toHaveValue("earlier note");
     expect(screen.getByRole("button", { name: "Update check-in" })).toBeVisible();
   });
@@ -105,8 +117,10 @@ describe("today's check-in for several experiments", () => {
     const post = vi.fn(() => HttpResponse.json(today));
     server.use(http.post(`${api}/api/checkins/today`, post));
     render(<CombinedCheckin />);
-    await user.click(await screen.findByRole("button", { name: "Save check-in" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("A few answers are still missing.");
+    expect(await screen.findByRole("button", { name: "Next" })).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("heading", { name: "Did you make the change?" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Save check-in" })).not.toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
   });
 
@@ -118,7 +132,7 @@ describe("today's check-in for several experiments", () => {
     await fill(user);
     await user.click(screen.getByRole("button", { name: "Save check-in" }));
     expect(await screen.findByText("Required on a test day")).toBeVisible();
-    expect(within(screen.getByRole("group", { name: /Morning energy/ })).getByRole("radio", { name: /^7/ })).toBeChecked();
+    expect(screen.getByRole("button", { name: /Change Morning energy/ })).toHaveTextContent("7/10");
   });
 
   it("reloads the form when the day or the questions changed", async () => {
@@ -141,7 +155,7 @@ describe("today's check-in for several experiments", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't load today's check-in");
     install();
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("group", { name: /Morning energy/ })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Did you make the change?" })).toBeVisible();
   });
 
   it("sends a single due experiment to its own form", async () => {
