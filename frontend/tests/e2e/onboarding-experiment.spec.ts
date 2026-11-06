@@ -77,7 +77,9 @@ for (const width of [390, 1440]) {
     await page.getByRole("button", { name: "Design experiment" }).click();
     const preview = page.getByRole("region", { name: "Experiment and prediction preview" });
     await expect(preview).toBeVisible();
-    await expect(preview.getByRole("heading", { name: "What could give me more energy in the morning?" })).toBeVisible();
+    await expect(preview.getByRole("heading", { name: "Walk 20 minutes after dinner" })).toBeVisible();
+    await preview.getByRole("button", { name: "Next", exact: true }).click();
+    await preview.getByRole("button", { name: "Next", exact: true }).click();
     await preview.getByRole("button", { name: "Start this experiment" }).click();
 
     await expect(page).toHaveURL(/\/experiments\/33333333-3333-3333-3333-333333333333$/);

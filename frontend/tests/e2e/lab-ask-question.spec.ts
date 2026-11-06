@@ -48,7 +48,7 @@ for (const width of [390, 768, 1440]) {
       });
       await submit.click();
       await expect(page.getByRole("region", { name: "Preparing your experiment" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Shaping your experiment…" })).toBeDisabled();
+      await expect(page.getByRole("heading", { name: "Planning your experiment." })).toBeFocused();
       release();
       await expect(page.getByRole("main").getByRole("alert")).toContainText("The service is unavailable right now.");
       await expect(field).toHaveValue("Does an evening walk help my sleep?");
@@ -56,12 +56,14 @@ for (const width of [390, 768, 1440]) {
       const preview = page.getByRole("region", { name: "Experiment and prediction preview" });
       await expect(preview).toBeVisible();
       await expect(page).toHaveURL(/\/$/);
-      await expect(preview.getByRole("heading", { level: 1 })).toHaveText(experiment.question);
+      await expect(preview.getByRole("heading", { level: 1 })).toHaveText(experiment.intervention.change_short!);
+      await preview.getByRole("button", { name: "Next", exact: true }).click();
       await expect(preview.getByText("+8% to +15%", { exact: true })).toHaveCSS("opacity", "1");
       if (reducedMotion === "reduce") {
         expect(await preview.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
       }
       await capture("preview");
+      await preview.getByRole("button", { name: "Next", exact: true }).click();
       await page.getByRole("button", { name: "Start this experiment" }).click();
       await expect(page).toHaveURL(new RegExp(`/experiments/${experiment.id}$`));
       await expect(page.getByRole("heading", { name: experiment.question })).toBeVisible();

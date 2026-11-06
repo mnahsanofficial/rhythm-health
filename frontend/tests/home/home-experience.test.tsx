@@ -267,8 +267,10 @@ describe("ask from Your lab", () => {
     await user.type(await screen.findByRole("textbox", { name: "Your question or goal" }), "  Does evening walking help my sleep?  ");
     await user.click(screen.getByRole("button", { name: "Design experiment" }));
     expect(await screen.findByRole("region", { name: "Experiment and prediction preview" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: experiment.question })).toBeVisible();
+    expect(screen.getByRole("heading", { name: experiment.intervention.change_short! })).toBeVisible();
     expect(router.push).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     await user.click(screen.getByRole("button", { name: "Start this experiment" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/experiments/${experiment.id}`));
     expect(saved).toEqual(saveExperimentRequest);

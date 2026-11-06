@@ -41,10 +41,14 @@ for (const width of [390, 1440]) {
     await field.fill("What's the capital of France?");
     await page.getByRole("button", { name: "Design experiment" }).click();
     await page.getByRole("button", { name: "Continue anyway" }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByRole("button", { name: /start this experiment/i })).toBeVisible();
     await expect(page.getByText("Your question wasn't about a habit, so Rhythm suggested a related habit experiment instead.")).toBeVisible();
     await page.screenshot({ path: `/tmp/proposal-continued-${width}.png`, fullPage: true });
     expect(bodies.at(-1)).toEqual({ question: "What's the capital of France?", continue_anyway: true });
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await page.getByRole("button", { name: "Back", exact: true }).click();
     await page.getByRole("button", { name: "Ask something else" }).click();
     await page.route(`${API}/api/experiments/propose`, async route => {
       bodies.push(route.request().postDataJSON());
