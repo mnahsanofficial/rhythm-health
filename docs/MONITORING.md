@@ -1,6 +1,6 @@
 # Monitoring
 
-Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration and live drill are pending approval.** Source code is not evidence of live delivery.
+Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration applied on 6 Nov; live drill and Sentry confirmations pending.** Source code is not evidence of live delivery.
 
 | Signal | Where to look | Data |
 |---|---|---|
@@ -20,6 +20,12 @@ Runbook, 6 Nov 2026. Owner: Nazmul. **Shared migration and live drill are pendin
 **Configuration and coverage:** DSNs are optional; blank means no reporting. Backend uses `APP_ENVIRONMENT` and `SENTRY_RELEASE` (git HEAD fallback); web/mobile embed the SHA at build/config time. In packaged deployments set the deployed SHA explicitly. Expo-pinned `@sentry/react-native` captures JS errors in Expo Go with native capture disabled. Native crashes need a development/native build. Server reports use Next's explicit request-error hook; automatic HTTP/process-session collection is off. Browser session/tracing integrations are filtered out. No replay, profiling, source-map uploads, lossless telemetry, background-job monitoring or paid-provider happy-path verification is configured. The strict event allowlist deliberately removes exception stacks/text; diagnose with request ID, failure code and the release's source.
 
 **Alerts:** this repo configures no Sentry notification rules, uptime scheduler, on-call routing or retention policy. Existing dashboard rules and notification delivery are unverified. Until configured, manually check Sentry and `/api/health`.
+
+## Shared migration, 6 Nov
+
+Applied with Supabase CLI `db push --db-url`, after a dry run listed only `20261106000000_app_events.sql`. `--skip-vault` was set; roles and seeds were not included. Nazmul approved the SQL and confirmed Shakeb was notified.
+
+Read-only SQL verification: `public.app_events` exists; RLS enabled; zero client policies; non-owner grants are exactly `service_role: INSERT, SELECT`; **0 rows before test-account use**. Columns are `id`, `profile_id`, `event_name`, `experiment_id`, `created_at`. Migration history records version `20261106000000`, name `app_events`. The `ai_calls_status_check` includes `timeout`. No smoke-test row was inserted.
 
 ## Local verification, 6 Nov
 

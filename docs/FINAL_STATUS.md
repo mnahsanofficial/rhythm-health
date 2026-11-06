@@ -44,4 +44,4 @@ Browser automation checked native controls, keyboard focus and reduced motion at
 
 ## Monitoring acceptance
 
-The monitoring gaps branch adds backend/web/mobile error reporting, privacy scrubbing, request correlation, DB health, best-effort product events and Python metrics. **Not yet accepted:** shared migration approval/application, live failure drill, Sentry dashboard confirmations and the physical Expo Go error tap. [Evidence and gaps](MONITORING.md). No paid call is needed for the drill.
+The monitoring gaps branch adds backend/web/mobile error reporting, privacy scrubbing, request correlation, DB health, best-effort product events and Python metrics. **Migration applied 6 Nov and verified read-only. Not yet accepted:** live failure drill, Sentry dashboard confirmations and the physical Expo Go error tap. [Evidence and gaps](MONITORING.md). No paid call is needed for the drill.

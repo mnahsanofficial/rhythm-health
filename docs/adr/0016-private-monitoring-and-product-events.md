@@ -1,6 +1,6 @@
 # 16. Private error reporting and in-house product events
 
-Date: 6 Nov 2026. Status: implementation in progress; shared migration and live acceptance pending.
+Date: 6 Nov 2026. Status: implemented; shared migration applied 6 Nov after approval; live acceptance pending.
 
 8x identified missing error reporting and usage analytics. #72 added request logs and optional backend/web Sentry, but DSNs were unset and mobile was uncovered.
 
