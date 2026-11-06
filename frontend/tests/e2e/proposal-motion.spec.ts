@@ -30,20 +30,24 @@ for (const width of [390, 1440]) {
       await capture("question");
       await page.getByRole("button", { name: "Design experiment" }).click();
       await expect(page.getByRole("region", { name: "Preparing your experiment" })).toBeVisible();
-      await expect(page.getByRole("list", { name: "What goes into your experiment" })).toContainText("An honest forecast");
+      await expect(page.getByRole("list", { name: "What goes into your experiment" })).toContainText("Forecasting what might happen");
       await capture("before");
       release();
       const preview = page.getByRole("region", { name: "Experiment and prediction preview" });
       await expect(preview.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.getByRole("textbox", { name: "Your question or goal" })).toHaveCount(0);
+      await preview.locator("summary").filter({ hasText: "A note before you begin" }).click();
       await expect(preview.getByRole("note")).toContainText("Keep the walk comfortable.");
       await capture("during");
-      const forecast = page.getByRole("complementary", { name: "Your prediction" });
-      await expect(forecast.getByText("+8% to +15%", { exact: true })).toHaveCSS("opacity", "1");
+      await preview.getByRole("button", { name: "Next", exact: true }).click();
+      const forecast = page.getByRole("complementary", { name: "Prediction and guess" });
+      await expect(forecast.getByRole("figure", { name: /Predicted range/ })).toBeVisible();
+      await expect(preview.getByText("+8% to +15%", { exact: true })).toBeVisible();
       await capture("after");
       if (reducedMotion === "reduce") {
         expect(await preview.evaluate(el => el.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
       }
+      await preview.getByRole("button", { name: "Back", exact: true }).click();
       await preview.getByRole("button", { name: "Ask something else" }).click();
       await expect(page.getByRole("textbox", { name: "Your question or goal" })).toBeFocused();
       expect(counts.proposals).toBe(0); // This spec overrides the proposal with a gated mock.

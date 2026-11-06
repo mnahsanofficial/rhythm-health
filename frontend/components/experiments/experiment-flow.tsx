@@ -4,12 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { getExperiment, isActiveLimitReached, proposeExperiment, saveExperiment, startExperiment } from "@/lib/data/experiments";
-import { signedPercent } from "@/lib/report/copy";
 import type { Profile, ProposeResponse } from "@rhythm-health/contract";
 import { closeButton, CloseIcon } from "@/components/nav/close-icon";
 import { useLeaveGuard, useNav } from "@/components/nav/navigation";
-import { PersonalGuess } from "@/components/experiments/personal-guess";
-import { ProposalPreview } from "@/components/experiments/proposal-preview";
+import { PlanSteps } from "@/components/experiments/plan-steps";
 import { ProposalSkeleton } from "@/components/experiments/proposal-skeleton";
 import { starters } from "@/components/experiments/starters";
 import { WONT_BE_KEPT } from "@/lib/nav/routes";
@@ -80,10 +78,10 @@ export function ExperimentFlow({
     : <Link href="/" className="mt-3 mr-4 inline-flex min-h-11 items-center underline">Go to your lab</Link>;
 
   useEffect(() => {
-    if (result) output.current?.focus();
+    if (result && !(result.safety.allowed && result.proposal && result.prediction)) output.current?.focus();
     else if (hasShownResult.current) input.current?.focus();
     hasShownResult.current = Boolean(result);
-  }, [result, personalGuess]);
+  }, [result]);
 
   async function submit(continueAnyway = false) {
     const text = question.trim();
@@ -195,7 +193,7 @@ export function ExperimentFlow({
       )}
       <div className="mt-5 grid gap-10">
         <div className="min-w-0">
-          {(!result?.safety.allowed || result.habit_check) && <>
+          {!busy && (!result?.safety.allowed || result.habit_check) && <>
           <QuestionForm
             inputRef={input}
             question={question}
@@ -250,32 +248,8 @@ export function ExperimentFlow({
       {result?.safety.allowed && result.proposal && result.prediction && (
         <div ref={output as React.RefObject<HTMLDivElement>} tabIndex={-1}>
           {continued && <p role="note" className="mb-4 border-l-2 border-line pl-4 text-caption text-muted">Your question wasn&apos;t about a habit, so Rhythm suggested a related habit experiment instead.</p>}
-          {result.personal_guess_available && personalGuess === null ? (
-            <PersonalGuess
-              headingLevel={headingLevel}
-              proposal={result.proposal}
-              onReveal={setPersonalGuess}
-              onBack={() => chooseQuestion("")}
-            />
-          ) : (<>
-            {!result.personal_guess_available && (
-              <p role="note" className="mt-4 border-l-2 border-line pl-4 text-caption text-muted">
-                Your own guess is unavailable right now. You can still start without one.
-              </p>
-            )}
-            {personalGuess !== null && (
-              <p className="mt-4 border-l-2 border-moss pl-4 text-body">
-                Your guess: <span className="font-mono">{signedPercent(personalGuess, 2)}</span> change from normal days. Locked before the AI reveal.
-              </p>
-            )}
-            <ProposalPreview
-              result={result}
-              headingLevel={headingLevel}
-              onStart={() => void beginExperiment()}
-              onAskSomethingElse={() => chooseQuestion("")}
-              starting={starting}
-            />
-          </>)}
+          <PlanSteps result={result} guess={personalGuess} onGuess={setPersonalGuess} headingLevel={headingLevel}
+            onStart={() => void beginExperiment()} onAskSomethingElse={() => chooseQuestion("")} starting={starting} />
           {startError && (
             <div role="alert" className="mt-4 rounded-card bg-clay-tint p-5 text-clay">
               <p>{startError}</p>
