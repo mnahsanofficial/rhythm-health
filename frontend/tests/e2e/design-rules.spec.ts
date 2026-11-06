@@ -112,7 +112,7 @@ for (const mode of ["light", "dark"] as const) for (const width of [390, 1440]) 
     for (const [screen, path, heading] of [
       ["Today", "/", "Evening walk"],
       ["ask a question", "/experiments/new", "Ask a question."],
-      ["check-in", `/experiments/${experiment.id}/check-in`, /check-in/i],
+      ["check-in", `/experiments/${experiment.id}/check-in`, "Did you make the change?"],
       ["Lab Report", `/experiments/${completedId}/report`, experiment.question],
     ] as const) {
       await page.goto(path);
