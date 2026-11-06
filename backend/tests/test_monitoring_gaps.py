@@ -76,3 +76,48 @@ def test_metrics_count_updates_once_and_exclude_samples():
     assert result["checkin_completion"]["days_recorded"] == 2
     assert result["checkin_completion"]["days_elapsed"] == 3
     assert result["checkin_completion"]["rate"] == 2 / 3
+
+
+def test_expected_validation_and_daily_cap_do_not_report(monkeypatch):
+    from app.auth.supabase import get_current_user
+    from app.repositories import profiles, experiments
+    from tests.test_propose import PROFILE_ROW
+    report = Mock()
+    monkeypatch.setattr(monitoring, "report_failure", report)
+    app.dependency_overrides[get_current_user] = lambda: "test-user"
+    monkeypatch.setattr(profiles, "get_by_user_id", lambda _: PROFILE_ROW)
+    monkeypatch.setattr(experiments, "list_for_profile", lambda *_: [])
+    monkeypatch.setattr(settings, "ai_daily_limit_propose", 0)
+    try:
+        assert client.post("/api/checkins/today", json={"unexpected": "private"}).status_code == 422
+        assert client.post("/api/experiments/propose", json={"question": "Does a short walk help sleep?"}).status_code == 429
+        report.assert_not_called()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_real_sentry_transport_receives_only_scrubbed_correlated_event(monkeypatch):
+    import sentry_sdk
+    from sentry_sdk.transport import Transport
+    captured = []
+    class InMemory(Transport):
+        def capture_envelope(self, envelope):
+            for item in envelope.items:
+                if item.type == "event":
+                    captured.append(item.payload.json)
+    sentry_sdk.init(dsn="https://public@example.invalid/1", transport=InMemory,
+                    default_integrations=False, before_send=monitoring.scrub_event,
+                    environment="development", release="abc123")
+    monkeypatch.setattr(settings, "sentry_dsn", "https://public@example.invalid/1")
+    monkeypatch.setattr(settings, "dev_failure_drill", True)
+    monkeypatch.setattr(settings, "app_environment", "development")
+    try:
+        response = client.get("/api/dev/failure-drill?token=private", headers={"Authorization": "Bearer private"})
+        assert len(captured) == 1
+        event = captured[0]
+        assert event["tags"]["request_id"] == response.headers["x-request-id"]
+        assert event["release"] == "abc123"
+        assert event["environment"] == "development"
+        assert "private" not in json.dumps(event)
+    finally:
+        sentry_sdk.init(dsn=None, default_integrations=False)

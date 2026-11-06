@@ -254,3 +254,39 @@ def test_a_proposal_reads_history_and_running_questions_together(monkeypatch):
     finally:
         app.dependency_overrides.clear()
     assert response.status_code == 200
+
+
+def test_timeout_is_recorded_and_reported_without_retry(transport, ai_call_rows, monkeypatch):
+    from unittest.mock import Mock
+    report = Mock()
+    monkeypatch.setattr(openrouter, "report_failure", report)
+    transport["replies"] = [httpx.ReadTimeout("private output")]
+    async def run():
+        with ai_usage.for_profile("test-profile"):
+            await openrouter.complete(task="experiment_design", model="m", schema=Tiny, system="private", user="private")
+    with pytest.raises(openrouter.AITimeout):
+        asyncio.run(run())
+    assert transport["calls"] == 1
+    assert [r["status"] for r in ai_call_rows.rows] == ["timeout"]
+    report.assert_called_once_with("ai_timeout")
+
+
+def test_invalid_provider_json_is_invalid_not_network_error(transport, ai_call_rows, monkeypatch):
+    from unittest.mock import Mock
+    report = Mock()
+    monkeypatch.setattr(openrouter, "report_failure", report)
+    transport["replies"] = [httpx.Response(200, text="not json")]
+    async def run():
+        with ai_usage.for_profile("test-profile"):
+            await openrouter.complete(task="experiment_design", model="m", schema=Tiny, system="s", user="u")
+    with pytest.raises(openrouter.AIInvalidOutput):
+        asyncio.run(run())
+    assert [r["status"] for r in ai_call_rows.rows] == ["invalid"]
+    report.assert_called_once_with("ai_invalid_output")
+
+
+def test_custom_provider_requires_local_opted_in_drill(transport, monkeypatch):
+    monkeypatch.setattr(settings, "openrouter_base_url", "https://example.invalid")
+    with pytest.raises(openrouter.AIUnavailable):
+        complete()
+    assert transport["calls"] == 0
