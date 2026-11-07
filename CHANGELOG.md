@@ -12,6 +12,7 @@ The work by day, one line per group of PRs. Dates are the day the PRs merged, in
 - **4 Nov:** Mobile history, polish and web parity; several active experiments and one combined check-in; new Supabase project; redesign and tokens; CI, monitoring, AI cap, async AI, calibration; readability, check-ins, Progress and Day 10, onboarding, Day 3, finish flow, report; project organisation; soft habit check and planning moment (#48–#97)
 - **5 Nov:** Proposal follow-ups, calm Today and unique keys for the demo (#98–#100); Maham's feedback: logs and round 3 (#101), one-question check-in (#102), Today and experiment screen (#103), plan steps (#104), text budget (#105), How we know (#106), wrap-up docs (#107), check-in scenes and thumb-zone answers (#108), only a first answer moves on by itself (#110)
 - **6 Nov:** Short labels from Nazmul's iPhone test: backend and contract (#111), mobile screens and scenes (#112); desktop Today (#114) and stepped web check-ins with review and celebration (#115), four-step web plans (#116), web habit and safety choices (#117); monitoring gaps closed across backend, web and mobile with the failure drill (#118); final log audits and docs check (#119, #120, final-check PR)
+- **7 Nov:** Add README hackathon context, team contributions, assessment results and review progress.
 
 ## After the demo
 

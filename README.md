@@ -4,6 +4,44 @@ Rhythm is a phone app that turns a question about one of your habits into a shor
 It predicts what will change, you check in for 30 seconds a day for 10 days, and Python measures what actually happened.
 The Lab Report then says honestly whether it was a signal or noise, so the lesson comes from your own evidence.
 
+## Built at 8x Playmakers (Cohort 2)
+
+8x Playmakers Cohort 2 was a 10-day paid pair hackathon run by 8x (28 Oct – 6 Nov 2026).
+Theme: "Learning that sticks". Track: Health habits (fitness, sleep, food). Team F (pair).
+
+Md Nazmul Ahsan ([@mnahsanofficial](https://github.com/mnahsanofficial)) and Shakeb Mohammed formed the team.
+Shakeb wrote the PRD and technical design and set up the early backend foundation.
+From 30 Oct he was away for a family emergency, and Nazmul built the rest: the mobile app (Expo), the web app,
+the redesigns, every round of 8x feedback, CI, the AI cost cap, monitoring and docs.
+
+Built with AI assistance from Claude Code and Codex. Every agent session is logged in [`.claude-logs/`](.claude-logs/)
+on main, in 8x's required format, as part of the assessment.
+
+Final score: **81.5 / 100**; rank **#6 of 21 scored trialists at sharing**.
+Scoring split: AI-scored 30 points plus manual review 70 points.
+
+| Area | Score |
+|---|---|
+| Claude logs | 12.6 / 15 |
+| Architecture | 11.9 / 15 |
+| Comms | 13.5 / 15 |
+| Initiative and thinking | 13.5 / 15 |
+| Demos | 8 / 10 |
+| Shipping speed | 9 / 10 |
+| Design | 6 / 10 |
+| Completeness | 7 / 10 |
+
+Review progress: **64 → 77 → 81 → 82** (s1, s2, s3, final).
+Across s1 → s2, the work included the move to mobile and the logging audit and fixes (#35–#43).
+Across s2 → s3, it included CI, monitoring and the AI cost cap (#70–#72).
+Across s3 → final, the cognitive-overload redesign shortened screens, split check-ins into one question at a time and added word budgets (#102–#105).
+These changes are recorded in [CHANGELOG.md](CHANGELOG.md) and the [feedback tracker](docs/FEEDBACK_TRACKER.md).
+
+The [feedback tracker](docs/FEEDBACK_TRACKER.md) maps 8x feedback to PRs; [final status](docs/FINAL_STATUS.md) records what shipped and what remains.
+[Architecture](docs/ARCHITECTURE.md), [decision records](docs/adr/) and [monitoring](docs/MONITORING.md) document the implementation and its limits.
+
+`Final demo: <LOOM_LINK>`
+
 Built for **8x Playmakers C2**, track "Health habits", theme "Learning that sticks", by **Team F**.
 
 **Reviewing this?** Start with the one-page [final status](docs/FINAL_STATUS.md), then [Architecture](docs/ARCHITECTURE.md), the [decision records](docs/adr/README.md) and the [8x feedback tracker](docs/FEEDBACK_TRACKER.md). All the docs are listed in the [docs index](docs/README.md).
